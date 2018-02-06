@@ -47,6 +47,8 @@ setup(
 
     packages=[
         'cryptoparser',
+        'cryptoparser.common',
+        'cryptoparser.tls',
     ],
 
     test_suite='setup.test_discover',
