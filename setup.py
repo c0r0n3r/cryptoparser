@@ -15,6 +15,8 @@ setup(
 
     packages=[
         'cryptoparser',
+        'cryptoparser.common',
+        'cryptoparser.tls',
     ],
 
     test_suite='tests',
