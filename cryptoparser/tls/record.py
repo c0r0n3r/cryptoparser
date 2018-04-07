@@ -4,7 +4,7 @@
 import cryptoparser.common.utils as utils
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal
 from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsContentType
 
@@ -39,7 +39,7 @@ class TlsRecord(ParsableBase):
                     parser.parse_parsable('message', subclass)
                     messages.append(parser['message'])
                     break
-                except InvalidValue:
+                except InvalidType:
                     continue
             else:
                 raise InvalidValue(parser['content_type'], TlsRecord, 'content type')
@@ -69,6 +69,10 @@ class TlsRecord(ParsableBase):
 
         # pylint: disable=attribute-defined-outside-init
         self._protocol_version = value
+
+    @property
+    def content_type(self):
+        return self._messages[0].get_content_type()
 
     @property
     def messages(self):

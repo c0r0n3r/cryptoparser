@@ -27,3 +27,7 @@ class InvalidValue(Exception):
         super(InvalidValue, self).__init__(message)
 
         self.value = value
+
+
+class InvalidType(Exception):
+    pass
