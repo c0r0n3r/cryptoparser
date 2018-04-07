@@ -7,6 +7,7 @@ import struct
 import six
 
 from cryptolyzer.common.exception import NotEnoughData, TooMuchData, InvalidValue
+import cryptolyzer.common.utils as utils
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -111,6 +112,52 @@ class ParserBinary(object):
         self._parsed_length += len(self._parsable) - self._parsed_length - len(unparsed_bytes)
         self._parsed_values[name] = parsed_object
 
+    def _parse_parsable_array(self, name, items_size, item_classes, fallback_class=None):
+        if items_size > self.unparsed_length:
+            raise NotEnoughData(bytes_needed=self._parsed_length + items_size)
+
+        items = []
+        remaining_items_size = items_size
+
+        while remaining_items_size > 0:
+            for item_class in item_classes:
+                try:
+                    remaining_bytes_offset = self._parsed_length + items_size - remaining_items_size
+                    item, parsed_length = item_class._parse(self._parsable[remaining_bytes_offset:])
+                    break
+                except InvalidValue:
+                    pass
+            else:
+                if fallback_class is not None:
+                    remaining_bytes_offset = self._parsed_length + items_size - remaining_items_size
+                    item, parsed_length = fallback_class._parse(self._parsable[remaining_bytes_offset:])
+                else:
+                    raise ValueError(self._parsable[remaining_bytes_offset:])
+
+            items.append(item)
+            remaining_items_size -= parsed_length
+
+        self._parsed_values[name] = items
+        self._parsed_length += items_size
+
+    def parse_parsable_array(self, name, items_size, item_class):
+        if self.unparsed_length < items_size:
+            raise NotEnoughData(items_size)
+
+        try:
+            return self._parse_parsable_array(name, items_size, [item_class, ])
+        except ValueError as e:
+            raise InvalidValue(e.args[0], item_class)
+
+    def parse_parsable_derived_array(self, name, items_size, item_base_class, fallback_class=None):
+        item_classes = utils.get_leaf_classes(item_base_class)
+        try:
+            return self._parse_parsable_array(name, items_size, item_classes, fallback_class)
+        except NotEnoughData as e:
+            raise e
+        except ValueError as e:
+            raise InvalidValue(e.args[0], item_base_class)
+
 
 class ComposerBinary(object):
     _INT_FORMATER_BY_SIZE = {
@@ -149,6 +196,14 @@ class ComposerBinary(object):
 
     def compose_parsable(self, value):
         self._composed += value.compose()
+
+    def compose_parsable_array(self, values):
+        composed_bytes = bytearray()
+
+        for item in values:
+            composed_bytes += item.compose()
+
+        self._composed += composed_bytes
 
     def compose_bytes(self, value):
         self._composed += value
