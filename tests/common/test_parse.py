@@ -5,8 +5,9 @@ import unittest
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
+from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
 
-from tests.common.classes import OneByteParsable
+from tests.common.classes import OneByteParsable, TwoByteParsable, ConditionalParsable, OneByteOddParsable
 
 
 class TestParsable(unittest.TestCase):
@@ -26,6 +27,10 @@ class TestParsable(unittest.TestCase):
         with self.assertRaises(TypeError):
             # pylint: disable=abstract-class-instantiated
             ParsableBase().compose()
+
+        parser = ParserBinary(b'\xff\xff')
+        with self.assertRaises(InvalidValue):
+            parser.parse_parsable('cipher_suite', TlsCipherSuiteFactory)
 
     def test_parse(self):
         _, unparsed_bytes = OneByteParsable.parse_immutable(b'\x01\x02')
@@ -104,6 +109,76 @@ class TestParserBinary(unittest.TestCase):
         parser = ParserBinary(b'\x01\x02')
         parser.parse_bytes('two_byte_array', size=2)
         self.assertEqual(parser['two_byte_array'], b'\x01\x02')
+
+    def test_parse_parsable(self):
+        parser = ParserBinary(b'\x01\x02\x03\x04')
+
+        parser.parse_parsable('first_byte', OneByteParsable)
+        self.assertEqual(
+            b'\x01',
+            parser['first_byte'].compose()
+        )
+
+        parser.parse_parsable('second_byte', OneByteParsable)
+        self.assertEqual(
+            b'\x02',
+            parser['second_byte'].compose()
+        )
+
+    def test_parse_parsable_array(self):
+        parser = ParserBinary(b'\x01\x02\x03\x04')
+        parser.parse_parsable_array('array', items_size=4, item_class=OneByteParsable)
+        self.assertEqual(
+            [0x01, 0x02, 0x03, 0x04],
+            list(map(int, parser['array']))
+        )
+
+        parser = ParserBinary(b'\x01\x02\x03\x04')
+        parser.parse_parsable_array('array', items_size=4, item_class=TwoByteParsable)
+        self.assertEqual(
+            [0x0102, 0x0304],
+            list(map(int, parser['array']))
+        )
+
+        parser = ParserBinary(b'\x01\x02')
+        with self.assertRaises(InvalidValue):
+            parser.parse_parsable_array('array', items_size=2, item_class=OneByteOddParsable)
+
+    def test_parse_parsable_derived_array(self):
+        parser = ParserBinary(b'\x01\x02\x00')
+        parser.parse_parsable_derived_array(
+            'array',
+            items_size=3,
+            item_base_class=ConditionalParsable,
+            fallback_class=None
+        )
+        self.assertEqual(
+            [0x01, 0x0200],
+            list(map(int, parser['array']))
+        )
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserBinary(b'\x00\x01')
+        with self.assertRaises(InvalidValue):
+            parser.parse_parsable_derived_array(
+                'array',
+                items_size=2,
+                item_base_class=ConditionalParsable,
+                fallback_class=None
+            )
+
+        parser = ParserBinary(b'\x00\x01')
+        parser.parse_parsable_derived_array(
+            'array',
+            items_size=2,
+            item_base_class=ConditionalParsable,
+            fallback_class=TwoByteParsable
+        )
+        self.assertEqual(
+            [0x01, ],
+            list(map(int, parser['array']))
+        )
+        self.assertEqual(parser.unparsed_length, 0)
 
 
 class TestComposerBinary(unittest.TestCase):
@@ -202,3 +277,13 @@ class TestComposerBinary(unittest.TestCase):
         composer.compose_numeric(0x08090a0b, 4)
         self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b')
         self.assertEqual(composer.composed_length, 11)
+
+    def test_compose_parsable_array(self):
+        composer = ComposerBinary()
+        parsable_array = [OneByteParsable(0x01), TwoByteParsable(0x0203), ]
+        composer.compose_parsable_array(parsable_array)
+
+        self.assertEqual(
+            b'\x01\x02\x03',
+            composer.composed_bytes
+        )
