@@ -149,3 +149,24 @@ class TlsChangeCipherSpecMessage(TlsSubprotocolMessageBase):
 
     def __eq__(self, other):
         return self._change_cipher_spec_type == other._change_cipher_spec_type
+
+
+class TlsApplicationDataMessage(TlsSubprotocolMessageBase):
+    def __init__(self, data):
+        super(TlsApplicationDataMessage, self).__init__()
+
+        self.data = data
+
+    @classmethod
+    def get_content_type(cls):
+        return TlsContentType.APPLICATION_DATA
+
+    @classmethod
+    def _parse(cls, parsable):
+        return TlsApplicationDataMessage(parsable), len(parsable)
+
+    def compose(self):
+        return self.data
+
+    def __eq__(self, other):
+        return self.data == other.data
