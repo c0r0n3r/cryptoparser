@@ -1,0 +1,11 @@
+[run]
+source = cryptoparser
+
+[report]
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+fail_under = 100
+include = cryptoparser/*
+omit = cryptoparser/tls/client.py
+show_missing = True
