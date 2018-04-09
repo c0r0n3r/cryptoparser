@@ -8,6 +8,7 @@ import six
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase
 from cryptoparser.tls.version import TlsProtocolVersionDraft, TlsProtocolVersionFinal
+from cryptoparser.tls.version import SslProtocolVersion
 
 
 class TestTlsProtocolVersion(unittest.TestCase):
@@ -125,3 +126,49 @@ class TestTlsProtocolVersion(unittest.TestCase):
         self.assertEqual(str(TlsProtocolVersionFinal(TlsVersion.TLS1_0)), 'TLS 1.0')
         self.assertEqual(str(TlsProtocolVersionFinal(TlsVersion.TLS1_2)), 'TLS 1.2')
         self.assertEqual(str(TlsProtocolVersionDraft(24)), 'TLS 1.3 Draft 23')
+
+
+class TestSslProtocolVersion(unittest.TestCase):
+    def test_error(self):
+        with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid SslVersion'):
+            self.assertEqual(
+                SslProtocolVersion.parse_exact_size(b'\x00\xff'),
+                SslProtocolVersion()
+            )
+        with self.assertRaises(NotEnoughData) as context_manager:
+            # pylint: disable=expression-not-assigned
+            SslProtocolVersion.parse_exact_size(b'\xff'),
+        self.assertGreaterEqual(context_manager.exception.bytes_needed, 1)
+
+    def test_parse(self):
+        self.assertEqual(
+            SslProtocolVersion.parse_exact_size(b'\x00\x02'),
+            SslProtocolVersion()
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            b'\x00\x02',
+            SslProtocolVersion().compose()
+        )
+
+    def test_lt(self):
+        self.assertLess(
+            SslProtocolVersion(),
+            TlsProtocolVersionFinal(TlsVersion.SSL3)
+        )
+
+    def test_set(self):
+        self.assertEqual(
+            1,
+            len(set([
+                SslProtocolVersion(),
+                SslProtocolVersion()
+            ]))
+        )
+
+    def test_repr(self):
+        self.assertEqual(repr(SslProtocolVersion()), 'ssl2')
+
+    def test_str(self):
+        self.assertEqual(str(SslProtocolVersion()), 'SSL 2.0')

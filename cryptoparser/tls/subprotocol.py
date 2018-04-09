@@ -12,8 +12,8 @@ from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.extension import TlsExtensions
-from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal
-from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
+from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
+from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory, SslCipherKindFactory
 
 
 class TlsContentType(enum.IntEnum):
@@ -610,3 +610,177 @@ class TlsHandshakeServerKeyExchange(TlsHandshakeMessage):
 
     def compose(self):
         return self._compose_header(len(self.param_bytes)) + self.param_bytes
+
+
+class SslMessageBase(ParsableBase):
+    @classmethod
+    def get_message_type(cls):
+        return NotImplementedError()  # pragma: no cover
+
+    # pylint: disable=duplicate-code
+    @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    # pylint: disable=duplicate-code
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+class SslMessageType(enum.IntEnum):
+    ERROR = 0x00
+    CLIENT_HELLO = 0x01
+    CLIENT_MASTER_KEY = 0x02
+    CLIENT_FINISHED = 0x03
+    SERVER_HELLO = 0x04
+    SERVER_VERIFY = 0x05
+    SERVER_FINISHED = 0x06
+    REQUEST_CERTIFICATE = 0x07
+    CLIENT_CERTIFICATE = 0x08
+
+
+class SslCertificateType(enum.IntEnum):
+    X509_CERTIFICATE = 0x01
+
+
+class SslAuthenticationType(enum.IntEnum):
+    MD5_WITH_RSA_ENCRYPTION = 0x01
+
+
+class SslErrorType(enum.IntEnum):
+    NO_CIPHER_ERROR = 0x0001
+    NO_CERTIFICATE_ERROR = 0x0002
+    BAD_CERTIFICATE_ERROR = 0x0003
+    UNSUPPORTED_CERTIFICATE_TYPE_ERROR = 0x0004
+
+
+class SslError(SslMessageBase):
+    def __init__(self, error_type):
+        self.error_type = error_type
+
+    @classmethod
+    def get_message_type(cls):
+        return SslMessageType.ERROR
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('error_type', 2, SslErrorType)
+
+        return SslError(parser['error_type']), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric(self.error_type, 2)
+
+        return composer.composed_bytes
+
+    def __eq__(self, other):
+        return self.error_type == other.error_type
+
+
+class SslHandshakeClientHello(SslMessageBase):
+    def __init__(
+            self,
+            cipher_kinds,
+            session_id=bytearray(),
+            challenge=bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32)),
+    ):
+        self.cipher_kinds = cipher_kinds
+        self.session_id = session_id
+        self.challenge = challenge
+
+    @classmethod
+    def get_message_type(cls):
+        return SslMessageType.CLIENT_HELLO
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('version', 2, SslVersion)
+        parser.parse_numeric('cipher_kinds_length', 2)
+        parser.parse_numeric('session_id_length', 2)
+        parser.parse_numeric('challenge_length', 2)
+        parser.parse_parsable_array('cipher_kinds', parser['cipher_kinds_length'], SslCipherKindFactory)
+        parser.parse_bytes('session_id', parser['session_id_length'])
+        parser.parse_bytes('challenge', parser['challenge_length'])
+
+        return SslHandshakeClientHello(
+            cipher_kinds=parser['cipher_kinds'],
+            session_id=parser['session_id'],
+            challenge=parser['challenge']
+        ), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric(SslVersion.SSL2, 2)
+
+        composer.compose_numeric(len(self.cipher_kinds) * 3, 2)
+        composer.compose_numeric(len(self.session_id), 2)
+        composer.compose_numeric(len(self.challenge), 2)
+
+        composer.compose_parsable_array(self.cipher_kinds)
+        composer.compose_bytes(self.session_id)
+        composer.compose_bytes(self.challenge)
+
+        return composer.composed_bytes
+
+
+class SslHandshakeServerHello(SslMessageBase):
+    def __init__(
+            self,
+            certificate,
+            cipher_kinds,
+            connection_id=bytearray(),
+            session_id_hit=False
+    ):
+        self.cipher_kinds = cipher_kinds
+        self.certificate = certificate
+        self.connection_id = connection_id
+        self.session_id_hit = session_id_hit
+
+    @classmethod
+    def get_message_type(cls):
+        return SslMessageType.SERVER_HELLO
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('session_id_hit', 1)
+        parser.parse_numeric('certificate_type', 1, SslCertificateType)
+        parser.parse_numeric('version', 2, SslVersion)
+        parser.parse_numeric('certificate_length', 2)
+        parser.parse_numeric('cipher_kinds_length', 2)
+        parser.parse_numeric('connection_id_length', 2)
+        parser.parse_bytes('certificate', parser['certificate_length'])
+        parser.parse_parsable_array('cipher_kinds', parser['cipher_kinds_length'], SslCipherKindFactory)
+        parser.parse_bytes('connection_id', parser['connection_id_length'])
+
+        return SslHandshakeServerHello(
+            certificate=parser['certificate'],
+            cipher_kinds=parser['cipher_kinds'],
+            connection_id=parser['connection_id'],
+            session_id_hit=parser['session_id_hit']
+        ), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric(1 if self.session_id_hit else 0, 1)
+        composer.compose_numeric(SslCertificateType.X509_CERTIFICATE, 1)
+        composer.compose_numeric(SslVersion.SSL2, 2)
+        composer.compose_numeric(len(self.certificate), 2)
+        composer.compose_numeric(len(self.cipher_kinds) * 3, 2)
+        composer.compose_numeric(len(self.connection_id), 2)
+        composer.compose_bytes(self.certificate)
+        composer.compose_parsable_array(self.cipher_kinds)
+        composer.compose_bytes(self.connection_id)
+
+        return composer.composed_bytes
