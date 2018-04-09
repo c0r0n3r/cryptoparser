@@ -71,6 +71,9 @@ class TlsProtocolVersionBase(ParsableBase):
     def __hash__(self):
         return hash(str(self))
 
+    def as_json(self):
+        return repr(self)
+
     @abc.abstractmethod
     def __str__(self):
         raise NotImplementedError()
@@ -169,3 +172,42 @@ class TlsProtocolVersionDraft(TlsProtocolVersionBase):
             raise InvalidValue(value, TlsProtocolVersionDraft, 'draft number')
 
         self._minor = value
+
+
+class SslVersion(enum.IntEnum):
+    SSL2 = 0x0002
+
+
+@six.add_metaclass(abc.ABCMeta)
+class SslProtocolVersion(JSONSerializable, ParsableBase):
+    _SIZE = 2
+
+    def __eq__(self, other):
+        return isinstance(other, SslProtocolVersion)
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def __repr__(self):
+        return 'ssl2'
+
+    def __str__(self):
+        return 'SSL 2.0'
+
+    @classmethod
+    def _parse(cls, parsable):
+        if len(parsable) < cls._SIZE:
+            raise NotEnoughData(bytes_needed=cls._SIZE)
+
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('version', cls._SIZE, SslVersion)
+
+        return SslProtocolVersion(), cls._SIZE
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric(SslVersion.SSL2.value, self._SIZE)
+
+        return composer.composed_bytes
