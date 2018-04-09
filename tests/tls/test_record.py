@@ -7,11 +7,12 @@ import six
 
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 
-from cryptoparser.tls.record import TlsRecord
-from cryptoparser.tls.subprotocol import TlsContentType, TlsSubprotocolMessageBase
+from cryptoparser.tls.record import TlsRecord, SslRecord
+from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsContentType
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
 from cryptoparser.tls.subprotocol import TlsAlertMessage, TlsAlertLevel, TlsAlertDescription
+from cryptoparser.tls.subprotocol import SslError, SslErrorType, SslMessageType, SslVersion
 
 
 class TestTlsSubprotocolMessageBase(unittest.TestCase):
@@ -64,9 +65,9 @@ class TestTlsRecord(unittest.TestCase):
             b'\x00\x02' +  # length = 2
             b'\x02\x28'
         )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(InvalidValue):
             record.protocol_version = 'invalid version'
-        with self.assertRaises(ValueError):
+        with self.assertRaises(InvalidValue):
             record.messages = ['invalid message', ]
 
         with self.assertRaises(NotEnoughData) as context_manager:
@@ -135,6 +136,85 @@ class TestTlsRecord(unittest.TestCase):
             record.messages[0],
             self.test_message
         )
+
+    def test_compose(self):
+        self.assertEqual(
+            self.test_record.compose(),
+            self.test_record_bytes
+        )
+
+
+class TestSslRecord(unittest.TestCase):
+    def setUp(self):
+        self.test_message = SslError(
+            error_type=SslErrorType.NO_CIPHER_ERROR
+        )
+        self.test_record = SslRecord(
+            message=self.test_message
+        )
+        self.test_record_bytes = bytes(
+            b'\x80\x03' +  # length = 3
+            b'\x00' +      # message_type = ERROR
+            b'\x00\x01' +  # error_type = NO_CIPHER_ERROR
+            b''
+        )
+
+    def test_error(self):
+        with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid SslMessageType'):
+            SslRecord.parse_exact_size(
+                b'\x80\x00' +  # length = 0
+                b'\xff' +      # type = INVALID
+                b''
+            )
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            SslRecord.parse_exact_size(
+                b'\x80\x03' +  # length = 3 (with length bytes)
+                b''
+            )
+        self.assertEqual(context_manager.exception.bytes_needed, 3)
+
+        with self.assertRaises(InvalidValue):
+            self.test_record.protocol_version = 'invalid version'
+        with self.assertRaises(InvalidValue):
+            self.test_record.message = 'invalid message'
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            SslRecord.parse_exact_size(
+                b'\x80\x03' +  # length = 3
+                b'\x00' +      # type = ERROR
+                b''
+            )
+        self.assertEqual(context_manager.exception.bytes_needed, 2)
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            SslRecord.parse_exact_size(
+                b'\x81\x03' +  # length = 256 + 3
+                b''
+            )
+        self.assertEqual(context_manager.exception.bytes_needed, 256 + 3 - 0)
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            SslRecord.parse_exact_size(
+                b'\x01\x03\x01' +  # length = 256 + 3
+                b''
+            )
+        self.assertEqual(context_manager.exception.bytes_needed, 256 + 3 - 0)
+
+    def test_setter(self):
+        record = SslRecord(self.test_message)
+
+        record.message = self.test_message
+        record.protocol_version = SslVersion.SSL2
+
+    def test_parse(self):
+        record = SslRecord.parse_exact_size(self.test_record_bytes)
+
+        self.assertEqual(
+            record.message,
+            self.test_message
+        )
+        self.assertEqual(record.content_type, SslMessageType.ERROR)
 
     def test_compose(self):
         self.assertEqual(
