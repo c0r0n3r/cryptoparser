@@ -282,6 +282,12 @@ class TwoByteEnumParsable(NByteEnumParsable):
         return 2
 
 
+class ThreeByteEnumParsable(NByteEnumParsable):
+    @classmethod
+    def get_byte_num(cls):
+        return 3
+
+
 class NByteEnumComposer(object):
     def compose(self):
         composer = ComposerBinary()
@@ -301,3 +307,9 @@ class TwoByteEnumComposer(NByteEnumComposer):
     @classmethod
     def get_byte_num(cls):
         return 2
+
+
+class ThreeByteEnumComposer(NByteEnumComposer):
+    @classmethod
+    def get_byte_num(cls):
+        return 3
