@@ -7,13 +7,14 @@ import imaplib
 import poplib
 import smtplib
 
-import socket as socket_module
+import socket
 
 from cryptoparser.common.algorithm import Authentication, KeyExchange
-from cryptoparser.common.exception import NotEnoughData
+from cryptoparser.common.exception import NotEnoughData, NetworkError, NetworkErrorType
 from cryptoparser.common.utils import get_leaf_classes
 
-from cryptoparser.tls.ciphersuite import TlsCipherSuite
+from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
+from cryptoparser.tls.subprotocol import SslMessageType, SslHandshakeClientHello
 from cryptoparser.tls.subprotocol import TlsHandshakeClientHello, TlsCipherSuiteVector, TlsContentType, TlsHandshakeType
 from cryptoparser.tls.subprotocol import TlsAlertLevel, TlsAlertDescription
 from cryptoparser.tls.extension import TlsExtensionServerName
@@ -21,8 +22,8 @@ from cryptoparser.tls.extension import TlsExtensionSignatureAlgorithms, TlsSigna
 from cryptoparser.tls.extension import TlsExtensionECPointFormats, TlsECPointFormat
 from cryptoparser.tls.extension import TlsExtensionEllipticCurves, TlsNamedCurve
 
-from cryptoparser.tls.record import TlsRecord
-from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
+from cryptoparser.tls.record import TlsRecord, SslRecord
+from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, SslVersion
 
 
 class TlsHandshakeClientHelloAnyAlgorithm(TlsHandshakeClientHello):
@@ -121,19 +122,55 @@ class TlsHandshakeClientHelloBasic(TlsHandshakeClientHello):
         )
 
 
-class Client(object):
+class L7Client(object):
     def __init__(self, host, port):
         self._host = host
         self._port = port
         self._socket = None
 
-    def connect(self):
-        self._socket = socket_module.socket(socket_module.AF_INET, socket_module.SOCK_STREAM)
-        self._socket.connect((self._host, self._port))
+    def _do_handshake(
+            self,
+            tls_client,
+            hello_message,
+            protocol_version,
+            last_handshake_message_type
+    ):
+        try:
+            self._socket = self._connect()
+        except ConnectionRefusedError:
+            raise NetworkError(NetworkErrorType.NO_CONNECTION)
 
-    def close(self):
-        if self._socket:
-            self._socket.close()
+        try:
+            server_messages = tls_client.do_handshake(hello_message, protocol_version, last_handshake_message_type)
+        finally:
+            self._close()
+
+        return server_messages
+
+    def do_ssl_handshake(self, hello_message, last_handshake_message_type=SslMessageType.SERVER_HELLO):
+        return self._do_handshake(
+            SslClientHandshake(self),
+            hello_message,
+            SslVersion.SSL2,
+            last_handshake_message_type
+        )
+
+    def do_tls_handshake(
+            self,
+            hello_message,
+            protocol_version,
+            last_handshake_message_type=TlsHandshakeType.SERVER_HELLO
+    ):
+        return self._do_handshake(
+            TlsClientHandshake(self),
+            hello_message,
+            protocol_version,
+            last_handshake_message_type
+        )
+
+    def _close(self):
+        self._socket.close()
+        self._socket = None
 
     def send(self, sendable_bytes):
         total_sent_byte_num = 0
@@ -149,7 +186,7 @@ class Client(object):
         while len(total_received_bytes) < receivable_byte_num:
             try:
                 actual_received_bytes = self._socket.recv(min(receivable_byte_num - len(total_received_bytes), 1024))
-            except socket_module.error:
+            except socket.error:
                 actual_received_bytes = None
 
             if not actual_received_bytes:
@@ -159,63 +196,115 @@ class Client(object):
 
         return total_received_bytes
 
+    @property
+    def host(self):
+        return self._host
+
+    @property
+    def port(self):
+        return self._port
+
     @classmethod
-    def from_scheme(cls, scheme):
-        for client_class in get_leaf_classes(Client):
+    def from_scheme(cls, scheme, host, port=None):
+        for client_class in get_leaf_classes(L7Client):
             if client_class.get_scheme() == scheme:
-                return client_class
+                port = client_class.get_default_port() if port is None else port
+                return client_class(host, port)
 
         raise ValueError()
+
+    @classmethod
+    def get_supported_schemes(cls):
+        return set([leaf_cls.get_scheme() for leaf_cls in get_leaf_classes(cls)])
+
+    @abc.abstractmethod
+    def _connect(self):
+        raise NotImplementedError()
 
     @classmethod
     @abc.abstractmethod
     def get_scheme(cls):
         return NotImplementedError()
 
+    @classmethod
+    @abc.abstractmethod
+    def get_default_port(cls):
+        raise NotImplementedError()
 
-class ClientTls(Client):
+
+class L7ClientTls(L7Client):
     @classmethod
     def get_scheme(cls):
         return 'tls'
 
+    @classmethod
+    def get_default_port(cls):
+        return 443
 
-class ClientHTTPS(Client):
+    def _connect(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((self._host, self._port))
+        return sock
+
+
+class L7ClientHTTPS(L7Client):
     @classmethod
     def get_scheme(cls):
         return 'https'
 
+    @classmethod
+    def get_default_port(cls):
+        return 443
 
-class ClientPOP3(Client):
+    def _connect(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((self._host, self._port))
+        return sock
+
+
+class ClientPOP3(L7Client):
     def __init__(self, host, port):
         super(ClientPOP3, self).__init__(host, port)
+
+        self.client = None
 
     @classmethod
     def get_scheme(cls):
         return 'pop'
 
-    def connect(self):
+    @classmethod
+    def get_default_port(cls):
+        return 110
+
+    def _connect(self):
         self.client = poplib.POP3(self._host, self._port)
         if 'STLS' not in self.client.capa():
             raise ValueError
         response = self.client.stls()
         if response != b'+OK':
             raise ValueError
-        self._socket = self.client.sock
+        return self.client.sock
 
     def close(self):
-        if self._socket:
+        if self.client:
             self.client.quit()
 
 
-class ClientSMTP(Client):
+class ClientSMTP(L7Client):
     def __init__(self, host, port):
         super(ClientSMTP, self).__init__(host, port)
+
+        self.client = None
 
     @classmethod
     def get_scheme(cls):
         return 'smtp'
 
-    def connect(self):
+    @classmethod
+    def get_default_port(cls):
+        return 587
+
+    def _connect(self):
         self.client = smtplib.SMTP()
         self.client.connect(self._host, self._port)
         self.client.ehlo()
@@ -224,32 +313,38 @@ class ClientSMTP(Client):
         response, _ = self.client.docmd('STARTTLS')
         if response != 220:
             raise ValueError
-        self._socket = self.client.sock
+        return self.client.sock
 
     def close(self):
-        if self._socket:
+        if self.client:
             self.client.quit()
 
 
-class ClientIMAP(Client):
+class ClientIMAP(L7Client):
     def __init__(self, host, port):
         super(ClientIMAP, self).__init__(host, port)
+
+        self.client = None
 
     @classmethod
     def get_scheme(cls):
         return 'imap'
 
-    def connect(self):
+    @classmethod
+    def get_default_port(cls):
+        return 143
+
+    def _connect(self):
         self.client = imaplib.IMAP4(self._host, self._port)
         if 'STARTTLS' not in self.client.capabilities:
             raise ValueError
-        response, message = self.client.xatom('STARTTLS')
+        response, _ = self.client.xatom('STARTTLS')
         if response != 'OK':
             raise ValueError
-        self._socket = self.client.socket()
+        return self.client.socket()
 
     def close(self):
-        if self._socket:
+        if self.client:
             self.client.quit()
 
 
@@ -267,27 +362,30 @@ class TlsAlert(ValueError):
         self.description = description
 
 
-class TlsClientHandshake(object):
-    def __init__(self, host, port, client_class=Client):
-        self._client = client_class(host, port)
-        self._host = host
+class TlsClient(object):
+    def __init__(self, l4_client):
+        self._l4_client = l4_client
 
-    def do(
+    @abc.abstractmethod
+    def do_handshake(self, hello_message, protocol_version, last_handshake_message_type):
+        raise NotImplementedError()
+
+
+class TlsClientHandshake(TlsClient):
+    def do_handshake(
             self,
             hello_message,
             protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
             last_handshake_message_type=TlsHandshakeType.SERVER_HELLO_DONE
     ):
-        self._client.connect()
-
         tls_record = TlsRecord([hello_message, ], protocol_version)
-        self._client.send(tls_record.compose())
+        self._l4_client.send(tls_record.compose())
 
         server_messages = {}
-        parsable = bytearray()
+        received_bytes = bytearray()
         while True:
             try:
-                record = TlsRecord.parse_mutable(parsable)
+                record = TlsRecord.parse_mutable(received_bytes)
                 if record.content_type == TlsContentType.ALERT:
                     if record.messages[0].level == TlsAlertLevel.FATAL:
                         raise TlsAlert(record.messages[0].description)
@@ -313,4 +411,63 @@ class TlsClientHandshake(object):
             except NotEnoughData as e:
                 receivable_byte_num = e.bytes_needed
 
-            parsable += self._client.receive(receivable_byte_num)
+            try:
+                actual_received_bytes = self._l4_client.receive(receivable_byte_num)
+            except NotEnoughData:
+                if received_bytes:
+                    raise NetworkError(NetworkErrorType.NO_CONNECTION)
+                else:
+                    raise NetworkError(NetworkErrorType.NO_RESPONSE)
+            received_bytes += actual_received_bytes
+
+
+class SslError(ValueError):
+    def __init__(self, error):
+        super(SslError, self).__init__()
+
+        self.error = error
+
+
+class SslHandshakeClientHelloAnyAlgorithm(SslHandshakeClientHello):
+    def __init__(self):
+        super(SslHandshakeClientHelloAnyAlgorithm, self).__init__(
+            cipher_kinds=list(SslCipherKind)
+        )
+
+
+class SslClientHandshake(TlsClient):
+    def do_handshake(
+            self,
+            hello_message=None,
+            protocol_version=SslVersion.SSL2,
+            last_handshake_message_type=SslMessageType.SERVER_HELLO
+    ):
+        ssl_record = SslRecord(hello_message)
+        self._l4_client.send(ssl_record.compose())
+
+        server_messages = {}
+        received_bytes = bytearray()
+        while True:
+            try:
+                record = SslRecord.parse_mutable(received_bytes)
+                message = record.messages[0]
+                # FIXME: error message is not parsed
+                if message.get_message_type() == SslMessageType.ERROR:
+                    raise SslError(message.get_message_type())
+
+                server_messages[message.get_message_type()] = message
+                if message.get_message_type() == last_handshake_message_type:
+                    return server_messages
+
+                receivable_byte_num = 0
+            except NotEnoughData as e:
+                receivable_byte_num = e.bytes_needed
+
+            try:
+                actual_received_bytes = self._l4_client.receive(receivable_byte_num)
+            except NotEnoughData:
+                if received_bytes:
+                    raise NetworkError(NetworkErrorType.NO_CONNECTION)
+                else:
+                    raise NetworkError(NetworkErrorType.NO_RESPONSE)
+            received_bytes += actual_received_bytes

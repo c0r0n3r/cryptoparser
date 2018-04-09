@@ -280,6 +280,17 @@ class TwoByteEnumParsable(NByteEnumParsable):
         raise NotImplementedError()
 
 
+class ThreeByteEnumParsable(NByteEnumParsable):
+    @classmethod
+    def get_byte_num(cls):
+        return 3
+
+    @classmethod
+    @abc.abstractmethod
+    def get_enum_class(cls):
+        raise NotImplementedError()
+
+
 class NByteEnumComposer(object):
     def compose(self):
         composer = ComposerBinary()
@@ -301,3 +312,9 @@ class TwoByteEnumComposer(NByteEnumComposer):
     @classmethod
     def get_byte_num(cls):
         return 2
+
+
+class ThreeByteEnumComposer(NByteEnumComposer):
+    @classmethod
+    def get_byte_num(cls):
+        return 3
