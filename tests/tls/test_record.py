@@ -7,21 +7,22 @@ import six
 
 from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 
-from cryptoparser.tls.record import TlsRecord
+from cryptoparser.tls.record import TlsRecord,SslRecord
 from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsContentType
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
 from cryptoparser.tls.subprotocol import TlsAlertMessage, TlsAlertLevel, TlsAlertDescription
+from cryptoparser.tls.subprotocol import SslError, SslErrorType, SslMessageType
 
 
-class TestSubprotocolMessageBase(unittest.TestCase):
+class TestTlsSubprotocolMessageBase(unittest.TestCase):
     def test_error(self):
         error_message = 'Can\'t instantiate abstract class TlsSubprotocolMessageBase with abstract methods'
         with six.assertRaisesRegex(self, TypeError, error_message):
             TlsSubprotocolMessageBase()
 
 
-class TestRecord(unittest.TestCase):
+class TestTlsRecord(unittest.TestCase):
     def setUp(self):
         self.test_message = TlsAlertMessage(
             level=TlsAlertLevel.FATAL,
@@ -118,6 +119,80 @@ class TestRecord(unittest.TestCase):
             self.test_message
         )
         self.assertEqual(record.content_type, TlsContentType.ALERT)
+
+    def test_compose(self):
+        self.assertEqual(
+            self.test_record.compose(),
+            self.test_record_bytes
+        )
+
+
+class TestSslRecord(unittest.TestCase):
+    def setUp(self):
+        self.test_message = SslError(
+            error_type=SslErrorType.NO_CIPHER_ERROR
+        )
+        self.test_record = SslRecord(
+            message=self.test_message
+        )
+        self.test_record_bytes = bytes(
+            b'\x80\x03' + # length = 3
+            b'\x00'     + # message_type = ERROR
+            b'\x00\x01' + # error_type = NO_CIPHER_ERROR
+            b''
+        )
+
+    def test_error(self):
+        with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid SslMessageType'):
+            record = SslRecord.parse_exact_size(
+                b'\x80\x00' + # length = 0
+                b'\xff'     + # type = INVALID
+                b''
+            )
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            record = SslRecord.parse_exact_size(
+                b'\x80\x03' + # length = 3 (with length bytes)
+                b''
+            )
+        self.assertEqual(context_manager.exception.bytes_needed, 3)
+
+        with self.assertRaises(ValueError):
+            self.test_record.protocol_version = 'invalid version'
+        with self.assertRaises(ValueError):
+            self.test_record.messages = ['invalid message', ]
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            record = SslRecord.parse_exact_size(
+                b'\x80\x03' + # length = 3
+                b'\x00'     + # type = ERROR
+                b''
+            )
+        self.assertEqual(context_manager.exception.bytes_needed, 2)
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            record = SslRecord.parse_exact_size(
+                b'\x81\x03' + # length = 256 + 3
+                b''
+            )
+        self.assertEqual(context_manager.exception.bytes_needed,  256 + 3 - 0)
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            record = SslRecord.parse_exact_size(
+                b'\x01\x03' + # length = 256 + 3
+                b''
+            )
+        self.assertEqual(context_manager.exception.bytes_needed,  256 + 3 - 0)
+
+    def test_parse(self):
+        record = SslRecord.parse_exact_size(self.test_record_bytes)
+
+        self.assertEqual(len(record.messages), 1)
+        self.assertEqual(
+            record.messages[0],
+            self.test_message
+        )
+        self.assertEqual(record.content_type, SslMessageType.ERROR)
 
     def test_compose(self):
         self.assertEqual(
