@@ -5,7 +5,7 @@ import enum
 import collections
 
 from cryptoparser.common.algorithm import Authentication, BlockCipher, BlockCipherMode, KeyExchange, MAC
-from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
+from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable, ThreeByteEnumParsable, ThreeByteEnumComposer
 
 CipherSuiteParams = collections.namedtuple(
     'TlsCipherSuiteParams',
@@ -2642,4 +2642,69 @@ class TlsCipherSuite(TwoByteEnumComposer, enum.Enum):
         block_cipher=BlockCipher.CHACHA20,
         block_cipher_mode=BlockCipherMode.POLY1305,
         mac=MAC.SHA256,
+    )
+
+
+class SslCipherKindFactory(ThreeByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return SslCipherKind
+
+
+class SslCipherKind(ThreeByteEnumComposer, enum.Enum):
+    RC4_128_WITH_MD5 = CipherSuiteParams(
+        code=0x010080,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        block_cipher=BlockCipher.RC4_128,
+        block_cipher_mode=None,
+        mac=MAC.MD5,
+    )
+    RC4_128_EXPORT40_WITH_MD5 = CipherSuiteParams(
+        code=0x020080,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        block_cipher=BlockCipher.RC4_128,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
+    )
+    RC2_128_CBC_WITH_MD5 = CipherSuiteParams(
+        code=0x030080,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        block_cipher=BlockCipher.RC2_128,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
+    )
+    RC2_128_CBC_EXPORT40_WITH_MD5 = CipherSuiteParams(
+        code=0x040080,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        block_cipher=BlockCipher.RC2_128_EXPORT40,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
+    )
+    IDEA_128_CBC_WITH_MD5 = CipherSuiteParams(
+        code=0x050080,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        block_cipher=BlockCipher.IDEA_128,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
+    )
+    DES_64_CBC_WITH_MD5 = CipherSuiteParams(
+        code=0x060040,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        block_cipher=BlockCipher.TRIPLE_DES,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
+    )
+    DES_192_EDE3_CBC_WITH_MD5 = CipherSuiteParams(
+        code=0x0700C0,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        block_cipher=BlockCipher.TRIPLE_DES_EDE,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
     )
