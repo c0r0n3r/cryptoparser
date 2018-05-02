@@ -2,15 +2,40 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import enum
+import json
 import math
 
 from collections import MutableSequence
-from typing import TypeVar
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 
-T = TypeVar('T')
+
+def _default(
+        self,  # pylint: disable=unused-argument
+        obj
+):
+    if isinstance(obj, enum.Enum) and hasattr(obj.value, '_asdict'):
+        result = {obj.name: obj.value._asdict()}
+    elif isinstance(obj, JSONSerializable) and hasattr(obj, 'as_json'):
+        result = obj.as_json()
+    elif hasattr(obj, '__dict__'):
+        result = {name: value for name, value in obj.__dict__.items() if not name.startswith('_')}
+
+    return result
+
+
+_default.default = json.JSONEncoder().default
+json.JSONEncoder.default = _default
+
+
+class JSONSerializable(object):  # pylint: disable=too-few-public-methods
+    def as_json(self):
+        return json.dumps(self.__dict__)
+
+    def __repr__(self):
+        return self.as_json()
 
 
 class VectorParamBase(object):  # pylint: disable=too-few-public-methods
@@ -49,7 +74,6 @@ class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-me
 
 class VectorBase(ParsableBase, MutableSequence):
     def __init__(self, items):
-        # type: (Sequence[T], int, int, int) -> None
         super(VectorBase, self).__init__()
 
         self.param = self.get_param()
