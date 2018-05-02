@@ -12,6 +12,15 @@ import cryptoparser.common.utils
 
 @six.add_metaclass(abc.ABCMeta)
 class ParsableBase(object):
+    def __repr__(self):
+        return '{}({})'.format(
+            self.__class__.__name__, ', '.join([
+                '{}={}'.format(name, repr(value))
+                for name, value in self.__dict__.items()
+                if not name.startswith('_')
+            ])
+        )
+
     @classmethod
     def parse_mutable(cls, parsable):
         parsed_object, parsed_length = cls._parse(parsable)

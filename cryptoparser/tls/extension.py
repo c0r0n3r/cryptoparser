@@ -76,7 +76,7 @@ class TlsExtensions(VectorParsableDerived):
 
 class TlsExtensionBase(ParsableBase):
     def __init__(self, extension_type):
-        self.extension_type = extension_type
+        self._extension_type = extension_type
 
     @classmethod
     @abc.abstractmethod
@@ -102,7 +102,7 @@ class TlsExtensionBase(ParsableBase):
     def _compose_header(self, payload_length):
         header_composer = ComposerBinary()
 
-        header_composer.compose_numeric(self.extension_type, 2)
+        header_composer.compose_numeric(self._extension_type, 2)
         header_composer.compose_numeric(payload_length, 2)
 
         return header_composer.composed_bytes
@@ -150,7 +150,7 @@ class TlsExtensionParsed(TlsExtensionBase):
         return parser
 
 
-class TlsServerNameType(enum.IntEnum):
+class TlsServerNameType(OneByteEnumComposer, enum.IntEnum):
     HOST_NAME = 0x00
 
 
@@ -205,7 +205,7 @@ class TlsExtensionServerName(TlsExtensionParsed):
         return header_bytes + composer.composed_bytes
 
 
-class TlsECPointFormat(enum.IntEnum):
+class TlsECPointFormat(OneByteEnumComposer, enum.IntEnum):
     UNCOMPRESSED = 0x0
     ANSIX962_COMPRESSED_PRIME = 0x1
     ANSIX962_COMPRESSED_CHAR2 = 0x2

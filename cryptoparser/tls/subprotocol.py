@@ -8,7 +8,8 @@ import enum
 import random
 
 from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorParamParsable, VectorParsable
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
+from cryptoparser.common.base import TwoByteEnumComposer
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.extension import TlsExtensions
@@ -370,7 +371,7 @@ class TlsCipherSuiteVector(VectorParsable):
         )
 
 
-class TlsCompressionMethod(enum.IntEnum):
+class TlsCompressionMethod(TwoByteEnumComposer, enum.IntEnum):
     NULL = 0
 
 

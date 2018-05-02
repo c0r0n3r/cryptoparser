@@ -6,11 +6,12 @@ import enum
 
 import six
 
+from cryptoparser.common.base import JSONSerializable, OneByteEnumComposer
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 
-class TlsVersion(enum.IntEnum):
+class TlsVersion(OneByteEnumComposer, enum.IntEnum):
     SSL3 = 0x00
     TLS1_0 = 0x01
     TLS1_1 = 0x02
@@ -19,7 +20,7 @@ class TlsVersion(enum.IntEnum):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class TlsProtocolVersionBase(ParsableBase):
+class TlsProtocolVersionBase(JSONSerializable, ParsableBase):
     _SIZE = 2
 
     def __init__(self, major, minor):
@@ -71,12 +72,12 @@ class TlsProtocolVersionBase(ParsableBase):
     def __hash__(self):
         return hash(str(self))
 
-    def as_json(self):
-        return repr(self)
-
     @abc.abstractmethod
     def __str__(self):
         raise NotImplementedError()
+
+    def as_json(self):
+        return repr(self)
 
     @property
     def major(self):
@@ -105,6 +106,15 @@ class TlsProtocolVersionFinal(TlsProtocolVersionBase):
         super(TlsProtocolVersionFinal, self).__init__(self._MAJOR, tls_version)
 
     def __repr__(self):
+        return 'TlsProtocolVersionFinal(tls_version={})'.format(repr(self.minor))
+
+    def __str__(self):
+        if self.minor == TlsVersion.SSL3:
+            return 'SSL 3.0'
+
+        return 'TLS 1.{}'.format(self.minor - 1)
+
+    def as_json(self):
         if self.minor == TlsVersion.SSL3:
             result = 'ssl3'
         elif self.minor == TlsVersion.TLS1_0:
@@ -113,12 +123,6 @@ class TlsProtocolVersionFinal(TlsProtocolVersionBase):
             result = 'tls1_{}'.format(self.minor - 1)
 
         return result
-
-    def __str__(self):
-        if self.minor == TlsVersion.SSL3:
-            return 'SSL 3.0'
-
-        return 'TLS 1.{}'.format(self.minor - 1)
 
     # pylint: disable=no-member
     @TlsProtocolVersionBase.major.setter
@@ -148,11 +152,11 @@ class TlsProtocolVersionDraft(TlsProtocolVersionBase):
         # type: (int) -> None
         super(TlsProtocolVersionDraft, self).__init__(self._MAJOR, draft_number)
 
-    def __repr__(self):
-        return 'tls1_3_draft{}'.format(self.minor - 1)
-
     def __str__(self):
         return 'TLS 1.3 Draft {}'.format(self.minor - 1)
+
+    def as_json(self):
+        return 'tls1_3_draft{}'.format(self.minor - 1)
 
     # pylint: disable=no-member
     @TlsProtocolVersionBase.major.setter
@@ -188,11 +192,11 @@ class SslProtocolVersion(JSONSerializable, ParsableBase):
     def __hash__(self):
         return hash(str(self))
 
-    def __repr__(self):
-        return 'ssl2'
-
     def __str__(self):
         return 'SSL 2.0'
+
+    def as_json(self):
+        return 'ssl2'
 
     @classmethod
     def _parse(cls, parsable):

@@ -2,15 +2,37 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import enum
+import json
 import math
 
 from collections import MutableSequence
-from typing import TypeVar
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 
-T = TypeVar('T')
+
+def _default(
+        self,  # pylint: disable=unused-argument
+        obj
+):
+    if isinstance(obj, enum.Enum) and hasattr(obj.value, '_asdict'):
+        result = {obj.name: obj.value._asdict()}
+    elif isinstance(obj, JSONSerializable) and hasattr(obj, 'as_json'):
+        result = obj.as_json()
+    elif hasattr(obj, '__dict__'):
+        result = {name: value for name, value in obj.__dict__.items() if not name.startswith('_')}
+
+    return result
+
+
+_default.default = json.JSONEncoder().default
+json.JSONEncoder.default = _default
+
+
+class JSONSerializable(object):  # pylint: disable=too-few-public-methods
+    def as_json(self):
+        return json.dumps(self.__dict__)
 
 
 class VectorParamBase(object):  # pylint: disable=too-few-public-methods
@@ -49,7 +71,6 @@ class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-me
 
 class VectorBase(ParsableBase, MutableSequence):
     def __init__(self, items):
-        # type: (Sequence[T], int, int, int) -> None
         super(VectorBase, self).__init__()
 
         self.param = self.get_param()
@@ -84,7 +105,10 @@ class VectorBase(ParsableBase, MutableSequence):
         raise NotImplementedError()
 
     def __repr__(self):
-        return "<{0} {1}>".format(self.__class__.__name__, self._items)
+        return '{}([{}])'.format(
+            self.__class__.__name__,
+            ', '.join([repr(item) for item in self._items])
+        )
 
     def __len__(self):
         # type: () -> int
@@ -269,6 +293,17 @@ class NByteEnumParsable(ParsableBase):
         raise NotImplementedError()
 
 
+class OneByteEnumParsable(NByteEnumParsable):
+    @classmethod
+    def get_byte_num(cls):
+        return 1
+
+    @classmethod
+    @abc.abstractmethod
+    def get_enum_class(cls):
+        raise NotImplementedError()
+
+
 class TwoByteEnumParsable(NByteEnumParsable):
     @classmethod
     def get_byte_num(cls):
@@ -292,6 +327,9 @@ class ThreeByteEnumParsable(NByteEnumParsable):
 
 
 class NByteEnumComposer(object):
+    def __repr__(self):
+        return self.__class__.__name__ + '.' + self.name
+
     def compose(self):
         composer = ComposerBinary()
 
@@ -306,6 +344,12 @@ class NByteEnumComposer(object):
     @abc.abstractmethod
     def get_byte_num(cls):
         raise NotImplementedError()
+
+
+class OneByteEnumComposer(NByteEnumComposer):
+    @classmethod
+    def get_byte_num(cls):
+        return 1
 
 
 class TwoByteEnumComposer(NByteEnumComposer):
