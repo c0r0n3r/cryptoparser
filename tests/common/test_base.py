@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import json
 import unittest
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData
@@ -12,6 +13,9 @@ from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 
 from tests.common.classes import OneByteParsable, TwoByteParsable
 from tests.common.classes import ConditionalParsable
+from tests.common.classes import TestObject
+from tests.common.classes import JSONSerializableSimpleTypes, JSONSerializableIterables, JSONSerializableEnum
+from tests.common.classes import JSONSerializableHidden, JSONSerializableUnhandled, JSONSerializableRecursive
 
 
 class VectorNumericTestErrors(Vector):
@@ -257,3 +261,37 @@ class TestEnum(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(len(TlsCipherSuite.TLS_NULL_WITH_NULL_NULL.compose()), TlsCipherSuite.get_byte_num())
         self.assertEqual(len(SslCipherKind.RC4_128_WITH_MD5.compose()), SslCipherKind.get_byte_num())
+
+
+class TestJSONSerializable(unittest.TestCase):
+    def test_simple_types(self):
+        self.assertEqual(
+            json.dumps(JSONSerializableSimpleTypes()),
+            '{"bool_value": false, "float_value": 1.0, "int_value": 1, "none_value": null, "str_value": "string"}'
+        )
+        self.assertEqual(
+            json.dumps(JSONSerializableIterables()),
+            '{"dict_value": {"value": 1}, "list_value": ["value"], "tuple_value": ["value"]}'
+        )
+        self.assertEqual(
+            json.dumps(JSONSerializableEnum.first),
+            '{"first": {"code": 1}}'
+        )
+        self.assertEqual(
+            json.dumps(JSONSerializableHidden()),
+            '{"visible_value": "value"}'
+        )
+        self.assertEqual(
+            json.dumps(JSONSerializableUnhandled()),
+            '{"bytes_value": "(1+2j)"}'
+        )
+        self.assertEqual(
+            json.dumps(JSONSerializableRecursive()),
+            '{' +
+            '"json_serializable_in_dict": {"key": {"visible_value": "value"}}, ' +
+            '"json_serializable_in_list": [{"visible_value": "value"}], ' +
+            '"json_serializable_in_tuple": [{"visible_value": "value"}], ' +
+            '"json_serializable_value": {"visible_value": "value"}' +
+            '}'
+        )
+        self.assertEqual(json.dumps(TestObject()), '{}')

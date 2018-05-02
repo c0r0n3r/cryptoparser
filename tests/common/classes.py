@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import enum
+import collections
 
+from cryptoparser.common.base import JSONSerializable
 from cryptoparser.common.exception import TooMuchData, InvalidValue
 from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
 
@@ -111,3 +114,64 @@ class AlwaysUnknowTypeParsable(ParsableBase):
 
     def compose(self):
         raise TooMuchData()
+
+
+JSONSerializableEnumValue = collections.namedtuple(
+    'JSONSerializableEnumValue',
+    [
+        'code',
+    ]
+)
+
+
+class TestObject(object):
+    pass
+
+
+class JSONSerializableSimpleTypes(JSONSerializable):
+    def __init__(self):
+        self.int_value = 1
+        self.float_value = 1.0
+        self.bool_value = False
+        self.str_value = 'string'
+        self.none_value = None
+
+
+class JSONSerializableIterables(JSONSerializable):
+    def __init__(self):
+        self.dict_value = dict({'value': 1})
+        self.list_value = list(['value', ])
+        self.tuple_value = tuple(['value', ])
+
+
+class JSONSerializableEnum(JSONSerializable, enum.Enum):
+    first = JSONSerializableEnumValue(
+        code=0x0001,
+    )
+    second = JSONSerializableEnumValue(
+        code=0x0002,
+    )
+
+
+class JSONSerializableStringEnum(JSONSerializable, enum.Enum):
+    first = '1'
+    second = '2'
+
+
+class JSONSerializableHidden(JSONSerializable):
+    def __init__(self):
+        self._invisible_value = None
+        self.visible_value = 'value'
+
+
+class JSONSerializableUnhandled(JSONSerializable):
+    def __init__(self):
+        self.bytes_value = 1 + 2j
+
+
+class JSONSerializableRecursive(JSONSerializable):
+    def __init__(self):
+        self.json_serializable_value = JSONSerializableHidden()
+        self.json_serializable_in_list = list([JSONSerializableHidden(), ])
+        self.json_serializable_in_tuple = tuple([JSONSerializableHidden(), ])
+        self.json_serializable_in_dict = dict({'key': JSONSerializableHidden()})
