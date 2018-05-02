@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import enum
+import collections
 
+from cryptoparser.common.base import JSONSerializable
 from cryptoparser.common.exception import TooMuchData, InvalidValue
 from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
 
@@ -111,3 +114,34 @@ class AlwaysUnknowTypeParsable(ParsableBase):
 
     def compose(self):
         raise TooMuchData()
+
+
+JSONSerializableEnumValue = collections.namedtuple(
+    'JSONSerializableEnumValue',
+    [
+        'code',
+    ]
+)
+
+
+class TestObject(object):
+    pass
+
+
+class JSONSerializableEnum(JSONSerializable, enum.Enum):
+    first = JSONSerializableEnumValue(
+        code=0x0001,
+    )
+    second = JSONSerializableEnumValue(
+        code=0x0002,
+    )
+
+
+class JSONSerializableStringEnum(JSONSerializable, enum.Enum):
+    first = '1'
+    second = '2'
+
+
+class JSONSerializableObject(JSONSerializable):  # pylint: disable=too-few-public-methods
+    def __init__(self, value):
+        self.value = value

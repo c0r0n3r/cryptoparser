@@ -215,7 +215,7 @@ class L7Client(object):
 
     @classmethod
     def get_supported_schemes(cls):
-        return set([leaf_cls.get_scheme() for leaf_cls in get_leaf_classes(cls)])
+        return {leaf_cls.get_scheme() for leaf_cls in get_leaf_classes(cls)}
 
     @abc.abstractmethod
     def _connect(self):
@@ -224,7 +224,7 @@ class L7Client(object):
     @classmethod
     @abc.abstractmethod
     def get_scheme(cls):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     @classmethod
     @abc.abstractmethod

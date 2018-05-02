@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import json
 import unittest
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData
@@ -12,6 +13,7 @@ from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 
 from tests.common.classes import OneByteParsable, TwoByteParsable
 from tests.common.classes import ConditionalParsable
+from tests.common.classes import TestObject, JSONSerializableEnum, JSONSerializableObject
 
 
 class VectorNumericTestErrors(Vector):
@@ -257,3 +259,14 @@ class TestEnum(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(len(TlsCipherSuite.TLS_NULL_WITH_NULL_NULL.compose()), TlsCipherSuite.get_byte_num())
         self.assertEqual(len(SslCipherKind.RC4_128_WITH_MD5.compose()), SslCipherKind.get_byte_num())
+
+
+class TestJSONSerializable(unittest.TestCase):
+    def test_serialize_enum(self):
+        self.assertEqual(json.dumps(TestObject()), '{}')
+        self.assertEqual(json.dumps(int(1)), '1')
+
+        self.assertEqual(json.dumps(JSONSerializableEnum.first), '{"first": {"code": 1}}')
+
+        self.assertEqual(repr(JSONSerializableObject(1)), '{\"value\": 1}')
+        self.assertEqual(json.dumps(JSONSerializableObject(1)), '"{\\\"value\\\": 1}"')
