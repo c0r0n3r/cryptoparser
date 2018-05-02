@@ -7,6 +7,7 @@ import functools
 
 import six
 
+from cryptoparser.common.base import JSONSerializable
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
@@ -21,7 +22,7 @@ class TlsVersion(enum.IntEnum):
 
 @six.add_metaclass(abc.ABCMeta)
 @functools.total_ordering
-class TlsProtocolVersionBase(ParsableBase):
+class TlsProtocolVersionBase(JSONSerializable, ParsableBase):
     _SIZE = 2
 
     def __init__(self, major, minor):
