@@ -5,10 +5,10 @@ import enum
 import collections
 
 from cryptoparser.common.algorithm import Authentication, BlockCipher, BlockCipherMode, KeyExchange, MAC
-from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable, ThreeByteEnumParsable, ThreeByteEnumComposer
+from cryptoparser.common.base import JSONSerializable, TwoByteEnumComposer, TwoByteEnumParsable, ThreeByteEnumParsable, ThreeByteEnumComposer
 
 CipherSuiteParams = collections.namedtuple(
-    'TlsCipherSuiteParams',
+    'CipherSuiteParams',
     [
         'code',
         'key_exchange',
@@ -19,22 +19,13 @@ CipherSuiteParams = collections.namedtuple(
     ]
 )
 
-
 class TlsCipherSuiteFactory(TwoByteEnumParsable):
     @classmethod
     def get_enum_class(cls):
         return TlsCipherSuite
 
 
-class TlsCipherSuite(TwoByteEnumComposer, enum.Enum):
-    TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
-        code=0xc012,
-        key_exchange=KeyExchange.ECDHE,
-        authentication=Authentication.RSA,
-        block_cipher=BlockCipher.TRIPLE_DES_EDE,
-        block_cipher_mode=BlockCipherMode.CBC,
-        mac=MAC.SHA,
-    )
+class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_NULL_WITH_NULL_NULL = CipherSuiteParams(
         code=0x0000,
         key_exchange=None,
@@ -1306,6 +1297,14 @@ class TlsCipherSuite(TwoByteEnumComposer, enum.Enum):
         block_cipher=BlockCipher.RC4_128,
         block_cipher_mode=None,
         mac=MAC.SHA,
+    )
+    TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+         code=0xc012,
+         key_exchange=KeyExchange.ECDHE,
+         authentication=Authentication.RSA,
+         block_cipher=BlockCipher.TRIPLE_DES_EDE,
+         block_cipher_mode=BlockCipherMode.CBC,
+         mac=MAC.SHA,
     )
     TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc013,
@@ -2651,7 +2650,7 @@ class SslCipherKindFactory(ThreeByteEnumParsable):
         return SslCipherKind
 
 
-class SslCipherKind(ThreeByteEnumComposer, enum.Enum):
+class SslCipherKind(JSONSerializable, ThreeByteEnumComposer, enum.Enum):
     RC4_128_WITH_MD5 = CipherSuiteParams(
         code=0x010080,
         key_exchange=KeyExchange.RSA,
