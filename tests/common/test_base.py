@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import json
 import unittest
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData
@@ -10,6 +11,7 @@ from cryptoparser.common.base import VectorParsableDerived, Opaque
 
 from tests.common.classes import OneByteParsable, TwoByteParsable
 from tests.common.classes import OneByteOddParsable, TwoByteEvenParsable, ConditionalParsable
+from tests.common.classes import JSONSerializableEnum, JSONSerializableStringEnum, JSONSerializableObject
 
 
 class VectorNumericTestErrors(Vector):
@@ -249,3 +251,11 @@ class TestOpaque(unittest.TestCase):
             b'\x01\x02\x03',
             OpaqueTest([1, 2, 3]).compose()
         )
+
+class TestJSONSerializable(unittest.TestCase):
+    def test_serialize_enum(self):
+        self.assertEqual(json.dumps(JSONSerializableEnum.first), '{"first": {"code": 1}}')
+        self.assertEqual(json.dumps(JSONSerializableStringEnum.first), '"1"')
+
+        self.assertEqual(repr(JSONSerializableObject(1)), '{\"value\": 1}')
+        self.assertEqual(json.dumps(JSONSerializableObject(1)), '"{\\\"value\\\": 1}"')

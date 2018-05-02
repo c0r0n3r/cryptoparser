@@ -199,7 +199,7 @@ class L7Client(object):
     @classmethod
     @abc.abstractmethod
     def get_scheme(cls):
-        return NotImplementedError()
+        raise NotImplementedError()
 
     @classmethod
     @abc.abstractmethod
