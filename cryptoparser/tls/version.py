@@ -7,6 +7,7 @@ import functools
 
 import six
 
+from cryptoparser.common.base import Serializable
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
@@ -21,7 +22,7 @@ class TlsVersion(enum.IntEnum):
 
 @six.add_metaclass(abc.ABCMeta)
 @functools.total_ordering
-class TlsProtocolVersionBase(ParsableBase):
+class TlsProtocolVersionBase(Serializable, ParsableBase):
     _SIZE = 2
 
     def __init__(self, major, minor):
@@ -72,6 +73,9 @@ class TlsProtocolVersionBase(ParsableBase):
 
     def __hash__(self):
         return hash(str(self))
+
+    def _asdict(self):
+        return repr(self)
 
     @abc.abstractmethod
     def __str__(self):
@@ -173,7 +177,7 @@ class SslVersion(enum.IntEnum):
 
 @six.add_metaclass(abc.ABCMeta)
 @functools.total_ordering
-class SslProtocolVersion(ParsableBase):
+class SslProtocolVersion(Serializable, ParsableBase):
     _SIZE = 2
 
     def __eq__(self, other):

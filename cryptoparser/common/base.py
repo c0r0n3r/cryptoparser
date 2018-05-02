@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import enum
+import json
 import math
 
 try:
@@ -9,8 +11,52 @@ try:
 except ImportError:  # pragma: no cover
     from collections import MutableSequence
 
+from collections import OrderedDict
+
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
+
+
+def _get_dict_result(dict_value):
+    return OrderedDict([
+        (name, _default(None, dict_value[name]))
+        for name in sorted(dict_value.keys())
+        if not name.startswith('_')
+    ])
+
+
+def _default(
+        self,  # pylint: disable=unused-argument
+        obj
+):
+    if isinstance(obj, enum.Enum) and hasattr(obj.value, '_asdict'):
+        result = {obj.name: obj.value._asdict()}
+    elif hasattr(obj, '_asdict'):
+        result = obj._asdict()
+    elif hasattr(obj, '__dict__'):
+        result = _get_dict_result(obj.__dict__)
+    elif isinstance(obj, dict):
+        result = _get_dict_result(obj)
+    elif isinstance(obj, (list, tuple)):
+        result = [_default(None, item) for item in obj]
+    elif isinstance(obj, (str, bool, int, float)) or obj is None:
+        result = obj
+    else:
+        result = repr(obj)
+
+    return result
+
+
+_default.default = json.JSONEncoder().default
+json.JSONEncoder.default = _default
+
+
+class Serializable(object):  # pylint: disable=too-few-public-methods
+    def _asdict(self):
+        return _get_dict_result(self.__dict__)
+
+    def as_json(self):
+        return json.dumps(self._asdict())
 
 
 class VectorParamBase(object):  # pylint: disable=too-few-public-methods

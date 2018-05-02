@@ -7,11 +7,12 @@ import enum
 import collections
 
 from cryptoparser.common.algorithm import Authentication, BlockCipher, BlockCipherMode, KeyExchange, MAC
+from cryptoparser.common.base import Serializable
 from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.base import ThreeByteEnumParsable, ThreeByteEnumComposer
 
 CipherSuiteParams = collections.namedtuple(
-    'TlsCipherSuiteParams',
+    'CipherSuiteParams',
     [
         'code',
         'key_exchange',
@@ -33,7 +34,7 @@ class TlsCipherSuiteFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-class TlsCipherSuite(TwoByteEnumComposer, enum.Enum):
+class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     TLS_NULL_WITH_NULL_NULL = CipherSuiteParams(
         code=0x0000,
         key_exchange=None,
@@ -2662,7 +2663,7 @@ class SslCipherKindFactory(ThreeByteEnumParsable):
         raise NotImplementedError()
 
 
-class SslCipherKind(ThreeByteEnumComposer, enum.Enum):
+class SslCipherKind(Serializable, ThreeByteEnumComposer, enum.Enum):
     RC4_128_WITH_MD5 = CipherSuiteParams(
         code=0x010080,
         key_exchange=KeyExchange.RSA,
