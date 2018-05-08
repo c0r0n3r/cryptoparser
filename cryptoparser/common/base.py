@@ -13,7 +13,7 @@ try:
 except ImportError:  # pragma: no cover
     from collections import MutableSequence
 
-from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
+from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ParserText, ComposerText
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 
 
@@ -23,6 +23,8 @@ def _default(
 ):
     if isinstance(obj, enum.Enum) and hasattr(obj.value, '_asdict'):
         result = {obj.name: obj.value._asdict()}
+    elif isinstance(obj, enum.Enum) and isinstance(obj.value, str):
+        result = obj.value
     elif isinstance(obj, JSONSerializable) and hasattr(obj, 'as_json'):
         result = obj.as_json()
     elif hasattr(obj, '__dict__'):
@@ -74,6 +76,18 @@ class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
         return 1
 
 
+class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-methods
+    def __init__(self, min_byte_num, max_byte_num, separator=',', item_class=str, fallback_class=None):
+        super(VectorParamString, self).__init__(min_byte_num, max_byte_num)
+
+        self.separator = separator
+        self.item_class = item_class
+        self.fallback_class = fallback_class
+
+    def get_item_size(self, item):
+        return len(str(item))
+
+
 class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-methods
     def __init__(self, item_class, min_byte_num, max_byte_num, fallback_class):
         super(VectorParamParsable, self).__init__(min_byte_num, max_byte_num)
@@ -85,18 +99,18 @@ class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-me
         return len(item.compose())
 
 
-class VectorBase(ParsableBase, MutableSequence):
+class VectorBase(JSONSerializable, ParsableBase, MutableSequence):
     def __init__(self, items):
         super(VectorBase, self).__init__()
 
-        self.param = self.get_param()
+        self._param = self.get_param()
 
         self._items_size = 0
         self._items = []
 
         for item in items:
             self._items.append(item)
-            self._items_size += self.param.get_item_size(item)
+            self._items_size += self._param.get_item_size(item)
 
         self._update_items_size(del_item=None, insert_item=None)
 
@@ -104,14 +118,14 @@ class VectorBase(ParsableBase, MutableSequence):
         size_diff = 0
 
         if del_item is not None:
-            size_diff -= self.param.get_item_size(del_item)
+            size_diff -= self._param.get_item_size(del_item)
         if insert_item is not None:
-            size_diff += self.param.get_item_size(insert_item)
+            size_diff += self._param.get_item_size(insert_item)
 
-        if self._items_size + size_diff < self.param.min_byte_num:
-            raise NotEnoughData(self.param.min_byte_num)
-        if self._items_size + size_diff > self.param.max_byte_num:
-            raise TooMuchData(self.param.max_byte_num)
+        if self._items_size + size_diff < self._param.min_byte_num:
+            raise NotEnoughData(self._param.min_byte_num)
+        if self._items_size + size_diff > self._param.max_byte_num:
+            raise TooMuchData(self._param.max_byte_num)
 
         self._items_size += size_diff
 
@@ -122,6 +136,9 @@ class VectorBase(ParsableBase, MutableSequence):
 
     def __repr__(self):
         return "<{0} {1}>".format(self.__class__.__name__, self._items)
+
+    def as_json(self):
+        return self._items
 
     def __len__(self):
         return len(self._items)
@@ -175,10 +192,41 @@ class Vector(VectorBase):
     def compose(self):
         composer = ComposerBinary()
 
-        composer.compose_numeric(len(self._items) * self.param.item_size, self.param.item_num_size)
-        composer.compose_numeric_array(self._items, self.param.item_size)
+        composer.compose_numeric(len(self._items) * self._param.item_size, self._param.item_num_size)
+        composer.compose_numeric_array(self._items, self._param.item_size)
 
         return composer.composed_bytes
+
+
+class VectorString(VectorBase):
+    @classmethod
+    def _parse(cls, parsable):
+        vector_param = cls.get_param()
+
+        header_parser = ParserBinary(parsable[:vector_param.item_num_size])
+
+        header_parser.parse_numeric('item_byte_num', vector_param.item_num_size)
+
+        body_parser = ParserText(
+            parsable[vector_param.item_num_size:header_parser['item_byte_num'] + vector_param.item_num_size]
+        )
+
+        body_parser.parse_string_array(
+            'items', vector_param.separator, vector_param.item_class
+        )
+
+        return cls(body_parser['items']), header_parser.parsed_length + body_parser.parsed_length
+
+    def compose(self):
+        vector_param = self.get_param()
+
+        body_composer = ComposerText()
+        body_composer.compose_string(vector_param.separator.join([item.compose() for item in self._items]))
+
+        header_composer = ComposerBinary()
+        header_composer.compose_numeric(body_composer.composed_length, self._param.item_num_size)
+
+        return header_composer.composed + body_composer.composed
 
 
 class VectorParsable(VectorBase):
@@ -210,7 +258,7 @@ class VectorParsable(VectorBase):
         body_composer.compose_parsable_array(self._items)
 
         header_composer = ComposerBinary()
-        header_composer.compose_numeric(body_composer.composed_length, self.param.item_num_size)
+        header_composer.compose_numeric(body_composer.composed_length, self._param.item_num_size)
 
         return header_composer.composed_bytes + body_composer.composed_bytes
 
@@ -242,7 +290,7 @@ class VectorParsableDerived(VectorBase):
         body_composer.compose_parsable_array(self._items)
 
         header_composer = ComposerBinary()
-        header_composer.compose_numeric(len(body_composer.composed_bytes), self.param.item_num_size)
+        header_composer.compose_numeric(len(body_composer.composed_bytes), self._param.item_num_size)
 
         return header_composer.composed_bytes + body_composer.composed_bytes
 
@@ -344,7 +392,7 @@ class NByteEnumComposer(object):
             self.get_byte_num()
         )
 
-        return composer.composed_bytes
+        return composer.composed
 
     @classmethod
     @abc.abstractmethod
@@ -368,3 +416,33 @@ class ThreeByteEnumComposer(NByteEnumComposer):
     @classmethod
     def get_byte_num(cls):
         return 3
+
+
+class StringEnumParsable(ParsableBase):
+    @classmethod
+    def _parse(cls, parsable):
+        enum_items = [
+            enum_item
+            for enum_item in cls.get_enum_class()
+            if len(enum_item.value) <= len(parsable)
+        ]
+        enum_items.sort(key=lambda color: len(color.value.code), reverse=True)
+
+        for enum_item in enum_items:
+            try:
+                value = str(parsable[:len(enum_item.value.code)], 'ascii')
+                if enum_item.value.code == value:
+                    return enum_item, len(enum_item.value.code)
+            except UnicodeDecodeError:
+                pass
+        else:
+            raise InvalidValue(parsable, cls, 'code')
+
+    @abc.abstractmethod
+    def get_enum_class(cls):
+        raise NotImplementedError()
+
+
+class StringEnumComposer(object):
+    def compose(self):
+        return self.value.code

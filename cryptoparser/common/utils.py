@@ -5,7 +5,6 @@ import inspect
 
 
 def get_leaf_classes(base_class):
-
     def _get_leaf_classes(base_class):
         subclasses = []
 
