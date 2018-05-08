@@ -519,9 +519,9 @@ class TlsCertificate(ParsableBase):
 
         try:
             certificate = cryptography.x509.load_der_x509_certificate(
-                bytes(parser['certificate']),
-                cryptography.hazmat.backends.default_backend()
-            )
+                    bytes(parser['certificate']),
+                    cryptography.hazmat.backends.default_backend()
+                    )
         except ValueError:
             raise InvalidValue(value=parser['certificate'])
 
@@ -541,15 +541,15 @@ class TlsCertificates(VectorParsable):
     @classmethod
     def get_param(cls):
         return VectorParamParsable(
-            item_class=TlsCertificate,
-            fallback_class=None,
-            min_byte_num=1, max_byte_num=2 ** 24 - 1
-        )
+                item_class=TlsCertificate,
+                fallback_class=None,
+                min_byte_num=1, max_byte_num=2 ** 24 - 1
+                )
 
 
-class TlsHandshakeCertificate(TlsHandshakeMessage):
-    def __init__(self, certificate_chain):
-        super(TlsHandshakeCertificate, self).__init__()
+        class TlsHandshakeCertificate(TlsHandshakeMessage):
+            def __init__(self, certificate_chain):
+                super(TlsHandshakeCertificate, self).__init__()
 
         self.certificate_chain = certificate_chain
 
@@ -566,11 +566,11 @@ class TlsHandshakeCertificate(TlsHandshakeMessage):
         parser.parse_parsable('certificates', TlsCertificates)
 
         return TlsHandshakeCertificate(
-            parser['certificates']
-        ), handshake_header_parser.parsed_length
+                parser['certificates']
+                ), handshake_header_parser.parsed_length
 
-    def compose(self):
-        body_composer = ComposerBinary()
+        def compose(self):
+            body_composer = ComposerBinary()
         body_composer.compose_parsable(self.certificate_chain)
 
         header_composer = ComposerBinary()
@@ -674,8 +674,8 @@ class TlsHandshakeServerKeyExchange(TlsHandshakeMessage):
         handshake_header_parser = cls._parse_handshake_header(parsable)
 
         return TlsHandshakeServerKeyExchange(
-            handshake_header_parser['payload']
-        ), handshake_header_parser.parsed_length
+                handshake_header_parser['payload']
+                ), handshake_header_parser.parsed_length
 
     def compose(self):
         # type: () -> bytes
@@ -748,11 +748,11 @@ class SslSessionIdVector(Vector):
 
 class SslHandshakeClientHello(SslMessageBase):
     def __init__(
-        self,
-        cipher_kinds,
-        session_id=SslSessionIdVector([]),
-        challenge=bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32)),
-    ):
+            self,
+            cipher_kinds,
+            session_id=SslSessionIdVector([]),
+            challenge=bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32)),
+            ):
         self.cipher_kinds = cipher_kinds
         self.session_id = session_id
         self.challenge = challenge
@@ -761,7 +761,7 @@ class SslHandshakeClientHello(SslMessageBase):
     def get_message_type(cls):
         return SslMessageType.CLIENT_HELLO
 
-    def _parse(self, parsable_bytes):
+    def _parse(self, parsable):
         raise NotImplementedError()
 
     def compose(self):

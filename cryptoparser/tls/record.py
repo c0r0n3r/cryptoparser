@@ -51,28 +51,17 @@ class TlsRecord(RecordBase):
             raise InvalidValue(e.value, TlsContentType)
         parser.parse_parsable('protocol_version', TlsProtocolVersionBase)
         parser.parse_numeric('record_length', 2)
+        if parser.unparsed_length < parser['record_length']:
+            raise NotEnoughData(parser['record_length'] - parser.unparsed_length)
 
-        if parser.parsed_length + parser['record_length'] > len(parsable):
-            raise NotEnoughData(parser['record_length'])
+        for subclass in utils.get_leaf_classes(TlsSubprotocolMessageBase):
+            if subclass.get_content_type() == parser['content_type']:
+                parser.parse_parsable_derived_array('messages', parser['record_length'], subclass)
+                break
+        else:
+            raise InvalidValue(parser['content_type'], TlsRecord, 'content type')
 
-        header_size = parser.parsed_length
-
-        messages = []
-        while parser.parsed_length < parser['record_length'] + header_size:
-            for subclass in utils.get_leaf_classes(TlsSubprotocolMessageBase):
-                if subclass.get_content_type() != parser['content_type']:
-                    continue
-
-                try:
-                    parser.parse_parsable('message', subclass)
-                    messages.append(parser['message'])
-                    break
-                except InvalidValue:
-                    continue
-            else:
-                raise InvalidValue(parser['content_type'], TlsRecord, 'content type')
-
-        return TlsRecord(messages=messages, protocol_version=parser['protocol_version']), parser.parsed_length
+        return TlsRecord(messages=parser['messages'], protocol_version=parser['protocol_version']), parser.parsed_length
 
     def compose(self):
         body_composer = ComposerBinary()
