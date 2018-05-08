@@ -5,7 +5,7 @@ import json
 import unittest
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData
-from cryptoparser.common.base import Vector, VectorParamNumeric
+from cryptoparser.common.base import Vector, VectorString, VectorParamNumeric, VectorParamString
 from cryptoparser.common.base import VectorParsable, VectorParamParsable
 from cryptoparser.common.base import VectorParsableDerived, Opaque, OpaqueParam
 
@@ -26,6 +26,12 @@ class VectorNumericTest(Vector):
     @classmethod
     def get_param(cls):
         return VectorParamNumeric(item_size=2, min_byte_num=0, max_byte_num=0xff)
+
+
+class VectorStringTest(VectorString):
+    @classmethod
+    def get_param(cls):
+        return VectorParamString(min_byte_num=0, max_byte_num=16, separator=';', item_class=int, fallback_class=str)
 
 
 class VectorOneByteParsableTest(VectorParsable):
@@ -117,6 +123,30 @@ class TestVectorNumeric(unittest.TestCase):
         self.assertEqual(len(vector), 1)
         self.assertEqual(str(vector), '[0]')
         self.assertEqual(repr(vector), '<VectorNumericTest [0]>')
+
+
+class TestVectorString(unittest.TestCase):
+    def test_error(self):
+        pass
+
+    def test_parse(self):
+        self.assertEqual(len(VectorStringTest.parse_exact_size(b'\x00')), 0)
+
+        self.assertEqual(
+            ['1', '2', ],
+            list(VectorStringTest.parse_exact_size(b'\x031;2'))
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            b'\x00',
+            VectorStringTest([]).compose(),
+        )
+
+        self.assertEqual(
+            b'\x031;2',
+            VectorStringTest(['1', '2', ]).compose(),
+        )
 
 
 class TestVectorParsable(unittest.TestCase):

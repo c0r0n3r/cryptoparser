@@ -4,7 +4,7 @@
 import unittest
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
-from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
+from cryptoparser.common.parse import ParserBinary, ParserText, ParsableBase, ComposerBinary, ComposerText
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
 
 from tests.common.classes import OneByteParsable, TwoByteParsable, ConditionalParsable, OneByteOddParsable
@@ -181,6 +181,141 @@ class TestParserBinary(unittest.TestCase):
         self.assertEqual(parser.unparsed_length, 0)
 
 
+class TestParserText(unittest.TestCase):
+    _ALPHA_BETA_GAMMA_HASHMARK = bytes(u'αβγ#', 'utf-8')
+
+    def test_error(self):
+        pass
+
+    def test_separator(self):
+        parser = ParserText(b';')
+        self.assertEqual(parser.unparsed_length, 1)
+
+        parser.parse_separator(';')
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b';;')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_separator(';', max_length=1)
+        self.assertEqual(context_manager.exception.value, b';;')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_separator(';', min_length=3)
+        self.assertEqual(context_manager.exception.value, b';;')
+
+    def test_parse_numeric(self):
+        parser = ParserText(b'1#')
+        parser.parse_numeric('number')
+        self.assertEqual(parser['number'], 1)
+
+        parser = ParserText(b'NaN')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_numeric('number')
+        self.assertEqual(context_manager.exception.value, b'NaN')
+
+        parser = ParserText(b'1a')
+        parser.parse_numeric('number')
+        self.assertEqual(parser['number'], 1)
+        self.assertEqual(parser.unparsed_length, 1)
+
+        parser = ParserText(b'1.2#')
+        parser.parse_numeric_array('number', 2, '.')
+        self.assertEqual(parser['number'], [1, 2])
+
+        parser = ParserText(b'1#')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_numeric_array('number', 2, '.')
+        self.assertEqual(context_manager.exception.value, b'1')
+
+    def test_parse_string_until_separator(self):
+        parser = ParserText(b'a#')
+        parser.parse_string_until_separator('string', '#')
+        self.assertEqual(parser['string'], 'a')
+        self.assertEqual(parser.unparsed_length, 1)
+
+        parser = ParserText(b'12#')
+        parser.parse_string_until_separator('number', '#', int)
+        self.assertEqual(parser['number'], 12)
+        self.assertEqual(parser.unparsed_length, 1)
+
+        parser = ParserText(self._ALPHA_BETA_GAMMA_HASHMARK, 'utf-8')
+        parser.parse_string_until_separator('alphabet', '#')
+        self.assertEqual(parser['alphabet'], u'αβγ')
+        self.assertEqual(parser.unparsed_length, 1)
+
+        parser = ParserText(b'ab')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_until_separator('string', '#')
+        self.assertEqual(context_manager.exception.value, b'ab')
+
+        parser = ParserText(b'ab')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_until_separator('string', '#')
+        self.assertEqual(context_manager.exception.value, b'ab')
+
+        parser = ParserText(b'12a#')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_until_separator('string', '#', int)
+        self.assertEqual(context_manager.exception.value, b'12a#')
+
+        parser = ParserText(self._ALPHA_BETA_GAMMA_HASHMARK, 'ascii')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_until_separator('alphabet', '#')
+        self.assertEqual(context_manager.exception.value, self._ALPHA_BETA_GAMMA_HASHMARK)
+
+    def test_parse_string_until_separator_or_end(self):
+        parser = ParserText(b'ab')
+        parser.parse_string_until_separator_or_end('string', '#')
+        self.assertEqual(parser['string'], 'ab')
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'12')
+        parser.parse_string_until_separator_or_end('number', '#', int)
+        self.assertEqual(parser['number'], 12)
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'a#b')
+        parser.parse_string_until_separator_or_end('string', '#')
+        self.assertEqual(parser['string'], 'a')
+        self.assertEqual(parser.unparsed_length, 2)
+
+    def test_parse_string_by_length(self):
+        parser = ParserText(b'abc')
+        parser.parse_string_by_length('string', 1, None)
+        self.assertEqual(parser['string'], 'abc')
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'12')
+        parser.parse_string_by_length('number', 1, None, int)
+        self.assertEqual(parser['number'], 12)
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'12ab')
+        parser.parse_string_by_length('string', 1, 2, int)
+        self.assertEqual(parser['string'], 12)
+        self.assertEqual(parser.unparsed_length, 2)
+
+        parser = ParserText(b'12')
+        with self.assertRaises(NotEnoughData) as context_manager:
+            parser.parse_string_by_length('string', 3, 3)
+        self.assertEqual(context_manager.exception.bytes_needed, 1)
+
+        parser = ParserText(b'12ab')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_by_length('string', 3, 4, int)
+        self.assertEqual(context_manager.exception.value, b'12ab')
+
+        parser = ParserText(self._ALPHA_BETA_GAMMA_HASHMARK, 'ascii')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_by_length('alphabet')
+        self.assertEqual(context_manager.exception.value, self._ALPHA_BETA_GAMMA_HASHMARK)
+
+    def test_parse_string_array(self):
+        parser = ParserText(b'a,b')
+        parser.parse_string_array('array', ',')
+        self.assertEqual(parser['array'], ['a', 'b'])
+        self.assertEqual(parser.unparsed_length, 0)
+
+
 class TestComposerBinary(unittest.TestCase):
     def test_error(self):
         composer = ComposerBinary()
@@ -287,3 +422,69 @@ class TestComposerBinary(unittest.TestCase):
             b'\x01\x02\x03',
             composer.composed_bytes
         )
+
+
+class TestComposerText(unittest.TestCase):
+    _ALPHA_BETA_GAMMA_HASHMARK = u'αβγ'
+
+    def test_compose_numeric(self):
+        composer = ComposerText()
+
+        composer.compose_numeric(1)
+        self.assertEqual(composer.composed, b'1')
+
+        composer.compose_numeric(2)
+        self.assertEqual(composer.composed, b'12')
+        self.assertEqual(composer.composed_length, 2)
+
+    def test_compose_numeric_array(self):
+        composer = ComposerText()
+
+        composer.compose_numeric_array([1, 2], separator=',')
+        self.assertEqual(composer.composed, b'1,2')
+        self.assertEqual(composer.composed_length, 3)
+
+    def test_compose_string(self):
+        composer = ComposerText()
+
+        composer.compose_string('abc')
+        self.assertEqual(composer.composed, b'abc')
+        self.assertEqual(composer.composed_length, 3)
+
+        composer = ComposerText('utf-8')
+        for index, char in enumerate(self._ALPHA_BETA_GAMMA_HASHMARK):
+            composer.compose_string(char)
+            expected_composed = bytes(self._ALPHA_BETA_GAMMA_HASHMARK[0:index + 1], 'utf-8')
+            self.assertEqual(composer.composed, expected_composed)
+            self.assertEqual(composer.composed_length, (index + 1) * 2)
+
+        composer = ComposerText()
+        with self.assertRaises(InvalidValue) as context_manager:
+            composer.compose_string(self._ALPHA_BETA_GAMMA_HASHMARK)
+
+    def test_compose_string_array(self):
+        composer = ComposerText()
+
+        composer.compose_string_array(['a', 'b', 'c'], '#')
+        self.assertEqual(composer.composed, b'a#b#c')
+        self.assertEqual(composer.composed_length, 5)
+
+        composer = ComposerText('utf-8')
+        composer.compose_string_array(list(self._ALPHA_BETA_GAMMA_HASHMARK), '')
+        self.assertEqual(composer.composed, bytes(self._ALPHA_BETA_GAMMA_HASHMARK, 'utf-8'))
+        self.assertEqual(composer.composed_length, len(self._ALPHA_BETA_GAMMA_HASHMARK) * 2)
+
+    def test_compose_separator(self):
+        composer = ComposerText()
+
+        composer.compose_separator('#')
+        self.assertEqual(composer.composed, b'#')
+        composer.compose_separator('string')
+        self.assertEqual(composer.composed, b'#string')
+        composer.compose_separator('#')
+        self.assertEqual(composer.composed, b'#string#')
+
+        composer = ComposerText('utf-8')
+
+        composer.compose_separator(self._ALPHA_BETA_GAMMA_HASHMARK)
+        self.assertEqual(composer.composed, bytes(self._ALPHA_BETA_GAMMA_HASHMARK, 'utf-8'))
