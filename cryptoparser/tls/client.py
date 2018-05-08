@@ -4,8 +4,8 @@
 import abc
 
 from cryptoparser.common.algorithm import Authentication, KeyExchange
+from cryptoparser.common.client import L7ClientTcp
 from cryptoparser.common.exception import NotEnoughData, NetworkError, NetworkErrorType
-from cryptoparser.common.utils import get_leaf_classes
 
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 from cryptoparser.tls.subprotocol import SslMessageBase, SslMessageType, SslHandshakeClientHello
@@ -121,12 +121,7 @@ class TlsHandshakeClientHelloBasic(TlsHandshakeClientHello):
         )
 
 
-class L7Client(object):
-    def __init__(self, host, port):
-        self._host = host
-        self._port = port
-        self._socket = None
-
+class L7ClientTlsBase(L7ClientTcp):
     def do_ssl_handshake(self, hello_message, last_handshake_message_type=SslMessageType.SERVER_HELLO):
         self._socket = self._connect()
         tls_client = SslClientHandshake(self)
@@ -143,71 +138,8 @@ class L7Client(object):
 
         return server_messages
 
-    def _close(self):
-        self._socket.close()
-        self._socket = None
 
-    def send(self, sendable_bytes):
-        total_sent_byte_num = 0
-        while total_sent_byte_num < len(sendable_bytes):
-            actual_sent_byte_num = self._socket.send(sendable_bytes[total_sent_byte_num:])
-            if actual_sent_byte_num == 0:
-                raise IOError()
-            total_sent_byte_num = total_sent_byte_num + actual_sent_byte_num
-
-    def receive(self, receivable_byte_num):
-        total_received_bytes = bytearray()
-
-        while len(total_received_bytes) < receivable_byte_num:
-            try:
-                actual_received_bytes = self._socket.recv(min(receivable_byte_num - len(total_received_bytes), 1024))
-            except socket.error as e:
-                actual_received_bytes = None
-
-            if not actual_received_bytes:
-                raise NotEnoughData(receivable_byte_num - len(total_received_bytes))
-
-            total_received_bytes += actual_received_bytes
-
-        return total_received_bytes
-
-    @property
-    def host(self):
-        return self._host
-
-    @property
-    def port(self):
-        return self._port
-
-    @classmethod
-    def from_scheme(cls, scheme, host, port=None):
-        for client_class in get_leaf_classes(L7Client):
-            if client_class.get_scheme() == scheme:
-                port = client_class.get_default_port() if port is None else port
-                return client_class(host, port)
-        else:
-            raise ValueError()
-
-    @classmethod
-    def get_supported_schemes(cls):
-        return set([leaf_cls.get_scheme() for leaf_cls in get_leaf_classes(cls)])
-
-    @abc.abstractmethod
-    def _connect(self):
-        raise NotImplementedError()
-
-    @classmethod
-    @abc.abstractmethod
-    def get_scheme(cls):
-        raise NotImplementedError()
-
-    @classmethod
-    @abc.abstractmethod
-    def get_default_port(cls):
-        raise NotImplementedError()
-
-
-class L7ClientTls(L7Client):
+class L7ClientTls(L7ClientTlsBase):
     @classmethod
     def get_scheme(cls):
         return 'tls'
@@ -221,8 +153,10 @@ class L7ClientTls(L7Client):
         sock.connect((self._host, self._port))
         return sock
 
+L7ClientTcp.register(L7ClientTls)
 
-class L7ClientHTTPS(L7Client):
+
+class L7ClientHTTPS(L7ClientTls):
     @classmethod
     def get_scheme(cls):
         return 'https'
@@ -231,13 +165,10 @@ class L7ClientHTTPS(L7Client):
     def get_default_port(cls):
         return 443
 
-    def _connect(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self._host, self._port))
-        return sock
+L7ClientTcp.register(L7ClientHTTPS)
 
 
-class ClientPOP3(L7Client):
+class ClientPOP3(L7ClientTls):
     def __init__(self, host, port):
         super(ClientPOP3, self).__init__(host, port)
 
@@ -263,8 +194,10 @@ class ClientPOP3(L7Client):
         if self._socket:
             self.client.quit()
 
+L7ClientTcp.register(ClientPOP3)
 
-class ClientSMTP(L7Client):
+
+class ClientSMTP(L7ClientTls):
     def __init__(self, host, port):
         super(ClientSMTP, self).__init__(host, port)
 
@@ -292,8 +225,10 @@ class ClientSMTP(L7Client):
         if self._socket:
             self.client.quit()
 
+L7ClientTcp.register(ClientSMTP)
 
-class ClientIMAP(L7Client):
+
+class ClientIMAP(L7ClientTls):
     def __init__(self, host, port):
         super(ClientIMAP, self).__init__(host, port)
 
@@ -318,6 +253,8 @@ class ClientIMAP(L7Client):
     def close(self):
         if self._socket:
             self.client.quit()
+
+L7ClientTcp.register(ClientIMAP)
 
 
 class InvalidState(ValueError):
