@@ -31,6 +31,10 @@ class InvalidValue(ValueError):
         self.value = value
 
 
+class InvalidType(ValueError):
+    pass
+
+
 class NetworkErrorType(enum.IntEnum):
     NO_CONNECTION = 0
     NO_RESPONSE = 1
