@@ -5,7 +5,7 @@ import unittest
 
 import six
 
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 
 from cryptoparser.tls.record import TlsRecord
 from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase

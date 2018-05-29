@@ -5,16 +5,16 @@ import inspect
 
 
 def get_leaf_classes(base_class):
-
-    def _get_subclasses(base_classes):
+    def _get_leaf_classes(base_class):
         subclasses = []
-        for base_class in base_classes:
-            subclasses += [subclass for subclass in base_class.__subclasses__() if not inspect.isabstract(subclass)]
+
+        if base_class.__subclasses__():
+            for subclass in base_class.__subclasses__():
+                subclasses += _get_leaf_classes(subclass)
+        else:
+            if not inspect.isabstract(base_class):
+                return [base_class, ]
+
         return subclasses
 
-    result = []
-    subclasses = [base_class, ]
-    while subclasses:
-        subclasses = _get_subclasses(subclasses)
-        result += subclasses
-    return result
+    return _get_leaf_classes(base_class)

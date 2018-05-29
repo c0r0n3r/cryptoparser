@@ -68,6 +68,12 @@ class ParserBase(object):
         self._parsed_length += len(self._parsable) - self._parsed_length - len(unparsed_bytes)
         self._parsed_values[name] = parsed_object
 
+    def parse_variant(self, name, variant):
+        parsed_object, value_length = variant.parse(self._parsable[self._parsed_length:])
+
+        self._parsed_values[name] = parsed_object
+        self._parsed_length += value_length
+
 
 class ParserText(ParserBase):
     def __init__(self, parsable, encoding='ascii'):
