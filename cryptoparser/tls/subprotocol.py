@@ -13,7 +13,7 @@ import random
 from typing import Tuple, List
 
 from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorParamParsable, VectorParsable
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.extension import TlsExtensions, TlsNamedCurve
@@ -27,6 +27,63 @@ class TlsContentType(enum.IntEnum):
     HANDSHAKE = 0x16
     APPLICATION_DATA = 0x17
     HEARTBEAT = 0x18
+
+
+class SubprotocolParser(object):
+    def __init__(self, subprotocol_type):
+        self._subprotocol_type = subprotocol_type
+        self._subprotocol_item = None
+
+    @abc.abstractmethod
+    def _get_subprotocol_parsers(cls):
+        raise NotImplementedError()
+
+    def register_subprotocol_parser(cls, subprotocol_type, parsable_class):
+        varints = cls._get_subprotocol_parsers()
+        subprotocol_parsers[subprotocol_type] = parsable_class
+
+    def parse(self, parsable):
+        subprotocol_parsers = self._get_subprotocol_parsers()
+
+        if self._subprotocol_type in subprotocol_parsers:
+            parsed_object, unparsed_bytes = subprotocol_parsers[self._subprotocol_type].parse_immutable(parsable)
+            return parsed_object, len(parsable) - len(unparsed_bytes)
+        else:
+            raise InvalidValue(self._subprotocol_type, TlsSubprotocolMessageBase)
+
+    def compose(self):
+        if self._subprotocol_item is None:
+            raise NotImplementedError()
+
+        return self._subprotocol_item.compose()
+
+
+class VariantParsable(ParsableBase):
+    def __init__(self):
+        self._variant = None
+
+    @abc.abstractmethod
+    def _get_variants(cls):
+        raise NotImplementedError()
+
+    def register_variant_parser(cls, variant_tag, parsable_class):
+        varints = cls._get_variants()
+        variants[variant_tag] = parsable_class
+
+    @classmethod
+    def _parse(cls, parsable):
+        variants = cls._get_variants()
+        for variant_parser in variants.values():
+            try:
+                parsed_object, unparsed_bytes = variant_parser.parse_immutable(parsable)
+                return parsed_object, len(parsable) - len(unparsed_bytes)
+            except InvalidType:
+                continue
+        else:
+            raise InvalidValue()
+
+    def compose(self):
+        raise NotImplementedError()
 
 
 class TlsSubprotocolMessageBase(ParsableBase):
@@ -130,6 +187,8 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
     def __eq__(self, other):
         return self.level == other.level and self.description == other.description
 
+TlsSubprotocolMessageBase.register(TlsAlertMessage)
+
 
 class TlsChangeCipherSpecType(enum.IntEnum):
     CHANGE_CIPHER_SPEC = 0x01
@@ -226,7 +285,7 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
             raise e
         else:
             if parser['handshake_type'] != cls.get_handshake_type():
-                raise InvalidValue(parser['handshake_type'], TlsHandshakeMessage, 'handshake type')
+                raise InvalidType()
 
         parser.parse_numeric('handshake_length', 3)
 
@@ -244,26 +303,6 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
         composer.compose_numeric(payload_length, 3)
 
         return composer.composed_bytes
-
-    """
-    @classmethod
-    def _parse(cls, parsable):
-        parser = ParserBinary(parsable)
-
-        try:
-            parser.parse_numeric('handshake_type', 1, TlsHandshakeType)
-        except InvalidValue as e:
-            raise UnknownType('{} is not a valid TlsHandshakeType'.format(e.value))
-
-        for handshake_class in utils.get_leaf_classes(TlsHandshakeMessage):
-            if handshake_class.get_handshake_type() == parser['handshake_type']:
-                return handshake_class.parse_exact_size(parsable)
-        else:
-            raise UnknownType('{} is not a valid TlsHandshakeType'.format(parser['handshake_type']))
-
-    def compose(self):
-        pass
-    """
 
     @classmethod
     def _parse_extensions(cls, parser):
@@ -827,3 +866,41 @@ class SslHandshakeServerHello(SslMessageBase):
         composer.compose_bytes(self.connection_id)
 
         return composer.composed_bytes
+
+
+class TlsHandshakeMessageVariant(VariantParsable):
+    _VARIANTS = {
+        TlsHandshakeType.CLIENT_HELLO: TlsHandshakeClientHello,
+        TlsHandshakeType.SERVER_HELLO: TlsHandshakeServerHello,
+        TlsHandshakeType.CERTIFICATE: TlsHandshakeCertificate,
+        TlsHandshakeType.SERVER_KEY_EXCHANGE: TlsHandshakeServerKeyExchange,
+        TlsHandshakeType.SERVER_HELLO_DONE: TlsHandshakeServerHelloDone,
+    }
+
+    @classmethod
+    def _get_variants(cls):
+        return cls._VARIANTS
+
+
+class TlsSubprotocolMessageParser(SubprotocolParser):
+    _SUBPROTOCOL_PARSERS = {
+        TlsContentType.CHANGE_CIPHER_SPEC: TlsChangeCipherSpecMessage,
+        TlsContentType.ALERT: TlsAlertMessage,
+        TlsContentType.HANDSHAKE: TlsHandshakeMessageVariant,
+        TlsContentType.APPLICATION_DATA: TlsApplicationDataMessage,
+    }
+
+    @classmethod
+    def _get_subprotocol_parsers(cls):
+        return cls._SUBPROTOCOL_PARSERS
+
+class SslSubprotocolMessageParser(SubprotocolParser):
+    _SUBPROTOCOL_PARSERS = {
+        SslMessageType.ERROR: SslError,
+        SslMessageType.CLIENT_HELLO: SslHandshakeClientHello,
+        SslMessageType.SERVER_HELLO: SslHandshakeServerHello,
+    }
+
+    @classmethod
+    def _get_subprotocol_parsers(cls):
+        return cls._SUBPROTOCOL_PARSERS

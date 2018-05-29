@@ -158,6 +158,12 @@ class ParserBinary(object):
         except ValueError as e:
             raise InvalidValue(e.args[0], item_base_class)
 
+    def parse_variant(self, name, variant):
+        parsed_object, value_length = variant.parse(self._parsable[self._parsed_length:])
+
+        self._parsed_values[name] = parsed_object
+        self._parsed_length += value_length
+
 
 class ComposerBinary(object):
     _INT_FORMATER_BY_SIZE = {
