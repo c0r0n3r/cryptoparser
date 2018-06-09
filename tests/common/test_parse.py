@@ -36,7 +36,7 @@ class TestParsable(unittest.TestCase):
         self.assertEqual(parsable, b'\x02')
 
 
-class TestParser(unittest.TestCase):
+class TestParserBinary(unittest.TestCase):
     def test_error(self):
         parser = ParserBinary(b'\x00')
         parser.parse_numeric('one_byte', 1)
@@ -172,7 +172,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parser.unparsed_length, 0)
 
 
-class TestComposer(unittest.TestCase):
+class TestComposerBinary(unittest.TestCase):
     def test_error(self):
         composer = ComposerBinary()
 
