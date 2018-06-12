@@ -19,6 +19,11 @@ class TlsVersion(enum.IntEnum):
     TLS1_3 = 0x04
 
 
+class DTlsVersion(enum.IntEnum):
+    DTLS1_0 = 0xff
+    DTLS1_2 = 0xfd
+
+
 @six.add_metaclass(abc.ABCMeta)
 class TlsProtocolVersionBase(JSONSerializable, ParsableBase):
     _SIZE = 2
@@ -113,6 +118,10 @@ class TlsProtocolVersionFinal(TlsProtocolVersionBase):
             raise InvalidValue(e.args[0], TlsProtocolVersionFinal)
 
         self._minor = value
+
+
+class DTlsProtocolVersionFinal(TlsProtocolVersionFinal):
+    _MAJOR = 0xfe
 
 
 class TlsProtocolVersionDraft(TlsProtocolVersionBase):
