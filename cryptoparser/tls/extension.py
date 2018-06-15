@@ -85,7 +85,7 @@ class TlsExtensionBase(ParsableBase):
         header_composer.compose_numeric(self.extension_type, 2)
         header_composer.compose_numeric(payload_length, 2)
 
-        return header_composer.composed
+        return header_composer.composed_bytes
 
 
 class TlsExtensionUnparsed(TlsExtensionBase):
@@ -108,7 +108,7 @@ class TlsExtensionUnparsed(TlsExtensionBase):
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
-        return header_bytes + payload_composer.composed
+        return header_bytes + payload_composer.composed_bytes
 
 
 class TlsExtensionParsed(TlsExtensionBase):
@@ -181,7 +181,7 @@ class TlsExtensionServerName(TlsExtensionParsed):
 
         header_bytes = self._compose_header(composer.composed_length)
 
-        return header_bytes + composer.composed
+        return header_bytes + composer.composed_bytes
 
 
 class TlsECPointFormat(enum.IntEnum):
@@ -226,7 +226,7 @@ class TlsExtensionECPointFormats(TlsExtensionParsed):
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
-        return header_bytes + payload_composer.composed
+        return header_bytes + payload_composer.composed_bytes
 
 
 class TlsNamedCurve(enum.IntEnum):
@@ -308,7 +308,7 @@ class TlsExtensionEllipticCurves(TlsExtensionParsed):
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
-        return header_bytes + payload_composer.composed
+        return header_bytes + payload_composer.composed_bytes
 
 
 class TlsSupportedVersionVector(VectorParsableDerived):
@@ -346,7 +346,7 @@ class TlsExtensionSupportedVersions(TlsExtensionParsed):
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
-        return header_bytes + payload_composer.composed
+        return header_bytes + payload_composer.composed_bytes
 
 
 class TlsSignatureAndHashAlgorithm(ParsableBase):
@@ -371,7 +371,7 @@ class TlsSignatureAndHashAlgorithm(ParsableBase):
         composer.compose_numeric(self.hash_algorithm, 1)
         composer.compose_numeric(self.signature_algorithm, 1)
 
-        return composer.composed
+        return composer.composed_bytes
 
 
 class TlsSignatureAndHashAlgorithmFactory(TwoByteEnumParsable):
@@ -564,4 +564,4 @@ class TlsExtensionSignatureAlgorithms(TlsExtensionParsed):
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
-        return header_bytes + payload_composer.composed
+        return header_bytes + payload_composer.composed_bytes

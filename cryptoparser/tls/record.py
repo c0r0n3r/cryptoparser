@@ -84,7 +84,7 @@ class TlsRecord(RecordBase):
         header_composer.compose_parsable(self.protocol_version)
         header_composer.compose_numeric(body_composer.composed_length, 2)
 
-        return header_composer.composed + body_composer.composed
+        return header_composer.composed_bytes + body_composer.composed_bytes
 
     @RecordBase.protocol_version.setter
     def protocol_version(self, value):
@@ -157,7 +157,7 @@ class SslRecord(RecordBase):
         else:
             header_composer.compose_numeric(body_composer.composed_length | (2 ** 15), 2)
 
-        return header_composer.composed + body_composer.composed
+        return header_composer.composed_bytes + body_composer.composed_bytes
 
     @RecordBase.protocol_version.setter
     def protocol_version(self, value):

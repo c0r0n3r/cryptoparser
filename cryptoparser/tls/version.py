@@ -58,7 +58,7 @@ class TlsProtocolVersionBase(JSONSerializable, ParsableBase):
         composer.compose_numeric(self.major, 1)
         composer.compose_numeric(self.minor, 1)
 
-        return composer.composed
+        return composer.composed_bytes
 
     def __eq__(self, other):
         return self.major == other.major and self.minor == other.minor

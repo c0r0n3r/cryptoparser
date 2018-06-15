@@ -195,82 +195,82 @@ class TestComposerBinary(unittest.TestCase):
     def test_compose_numeric_to_right_size(self):
         composer = ComposerBinary()
         composer.compose_numeric(0x01, 1)
-        self.assertEqual(composer.composed, b'\x01')
+        self.assertEqual(composer.composed_bytes, b'\x01')
 
         composer = ComposerBinary()
         composer.compose_numeric(0x01, 2)
-        self.assertEqual(composer.composed, b'\x00\x01')
+        self.assertEqual(composer.composed_bytes, b'\x00\x01')
 
         composer = ComposerBinary()
         composer.compose_numeric(0x01, 3)
-        self.assertEqual(composer.composed, b'\x00\x00\x01')
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x01')
 
         composer = ComposerBinary()
         composer.compose_numeric(0x01, 4)
-        self.assertEqual(composer.composed, b'\x00\x00\x00\x01')
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x01')
 
     def test_compose_numeric_to_rigth_order(self):
         composer = ComposerBinary()
         composer.compose_numeric(0x01, 1)
-        self.assertEqual(composer.composed, b'\x01')
+        self.assertEqual(composer.composed_bytes, b'\x01')
 
         composer = ComposerBinary()
         composer.compose_numeric(0x0102, 2)
-        self.assertEqual(composer.composed, b'\x01\x02')
+        self.assertEqual(composer.composed_bytes, b'\x01\x02')
 
         composer = ComposerBinary()
         composer.compose_numeric(0x010203, 3)
-        self.assertEqual(composer.composed, b'\x01\x02\x03')
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03')
 
         composer = ComposerBinary()
         composer.compose_numeric(0x01020304, 4)
-        self.assertEqual(composer.composed, b'\x01\x02\x03\x04')
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
 
     def test_compose_numeric_array(self):
         composer = ComposerBinary()
         composer.compose_numeric_array(values=[1, 2, 3, 4], item_size=1)
-        self.assertEqual(composer.composed, b'\x01\x02\x03\x04')
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
 
         composer = ComposerBinary()
         composer.compose_numeric_array(values=[1, 2, 3, 4], item_size=2)
-        self.assertEqual(composer.composed, b'\x00\x01\x00\x02\x00\x03\x00\x04')
+        self.assertEqual(composer.composed_bytes, b'\x00\x01\x00\x02\x00\x03\x00\x04')
 
         composer = ComposerBinary()
         composer.compose_numeric_array(values=[1, 2, 3, 4], item_size=3)
-        self.assertEqual(composer.composed, b'\x00\x00\x01\x00\x00\x02\x00\x00\x03\x00\x00\x04')
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x01\x00\x00\x02\x00\x00\x03\x00\x00\x04')
 
         composer = ComposerBinary()
         composer.compose_numeric_array(values=[1, 2, 3, 4], item_size=4)
-        self.assertEqual(composer.composed, b'\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04')
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04')
 
     def test_compose_bytes(self):
         composer = ComposerBinary()
 
         composer.compose_bytes(b'\x01\x02\x03\x04')
 
-        self.assertEqual(composer.composed, b'\x01\x02\x03\x04')
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
 
     def test_compose_multiple(self):
         composer = ComposerBinary()
 
         one_byte_parsable = OneByteParsable(0x01)
         composer.compose_parsable(one_byte_parsable)
-        self.assertEqual(composer.composed, b'\x01')
+        self.assertEqual(composer.composed_bytes, b'\x01')
 
         composer.compose_numeric(0x02, 1)
-        self.assertEqual(composer.composed, b'\x01\x02')
+        self.assertEqual(composer.composed_bytes, b'\x01\x02')
         self.assertEqual(composer.composed_length, 2)
 
         composer.compose_numeric(0x0304, 2)
-        self.assertEqual(composer.composed, b'\x01\x02\x03\x04')
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
         self.assertEqual(composer.composed_length, 4)
 
         composer.compose_numeric(0x050607, 3)
-        self.assertEqual(composer.composed, b'\x01\x02\x03\x04\x05\x06\x07')
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04\x05\x06\x07')
         self.assertEqual(composer.composed_length, 7)
 
         composer.compose_numeric(0x08090a0b, 4)
-        self.assertEqual(composer.composed, b'\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b')
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b')
         self.assertEqual(composer.composed_length, 11)
 
     def test_compose_parsable_array(self):
@@ -280,5 +280,5 @@ class TestComposerBinary(unittest.TestCase):
 
         self.assertEqual(
             b'\x01\x02\x03',
-            composer.composed
+            composer.composed_bytes
         )

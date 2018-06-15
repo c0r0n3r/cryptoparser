@@ -32,7 +32,7 @@ class NByteParsable(ParsableBase):
 
         composer.compose_numeric(self.value, self.get_byte_size())
 
-        return composer.composed
+        return composer.composed_bytes
 
     def __repr__(self):
         return '{0:#0{1}x}'.format(self.value, self.get_byte_size() * 2 + 2)
@@ -79,7 +79,7 @@ class ConditionalParsable(NByteParsable):
 
         composer.compose_numeric(self.value, self.get_byte_size())
 
-        return composer.composed
+        return composer.composed_bytes
 
 
 class OneByteOddParsable(ConditionalParsable):
