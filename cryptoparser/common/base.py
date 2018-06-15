@@ -157,7 +157,7 @@ class Vector(VectorBase):
         composer.compose_numeric(len(self._items) * self.param.item_size, self.param.item_num_size)
         composer.compose_numeric_array(self._items, self.param.item_size)
 
-        return composer.composed
+        return composer.composed_bytes
 
 
 class VectorParsable(VectorBase):
@@ -186,7 +186,7 @@ class VectorParsable(VectorBase):
         header_composer = ComposerBinary()
         header_composer.compose_numeric(body_composer.composed_length, self.param.item_num_size)
 
-        return header_composer.composed + body_composer.composed
+        return header_composer.composed_bytes + body_composer.composed_bytes
 
 
 class VectorParsableDerived(VectorBase):
@@ -211,9 +211,9 @@ class VectorParsableDerived(VectorBase):
         body_composer.compose_parsable_array(self._items)
 
         header_composer = ComposerBinary()
-        header_composer.compose_numeric(len(body_composer.composed), self.param.item_num_size)
+        header_composer.compose_numeric(len(body_composer.composed_bytes), self.param.item_num_size)
 
-        return header_composer.composed + body_composer.composed
+        return header_composer.composed_bytes + body_composer.composed_bytes
 
 
 class Opaque(Vector):
@@ -224,7 +224,7 @@ class Opaque(Vector):
         composer.compose_numeric(vector_param.min_byte_num, vector_param.item_num_size)
 
         try:
-            vector, parsed_length = super(Opaque, cls)._parse(composer.composed + parsable)
+            vector, parsed_length = super(Opaque, cls)._parse(composer.composed_bytes + parsable)
         except NotEnoughData as e:
             raise NotEnoughData(cls.get_byte_num())
 
@@ -289,7 +289,7 @@ class NByteEnumComposer(object):
 
         composer.compose_numeric(self.value.code, self.get_byte_num())
 
-        return composer.composed
+        return composer.composed_bytes
 
 
 class OneByteEnumComposer(NByteEnumComposer):

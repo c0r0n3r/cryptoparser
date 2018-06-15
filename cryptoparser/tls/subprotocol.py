@@ -101,7 +101,7 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
         composer.compose_numeric(self.level, 1)
         composer.compose_numeric(self.description, 1)
 
-        return composer.composed
+        return composer.composed_bytes
 
     @property
     def level(self):
@@ -158,7 +158,7 @@ class TlsChangeCipherSpecMessage(TlsSubprotocolMessageBase):
 
         composer.compose_numeric(self._change_cipher_spec_type, 1)
 
-        return composer.composed
+        return composer.composed_bytes
 
     def __eq__(self, other):
         return self._change_cipher_spec_type == other._change_cipher_spec_type
@@ -243,7 +243,7 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
         composer.compose_numeric(self.get_handshake_type(), 1)
         composer.compose_numeric(payload_length, 3)
 
-        return composer.composed
+        return composer.composed_bytes
 
     """
     @classmethod
@@ -280,7 +280,7 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
         payload_composer = ComposerBinary()
         payload_composer.compose_numeric(len(extension_bytes), 2)
 
-        return payload_composer.composed + extension_bytes
+        return payload_composer.composed_bytes + extension_bytes
 
 
 class TlsHandshakeHelloRandomBytes(Opaque):
@@ -330,7 +330,7 @@ class TlsHandshakeHelloRandom(ParsableBase):
         composer.compose_numeric(int(time.mktime(self._time.timetuple())), 4)
         composer.compose_bytes(self._random)
 
-        return composer.composed
+        return composer.composed_bytes
 
 
 class TlsHandshakeHello(TlsHandshakeMessage):
@@ -358,7 +358,7 @@ class TlsHandshakeHello(TlsHandshakeMessage):
             payload_length + composer.composed_length
         )
 
-        return handshake_header_bytes + composer.composed
+        return handshake_header_bytes + composer.composed_bytes
 
 
 class TlsCipherSuiteVector(VectorParsable):
@@ -446,7 +446,7 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
 
         header_bytes = self._compose_header(payload_composer.composed_length + len(extension_bytes))
 
-        return header_bytes + payload_composer.composed + extension_bytes
+        return header_bytes + payload_composer.composed_bytes + extension_bytes
 
 
 class TlsHandshakeServerHello(TlsHandshakeHello):
@@ -502,7 +502,7 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
-        return header_bytes + payload_composer.composed
+        return header_bytes + payload_composer.composed_bytes
 
 
 class TlsCertificate(ParsableBase):
@@ -575,7 +575,7 @@ class TlsHandshakeCertificate(TlsHandshakeMessage):
         header_composer = ComposerBinary()
         header_composer.compose_numeric(body_composer.composed_length)
 
-        return header_composer.composed + body_composer.composed
+        return header_composer.composed + body_composer.composed_bytes
 
 
 class TlsHandshakeServerHelloDone(TlsHandshakeMessage):
@@ -735,7 +735,7 @@ class SslHandshakeClientHello(SslMessageBase):
         composer.compose_parsable_array(self.cipher_kinds)
         composer.compose_bytes(self.challenge)
 
-        return composer.composed
+        return composer.composed_bytes
 
 
 class SslCertificateType(enum.IntEnum):
