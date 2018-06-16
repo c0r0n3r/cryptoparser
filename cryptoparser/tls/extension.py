@@ -349,31 +349,6 @@ class TlsExtensionSupportedVersions(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
-class TlsSignatureAndHashAlgorithm(ParsableBase):
-    def __init__(self, hash_algorithm, signature_algorithm):
-        self = hash_algorithm = hash_algorithm
-        self.signature_algorithm = signature_algorithm
-
-    def _parse(self, parsable):
-        parser = ParserBinary(parsable)
-
-        parser.parse_numeric('hash_algorithm', 1)
-        parser.parse_numeric('signature_algorithm', 1)
-
-        return TlsSignatureAndHashAlgorithm(
-            parser['signature_algorithm'],
-            parser['hash_algorithm']),
-        parser.parsed_length
-
-    def compose(self):
-        composer = ComposerBinary()
-
-        composer.compose_numeric(self.hash_algorithm, 1)
-        composer.compose_numeric(self.signature_algorithm, 1)
-
-        return composer.composed_bytes
-
-
 class TlsSignatureAndHashAlgorithmFactory(TwoByteEnumParsable):
     @classmethod
     def get_enum_class(cls):
@@ -529,11 +504,11 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
     )
 
 
-class TlsSignatureAndHashAlgorithmVector(VectorParsableDerived):
+class TlsSignatureAndHashAlgorithmVector(VectorParsable):
     @classmethod
     def get_param(cls):
         return VectorParamParsable(
-            item_class=TlsSignatureAndHashAlgorithm,
+            item_class=TlsSignatureAndHashAlgorithmFactory,
             fallback_class=None,
             min_byte_num=2, max_byte_num=2 ** 16 - 2
         )
