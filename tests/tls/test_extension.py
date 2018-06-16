@@ -13,6 +13,7 @@ from cryptoparser.tls.extension import TlsExtensionServerName
 from cryptoparser.tls.extension import TlsExtensionECPointFormats, TlsECPointFormat
 from cryptoparser.tls.extension import TlsExtensionEllipticCurves, TlsNamedCurve
 from cryptoparser.tls.extension import TlsExtensionSupportedVersions
+from cryptoparser.tls.extension import TlsExtensionSignatureAlgorithms, TlsSignatureAndHashAlgorithm
 
 
 class TestExtensionUnparsed(unittest.TestCase):
@@ -179,3 +180,27 @@ class TestExtensionSupportedVersions(unittest.TestCase):
             ]
         )
         self.assertEqual(extension_supported_versions.compose(), extension_supported_versions_bytes)
+
+
+class TestExtensionSignatureAlgorithms(unittest.TestCase):
+    def test_parse(self):
+        extension_signature_algorithms_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x0d'),
+            ('extension_length', b'\x00\x0a'),
+            ('signature_algorithm_list_length', b'\x00\x08'),
+            ('signature_algorithm_list', b'\x01\x00\x02\x01\x03\x02\x04\x03'),
+        ])
+        extension_signature_algorithms_bytes = b''.join(extension_signature_algorithms_dict.values())
+        extension_signature_algorithms = TlsExtensionSignatureAlgorithms.parse_exact_size(
+            extension_signature_algorithms_bytes
+        )
+        self.assertEqual(
+            list(extension_signature_algorithms.hash_and_signature_algorithms),
+            [
+                TlsSignatureAndHashAlgorithm.ANONYMOUS_MD5,
+                TlsSignatureAndHashAlgorithm.RSA_SHA1,
+                TlsSignatureAndHashAlgorithm.DSA_SHA224,
+                TlsSignatureAndHashAlgorithm.ECDSA_SHA256,
+            ]
+        )
+        self.assertEqual(extension_signature_algorithms.compose(), extension_signature_algorithms_bytes)
