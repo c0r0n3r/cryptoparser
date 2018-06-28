@@ -14,6 +14,7 @@ from cryptoparser.tls.extension import TlsExtensionSupportedVersions, TlsExtensi
 from cryptoparser.tls.extension import TlsExtensionSignatureAlgorithms, TlsSignatureAndHashAlgorithm
 from cryptoparser.tls.extension import TlsExtensionECPointFormats, TlsECPointFormat
 from cryptoparser.tls.extension import TlsExtensionEllipticCurves, TlsNamedCurve
+from cryptoparser.tls.extension import TlsExtensionCertificateStatusRequest
 
 from cryptoparser.tls.record import TlsRecord, SslRecord
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, SslVersion
@@ -52,6 +53,7 @@ class TlsHandshakeClientHelloAuthenticationRSA(TlsHandshakeClientHello):
             extensions=[
                 TlsExtensionServerName(hostname),
                 TlsExtensionSignatureAlgorithms(list(TlsSignatureAndHashAlgorithm)),
+                TlsExtensionCertificateStatusRequest(),
             ]
         )
 
@@ -69,6 +71,7 @@ class TlsHandshakeClientHelloAuthenticationDSS(TlsHandshakeClientHello):
             cipher_suites=TlsCipherSuiteVector(self._CIPHER_SUITES),
             extensions=[
                 TlsExtensionServerName(hostname),
+                TlsExtensionCertificateStatusRequest(),
             ]
         )
 
@@ -89,6 +92,7 @@ class TlsHandshakeClientHelloAuthenticationECDSA(TlsHandshakeClientHello):
                 TlsExtensionECPointFormats(list(TlsECPointFormat)),
                 TlsExtensionEllipticCurves(list(TlsNamedCurve)),
                 TlsExtensionSignatureAlgorithms(list(TlsSignatureAndHashAlgorithm)),
+                TlsExtensionCertificateStatusRequest(),
             ]
         )
 

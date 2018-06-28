@@ -540,3 +540,66 @@ class TlsExtensionSignatureAlgorithms(TlsExtensionParsed):
         header_bytes = self._compose_header(payload_composer.composed_length)
 
         return header_bytes + payload_composer.composed_bytes
+
+
+class TlsCertificateStatusType(enum.IntEnum):
+    OCSP = 1
+
+
+class TlsCertificateStatusRequestExtensions(Vector):
+    @classmethod
+    def get_param(cls):
+        return VectorParamNumeric(
+            item_size=1,
+            min_byte_num=0,
+            max_byte_num=2 ** 16 - 1,
+        )
+
+
+class TlsCertificateStatusRequestResponderId(Vector):
+    @classmethod
+    def get_param(cls):
+        return VectorParamNumeric(
+            item_size=1,
+            min_byte_num=1,
+            max_byte_num=2 ** 16 - 1,
+        )
+
+
+class TlsCertificateStatusRequestResponderIdList(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsCertificateStatusRequestResponderId,
+            fallback_class=None,
+            min_byte_num=0, max_byte_num=2 ** 16 - 1
+        )
+
+
+class TlsExtensionCertificateStatusRequest(TlsExtensionParsed):
+    def __init__(self):
+        super(TlsExtensionCertificateStatusRequest, self).__init__()
+
+        self.responder_id_list = TlsCertificateStatusRequestResponderIdList([])
+        self.request_extensions = TlsCertificateStatusRequestExtensions([])
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.STATUS_REQUEST
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionCertificateStatusRequest, cls)._parse_header(parsable)
+
+        return TlsExtensionCertificateStatusRequest(), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_numeric(TlsCertificateStatusType.OCSP, 1)
+        payload_composer.compose_parsable(self.responder_id_list)
+        payload_composer.compose_parsable(self.request_extensions)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes

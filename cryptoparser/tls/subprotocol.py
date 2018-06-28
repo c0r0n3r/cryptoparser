@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import asn1crypto.ocsp
 import cryptography.hazmat.backends
 import cryptography.hazmat.primitives.asymmetric
 import cryptography.x509
@@ -16,7 +17,7 @@ from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorP
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
-from cryptoparser.tls.extension import TlsExtensions, TlsNamedCurve
+from cryptoparser.tls.extension import TlsExtensions, TlsNamedCurve, TlsCertificateStatusType
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory, SslCipherKindFactory
 
@@ -571,6 +572,46 @@ class TlsHandshakeCertificate(TlsHandshakeMessage):
     def compose(self):
         body_composer = ComposerBinary()
         body_composer.compose_parsable(self.certificate_chain)
+
+        header_composer = ComposerBinary()
+        header_composer.compose_numeric(body_composer.composed_length)
+
+        return header_composer.composed + body_composer.composed_bytes
+
+
+class TlsHandshakeCertificateStatus(TlsHandshakeMessage):
+    def __init__(self, status_type, status):
+        super(TlsHandshakeCertificateStatus, self).__init__()
+
+        self.status_type = status_type
+        self.status = status
+
+    @classmethod
+    def get_handshake_type(cls):
+        return TlsHandshakeType.CERTIFICATE_STATUS
+
+    @classmethod
+    def _parse(cls, parsable):
+        handshake_header_parser = cls._parse_handshake_header(parsable)
+
+        parser = ParserBinary(handshake_header_parser['payload'])
+
+        parser.parse_numeric('status_type', 1, TlsCertificateStatusType)
+        parser.parse_numeric('status_length', 3)
+        parser.parse_bytes('status', parser['status_length'])
+
+        return TlsHandshakeCertificateStatus(
+            parser['status_type'],
+            asn1crypto.ocsp.OCSPResponse.load(bytes(parser['status']))
+        ), handshake_header_parser.parsed_length
+
+    def compose(self):
+        body_composer = ComposerBinary()
+        body_composer.compose_numeric(self.status_type, 1)
+
+        status = self.status.dump()
+        body_composer.compose_numeric(self.status_type, 1, len(status))
+        body_composer.compose_bytes(status)
 
         header_composer = ComposerBinary()
         header_composer.compose_numeric(body_composer.composed_length)
