@@ -9,7 +9,7 @@ from cryptoparser.common.utils import get_leaf_classes
 
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 from cryptoparser.tls.subprotocol import SslMessageBase, SslMessageType, SslHandshakeClientHello
-from cryptoparser.tls.subprotocol import TlsHandshakeClientHello, TlsCipherSuiteVector, TlsContentType, TlsHandshakeType
+from cryptoparser.tls.subprotocol import TlsHandshakeClientHello, TlsAlertDescription, TlsCipherSuiteVector, TlsContentType, TlsHandshakeType
 from cryptoparser.tls.extension import TlsExtensionSupportedVersions, TlsExtensionServerName
 from cryptoparser.tls.extension import TlsExtensionSignatureAlgorithms, TlsSignatureAndHashAlgorithm
 from cryptoparser.tls.extension import TlsExtensionECPointFormats, TlsECPointFormat
@@ -126,6 +126,7 @@ class L7Client(object):
         self._host = host
         self._port = port
         self._socket = None
+        self._buffer = bytearray()
 
     def _do_handshake(self, tls_client, hello_message, protocol_version, last_handshake_message_type):
         try:
@@ -169,20 +170,17 @@ class L7Client(object):
             total_sent_byte_num = total_sent_byte_num + actual_sent_byte_num
 
     def receive(self, receivable_byte_num):
-        total_received_bytes = bytearray()
-
-        while len(total_received_bytes) < receivable_byte_num:
+        total_received_byte_num = 0
+        while total_received_byte_num < receivable_byte_num:
             try:
-                actual_received_bytes = self._socket.recv(min(receivable_byte_num - len(total_received_bytes), 1024))
+                actual_received_bytes = self._socket.recv(min(receivable_byte_num - total_received_byte_num, 1024))
+                self._buffer += actual_received_bytes
+                total_received_byte_num += len(actual_received_bytes)
             except socket.error as e:
                 actual_received_bytes = None
 
             if not actual_received_bytes:
-                raise NotEnoughData(receivable_byte_num - len(total_received_bytes))
-
-            total_received_bytes += actual_received_bytes
-
-        return total_received_bytes
+                raise NotEnoughData(receivable_byte_num - total_received_byte_num)
 
     @property
     def host(self):
@@ -191,6 +189,16 @@ class L7Client(object):
     @property
     def port(self):
         return self._port
+
+    @property
+    def buffer(self):
+        return bytearray(self._buffer)
+
+    def flush_buffer(self, byte_num=None):
+        if byte_num is None:
+            byte_num = len(self._buffer)
+
+        self._buffer = self._buffer[byte_num:]
 
     @classmethod
     def from_scheme(cls, scheme, host, port=None):
@@ -370,10 +378,10 @@ class TlsClientHandshake(TlsClient):
         self._l4_client.send(tls_record.compose())
 
         server_messages = {}
-        received_bytes = bytearray()
         while True:
             try:
-                record = TlsRecord.parse_mutable(received_bytes)
+                record = TlsRecord.parse_exact_size(self._l4_client.buffer)
+                self._l4_client.flush_buffer()
                 if record.content_type == TlsContentType.ALERT:
                     raise TlsAlert(record.messages[0].description)
                 elif record.content_type != TlsContentType.HANDSHAKE:
@@ -397,13 +405,12 @@ class TlsClientHandshake(TlsClient):
                 receivable_byte_num = e.bytes_needed
 
             try:
-                actual_received_bytes = self._l4_client.receive(receivable_byte_num)
+                self._l4_client.receive(receivable_byte_num)
             except NotEnoughData:
-                if received_bytes:
+                if self._l4_client.buffer:
                     raise NetworkError(NetworkErrorType.NO_CONNECTION)
                 else:
                     raise NetworkError(NetworkErrorType.NO_RESPONSE)
-            received_bytes += actual_received_bytes
 
 
 class SslError(ValueError):
@@ -432,10 +439,10 @@ class SslClientHandshake(TlsClient):
         self._l4_client.send(ssl_record.compose())
 
         server_messages = {}
-        received_bytes = bytearray()
         while True:
             try:
-                record = SslRecord.parse_mutable(received_bytes)
+                record = SslRecord.parse_exact_size(self._l4_client.buffer)
+                self._l4_client.flush_buffer()
                 message = record.messages[0]
                 #FIXME: error message is not parsed
                 if message.get_message_type() == SslMessageType.ERROR:
@@ -450,10 +457,19 @@ class SslClientHandshake(TlsClient):
                 receivable_byte_num = e.bytes_needed
 
             try:
-                actual_received_bytes = self._l4_client.receive(receivable_byte_num)
+                self._l4_client.receive(receivable_byte_num)
             except NotEnoughData:
-                if received_bytes:
-                    raise NetworkError(NetworkErrorType.NO_CONNECTION)
+                if self._l4_client.buffer:
+                    try:
+                        tls_record = TlsRecord.parse_exact_size(self._l4_client.buffer)
+                        self._l4_client.flush_buffer()
+                    except ValueError:
+                        raise NetworkError(NetworkErrorType.NO_CONNECTION)
+                    else:
+                        if (tls_record.content_type == TlsContentType.ALERT and
+                            tls_record.messages[0].description == TlsAlertDescription.PROTOCOL_VERSION):
+                            raise NetworkError(NetworkErrorType.NO_RESPONSE)
+                        else:
+                            raise NetworkError(NetworkErrorType.NO_CONNECTION)
                 else:
                     raise NetworkError(NetworkErrorType.NO_RESPONSE)
-            received_bytes += actual_received_bytes
