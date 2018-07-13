@@ -53,7 +53,9 @@ class TlsRecord(RecordBase):
         parser.parse_numeric('record_length', 2)
 
         if parser.parsed_length + parser['record_length'] > len(parsable):
-            raise NotEnoughData(parser['record_length'])
+            print('fasz', parser['record_length'], len(parsable))
+            print('fasz', parser.parsed_length + parser['record_length'] - len(parsable))
+            raise NotEnoughData(parser.parsed_length + parser['record_length'] - len(parsable))
 
         header_size = parser.parsed_length
 

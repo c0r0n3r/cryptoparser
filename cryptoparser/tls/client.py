@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import errno
+import time
 
 from cryptoparser.common.algorithm import Authentication, KeyExchange
 from cryptoparser.common.exception import NotEnoughData, NetworkError, NetworkErrorType
@@ -157,17 +159,25 @@ class L7Client(object):
             total_sent_byte_num = total_sent_byte_num + actual_sent_byte_num
 
     def receive(self, receivable_byte_num):
+        retry_num = 0
         total_received_byte_num = 0
         while total_received_byte_num < receivable_byte_num:
             try:
-                actual_received_bytes = self._socket.recv(min(receivable_byte_num - total_received_byte_num, 1024))
+                #print(min(receivable_byte_num - total_received_byte_num, 1024) if receivable_byte_num > 1 else 1024)
+                actual_received_bytes = self._socket.recv(min(receivable_byte_num - total_received_byte_num, 1024) if receivable_byte_num > 2 else 1024 * 16)
+                print(len(actual_received_bytes))
                 self._buffer += actual_received_bytes
                 total_received_byte_num += len(actual_received_bytes)
             except socket.error as e:
+                retry_num += 1
+                if e.errno == errno.EAGAIN and retry_num < 1000:
+                    time.sleep(0.0001)
+                    continue
                 actual_received_bytes = None
 
             if not actual_received_bytes:
                 raise NotEnoughData(receivable_byte_num - total_received_byte_num)
+        #print('exit')
 
     @property
     def host(self):
@@ -227,6 +237,7 @@ class L7ClientTls(L7Client):
     def _connect(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((self._host, self._port))
+        sock.setblocking(0)
         return sock
 
 
@@ -356,7 +367,7 @@ class TlsClientHandshake(TlsClient):
         self,
         hello_message=None,
         protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
-        last_handshake_message_type=TlsHandshakeType.SERVER_HELLO_DONE
+        last_handshake_message_type=TlsHandshakeType.SERVER_HELLO
     ):
         if hello_message is None:
             hello_message = TlsHandshakeClientHelloAnyAlgorithm(self._host)
@@ -367,8 +378,9 @@ class TlsClientHandshake(TlsClient):
         server_messages = {}
         while True:
             try:
-                record = TlsRecord.parse_exact_size(self._l4_client.buffer)
-                self._l4_client.flush_buffer()
+                buffer_len = len(self._l4_client.buffer)
+                record, unparsed_bytes = TlsRecord.parse_immutable(self._l4_client.buffer)
+                self._l4_client.flush_buffer(buffer_len - len(unparsed_bytes))
                 if record.content_type == TlsContentType.ALERT:
                     raise TlsAlert(record.messages[0].description)
                 elif record.content_type != TlsContentType.HANDSHAKE:
@@ -379,7 +391,10 @@ class TlsClientHandshake(TlsClient):
                         raise TlsAlert(TlsAlertDescription.UNEXPECTED_MESSAGE)
 
                     server_messages[handshake_message.get_handshake_type()] = handshake_message
+                    #print(last_handshake_message_type, handshake_message.get_handshake_type())
                     if handshake_message.get_handshake_type() == last_handshake_message_type:
+                        #print('RETRUN')
+                        self._l4_client.flush_buffer()
                         return server_messages
 
                 receivable_byte_num = 0
@@ -418,8 +433,9 @@ class SslClientHandshake(TlsClient):
         server_messages = {}
         while True:
             try:
-                record = SslRecord.parse_exact_size(self._l4_client.buffer)
-                self._l4_client.flush_buffer()
+                buffer_len = len(self._l4_client.buffer)
+                record, unparsed_bytes = SslRecord.parse_immutable(self._l4_client.buffer)
+                self._l4_client.flush_buffer(buffer_len - len(unparsed_bytes))
                 message = record.messages[0]
                 #FIXME: error message is not parsed
                 if message.get_message_type() == SslMessageType.ERROR:
