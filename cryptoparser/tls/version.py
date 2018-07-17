@@ -3,6 +3,7 @@
 
 import abc
 import enum
+import functools
 
 import six
 
@@ -20,6 +21,7 @@ class TlsVersion(enum.IntEnum):
 
 
 @six.add_metaclass(abc.ABCMeta)
+@functools.total_ordering
 class TlsProtocolVersionBase(JSONSerializable, ParsableBase):
     _SIZE = 2
 
@@ -134,11 +136,9 @@ class TlsProtocolVersionFinal(TlsProtocolVersionBase):
     def minor(self, value):
         # type: (TlsVersion) -> None
         try:
-            TlsVersion(value)
+            self._minor = TlsVersion(value)
         except ValueError as e:
             raise InvalidValue(e.args[0], TlsProtocolVersionFinal)
-
-        self._minor = value
 
 
 class TlsProtocolVersionDraft(TlsProtocolVersionBase):

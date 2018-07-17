@@ -11,8 +11,8 @@ from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorP
 from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
-from cryptoparser.tls.extension import TlsExtensions
-from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
+from cryptoparser.tls.extension import TlsExtensions, TlsNamedCurve
+from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, TlsProtocolVersionDraft, SslVersion
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory, SslCipherKindFactory
 
 
@@ -246,6 +246,7 @@ class TlsHandshakeType(enum.IntEnum):
     SERVER_HELLO = 0x02
     HELLO_VERIFY_REQUEST = 0x03
     NEW_SESSION_TICKET = 0x04
+    HELLO_RETRY_REQUEST = 0x06
     CERTIFICATE = 0x0b
     SERVER_KEY_EXCHANGE = 0x0c
     CERTIFICATE_REQUEST = 0x0d
@@ -376,7 +377,9 @@ class TlsHandshakeHello(TlsHandshakeMessage):
 
         parser.parse_parsable('protocol_version', TlsProtocolVersionBase)
         parser.parse_parsable('random', TlsHandshakeHelloRandom)
-        parser.parse_parsable('session_id', TlsSessionIdVector)
+        protocol_version = parser['protocol_version']
+        if not (type(protocol_version) == TlsProtocolVersionDraft and protocol_version.minor < 22):
+            parser.parse_parsable('session_id', TlsSessionIdVector)
 
         return parser
 
@@ -533,15 +536,18 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
         parser = cls._parse_hello_header(handshake_header_parser['payload'])
 
         parser.parse_parsable('cipher_suite', TlsCipherSuiteFactory)
-        parser.parse_numeric('compression_method', 1)
+
+        protocol_version = parser['protocol_version']
+        if not (type(protocol_version) == TlsProtocolVersionDraft and protocol_version.minor < 22):
+            parser.parse_numeric('compression_method', 1)
 
         extension_parser = cls._parse_extensions(handshake_header_parser, parser)
 
         return TlsHandshakeServerHello(
             protocol_version=parser['protocol_version'],
             random_bytes=parser['random'],
-            session_id=parser['session_id'],
-            compression_method=parser['compression_method'],
+            session_id=parser['session_id'] if hasattr(parser, 'session_id') else TlsSessionIdVector([]),
+            compression_method=parser['compression_method'] if hasattr(parser, 'compression_method') else TlsCompressionMethod.NULL,
             cipher_suite=parser['cipher_suite'],
             extensions=parser['extensions'] if extension_parser else TlsExtensions([]),
         ), handshake_header_parser.parsed_length
@@ -682,6 +688,48 @@ class TlsHandshakeServerKeyExchange(TlsHandshakeMessage):
         # type: () -> bytes
 
         return self._compose_header(len(self.param_bytes)) + self.param_bytes
+
+
+class TlsHandshakeHelloRetryRequest(TlsHandshakeHello):
+    def __init__(self, selected_group, protocol_version):
+        super(TlsHandshakeHelloRetryRequest, self).__init__()
+
+        self.protocol_version = protocol_version
+        self.selected_group = TlsNamedCurve(selected_group)
+
+    @classmethod
+    def get_handshake_type(cls):
+        return TlsHandshakeType.HELLO_RETRY_REQUEST
+
+    @classmethod
+    def _parse(cls, parsable_bytes):
+        # type: (bytes) -> Tuple[TlsHandshakeHelloRetryRequest, int]
+
+        handshake_header_parser = cls._parse_handshake_header(parsable_bytes)
+
+        parser = cls._parse_hello_header(handshake_header_parser['payload'])
+
+        parser = Parser(handshake_header_parser['payload'])
+        parser.parse_parsable('protocol_version', TlsProtocolVersionBase)
+        parser.parse_numeric('selected_group', 2, TlsNamedCurve)
+
+        return TlsHandshakeHelloRetryRequest(
+            parser['selected_group'],
+            parser['protocol_version']
+        ), handshake_header_parser.parsed_byte_num + parser.parsed_byte_num
+
+    def compose(self):
+        # type: () -> bytes
+        payload_composer = Composer()
+
+        payload_composer.compose_parsable(self.protocol_version)
+        payload_composer.compose_numeric(self.selected_group, 2)
+
+        extension_bytes = self._compose_extensions()
+
+        header_bytes = self._compose_header(payload_composer.composed_byte_num + len(extension_bytes))
+
+        return extension_bytes
 
 
 class SslMessageBase(ParsableBase):
@@ -865,6 +913,7 @@ class TlsHandshakeMessageVariant(VariantParsable):
         TlsHandshakeType.CERTIFICATE: TlsHandshakeCertificate,
         TlsHandshakeType.SERVER_KEY_EXCHANGE: TlsHandshakeServerKeyExchange,
         TlsHandshakeType.SERVER_HELLO_DONE: TlsHandshakeServerHelloDone,
+        TlsHandshakeType.HELLO_RETRY_REQUEST: TlsHandshakeHelloRetryRequest,
     }
 
     @classmethod
