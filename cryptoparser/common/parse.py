@@ -67,6 +67,12 @@ class ParserBinary(object):
     def __getitem__(self, key):
         return self._parsed_values[key]
 
+    def __getattr__(self, key):
+        if key in self._parsed_values:
+            return self._parsed_values[key]
+        
+        raise AttributeError
+
     @property
     def parsed_length(self):
         return self._parsed_length

@@ -112,6 +112,12 @@ class Authentication(enum.Enum):
         anonymous=False,
         exportable=True,
     )
+    EDDSA = AuthenticationParams(
+        name='EdDSA',
+        anonymous=False,
+        exportable=True,
+    )
+
 
 
 class BlockCipher(enum.Enum):
@@ -299,6 +305,14 @@ class MAC(enum.Enum):
     SHA512 = MACParams(
         name='SHA512',
         digest_size=512
+    )
+    ED25519PH = MACParams(
+        name='Ed25519ph',
+        digest_size=255
+    )
+    ED448PH = MACParams(
+        name='Ed25519ph',
+        digest_size=448
     )
 
 

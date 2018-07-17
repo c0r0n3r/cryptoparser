@@ -11,7 +11,9 @@ from cryptoparser.common.base import JSONSerializable
 from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.base import ThreeByteEnumParsable, ThreeByteEnumComposer
 
-CipherSuiteParams = collections.namedtuple(
+from cryptoparser.tls.version import TlsProtocolVersionFinal, TlsProtocolVersionDraft, TlsVersion
+
+CipherSuiteParamsBase = collections.namedtuple(
     'CipherSuiteParams',
     [
         'code',
@@ -22,6 +24,26 @@ CipherSuiteParams = collections.namedtuple(
         'mac',
     ]
 )
+
+
+class CipherSuiteParams(CipherSuiteParamsBase):
+    @property
+    def min_version(self):
+        return (
+            TlsProtocolVersionDraft(1)
+            if (self.code & 0xff00) == 0x1300
+            else TlsProtocolVersionFinal(TlsVersion.TLS1_0)
+        )
+
+    def dtls_ok(self):
+        return (
+            self.block_cipher not in [
+                BlockCipherMode.RC2_40,
+                BlockCipherMode.RC2_128,
+                BlockCipherMode.RC2_128_EXPORT40,
+            ] or
+            self.block_cipher_mode == BlockCipherMode.CBC
+        )
 
 
 class TlsCipherSuiteFactory(TwoByteEnumParsable):
@@ -2649,6 +2671,46 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
         authentication=Authentication.PSK,
         block_cipher=BlockCipher.CHACHA20,
         block_cipher_mode=BlockCipherMode.POLY1305,
+        mac=MAC.SHA256,
+    )
+    TLS_AES_128_GCM_SHA256 = CipherSuiteParams(
+        code=0x1301,
+        key_exchange=None,
+        authentication=None,
+        block_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.GCM,
+        mac=MAC.SHA256,
+    )
+    TLS_AES_256_GCM_SHA384 = CipherSuiteParams(
+        code=0x1302,
+        key_exchange=None,
+        authentication=None,
+        block_cipher=BlockCipher.AES_256,
+        block_cipher_mode=BlockCipherMode.GCM,
+        mac=MAC.SHA384,
+    )
+    TLS_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
+        code=0x1303,
+        key_exchange=None,
+        authentication=None,
+        block_cipher=BlockCipher.CHACHA20,
+        block_cipher_mode=BlockCipherMode.POLY1305,
+        mac=MAC.SHA256,
+    )
+    TLS_AES_128_CCM_SHA256 = CipherSuiteParams(
+        code=0x1304,
+        key_exchange=None,
+        authentication=None,
+        block_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.CCM,
+        mac=MAC.SHA256,
+    )
+    TLS_AES_128_CCM_8_SHA256 = CipherSuiteParams(
+        code=0x1305,
+        key_exchange=None,
+        authentication=None,
+        block_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.CCM_8,
         mac=MAC.SHA256,
     )
     SSL_RSA_OLDFIPS_WITH_DES_CBC_SHA = CipherSuiteParams(

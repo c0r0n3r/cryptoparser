@@ -78,6 +78,14 @@ class TestTlsProtocolVersion(unittest.TestCase):
             TlsProtocolVersionFinal(TlsVersion.TLS1_2),
             TlsProtocolVersionDraft(0)
         )
+        self.assertGreater(
+            TlsProtocolVersionDraft(0),
+            TlsProtocolVersionFinal(TlsVersion.TLS1_2)
+        )
+        self.assertGreater(
+            TlsProtocolVersionFinal(TlsVersion.TLS1_3),
+            TlsProtocolVersionFinal(TlsVersion.TLS1_2)
+        )
 
         self.assertLess(
             TlsProtocolVersionDraft(255),
