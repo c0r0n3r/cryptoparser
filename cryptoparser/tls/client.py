@@ -136,7 +136,7 @@ class L7Client(object):
 
         return server_messages
 
-    def do_tls_handshake(self, hello_message, protocol_version, last_handshake_message_type=TlsHandshakeType.SERVER_HELLO):
+    def do_tls_handshake(self, hello_message=None, protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0), last_handshake_message_type=TlsHandshakeType.SERVER_HELLO_DONE):
         self._socket = self._connect()
         tls_client = TlsClientHandshake(self)
         server_messages = tls_client.do_handshake(hello_message, protocol_version, last_handshake_message_type)
@@ -378,8 +378,9 @@ class TlsClientHandshake(TlsClient):
                     if handshake_message.get_handshake_type() in server_messages:
                         raise TlsAlert(TlsAlertDescription.UNEXPECTED_MESSAGE)
 
-                    server_messages[handshake_message.get_handshake_type()] = handshake_message
-                    if handshake_message.get_handshake_type() == last_handshake_message_type:
+                    handshake_type = handshake_message.get_handshake_type()
+                    server_messages[handshake_type] = handshake_message
+                    if handshake_type == last_handshake_message_type:
                         return server_messages
 
                 receivable_byte_num = 0
@@ -438,13 +439,19 @@ class SslClientHandshake(TlsClient):
             except NotEnoughData:
                 if self._l4_client.buffer:
                     try:
+                        print(self._l4_client.buffer)
                         tls_record = TlsRecord.parse_exact_size(self._l4_client.buffer)
                         self._l4_client.flush_buffer()
-                    except ValueError:
+                    except ValueError as e:
                         raise NetworkError(NetworkErrorType.NO_CONNECTION)
                     else:
+                        print( tls_record.messages[0].description)
                         if (tls_record.content_type == TlsContentType.ALERT and
-                            tls_record.messages[0].description == TlsAlertDescription.PROTOCOL_VERSION):
+                            tls_record.messages[0].description in [
+                                TlsAlertDescription.PROTOCOL_VERSION,
+                                TlsAlertDescription.INTERNAL_ERROR,
+                            ]
+                        ):
                             raise NetworkError(NetworkErrorType.NO_RESPONSE)
                         else:
                             raise NetworkError(NetworkErrorType.NO_CONNECTION)
