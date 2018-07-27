@@ -61,7 +61,7 @@ class TlsProtocolVersionBase(JSONSerializable, ParsableBase):
         return composer.composed_bytes
 
     def __eq__(self, other):
-        return self.major == other.major and self.minor == other.minor
+        return isinstance(other, type(self)) and self.major == other.major and self.minor == other.minor
 
     def __lt__(self, other):
         if self.major == other.major:
