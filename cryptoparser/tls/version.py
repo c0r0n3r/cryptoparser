@@ -69,6 +69,13 @@ class TlsProtocolVersionBase(JSONSerializable, ParsableBase):
 
         return isinstance(self, TlsProtocolVersionDraft) == (other.minor == TlsVersion.TLS1_3)
 
+    def __hash__(self):
+        return hash(str(self))
+
+    @abc.abstractmethod
+    def __str__(self):
+       raise NotImplementedError() 
+
     @property
     def major(self):
         return self._major
@@ -94,6 +101,20 @@ class TlsProtocolVersionFinal(TlsProtocolVersionBase):
     def __init__(self, tls_version):
         # type: (TlsVersion) -> None
         super(TlsProtocolVersionFinal, self).__init__(self._MAJOR, tls_version)
+
+    def __repr__(self):
+        if self.minor == TlsVersion.SSL3:
+            return 'ssl3'
+        elif self.minor == TlsVersion.TLS1_0:
+            return 'tls1'
+
+        return 'tls1_{}'.format(self.minor - 1)
+
+    def __str__(self):
+        if self.minor == TlsVersion.SSL3:
+            return 'SSL 3.0'
+
+        return 'TLS 1.{}'.format(self.minor - 1)
 
     # pylint: disable=no-member
     @TlsProtocolVersionBase.major.setter
@@ -122,6 +143,12 @@ class TlsProtocolVersionDraft(TlsProtocolVersionBase):
     def __init__(self, draft_number):
         # type: (int) -> None
         super(TlsProtocolVersionDraft, self).__init__(self._MAJOR, draft_number)
+
+    def __repr__(self):
+        return 'tls1_3_draft{}'.format(self.minor - 1)
+
+    def __str__(self):
+        return 'TLS 1.3 Draft {}'.format(self.minor - 1)
 
     # pylint: disable=no-member
     @TlsProtocolVersionBase.major.setter
