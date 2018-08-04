@@ -153,6 +153,15 @@ class SslProtocolVersion(JSONSerializable, ParsableBase):
     def __eq__(self, other):
         return isinstance(other, SslProtocolVersion)
 
+    def __hash__(self):
+        return hash(str(self))
+
+    def __repr__(self):
+        return 'ssl2'
+
+    def __str__(self):
+        return 'SSL 2.0'
+
     @classmethod
     def _parse(cls, parsable):
         if len(parsable) < cls._SIZE:
