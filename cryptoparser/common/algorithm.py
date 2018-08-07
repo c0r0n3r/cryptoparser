@@ -8,7 +8,7 @@ from cryptoparser.common.base import JSONSerializable
 
 KeyExchangeParams = collections.namedtuple('KeyExchangeParams', ['name', 'pfs', ])
 AuthenticationParams = collections.namedtuple('AuthenticationParams', ['name', 'anonymous', 'exportable', ])
-BlockCipherParams = collections.namedtuple('BlockCipherParams', ['size', 'exportable', ])
+BlockCipherParams = collections.namedtuple('BlockCipherParams', ['key_size', 'block_size', 'exportable', ])
 BlockCipherModeParams = collections.namedtuple('BlockCipherModeParams', ['aead', ])
 MACParams = collections.namedtuple('MACParams', ['size', ])
 CipherSuiteParams = collections.namedtuple('TlsCipherSuiteParams', ['key_exchange', ])
