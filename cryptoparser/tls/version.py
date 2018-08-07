@@ -72,6 +72,9 @@ class TlsProtocolVersionBase(JSONSerializable, ParsableBase):
     def __hash__(self):
         return hash(str(self))
 
+    def as_json(self):
+        return repr(self)
+
     @abc.abstractmethod
     def __str__(self):
        raise NotImplementedError() 

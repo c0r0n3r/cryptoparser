@@ -128,21 +128,32 @@ class L7Client(object):
         self._socket = None
         self._buffer = bytearray()
 
-    def do_ssl_handshake(self, hello_message, last_handshake_message_type=SslMessageType.SERVER_HELLO):
-        self._socket = self._connect()
-        tls_client = SslClientHandshake(self)
-        server_messages = tls_client.do_handshake(hello_message, SslVersion.SSL2, last_handshake_message_type)
-        self._close()
+    def _do_handshake(self, tls_client, hello_message, protocol_version, last_handshake_message_type=SslMessageType.SERVER_HELLO):
+        try:
+            self._socket = self._connect()
+        except ConnectionRefusedError:
+            raise NetworkError(NetworkErrorType.NO_CONNECTION)
 
-        return server_messages
-
-    def do_tls_handshake(self, hello_message, protocol_version, last_handshake_message_type=TlsHandshakeType.SERVER_HELLO):
-        self._socket = self._connect()
-        tls_client = TlsClientHandshake(self)
         server_messages = tls_client.do_handshake(hello_message, protocol_version, last_handshake_message_type)
         self._close()
 
         return server_messages
+
+    def do_ssl_handshake(self, hello_message, last_handshake_message_type=SslMessageType.SERVER_HELLO):
+        return self._do_handshake(
+            SslClientHandshake(self),
+            hello_message,
+            SslVersion.SSL2,
+            last_handshake_message_type
+        )
+
+    def do_tls_handshake(self, hello_message, protocol_version, last_handshake_message_type=TlsHandshakeType.SERVER_HELLO):
+        return self._do_handshake(
+            TlsClientHandshake(self),
+            hello_message,
+            protocol_version,
+            last_handshake_message_type
+        )
 
     def _close(self):
         self._socket.close()
