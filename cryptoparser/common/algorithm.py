@@ -117,87 +117,116 @@ class Authentication(enum.Enum):
 
 class BlockCipher(enum.Enum):
     AES_128 = BlockCipherParams(
-        size=16,
+        key_size=128,
+        block_size=128,
+        exportable=True,
+    )
+    AES_192 = BlockCipherParams(
+        key_size=192,
+        block_size=128,
         exportable=True,
     )
     AES_256 = BlockCipherParams(
-        size=16,
+        key_size=256,
+        block_size=128,
         exportable=True,
     )
     ARIA_128 = BlockCipherParams(
-        size=16,
+        key_size=128,
+        block_size=128,
         exportable=True,
     )
     ARIA_192 = BlockCipherParams(
-        size=16,
+        key_size=192,
+        block_size=128,
         exportable=True,
     )
     ARIA_256 = BlockCipherParams(
-        size=16,
+        key_size=256,
+        block_size=128,
         exportable=True,
     )
     CAMELLIA_128 = BlockCipherParams(
-        size=16,
+        key_size=128,
+        block_size=128,
         exportable=True,
     )
     CAMELLIA_256 = BlockCipherParams(
-        size=16,
+        key_size=256,
+        block_size=128,
         exportable=True,
     )
     CHACHA20 = BlockCipherParams(
-        size=64,
+        key_size=64, # min
+        # key_size_max=128,
+        block_size=None,
         exportable=True,
     )
     DES = BlockCipherParams(
-        size=8,
+        key_size=56,
+        block_size=64,
         exportable=True,
     )
     DES40 = BlockCipherParams(
-        size=8,
+        key_size=40,
+        block_size=64,
         exportable=True,
     )
     IDEA = BlockCipherParams(
-        size=8,
+        key_size=64,
+        block_size=64,
         exportable=True,
     )
     IDEA_128 = BlockCipherParams(
-        size=16,
+        key_size=128,
+        block_size=64,
         exportable=True,
     )
     RC2_40 = BlockCipherParams(
-        size=8,
+        key_size=40,
+        block_size=64,
         exportable=True,
     )
     RC2_128 = BlockCipherParams(
-        size=8,
+        key_size=128,
+        block_size=64,
         exportable=True,
     )
     RC2_128_EXPORT40 = BlockCipherParams(
-        size=8,
+        key_size=40,
+        block_size=64,
         exportable=True,
     )
     RC4_40 = BlockCipherParams(
-        size=None,
+        key_size=40,
+        block_size=None,
         exportable=True,
     )
     RC4_128 = BlockCipherParams(
-        size=None,
+        key_size=128,
+        block_size=None,
         exportable=True,
     )
     RC4_128_EXPORT40 = BlockCipherParams(
-        size=None,
+        key_size=40,
+        block_size=None,
         exportable=True,
     )
     SEED = BlockCipherParams(
-        size=16,
+        key_size=128,
+        block_size=128,
         exportable=True,
     )
     TRIPLE_DES = BlockCipherParams(
-        size=8,
+        key_size=128, # min
+        # key_size_max=192,
+        block_size=64,
         exportable=True,
     )
     TRIPLE_DES_EDE = BlockCipherParams(
-        size=8,
+        key_size=128, # min
+        # key_size_max=192,
+        block_size=64,
         exportable=True,
     )
 
@@ -225,22 +254,22 @@ class BlockCipherMode(enum.Enum):
 
 class MAC(enum.Enum):
     MD5 = MACParams(
-        size=16
+        size=64
     )
     SHA = MACParams(
-        size=20
+        size=160
     )
     SHA224 = MACParams(
-        size=28
+        size=224
     )
     SHA256 = MACParams(
-        size=32
+        size=256
     )
     SHA384 = MACParams(
-        size=48
+        size=384
     )
     SHA512 = MACParams(
-        size=64
+        size=512
     )
 
     def __init__(self, params):
