@@ -83,6 +83,11 @@ class Authentication(enum.Enum):
         anonymous=False,
         exportable=True,
     )
+    EDDSA = AuthenticationParams(
+        name='EdDSA',
+        anonymous=False,
+        exportable=False,
+    )
     KRB5 = AuthenticationParams(
         name='KRB5',
         anonymous=False,
@@ -146,6 +151,12 @@ class BlockCipher(enum.Enum):
         block_size=128,
         exportable=True,
     )
+    BLOWFISH = BlockCipherParams(
+        key_size=32, # min
+        # key_size_max=448,
+        block_size=64,
+        exportable=True,
+    )
     CAMELLIA_128 = BlockCipherParams(
         key_size=128,
         block_size=128,
@@ -153,6 +164,18 @@ class BlockCipher(enum.Enum):
     )
     CAMELLIA_256 = BlockCipherParams(
         key_size=256,
+        block_size=128,
+        exportable=True,
+    )
+    CAST_128 = BlockCipherParams(
+        key_size=40, # min
+        # key_size_max=128,
+        block_size=64,
+        exportable=True,
+    )
+    CAST_256 = BlockCipherParams(
+        key_size=128, # min
+        # key_size_max=256,
         block_size=128,
         exportable=True,
     )
@@ -212,6 +235,11 @@ class BlockCipher(enum.Enum):
         block_size=None,
         exportable=True,
     )
+    RC4_256 = BlockCipherParams(
+        key_size=256,
+        block_size=None,
+        exportable=True,
+    )
     SEED = BlockCipherParams(
         key_size=128,
         block_size=128,
@@ -241,6 +269,9 @@ class BlockCipherMode(enum.Enum):
     CCM_8 = BlockCipherModeParams(
         aead=True
     )
+    CTR = BlockCipherModeParams(
+        aead=False
+    )
     GCM = BlockCipherModeParams(
         aead=True
     )
@@ -256,19 +287,25 @@ class MAC(enum.Enum):
     MD5 = MACParams(
         size=64
     )
-    SHA = MACParams(
+    UMAC_64 = MACParams(
+        size=64
+    )
+    UMAC_128 = MACParams(
+        size=128
+    )
+    SHA1 = MACParams(
         size=160
     )
-    SHA224 = MACParams(
+    SHA2_224 = MACParams(
         size=224
     )
-    SHA256 = MACParams(
+    SHA2_256 = MACParams(
         size=256
     )
-    SHA384 = MACParams(
+    SHA2_384 = MACParams(
         size=384
     )
-    SHA512 = MACParams(
+    SHA2_512 = MACParams(
         size=512
     )
 
