@@ -397,6 +397,31 @@ class ThreeByteEnumComposer(NByteEnumComposer):
         return 3
 
 
-class StringComposer(object):
-    def compose(self):
-        return bytearray(self.value)
+class StringEnumParsable(ParsableBase):
+    @classmethod
+    def _parse(cls, parsable):
+        enum_items = [
+            enum_item
+            for enum_item in cls.get_enum_class()
+            if len(enum_item.value) <= len(parsable)
+        ]
+        enum_items.sort(key=lambda color: len(color.value.code), reverse=True)
+
+        for enum_item in enum_items:
+            try:
+                value = str(parsable[:len(enum_item.value.code)], 'ascii')
+                if enum_item.value.code == value:
+                    return enum_item, len(enum_item.value.code)
+            except UnicodeDecodeError:
+                pass
+        else:
+            raise InvalidValue(parsable, cls, 'code')
+
+    @abc.abstractmethod
+    def get_enum_class(cls):
+        raise NotImplementedError()
+
+
+class StringEnum(object):
+    def __str__(self):
+        return self.value.code
