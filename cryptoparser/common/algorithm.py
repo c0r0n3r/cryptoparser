@@ -158,7 +158,7 @@ class BlockCipher(enum.Enum):
     )
     BLOWFISH = BlockCipherParams(
         name='BLOWFISH',
-        key_size=32, # min
+        key_size=32,  # min
         # key_size_max=448,
         block_size=64,
         exportable=True,
@@ -177,14 +177,14 @@ class BlockCipher(enum.Enum):
     )
     CAST_128 = BlockCipherParams(
         name='CAST_128',
-        key_size=40, # min
+        key_size=40,  # min
         # key_size_max=128,
         block_size=64,
         exportable=True,
     )
     CAST_256 = BlockCipherParams(
         name='CAST_256',
-        key_size=128, # min
+        key_size=128,  # min
         # key_size_max=256,
         block_size=128,
         exportable=True,
