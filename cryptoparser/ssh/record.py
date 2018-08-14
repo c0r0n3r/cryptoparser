@@ -7,7 +7,6 @@ import cryptoparser.common.utils as utils
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
-
 from cryptoparser.ssh.subprotocol import SshMessageBase
 
 

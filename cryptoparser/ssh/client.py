@@ -8,7 +8,7 @@ from cryptoparser.common.exception import NotEnoughData, NetworkError, NetworkEr
 from cryptoparser.common.parse import ParserBinary, ParserText
 
 from cryptoparser.ssh.record import SshRecord
-from cryptoparser.ssh.subprotocol import SshProtocolMessage, SshKeyExchangeInit
+from cryptoparser.ssh.subprotocol import SshMessageCode, SshProtocolMessage, SshKeyExchangeInit
 from cryptoparser.ssh.subprotocol import SshKexAlgorithms, SshEncryptionAlgorithms, SshHostKeyAlgorithms, SshMacAlgorithms, SshCompressionAlgorithms
 from cryptoparser.ssh.version import SshProtocolVersion, SshVersion
 
@@ -60,6 +60,34 @@ class ClientSsh(L7ClientTcp):
 L7ClientTcp.register(ClientSsh)
 
 
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import ec, dh
+
+def get_ecdh_public_key():
+    # Generate a private key for use in the exchange.
+    private_key = ec.generate_private_key(
+        ec.SECP521R1(), default_backend()
+    )
+    return private_key.public_key()
+
+def get_dh_public_key():
+    parameters = dh.generate_parameters(generator=2, key_size=1024,
+                                        backend=default_backend())
+    # Generate a private key for use in the exchange.
+    private_key = parameters.generate_private_key()
+    return private_key.public_key()
+
+from cryptoparser.ssh.subprotocol import SshECDHKeyExchangeInit
+
+
+class SshDisconnect(ValueError):
+    def __init__(self, reason):
+        super(SshDisconnect, self).__init__()
+
+        self.reason = reason
+
+
 class SshClientHandshake(object):
     def __init__(self, l4_client):
         self._l4_client = l4_client
@@ -90,13 +118,15 @@ class SshClientHandshake(object):
             return server_messages
 
         self._l4_client.send(SshRecord(key_exchange_init_message).compose())
+        self._l4_client.send(SshRecord(SshECDHKeyExchangeInit(get_ecdh_public_key())).compose())
 
         received_bytes = parser._parsable[parser._parsed_length:]
         while True:
             try:
-                parser = ParserBinary(received_bytes)
                 record = SshRecord.parse_exact_size(self._l4_client.buffer)
                 self._l4_client.flush_buffer()
+                if record.packet.get_message_code() == SshMessageCode.DISCONNECT:
+                    raise SshDisconnect(record.packet.reason)
 
                 server_messages[type(record.packet)] = record.packet
                 if type(record.packet) == last_message_type:

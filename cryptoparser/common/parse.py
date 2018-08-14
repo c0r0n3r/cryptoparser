@@ -213,29 +213,36 @@ class ParserBinary(ParserBase):
         2: '!H',
         3: '!I',
         4: '!I',
+        8: '!Q',
     }
+
+    def _parse_numeric(self, item_offset, item_size, item_numeric_class=int):
+        item_bytes = self._parsable[item_offset:item_offset + item_size]
+        if item_size == 3:
+            item_bytes = b'\x00' + item_bytes
+
+        item = struct.unpack(
+            self._INT_FORMATER_BY_SIZE[item_size],
+            item_bytes
+        )[0]
+        try:
+            value = item_numeric_class(item)
+        except ValueError:
+            raise InvalidValue(item, item_numeric_class)
+
+        return value
 
     def _parse_numeric_array(self, name, item_num, item_size, item_numeric_class):
         if self._parsed_length + (item_num * item_size) > len(self._parsable):
             raise NotEnoughData(bytes_needed=(item_num * item_size) - self.unparsed_length)
 
-        if item_size in self._INT_FORMATER_BY_SIZE:
-            value = list()
-            for item_offset in range(self._parsed_length, self._parsed_length + (item_num * item_size), item_size):
-                item_bytes = self._parsable[item_offset:item_offset + item_size]
-                if item_size == 3:
-                    item_bytes = b'\x00' + item_bytes
-
-                item = struct.unpack(
-                    self._INT_FORMATER_BY_SIZE[item_size],
-                    item_bytes
-                )[0]
-                try:
-                    value.append(item_numeric_class(item))
-                except ValueError:
-                    raise InvalidValue(item, item_numeric_class)
-        else:
+        if item_size not in self._INT_FORMATER_BY_SIZE:
             raise NotImplementedError()
+
+        value = [
+            self._parse_numeric(item_offset, item_size, item_numeric_class)
+            for item_offset in range(self._parsed_length, self._parsed_length + (item_num * item_size), item_size)
+        ]
 
         self._parsed_length += item_num * item_size
         self._parsed_values[name] = value
@@ -247,13 +254,24 @@ class ParserBinary(ParserBase):
     def parse_numeric_array(self, name, item_num, item_size, numeric_class=int):
         self._parse_numeric_array(name, item_num, item_size, numeric_class)
 
-    def parse_bytes(self, name, size):
-        if self.unparsed_length < size:
-            raise NotEnoughData(bytes_needed=self._parsed_length + size)
+    def _parse_bytes(self, item_offset, item_size):
+        if len(self._parsable) - item_offset < item_size:
+            raise NotEnoughData(bytes_needed=item_size - (len(self._parsable) - item_offset))
 
-        self._parsed_values[name] = self._parsable[self._parsed_length: self._parsed_length + size]
+        return self._parsable[item_offset: item_offset + item_size]
+
+    def parse_bytes(self, name, size):
+        value = self._parse_bytes(item_offset=self._parsed_length, item_size=size)
+
+        self._parsed_values[name] = value
         self._parsed_length += size
 
+    def parse_string(self, name, items_size, encoding='utf-8'):
+        item_size = self._parse_numeric(item_offset=self._parsed_length, item_size=items_size)
+        value = self._parse_bytes(self._parsed_length + items_size, item_size)
+
+        self._parsed_values[name] = str(value, encoding)
+        self._parsed_length += items_size + item_size
 
     def _parse_parsable_derived(self, item_offset, item_classes, fallback_class=None):
         for item_class in item_classes:
@@ -389,6 +407,7 @@ class ComposerBinary(ComposerBase):
         2: '!H',
         3: '!I',
         4: '!I',
+        8: '!Q',
     }
 
     def __init__(self):
