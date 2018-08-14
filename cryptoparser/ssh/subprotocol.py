@@ -2,20 +2,36 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import base64
+import binascii
+import datetime
 import enum
 import random
+import textwrap
 
 from collections import OrderedDict
 
-import cryptoparser.common.utils as utils
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import dsa
+from cryptography.hazmat.primitives.asymmetric import x25519
+from cryptography.hazmat.primitives import hashes as cryptography_hashes
+from cryptography.hazmat.primitives.serialization import load_der_public_key
+from cryptography.hazmat.primitives.serialization.ssh import _ssh_write_string
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-from cryptoparser.common.base import VectorString, VectorParamString, StringComposer
-from cryptoparser.common.exception import InvalidValue
+from cryptography.x509 import load_der_x509_certificate
+
+from cryptoparser.common.algorithm import Authentication
+from cryptoparser.common.base import JSONSerializable, VectorString, VectorParamString
+from cryptoparser.common.exception import InvalidType, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ParserText, ComposerText
 
 from cryptoparser.tls.subprotocol import VariantParsable
 
-from cryptoparser.ssh.ciphersuite import SshEncryptionAlgoriths, SshMacAlogrithms, SshKexAlogrithms, SshHostKeyAlogrithms, SshCompressionAlogrithms
+from cryptoparser.ssh.ciphersuite import SshHostKeyAlgorithmFactory, SshHostKeyType, SshCompressionAlgorithmFactory
+from cryptoparser.ssh.ciphersuite import SshKexAlgorithmFactory, SshEncryptionAlgorithmFactory, SshMacAlgorithmFactory
 from cryptoparser.ssh.version import SshProtocolVersion
 
 
@@ -28,6 +44,18 @@ class SshMessageCode(enum.IntEnum):
     SERVICE_ACCEPT = 0x6
     KEXINIT = 0x14
     NEWKEYS = 0x15
+
+    #KEX_DH_INIT = 0x1e
+    #KEX_DH_REPLY = 0x1f
+
+    KEX_DH_GEX_REQUEST_OLD = 0x1e
+    KEX_DH_GEX_GROUP = 0x1f
+    KEX_DH_GEX_INIT = 0x20
+    KEX_DH_GEX_REPLY = 0x21
+    KEX_DH_GEX_REQUEST = 0x22
+
+    #KEX_ECDH_INIT = 0x1e
+    #KEX_ECDH_REPLY = 0x1f
 
 
 class SshMessageBase(ParsableBase):
@@ -282,10 +310,535 @@ class SshDisconnectMessage(SshMessageBase):
         return composer.composed
 
 
+class SshUnimplementedMessage(SshMessageBase):
+    def __init__(self, sequence_number):
+        self.sequence_number = sequence_number
+
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.UNIMPLEMENTED
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_numeric('sequence_number', 4)
+
+        return SshUnimplementedMessage(parser['sequence_number']), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_numeric(self.sequence_number, 4)
+
+        return composer.composed
+
+
+class SshKexDHInit(SshMessageBase):
+    def __init__(self, ephemeral_public_key):
+        super(SshKexDHInit, self).__init__()
+
+        self.key = ephemeral_public_key
+
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.KEX_DH_INIT
+
+    @classmethod
+    def _parse(cls, parsable):
+        header_parser = cls._parse_header(parsable)
+
+        body_parser = ParserBinary(parsable[header_parser.parsed_length:])
+        body_parser.parse_numeric('key_length', 4)
+        body_parser.parse_bytes('ephemeral_public_key', body_parser['key_length'])
+
+        ephemeral_public_key = load_der_public_key(body_parser['ephemeral_public_key'], backend=default_backend())
+
+        return SshKexDHInit(ephemeral_public_key), header_parser.parsed_length + body_parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        key_bytes = self.key
+
+        composer.compose_numeric(len(key_bytes), 4)
+        composer.compose_bytes(key_bytes)
+
+        return composer.composed
+
+
+class SshHostKey(JSONSerializable, ParsableBase):
+    def __init__(self, key_algorithm, public_key):
+        self.public_key = public_key
+        self.key_algorithm = key_algorithm
+
+    @staticmethod
+    def _get_hash(host_key_openssh, hash_algo):
+        key_bytes = base64.b64decode(host_key_openssh)
+        digest = cryptography_hashes.Hash(hash_algo(), default_backend())
+        digest.update(key_bytes)
+        if hash_algo == cryptography_hashes.MD5:
+            hash_str = ':'.join(textwrap.wrap(str(binascii.hexlify(digest.finalize()), 'ascii'), 2))
+        else:
+            hash_str = str(base64.b64encode(digest.finalize()), 'ascii')
+
+        return '{}:{}'.format(hash_algo.name.upper(), hash_str)
+
+    @staticmethod
+    def _get_hashes(host_key_openssh):
+        hash_dict = OrderedDict()
+
+        for hash_algo in [cryptography_hashes.SHA256, cryptography_hashes.SHA1, cryptography_hashes.MD5]:
+            hash_dict[hash_algo.name] = SshHostKey._get_hash(host_key_openssh, hash_algo)
+
+        return hash_dict
+
+    @classmethod
+    def _parse_rsa_public_key(cls, parser):
+        parser.parse_numeric('exponent_length', 4)
+        parser.parse_bytes('exponent', parser['exponent_length'])
+        parser.parse_numeric('modulus_length', 4)
+        parser.parse_bytes('modulus', parser['modulus_length'])
+
+        exponent = int.from_bytes(parser['exponent'], byteorder='big', signed=False)
+        modulus = int.from_bytes(parser['modulus'], byteorder='big', signed=False)
+
+        return rsa.RSAPublicNumbers(exponent, modulus).public_key(default_backend())
+
+    @classmethod
+    def _parse_dss_public_key(cls, parser):
+        integers = dict()
+        for param_name in ['p', 'q', 'g', 'y']:
+            param_length_name = param_name + '_length'
+            parser.parse_numeric(param_length_name, 4)
+            parser.parse_bytes(param_name, parser[param_length_name])
+            integers[param_name] = int.from_bytes(parser[param_name], byteorder='big', signed=False)
+        return dsa.DSAPublicNumbers(
+            integers['y'],
+            dsa.DSAParameterNumbers(
+                integers['p'],
+                integers['q'],
+                integers['g']
+            )
+        ).public_key(default_backend())
+
+    @classmethod
+    def _parse_ecdsa_public_key(cls, parser):
+            parser.parse_numeric('curve_name_length', 4)
+            parser.parse_bytes('curve_name', parser['curve_name_length'])
+
+            curve = {
+                b'ecdsa-sha2-nistp256': ec.SECP256R1,
+                b'ecdsa-sha2-nistp384': ec.SECP384R1,
+                b'ecdsa-sha2-nistp521': ec.SECP521R1,
+                b'nistp256': ec.SECP256R1,
+                b'nistp384': ec.SECP384R1,
+                b'nistp521': ec.SECP521R1,
+            }[bytes(parser['curve_name'])]()
+
+            parser.parse_numeric('curve_data_length', 4)
+            parser.parse_bytes('curve_data', parser['curve_data_length'])
+            numbers = ec.EllipticCurvePublicNumbers.from_encoded_point(curve, parser['curve_data'])
+            return numbers.public_key(default_backend())
+
+    @classmethod
+    def _parse_eddsa_public_key(cls, parser):
+        parser.parse_numeric('key_data_length', 4)
+        parser.parse_bytes('key_data', parser['key_data_length'])
+
+        return x25519.X25519PublicKey.from_public_bytes(bytes(parser['key_data']))
+
+    def as_json(self):
+        if isinstance(self.public_key, x25519.X25519PublicKey):
+            key_size = None
+            host_key_openssh = base64.b64encode(
+                _ssh_write_string(b'ssh-ed25519') +
+                _ssh_write_string(self.public_key.public_bytes())
+            )
+            host_key_openssh = str(host_key_openssh, 'ascii')
+            hashes = self._get_hashes(host_key_openssh)
+        else:
+            key_size = self.public_key.key_size
+            host_key_openssh = str(self.public_key.public_bytes(
+                Encoding.OpenSSH,
+                PublicFormat.OpenSSH
+            ), 'ascii').split(' ')[1]
+            hashes = self._get_hashes(host_key_openssh)
+
+        return {
+            self.key_algorithm.value.code: OrderedDict([
+                ('known_hosts', host_key_openssh),
+                ('hashes', hashes),
+                ('key_type', type(self.public_key).__name__[1:-len('PublicKey')]),
+                ('key_size', key_size),
+            ])
+        }
+
+    @classmethod
+    def _parse(cls, parsable):
+        return None, 0
+
+    def compose(self):
+        return b''
+
+
+class SshCertificateType(enum.IntEnum):
+    USER = 1
+    HOST = 2
+
+
+def utcfromtimestamp(time_t):
+    try:
+        value = datetime.datetime.utcfromtimestamp(time_t)
+    except OverflowError:
+        value = None
+    else:
+        if value == datetime.datetime(1970, 1, 1):
+            value = None
+
+    return value
+
+
+class SshHostCertificate(SshHostKey):
+    def __init__(  # pylint: disable: too-many-arguments
+        self,
+        key_algorithm,
+        public_key,
+        serial,
+        key_type,
+        key_id,
+        valid_principals,
+        valid_after,
+        valid_before,
+        critical_options,
+        extensions,
+        reserved,
+        signature_key,
+        signature,
+    ):
+        super(SshHostCertificate, self).__init__(key_algorithm, public_key)
+
+        self.serial = serial
+        self.key_type = key_type
+        self.key_id = key_id
+        self.valid_principals = valid_principals
+        self.valid_after = valid_after
+        self.valid_before = valid_before
+        self.critical_options = critical_options
+        self.extensions = extensions
+        self._reserved = reserved
+        self._signature_key = signature_key
+        self._signature = signature
+
+    def as_json(self):
+        result = super(SshHostCertificate, self).as_json()
+
+        result['serial'] = self.serial
+        result['id'] = self.key_id
+        result['valid_after'] = self.valid_after
+        result['valid_before'] = self.valid_before
+
+        return result
+
+    @classmethod
+    def _parse_ssh_key(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('host_key_algorithm_length', 4)
+        parser.parse_parsable('host_key_type', SshHostKeyAlgorithmFactory)
+
+        host_key_type = parser['host_key_type'].value
+
+        if host_key_type.key_type == SshHostKeyType.CERTIFICATE:
+            parser.parse_numeric('nonce_length', 4)
+            parser.parse_bytes('nonce', parser['nonce_length'])
+
+        if host_key_type.authentication == Authentication.ECDSA:
+            host_key = cls._parse_ecdsa_public_key(parser)
+        elif host_key_type.authentication == Authentication.RSA:
+            host_key = cls._parse_rsa_public_key(parser)
+        elif host_key_type.authentication == Authentication.DSS:
+            host_key = cls._parse_dss_public_key(parser)
+        elif host_key_type.authentication == Authentication.EDDSA:
+            host_key = cls._parse_eddsa_public_key(parser)
+
+        if host_key_type.key_type == SshHostKeyType.CERTIFICATE:
+            parser.parse_numeric('serial', 8)
+            parser.parse_numeric('type', 4, SshHostKeyType)
+            parser.parse_string('key_id', 4)
+            parser.parse_string('valid_principals', 4)
+            parser.parse_numeric('valid_after', 8, utcfromtimestamp)
+            parser.parse_numeric('valid_before', 8, utcfromtimestamp)
+            parser.parse_numeric('critical_options_length', 4)
+            parser.parse_bytes('critical_options', parser['critical_options_length'])
+            parser.parse_numeric('extensions_length', 4)
+            parser.parse_bytes('extensions', parser['extensions_length'])
+            parser.parse_numeric('reserved_length', 4)
+            parser.parse_bytes('reserved', parser['reserved_length'])
+            parser.parse_numeric('signature_key_length', 4)
+            parser.parse_bytes('signature_key', parser['signature_key_length'])
+            parser.parse_numeric('signature_length', 4)
+            parser.parse_bytes('signature', parser['signature_length'])
+
+            parsed_object = SshHostCertificate(
+                parser['host_key_type'],
+                host_key,
+                parser['serial'] if parser['serial'] != 0 else None,
+                parser['type'],
+                parser['key_id'],
+                parser['valid_principals'],
+                parser['valid_after'],
+                parser['valid_before'],
+                parser['critical_options'],
+                parser['extensions'],
+                parser['reserved'],
+                parser['signature_key'],
+                parser['signature']
+            )
+        else:
+            parsed_object = SshHostKey(
+                parser['host_key_type'],
+                host_key
+            )
+
+        return parsed_object, parser.parsed_length
+
+    @classmethod
+    def _parse(cls, parsable):
+        host_key, parsed_length = cls._parse_ssh_key(parsable)
+
+        return host_key, parsed_length
+
+    def compose(self):
+        return b''
+
+
+class SshX509Certificate(SshHostKey):
+    def __init__(
+        self,
+        key_algorithm,
+        x509_certificate,
+    ):
+        super(SshX509Certificate, self).__init__(
+            key_algorithm,
+            x509_certificate.public_key()
+        )
+
+        self.x509_certificate = x509_certificate
+
+
+class SshKexDHReply(SshMessageBase):
+    def __init__(self, host_public_key, ephemeral_public_key):
+        self.host_public_key = host_public_key
+        self.ephemeral_public_key = ephemeral_public_key
+
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.KEX_DH_REPLY
+
+    @classmethod
+    def _parse_ssh_key(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_numeric('host_key_length', 4)
+
+        parser.parse_parsable('host_public_key', SshHostCertificate)
+
+        parser.parse_numeric('ephemeral_public_key_length', 4)
+        parser.parse_bytes('ephemeral_public_key', parser['ephemeral_public_key_length'])
+
+        parser.parse_numeric('signature_length', 4)
+        parser.parse_bytes('signature', parser['signature_length'])
+
+        return parser['host_public_key'], parser['ephemeral_public_key'], parser.parsed_length
+
+    @classmethod
+    def _parse_x509_key(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_numeric('public_key_length', 4)
+        parser.parse_bytes('public_key', parser['public_key_length'])
+
+        parser.parse_numeric('ssh_key_length', 4)
+        parser.parse_bytes('ssh_key', parser['ssh_key_length'])
+
+        parser.parse_numeric('signature_length', 4)
+
+        parser.parse_numeric('signature_type_length', 4)
+        parser.parse_parsable('signature_type', SshHostKeyAlgorithmFactory)
+
+        parser.parse_numeric('signature_data_length', 4)
+        parser.parse_bytes('signature_data', parser['signature_data_length'])
+
+        return SshX509Certificate(
+            parser['signature_type'],
+            load_der_x509_certificate(bytes(parser['public_key']), default_backend())
+        ), b'', parser.parsed_length
+
+    @classmethod
+    def _parse(cls, parsable):
+        try:
+            host_public_key, ephemeral_public_key, parsed_length = cls._parse_ssh_key(parsable)
+        except InvalidValue:
+            host_public_key, ephemeral_public_key, parsed_length = cls._parse_x509_key(parsable)
+
+        return SshKexDHReply(
+            host_public_key,
+            ephemeral_public_key,
+        ), parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_numeric(self.host_public_key.key_size / 8)
+        composer.compose_bytes(self.host_public_key.public_bytes(Encoding.DER))
+
+        return composer.composed
+
+
+class SshKexDHGexRequest(SshMessageBase):
+    def __init__(self, min_size, preferred_size, max_size):
+        super(SshKexDHGexRequest, self).__init__()
+
+        self.min_size = min_size
+        self.preferred_size = preferred_size
+        self.max_size = max_size
+
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.KEX_DH_GEX_REQUEST
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_numeric('min_size', 4)
+        parser.parse_numeric('preferred_size', 4)
+        parser.parse_numeric('max_size', 4)
+
+        return SshKexDHGexRequest(
+            parser['min_size'],
+            parser['preferred_size'],
+            parser['max_size'],
+        ), parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_numeric(self.min_size, 4)
+        composer.compose_numeric(self.preferred_size, 4)
+        composer.compose_numeric(self.max_size, 4)
+
+        return composer.composed
+
+
+class SshKexDHGexGroup(SshMessageBase):
+    def __init__(self, p, g):
+        super(SshKexDHGexGroup, self).__init__()
+
+        self.p = p
+        self.g = g
+
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.KEX_DH_GEX_GROUP
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_numeric('p_length', 4)
+        parser.parse_bytes('p', parser['p_length'])
+        parser.parse_numeric('g_length', 4)
+        parser.parse_bytes('g', parser['g_length'])
+
+        return SshKexDHGexGroup(
+            parser['p'],
+            parser['g'],
+        ), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_numeric(len(self.p), 4)
+        composer.compose_bytes(self.p)
+        composer.compose_numeric(len(self.g), 4)
+        composer.compose_bytes(self.g)
+
+        return composer.composed
+
+
+class SshKexDHGexInit(SshMessageBase):
+    def __init__(self, e):
+        super(SshKexDHGexInit, self).__init__()
+
+        self.e = e
+
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.KEX_DH_GEX_INIT
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_numeric('e_length', 4)
+        parser.parse_bytes('e', parser['e_length'])
+
+        return SshKexDHGexInit(
+            parser['e'],
+        ), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_numeric(len(self.e), 4)
+        composer.compose_bytes(self.e)
+
+        return composer.composed
+
+
+class SshKexDHGexReply(SshMessageBase):
+    def __init__(self, f):
+        super(SshKexDHGexReply, self).__init__()
+
+        self.f = f
+
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.KEX_DH_GEX_REPLY
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_numeric('f_length', 4)
+        parser.parse_bytes('f', parser['f_length'])
+
+        return SshKexDHGexReply(
+            parser['f'],
+        ), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_numeric(len(self.f), 4)
+        composer.compose_bytes(self.f)
+
+        return composer.composed
+
+
 class SshHandshakeMessageVariant(VariantParsable):
     _VARIANTS = {
         SshMessageCode.DISCONNECT: SshDisconnectMessage,
+        SshMessageCode.UNIMPLEMENTED: SshUnimplementedMessage,
         SshMessageCode.KEXINIT: SshKeyExchangeInit,
+        #SshMessageCode.KEX_DH_INIT: SshKexDHInit,
+        #SshMessageCode.KEX_DH_REPLY: SshKexDHReply,
+        SshMessageCode.KEX_DH_GEX_GROUP: SshKexDHGexGroup,
+        SshMessageCode.KEX_DH_GEX_INIT: SshKexDHGexInit,
+        SshMessageCode.KEX_DH_GEX_REPLY: SshKexDHGexReply,
+        SshMessageCode.KEX_DH_GEX_REQUEST: SshKexDHGexRequest,
     }
 
     @classmethod
