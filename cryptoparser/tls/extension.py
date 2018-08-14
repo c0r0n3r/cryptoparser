@@ -527,22 +527,22 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
     ANONYMOUS_SHA224 = HashAndSignatureAlgorithmParam(
         code=0x0300,
         signature_algorithm=Authentication.anon,
-        hash_algorithm=MAC.SHA224
+        hash_algorithm=MAC.SHA2_224
     )
     ANONYMOUS_SHA256 = HashAndSignatureAlgorithmParam(
         code=0x0400,
         signature_algorithm=Authentication.anon,
-        hash_algorithm=MAC.SHA256
+        hash_algorithm=MAC.SHA2_256
     )
     ANONYMOUS_SHA384 = HashAndSignatureAlgorithmParam(
         code=0x0500,
         signature_algorithm=Authentication.anon,
-        hash_algorithm=MAC.SHA384
+        hash_algorithm=MAC.SHA2_384
     )
     ANONYMOUS_SHA512 = HashAndSignatureAlgorithmParam(
         code=0x0006,
         signature_algorithm=Authentication.anon,
-        hash_algorithm=MAC.SHA512
+        hash_algorithm=MAC.SHA2_512
     )
     RSA_NONE = HashAndSignatureAlgorithmParam(
         code=0x0001,
@@ -562,22 +562,22 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
     RSA_SHA224 = HashAndSignatureAlgorithmParam(
         code=0x0301,
         signature_algorithm=Authentication.RSA,
-        hash_algorithm=MAC.SHA224
+        hash_algorithm=MAC.SHA2_224
     )
     RSA_SHA256 = HashAndSignatureAlgorithmParam(
         code=0x0401,
         signature_algorithm=Authentication.RSA,
-        hash_algorithm=MAC.SHA256
+        hash_algorithm=MAC.SHA2_256
     )
     RSA_SHA384 = HashAndSignatureAlgorithmParam(
         code=0x0501,
         signature_algorithm=Authentication.RSA,
-        hash_algorithm=MAC.SHA384
+        hash_algorithm=MAC.SHA2_384
     )
     RSA_SHA512 = HashAndSignatureAlgorithmParam(
         code=0x0601,
         signature_algorithm=Authentication.RSA,
-        hash_algorithm=MAC.SHA512
+        hash_algorithm=MAC.SHA2_512
     )
     DSA_NONE = HashAndSignatureAlgorithmParam(
         code=0x0002,
@@ -597,22 +597,22 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
     DSA_SHA224 = HashAndSignatureAlgorithmParam(
         code=0x0302,
         signature_algorithm=Authentication.DSS,
-        hash_algorithm=MAC.SHA224
+        hash_algorithm=MAC.SHA2_224
     )
     DSA_SHA256 = HashAndSignatureAlgorithmParam(
         code=0x0402,
         signature_algorithm=Authentication.DSS,
-        hash_algorithm=MAC.SHA256
+        hash_algorithm=MAC.SHA2_256
     )
     DSA_SHA384 = HashAndSignatureAlgorithmParam(
         code=0x0502,
         signature_algorithm=Authentication.DSS,
-        hash_algorithm=MAC.SHA384
+        hash_algorithm=MAC.SHA2_384
     )
     DSA_SHA512 = HashAndSignatureAlgorithmParam(
         code=0x0602,
         signature_algorithm=Authentication.DSS,
-        hash_algorithm=MAC.SHA512
+        hash_algorithm=MAC.SHA2_512
     )
     ECDSA_NONE = HashAndSignatureAlgorithmParam(
         code=0x0003,
@@ -632,22 +632,22 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
     ECDSA_SHA224 = HashAndSignatureAlgorithmParam(
         code=0x0303,
         signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=MAC.SHA224
+        hash_algorithm=MAC.SHA2_224
     )
     ECDSA_SHA256 = HashAndSignatureAlgorithmParam(
         code=0x0403,
         signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=MAC.SHA256
+        hash_algorithm=MAC.SHA2_256
     )
     ECDSA_SHA384 = HashAndSignatureAlgorithmParam(
         code=0x0503,
         signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=MAC.SHA384
+        hash_algorithm=MAC.SHA2_384
     )
     ECDSA_SHA512 = HashAndSignatureAlgorithmParam(
         code=0x0603,
         signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=MAC.SHA512
+        hash_algorithm=MAC.SHA2_512
     )
 
 

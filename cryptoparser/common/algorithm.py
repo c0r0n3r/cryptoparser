@@ -61,6 +61,10 @@ class Authentication(enum.Enum):
         name='ECDSA',
         anonymous=False,
     )
+    EDDSA = AuthenticationParams(
+        name='EdDSA',
+        anonymous=False,
+    )
     KRB5 = AuthenticationParams(
         name='KRB5',
         anonymous=False,
@@ -80,6 +84,11 @@ class Authentication(enum.Enum):
 
 
 class BlockCipher(enum.Enum):
+    ACSS = BlockCipherParams(
+        name='ACSS',
+        key_size=128,
+        block_size=None,  # FIXME
+    )
     AES_128 = BlockCipherParams(
         name='AES_128',
         key_size=128,
@@ -110,6 +119,27 @@ class BlockCipher(enum.Enum):
         key_size=256,
         block_size=128,
     )
+    BLOWFISH = BlockCipherParams(
+        name='BLOWFISH',
+        key_size=32, # min
+        # key_size_max=448,
+        block_size=64,
+    )
+    TWOFISH128 = BlockCipherParams(
+        name='TWOFISH',
+        key_size=128,
+        block_size=128,
+    )
+    TWOFISH192 = BlockCipherParams(
+        name='TWOFISH',
+        key_size=192,
+        block_size=192,
+    )
+    TWOFISH256 = BlockCipherParams(
+        name='TWOFISH',
+        key_size=256,
+        block_size=256,
+    )
     CAMELLIA_128 = BlockCipherParams(
         name='CAMELLIA_128',
         key_size=128,
@@ -120,10 +150,27 @@ class BlockCipher(enum.Enum):
         key_size=256,
         block_size=128,
     )
+    CAST_128 = BlockCipherParams(
+        name='CAST_128',
+        key_size=40, # min
+        # key_size_max=128,
+        block_size=64,
+    )
+    CAST_256 = BlockCipherParams(
+        name='CAST_256',
+        key_size=128, # min
+        # key_size_max=256,
+        block_size=128,
+    )
     CHACHA20 = BlockCipherParams(
         name='CHACHA20',
         key_size=128,  # min
         #  key_size_max=256,
+        block_size=None,
+    )
+    CRYPTICORE128 = BlockCipherParams(
+        name='CryptiCore128',
+        key_size=128,  #  FIXME
         block_size=None,
     )
     DES = BlockCipherParams(
@@ -166,6 +213,11 @@ class BlockCipher(enum.Enum):
         key_size=128,
         block_size=None,
     )
+    RC4_256 = BlockCipherParams(
+        name='RC4_256',
+        key_size=256,
+        block_size=None,
+    )
     SEED = BlockCipherParams(
         name='SEED',
         key_size=128,
@@ -198,6 +250,10 @@ class BlockCipherMode(enum.Enum):
         name='CCM_8',
         aead=True
     )
+    CTR = BlockCipherModeParams(
+        name='CTR',
+        aead=False
+    )
     GCM = BlockCipherModeParams(
         name='GCM',
         aead=True
@@ -209,28 +265,56 @@ class BlockCipherMode(enum.Enum):
 
 
 class MAC(enum.Enum):
+    CRYPTICORE = MACParams(
+        name='CRYPTICORE',
+        digest_size=64  #  FIXME
+    )
     MD5 = MACParams(
         name='MD5',
         digest_size=64
+    )
+    UMAC_64 = MACParams(
+        name='UMAC_64',
+        digest_size=64
+    )
+    UMAC_128 = MACParams(
+        name='UMAC_128',
+        digest_size=128
     )
     SHA1 = MACParams(
         name='SHA1',
         digest_size=160
     )
-    SHA224 = MACParams(
-        name='SHA224',
-        digest_size=224
+    RIPEMD128 = MACParams(
+        name='RIPEMD-128',
+        digest_size=128
     )
-    SHA256 = MACParams(
-        name='SHA256',
+    RIPEMD160 = MACParams(
+        name='RIPEMD-160',
+        digest_size=160
+    )
+    RIPEMD256 = MACParams(
+        name='RIPEMD-256',
         digest_size=256
     )
-    SHA384 = MACParams(
-        name='SHA384',
+    RIPEMD320 = MACParams(
+        name='RIPEMD-320',
+        digest_size=320
+    )
+    SHA2_224 = MACParams(
+        name='SHA2_224',
+        digest_size=224
+    )
+    SHA2_256 = MACParams(
+        name='SHA2_256',
+        digest_size=256
+    )
+    SHA2_384 = MACParams(
+        name='SHA2_384',
         digest_size=384
     )
-    SHA512 = MACParams(
-        name='SHA512',
+    SHA2_512 = MACParams(
+        name='SHA2_512',
         digest_size=512
     )
 

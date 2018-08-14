@@ -15,6 +15,7 @@ from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.subprotocol import VariantParsable
 
+from cryptoparser.ssh.ciphersuite import SshEncryptionAlgoriths, SshMacAlogrithms, SshKexAlogrithms, SshHostKeyAlogrithms, SshCompressionAlogrithms
 from cryptoparser.ssh.version import SshProtocolVersion
 
 
@@ -110,89 +111,6 @@ class SshProtocolMessage(ParsableBase):
         )
 
 
-class SshEncryptionAlgorithms(StringComposer, enum.Enum):
-    AES128_CBC = 'aes128-cbc'
-    AES128_CTR = 'aes128-ctr'
-    AES128_GCM_OPENSSH_COM = 'aes128-gcm@openssh.com'
-    AES192_CBC = 'aes192-cbc'
-    AES192_CTR = 'aes192-ctr'
-    AES256_CBC = 'aes256-cbc'
-    AES256_CTR = 'aes256-ctr'
-    AES256_GCM_OPENSSH_COM = 'aes256-gcm@openssh.com'
-    ARCFOUR = 'arcfour'
-    ARCFOUR128 = 'arcfour128'
-    ARCFOUR256 = 'arcfour256'
-    BLOWFISH_CBC = 'blowfish-cbc'
-    CAST128_CBC = 'cast128-cbc'
-    CHACHA20_POLY1305_OPENSSH_COM = 'chacha20-poly1305@openssh.com'
-    RIJNDAEL_CBC_LYSATOR_LIU_SE = 'rijndael-cbc@lysator-liu-se'
-    TRIPLE_DES_CBC = '3des-cbc'
-
-
-class SshMacAlgorithms(StringComposer, enum.Enum):
-    HMAC_SHA1 = 'hmac-sha1'
-    HMAC_SHA1_96 = 'hmac-sha1-96'
-    HMAC_SHA2_256 = 'hmac-sha2-256'
-    HMAC_SHA2_512 = 'hmac-sha2-512'
-    HMAC_MD5 = 'hmac-md5'
-    HMAC_MD5_96 = 'hmac-md5-96'
-    UMAC_64_OPENSSH_COM = 'umac-64@openssh.com'
-    UMAC_128_OPENSSH_COM = 'umac-128@openssh.com'
-    HMAC_SHA1_ETM_OPENSSH_COM = 'hmac-sha1-etm@openssh.com'
-    HMAC_SHA1_96_ETM_OPENSSH_COM = 'hmac-sha1-96-etm@openssh.com'
-    HMAC_SHA2_256_ETM_OPENSSH_COM = 'hmac-sha2-256-etm@openssh.com'
-    HMAC_SHA2_512_ETM_OPENSSH_COM = 'hmac-sha2-512-etm@openssh.com'
-    HMAC_MD5_ETM_OPENSSH_COM = 'hmac-md5-etm@openssh.com'
-    HMAC_MD5_96_ETM_OPENSSH_COM = 'hmac-md5-96-etm@openssh.com'
-    UMAC_64_ETM_OPENSSH_COM = 'umac-64-etm@openssh.com'
-    UMAC_128_ETM_OPENSSH_COM = 'umac-128-etm@openssh.com'
-
-
-class SshKexAlgorithms(StringComposer, enum.Enum):
-    DIFFIE_HELLMAN_GROUP1_SHA1 = 'diffie-hellman-group1-sha1'
-    DIFFIE_HELLMAN_GROUP14_SHA1 = 'diffie-hellman-group14-sha1'
-    DIFFIE_HELLMAN_GROUP14_SHA256 = 'diffie-hellman-group14-sha256'
-    DIFFIE_HELLMAN_GROUP16_SHA512 = 'diffie-hellman-group16-sha512'
-    DIFFIE_HELLMAN_GROUP18_SHA512 = 'diffie-hellman-group18-sha512'
-    DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1 = 'diffie-hellman-group-exchange-sha1'
-    DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA256 = 'diffie-hellman-group-exchange-sha256'
-    ECDH_SHA2_NISTP256 = 'ecdh-sha2-nistp256'
-    ECDH_SHA2_NISTP384 = 'ecdh-sha2-nistp384'
-    ECDH_SHA2_NISTP521 = 'ecdh-sha2-nistp521'
-    CURVE25519_SHA256 = 'curve25519-sha256'
-    CURVE25519_SHA256_LIBSSH_RG = 'curve25519-sha256@libssh.org'
-    GSS_GEX_SHA1_ = 'gss-gex-sha1_'
-    GSS_GROUP1_SHA1_ = 'gss-group1-sha1_'
-    GSS_GROUP14_SHA1_ = 'gss-group14-sha1_'
-    GSS_GROUP14_SHA256_ = 'gss-group14-sha256_'
-    GSS_GROUP16_SHA512_ = 'gss-group16-sha512_'
-    GSS_NISTP256_SHA256_ = 'gss-nistp256-sha256_'
-    GSS_CURVE25519_SHA256_ = 'gss-curve25519-sha256_'
-
-
-class SshHostKeyAlgorithms(StringComposer, enum.Enum):
-    SSH_ED25519 = 'ssh-ed25519'
-    SSH_ED25519_CERT_V01_OPENSSH_COM = 'ssh-ed25519-cert-v01@openssh.com'
-    SSH_RSA = 'ssh-rsa'
-    RSA_SHA2_256 = 'rsa-sha2-256'
-    RSA_SHA2_512 = 'rsa-sha2-512'
-    SSH_DSS = 'ssh-dss'
-    ECDSA_SHA2_NISTP256 = 'ecdsa-sha2-nistp256'
-    ECDSA_SHA2_NISTP384 = 'ecdsa-sha2-nistp384'
-    ECDSA_SHA2_NISTP521 = 'ecdsa-sha2-nistp521'
-    SSH_RSA_CERT_V01_OPENSSH_COM = 'ssh-rsa-cert-v01@openssh.com'
-    SSH_DSS_CERT_V01_OPENSSH_COM = 'ssh-dss-cert-v01@openssh.com'
-    ECDSA_SHA2_NISTP256_CERT_V01_OPENSSH_COM = 'ecdsa-sha2-nistp256-cert-v01@openssh.com'
-    ECDSA_SHA2_NISTP384_CERT_V01_OPENSSH_COM = 'ecdsa-sha2-nistp384-cert-v01@openssh.com'
-    ECDSA_SHA2_NISTP521_CERT_V01_OPENSSH_COM = 'ecdsa-sha2-nistp521-cert-v01@openssh.com'
-
-
-class SshCompressionAlgorithms(StringComposer, enum.Enum):
-    ZLIB_OPENSSH_COM = 'zlib@openssh.com'
-    ZLIB = 'zlib'
-    NONE = 'none'
-
-
 class SshAlgorithmVector(VectorString):
     @classmethod
     def get_param(cls):
@@ -212,31 +130,31 @@ class SshAlgorithmVector(VectorString):
 class SshKexAlgorithmVector(SshAlgorithmVector):
     @classmethod
     def get_item_class(cls):
-        return SshKexAlgorithms
+        return SshKexAlgorithmFactory
 
 
 class SshHostKeyAlgorithmVector(SshAlgorithmVector):
     @classmethod
     def get_item_class(cls):
-        return SshHostKeyAlgorithms
+        return SshHostKeyAlgorithmFactory
 
 
 class SshEncryptionAlgorithmVector(SshAlgorithmVector):
     @classmethod
     def get_item_class(cls):
-        return SshEncryptionAlgorithms
+        return SshEncryptionAlgorithmFactory
 
 
 class SshMacAlgorithmVector(SshAlgorithmVector):
     @classmethod
     def get_item_class(cls):
-        return SshMacAlgorithms
+        return SshMacAlgorithmFactory
 
 
 class SshCompressionAlgorithmVector(SshAlgorithmVector):
     @classmethod
     def get_item_class(cls):
-        return SshCompressionAlgorithms
+        return SshCompressionAlgorithmFactory
 
 
 class SshLanguageVector(VectorString):
