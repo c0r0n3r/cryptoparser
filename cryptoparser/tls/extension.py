@@ -6,11 +6,14 @@ import enum
 import collections
 
 from cryptoparser.common.base import Vector, VectorParsable, VectorParsableDerived, VectorParamNumeric, VectorParamParsable
-from cryptoparser.common.algorithm import Authentication, MAC
+from cryptoparser.common.algorithm import Authentication, MAC, NamedGroup
 from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.tls.version import TlsProtocolVersionBase
+
+
+TlsNamedCurveParams = collections.namedtuple('TlsNamedCurveParams', [ 'code', 'named_group', ])
 
 
 class TlsExtensionType(enum.IntEnum):
@@ -229,57 +232,173 @@ class TlsExtensionECPointFormats(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
-class TlsNamedCurve(enum.IntEnum):
-    SECT163K1 = 0x0001
-    SECT163R1 = 0x0002
-    SECT163R2 = 0x0003
-    SECT193R1 = 0x0004
-    SECT193R2 = 0x0005
-    SECT233K1 = 0x0006
-    SECT233R1 = 0x0007
-    SECT239K1 = 0x0008
-    SECT283K1 = 0x0009
-    SECT283R1 = 0x000a
-    SECT409K1 = 0x000b
-    SECT409R1 = 0x000c
-    SECT571K1 = 0x000d
-    SECT571R1 = 0x000e
-    SECP160K1 = 0x000f
-    SECP160R1 = 0x0010
-    SECP160R2 = 0x0011
-    SECP192K1 = 0x0012
-    SECP192R1 = 0x0013
-    SECP224K1 = 0x0014
-    SECP224R1 = 0x0015
-    SECP256K1 = 0x0016
-    SECP256R1 = 0x0017
-    SECP384R1 = 0x0018
-    SECP521R1 = 0x0019
-
-    BRAINPOOLP256R1 = 0x001a
-    BRAINPOOLP384R1 = 0x001b
-    BRAINPOOLP512R1 = 0x001c
-    X25519 = 0x001d
-    X448 = 0x001e
-
-    FFDHE2048 = 0x0100
-    FFDHE3072 = 0x0101
-    FFDHE4096 = 0x0102
-    FFDHE6144 = 0x0103
-    FFDHE8192 = 0x0104
-
-    ARBITRARY_EXPLICIT_PRIME_CURVES = 0xff01
-    ARBITRARY_EXPLICIT_CHAR2_CURVES = 0xff02
+class TlsNamedCurveFactory(TwoByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsNamedCurve
 
 
-class TlsEllipticCurveVector(Vector):
+class TlsNamedCurve(TwoByteEnumComposer, enum.Enum):
+    SECT163K1 = TlsNamedCurveParams(
+        code=0x0001,
+        named_group=NamedGroup.SECT163K1,
+    )
+    SECT163R1 = TlsNamedCurveParams(
+        code=0x0002,
+        named_group=NamedGroup.SECT163R1,
+    )
+    SECT163R2 = TlsNamedCurveParams(
+        code=0x0003,
+        named_group=NamedGroup.SECT163R2,
+    )
+    SECT193R1 = TlsNamedCurveParams(
+        code=0x0004,
+        named_group=NamedGroup.SECT193R1,
+    )
+    SECT193R2 = TlsNamedCurveParams(
+        code=0x0005,
+        named_group=NamedGroup.SECT193R2,
+    )
+    SECT233K1 = TlsNamedCurveParams(
+        code=0x0006,
+        named_group=NamedGroup.SECT233K1,
+    )
+    SECT233R1 = TlsNamedCurveParams(
+        code=0x0007,
+        named_group=NamedGroup.SECT233R1,
+    )
+    SECT239K1 = TlsNamedCurveParams(
+        code=0x0008,
+        named_group=NamedGroup.SECT239K1,
+    )
+    SECT283K1 = TlsNamedCurveParams(
+        code=0x0009,
+        named_group=NamedGroup.SECT283K1,
+    )
+    SECT283R1 = TlsNamedCurveParams(
+        code=0x000a,
+        named_group=NamedGroup.SECT283R1,
+    )
+    SECT409K1 = TlsNamedCurveParams(
+        code=0x000b,
+        named_group=NamedGroup.SECT409K1,
+    )
+    SECT409R1 = TlsNamedCurveParams(
+        code=0x000c,
+        named_group=NamedGroup.SECT409R1,
+    )
+    SECT571K1 = TlsNamedCurveParams(
+        code=0x000d,
+        named_group=NamedGroup.SECT571K1,
+    )
+    SECT571R1 = TlsNamedCurveParams(
+        code=0x000e,
+        named_group=NamedGroup.SECT571R1,
+    )
+    SECP160K1 = TlsNamedCurveParams(
+        code=0x000f,
+        named_group=NamedGroup.SECP160K1,
+    )
+    SECP160R1 = TlsNamedCurveParams(
+        code=0x0010,
+        named_group=NamedGroup.SECP160R1,
+    )
+    SECP160R2 = TlsNamedCurveParams(
+        code=0x0011,
+        named_group=NamedGroup.SECP160R2,
+    )
+    SECP192K1 = TlsNamedCurveParams(
+        code=0x0012,
+        named_group=NamedGroup.SECP192K1,
+    )
+    SECP192R1 = TlsNamedCurveParams(
+        code=0x0013,
+        named_group=NamedGroup.SECP192R1,
+    )
+    SECP224K1 = TlsNamedCurveParams(
+        code=0x0014,
+        named_group=NamedGroup.SECP224K1,
+    )
+    SECP224R1 = TlsNamedCurveParams(
+        code=0x0015,
+        named_group=NamedGroup.SECP224R1,
+    )
+    SECP256K1 = TlsNamedCurveParams(
+        code=0x0016,
+        named_group=NamedGroup.SECP256K1,
+    )
+    SECP256R1 = TlsNamedCurveParams(
+        code=0x0017,
+        named_group=NamedGroup.SECP256R1,
+    )
+    SECP384R1 = TlsNamedCurveParams(
+        code=0x0018,
+        named_group=NamedGroup.SECP384R1,
+    )
+    SECP521R1 = TlsNamedCurveParams(
+        code=0x0019,
+        named_group=NamedGroup.SECP521R1,
+    )
+
+    BRAINPOOLP256R1 = TlsNamedCurveParams(
+        code=0x001a,
+        named_group=NamedGroup.BRAINPOOLP256R1,
+    )
+    BRAINPOOLP384R1 = TlsNamedCurveParams(
+        code=0x001b,
+        named_group=NamedGroup.BRAINPOOLP384R1,
+    )
+    BRAINPOOLP512R1 = TlsNamedCurveParams(
+        code=0x001c,
+        named_group=NamedGroup.BRAINPOOLP512R1,
+    )
+    X25519 = TlsNamedCurveParams(
+        code=0x001d,
+        named_group=NamedGroup.CURVE25519,
+    )
+    X448 = TlsNamedCurveParams(
+        code=0x001e,
+        named_group=NamedGroup.CURVE448,
+    )
+
+    FFDHE2048 = TlsNamedCurveParams(
+        code=0x0100,
+        named_group=NamedGroup.FFDHE2048,
+    )
+    FFDHE3072 = TlsNamedCurveParams(
+        code=0x0101,
+        named_group=NamedGroup.FFDHE3072,
+    )
+    FFDHE4096 = TlsNamedCurveParams(
+        code=0x0102,
+        named_group=NamedGroup.FFDHE4096,
+    )
+    FFDHE6144 = TlsNamedCurveParams(
+        code=0x0103,
+        named_group=NamedGroup.FFDHE6144,
+    )
+    FFDHE8192 = TlsNamedCurveParams(
+        code=0x0104,
+        named_group=NamedGroup.FFDHE8192,
+    )
+
+    ARBITRARY_EXPLICIT_PRIME_CURVES = TlsNamedCurveParams(
+        code=0xff01,
+        named_group=None,
+    )
+    ARBITRARY_EXPLICIT_CHAR2_CURVES = TlsNamedCurveParams(
+        code=0xff02,
+        named_group=None,
+    )
+
+
+class TlsEllipticCurveVector(VectorParsable):
     @classmethod
     def get_param(cls):
-        return VectorParamNumeric(
-            item_size=2,
-            min_byte_num=1,
-            max_byte_num=2 ** 16 - 1,
-            numeric_class=TlsNamedCurve
+        return VectorParamParsable(
+            item_class=TlsNamedCurveFactory,
+            fallback_class=None,
+            min_byte_num=1, max_byte_num=2 ** 16 - 1
         )
 
 
