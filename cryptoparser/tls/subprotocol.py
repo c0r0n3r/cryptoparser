@@ -665,6 +665,11 @@ class TlsHandshakeServerKeyExchange(TlsHandshakeMessage):
         if parser['curve_type'] == TlsECCurveType.NAMED_CURVE:
             parser.parse_numeric('curve_type', 2, TlsNamedCurve)
 
+            parser.parse_numeric('point_length', TlsDHParamVector)
+            parser.parse_bytes('point', parser['point_length'])
+
+            self.ecdh_public_key = asymmetric.ec.EllipticCurvePublicNumbers.from_encoded_point(parser['point'])
+
 
 class SslMessageBase(ParsableBase):
     @classmethod

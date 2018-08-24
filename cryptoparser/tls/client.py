@@ -93,6 +93,22 @@ class TlsHandshakeClientHelloAuthenticationECDSA(TlsHandshakeClientHello):
         )
 
 
+class TlsHandshakeClientHelloKeyExchangeDHE(TlsHandshakeClientHello):
+    _CIPHER_SUITES = TlsCipherSuiteVector([
+        cipher_suite
+        for cipher_suite in TlsCipherSuite
+        if cipher_suite.value.key_exchange == KeyExchange.DHE
+    ])
+
+    def __init__(self, hostname):
+        super(TlsHandshakeClientHelloKeyExchangeDHE, self).__init__(
+            cipher_suites=TlsCipherSuiteVector(self._CIPHER_SUITES),
+            extensions=[
+                TlsExtensionServerName(hostname),
+            ]
+        )
+
+
 class TlsHandshakeClientHelloKeyExchangeECDHx(TlsHandshakeClientHello):
     _CIPHER_SUITES = TlsCipherSuiteVector([
         cipher_suite
