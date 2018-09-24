@@ -10,14 +10,78 @@ from cryptoparser.common.exception import InvalidValue, InvalidType, NotEnoughDa
 
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 from cryptoparser.tls.extension import TlsExtensionSupportedVersions
+from cryptoparser.tls.subprotocol import TlsSubprotocolMessageParser, TlsHandshakeMessageVariant
 from cryptoparser.tls.subprotocol import TlsHandshakeClientHello, TlsHandshakeServerHello, TlsHandshakeHelloRandom
 from cryptoparser.tls.subprotocol import TlsCipherSuiteVector, TlsCompressionMethodVector, TlsCompressionMethod
 from cryptoparser.tls.subprotocol import TlsSessionIdVector, TlsExtensions, TlsContentType, TlsHandshakeType
 from cryptoparser.tls.subprotocol import TlsHandshakeCertificate, TlsCertificates, TlsCertificate
-from cryptoparser.tls.subprotocol import TlsHandshakeServerHelloDone, TlsHandshakeServerKeyExchange
+from cryptoparser.tls.subprotocol import TlsHandshakeServerHelloDone, TlsHandshakeServerKeyExchange, TlsAlertMessage
 from cryptoparser.tls.subprotocol import SslMessageType, SslHandshakeClientHello, SslHandshakeServerHello
 from cryptoparser.tls.record import TlsRecord
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
+
+from tests.tls.classes import TestMessage, TestVariantMessage
+
+
+class TestSubprotocolParser(unittest.TestCase):
+    def test_registered_parser(self):
+        tls_message_bytes = bytes(
+            b'\x02' +      # level = FATAL
+            b'\x28' +      # description = HANDSHAKE_FAILURE
+            b''
+        )
+        tls_parser = TlsSubprotocolMessageParser(TlsContentType.ALERT)
+        tls_parser.parse(tls_message_bytes)
+
+        tls_parser.register_subprotocol_parser(TlsContentType.ALERT, TestMessage)
+        with self.assertRaises(NotImplementedError):
+            tls_parser.parse(tls_message_bytes)
+
+        tls_parser.register_subprotocol_parser(TlsContentType.ALERT, TlsAlertMessage)
+        parsed_object, _ = tls_parser.parse(tls_message_bytes)
+        self.assertEqual(parsed_object.compose(), tls_message_bytes)
+
+
+class TestVariantParsable(unittest.TestCase):
+    def setUp(self):
+        self.server_hello_done_bytes = bytes(
+            b'\x0e' +                              # handshake_type = SERVER_HELLO_DONE
+            b'\x00\x00\x00' +                      # length = 0x00
+            b''
+        )
+        self.server_hello_done = TlsHandshakeServerHelloDone()
+
+    def test_error(self):
+        invalid_tls_message_bytes = bytes(
+            b'\x16' +      # type = HANDSHAKE
+            b'\x03\x01' +  # version = TLS1_0
+            b'\x00\x01' +  # length = 2
+            b'\xff' +
+            b''
+        )
+
+        with six.assertRaisesRegex(self, InvalidValue, 'is not a valid TlsHandshakeMessageVariant'):
+            TlsHandshakeMessageVariant.parse_exact_size(invalid_tls_message_bytes)
+
+    def test_compose(self):
+        self.assertEqual(TlsHandshakeMessageVariant(self.server_hello_done).compose(), self.server_hello_done_bytes)
+
+    def test_registered_parser(self):
+        message = TlsHandshakeMessageVariant.parse_exact_size(self.server_hello_done_bytes)
+        self.assertEqual(message.compose(), self.server_hello_done_bytes)
+
+        TlsHandshakeMessageVariant.register_variant_parser(TlsHandshakeType.SERVER_HELLO_DONE, TestVariantMessage)
+        with self.assertRaises(NotImplementedError):
+            TlsHandshakeMessageVariant.parse_exact_size(self.server_hello_done_bytes)
+
+        TlsHandshakeMessageVariant.register_variant_parser(
+            TlsHandshakeType.SERVER_HELLO_DONE,
+            TlsHandshakeServerHelloDone
+        )
+        parsed_object = TlsHandshakeMessageVariant.parse_exact_size(self.server_hello_done_bytes)
+        self.assertEqual(parsed_object.compose(), self.server_hello_done_bytes)
+        self.assertEqual(parsed_object.get_content_type(), TlsContentType.HANDSHAKE)
+        self.assertEqual(parsed_object.get_handshake_type(), TlsHandshakeType.SERVER_HELLO_DONE)
 
 
 class TestTlsHandshake(unittest.TestCase):
