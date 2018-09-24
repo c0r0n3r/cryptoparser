@@ -4,8 +4,6 @@
 import enum
 import collections
 
-from cryptoparser.common.base import JSONSerializable
-
 KeyExchangeParams = collections.namedtuple('KeyExchangeParams', ['name', 'pfs', ])
 AuthenticationParams = collections.namedtuple('AuthenticationParams', ['name', 'anonymous', 'exportable', ])
 BlockCipherParams = collections.namedtuple('BlockCipherParams', ['key_size', 'block_size', 'exportable', ])

@@ -8,7 +8,7 @@ import cryptoparser.common.utils as utils
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
-from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsContentType, SslMessageBase, SslMessageType
+from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsSubprotocolMessageParser, TlsContentType, SslMessageBase, SslMessageType, SslSubprotocolMessageParser
 
 
 class RecordBase(ParsableBase):
@@ -28,7 +28,7 @@ class RecordBase(ParsableBase):
 
     @property
     def messages(self):
-        return self._messages
+        return list(self._messages)
 
     @messages.setter
     @abc.abstractmethod
@@ -52,27 +52,9 @@ class TlsRecord(RecordBase):
         parser.parse_parsable('protocol_version', TlsProtocolVersionBase)
         parser.parse_numeric('record_length', 2)
 
-        if parser.parsed_length + parser['record_length'] > len(parsable):
-            raise NotEnoughData(parser['record_length'])
+        parser.parse_variant('messages', TlsSubprotocolMessageParser(parser['content_type']))
 
-        header_size = parser.parsed_length
-
-        messages = []
-        while parser.parsed_length < parser['record_length'] + header_size:
-            for subclass in utils.get_leaf_classes(TlsSubprotocolMessageBase):
-                if subclass.get_content_type() != parser['content_type']:
-                    continue
-
-                try:
-                    parser.parse_parsable('message', subclass)
-                    messages.append(parser['message'])
-                    break
-                except InvalidValue:
-                    continue
-            else:
-                raise InvalidValue(parser['content_type'], TlsRecord, 'content type')
-
-        return TlsRecord(messages=messages, protocol_version=parser['protocol_version']), parser.parsed_length
+        return TlsRecord(messages=[parser['messages'], ], protocol_version=parser['protocol_version']), parser.parsed_length
 
     def compose(self):
         body_composer = ComposerBinary()
@@ -98,10 +80,6 @@ class TlsRecord(RecordBase):
     def content_type(self):
         return self._messages[0].get_content_type()
 
-    @property
-    def messages(self):
-        return list(self._messages)
-
     @RecordBase.messages.setter
     def messages(self, value):
         if not all([issubclass(type(item), TlsSubprotocolMessageBase) for item in value]):
@@ -122,26 +100,16 @@ class SslRecord(RecordBase):
         parser.parse_numeric('record_length_0', 1)
         parser.parse_numeric('record_length_1', 1)
         record_length = ((parser['record_length_0'] & 0x7f) * (2 ** 8)) + parser['record_length_1']
-        #FIXME: not enough data
-        if parser.parsed_length + record_length > len(parsable_bytes):
-            raise NotEnoughData(record_length)
+
+        if record_length > parser.unparsed_length:
+            raise NotEnoughData(record_length - parser.unparsed_length)
 
         try:
             parser.parse_numeric('message_type', 1, SslMessageType)
         except InvalidValue as e:
             raise InvalidValue(e.value, SslMessageType)
 
-        for subclass in utils.get_leaf_classes(SslMessageBase):
-            if subclass.get_message_type() != parser['message_type']:
-                continue
-
-            try:
-                parser.parse_parsable('message', subclass)
-                break
-            except InvalidValue:
-                continue
-        else:
-            raise InvalidValue(parser['message_type'], SslRecord, 'message type')
+        parser.parse_variant('message', SslSubprotocolMessageParser(parser['message_type']))
 
         return SslRecord(message=parser['message']), parser.parsed_length
 
@@ -174,3 +142,7 @@ class SslRecord(RecordBase):
 
         # pylint: disable=attribute-defined-outside-init
         self._messages = value
+
+    @property
+    def content_type(self):
+        return self._messages[0].get_message_type()

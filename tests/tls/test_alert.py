@@ -10,7 +10,7 @@ from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.tls.subprotocol import TlsAlertMessage, TlsAlertLevel, TlsAlertDescription
 
 
-class TestRecord(unittest.TestCase):
+class TestAlert(unittest.TestCase):
     def test_error(self):
         with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid TlsAlertLevel'):
             # pylint: disable=expression-not-assigned
@@ -23,7 +23,7 @@ class TestRecord(unittest.TestCase):
         with self.assertRaises(NotEnoughData) as context_manager:
             # pylint: disable=expression-not-assigned
             TlsAlertMessage.parse_exact_size(b'\xff'),
-        self.assertGreater(context_manager.exception.bytes_needed, 1)
+        self.assertGreaterEqual(context_manager.exception.bytes_needed, 1)
 
     def test_parse(self):
         self.assertEqual(

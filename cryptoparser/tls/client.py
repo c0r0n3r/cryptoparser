@@ -128,14 +128,16 @@ class L7Client(object):
         self._socket = None
         self._buffer = bytearray()
 
-    def _do_handshake(self, tls_client, hello_message, protocol_version, last_handshake_message_type=SslMessageType.SERVER_HELLO):
+    def _do_handshake(self, tls_client, hello_message, protocol_version, last_handshake_message_type):
         try:
             self._socket = self._connect()
         except ConnectionRefusedError:
             raise NetworkError(NetworkErrorType.NO_CONNECTION)
 
-        server_messages = tls_client.do_handshake(hello_message, protocol_version, last_handshake_message_type)
-        self._close()
+        try:
+            server_messages = tls_client.do_handshake(hello_message, protocol_version, last_handshake_message_type)
+        finally:
+            self._close()
 
         return server_messages
 
@@ -386,10 +388,15 @@ class TlsClientHandshake(TlsClient):
                     raise TlsAlert(TlsAlertDescription.UNEXPECTED_MESSAGE)
 
                 for handshake_message in record.messages:
-                    if handshake_message.get_handshake_type() in server_messages:
+                    handshake_type = handshake_message.get_handshake_type()
+                    if handshake_type in server_messages:
                         raise TlsAlert(TlsAlertDescription.UNEXPECTED_MESSAGE)
+                    if (handshake_type == TlsHandshakeType.SERVER_HELLO and
+                        handshake_message.protocol_version != protocol_version):
+                        raise TlsAlert(TlsAlertDescription.PROTOCOL_VERSION)
 
                     server_messages[handshake_message.get_handshake_type()] = handshake_message
+
                     if handshake_message.get_handshake_type() == last_handshake_message_type:
                         return server_messages
 
@@ -419,7 +426,12 @@ class SslHandshakeClientHelloAnyAlgorithm(SslHandshakeClientHello):
 
 
 class SslClientHandshake(TlsClient):
-    def do_handshake(self, hello_message=None, protocol_version=SslVersion.SSL2, last_handshake_message_type=SslMessageType.SERVER_HELLO):
+    def do_handshake(
+        self,
+        hello_message=None,
+        protocol_version=SslVersion.SSL2,
+        last_handshake_message_type=SslMessageType.SERVER_HELLO
+    ):
         if hello_message is None:
             hello_message = SslHandshakeClientHelloAnyAlgorithm(self._host)
 

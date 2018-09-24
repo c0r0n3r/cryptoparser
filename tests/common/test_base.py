@@ -252,6 +252,7 @@ class TestOpaque(unittest.TestCase):
             OpaqueTest([1, 2, 3]).compose()
         )
 
+
 class TestJSONSerializable(unittest.TestCase):
     def test_serialize_enum(self):
         self.assertEqual(json.dumps(JSONSerializableEnum.first), '{"first": {"code": 1}}')

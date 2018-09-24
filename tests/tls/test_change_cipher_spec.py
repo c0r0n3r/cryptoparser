@@ -7,6 +7,7 @@ import six
 
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 
+from cryptoparser.tls.record import TlsRecord
 from cryptoparser.tls.subprotocol import TlsChangeCipherSpecMessage, TlsChangeCipherSpecType
 
 
@@ -31,4 +32,10 @@ class TestRecord(unittest.TestCase):
         self.assertEqual(
             b'\x01',
             TlsChangeCipherSpecMessage(TlsChangeCipherSpecType.CHANGE_CIPHER_SPEC).compose()
+        )
+
+    def test_record(self):
+        self.assertEqual(
+            b'\x14\x03\x03\x00\x01\x01',
+            TlsRecord([TlsChangeCipherSpecMessage()]).compose()
         )

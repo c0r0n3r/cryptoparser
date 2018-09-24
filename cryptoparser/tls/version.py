@@ -199,9 +199,9 @@ class SslProtocolVersion(JSONSerializable, ParsableBase):
 
         parser = ParserBinary(parsable)
 
-        parser.parse_numeric('version', sl._SIZE, SslVersion)
+        parser.parse_numeric('version', cls._SIZE, SslVersion)
 
-        return SslProtocolVersion, cls._SIZE
+        return SslProtocolVersion(), cls._SIZE
 
     def compose(self):
         composer = ComposerBinary()

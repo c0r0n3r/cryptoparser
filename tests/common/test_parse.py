@@ -54,7 +54,7 @@ class TestParserBinary(unittest.TestCase):
         parser.parse_numeric('one_byte', 1)
         with self.assertRaises(NotEnoughData) as context_manager:
             parser.parse_bytes('four_byte_array', 4)
-        self.assertEqual(context_manager.exception.bytes_needed, 5)
+        self.assertEqual(context_manager.exception.bytes_needed, 1)
 
         parser = ParserBinary(b'\x00\x00\x00\x00\x00')
         with self.assertRaises(NotImplementedError):

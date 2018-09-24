@@ -5,15 +5,15 @@ import abc
 import cryptography.hazmat.backends
 import cryptography.hazmat.primitives.asymmetric
 import cryptography.x509
+import calendar
 import datetime
 import enum
 import random
-import time
 
 from typing import Tuple, List
 
 from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorParamParsable, VectorParsable
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.extension import TlsExtensions, TlsNamedCurve
@@ -27,6 +27,63 @@ class TlsContentType(enum.IntEnum):
     HANDSHAKE = 0x16
     APPLICATION_DATA = 0x17
     HEARTBEAT = 0x18
+
+
+class SubprotocolParser(object):
+    def __init__(self, subprotocol_type):
+        self._subprotocol_type = subprotocol_type
+        self._subprotocol_item = None
+
+    @abc.abstractmethod
+    def _get_subprotocol_parsers(cls):
+        raise NotImplementedError()
+
+    def register_subprotocol_parser(cls, subprotocol_type, parsable_class):
+        varints = cls._get_subprotocol_parsers()
+        subprotocol_parsers[subprotocol_type] = parsable_class
+
+    def parse(self, parsable):
+        subprotocol_parsers = self._get_subprotocol_parsers()
+
+        if self._subprotocol_type in subprotocol_parsers:
+            parsed_object, unparsed_bytes = subprotocol_parsers[self._subprotocol_type].parse_immutable(parsable)
+            return parsed_object, len(parsable) - len(unparsed_bytes)
+        else:
+            raise InvalidValue(self._subprotocol_type, TlsSubprotocolMessageBase)
+
+    def compose(self):
+        if self._subprotocol_item is None:
+            raise NotImplementedError()
+
+        return self._subprotocol_item.compose()
+
+
+class VariantParsable(ParsableBase):
+    def __init__(self):
+        self._variant = None
+
+    @abc.abstractmethod
+    def _get_variants(cls):
+        raise NotImplementedError()
+
+    def register_variant_parser(cls, variant_tag, parsable_class):
+        varints = cls._get_variants()
+        variants[variant_tag] = parsable_class
+
+    @classmethod
+    def _parse(cls, parsable):
+        variants = cls._get_variants()
+        for variant_parser in variants.values():
+            try:
+                parsed_object, unparsed_bytes = variant_parser.parse_immutable(parsable)
+                return parsed_object, len(parsable) - len(unparsed_bytes)
+            except InvalidType:
+                continue
+        else:
+            raise InvalidValue()
+
+    def compose(self):
+        raise NotImplementedError()
 
 
 class TlsSubprotocolMessageBase(ParsableBase):
@@ -86,7 +143,7 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
     @classmethod
     def _parse(cls, parsable):
         if len(parsable) < cls._SIZE:
-            raise NotEnoughData(cls._SIZE)
+            raise NotEnoughData(cls._SIZE - len(parsable))
 
         parser = ParserBinary(parsable)
 
@@ -129,6 +186,8 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
 
     def __eq__(self, other):
         return self.level == other.level and self.description == other.description
+
+TlsSubprotocolMessageBase.register(TlsAlertMessage)
 
 
 class TlsChangeCipherSpecType(enum.IntEnum):
@@ -216,7 +275,7 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
     def _parse_handshake_header(cls, parsable):
         # type: (bytes) -> Tuple[TlsHandshakeMessage, int]
         if len(parsable) < cls._HEADER_SIZE:
-            raise NotEnoughData(cls._HEADER_SIZE)
+            raise NotEnoughData(cls._HEADER_SIZE - len(parsable))
 
         parser = ParserBinary(parsable)
 
@@ -226,14 +285,14 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
             raise e
         else:
             if parser['handshake_type'] != cls.get_handshake_type():
-                raise InvalidValue(parser['handshake_type'], TlsHandshakeMessage, 'handshake type')
+                raise InvalidType()
 
         parser.parse_numeric('handshake_length', 3)
 
         try:
             parser.parse_bytes('payload', parser['handshake_length'])
         except NotEnoughData as e:
-            raise NotEnoughData(e.bytes_needed + cls._HEADER_SIZE)
+            raise NotEnoughData(e.bytes_needed)
 
         return parser
 
@@ -244,26 +303,6 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
         composer.compose_numeric(payload_length, 3)
 
         return composer.composed_bytes
-
-    """
-    @classmethod
-    def _parse(cls, parsable):
-        parser = ParserBinary(parsable)
-
-        try:
-            parser.parse_numeric('handshake_type', 1, TlsHandshakeType)
-        except InvalidValue as e:
-            raise UnknownType('{} is not a valid TlsHandshakeType'.format(e.value))
-
-        for handshake_class in utils.get_leaf_classes(TlsHandshakeMessage):
-            if handshake_class.get_handshake_type() == parser['handshake_type']:
-                return handshake_class.parse_exact_size(parsable)
-        else:
-            raise UnknownType('{} is not a valid TlsHandshakeType'.format(parser['handshake_type']))
-
-    def compose(self):
-        pass
-    """
 
     @classmethod
     def _parse_extensions(cls, parser):
@@ -315,6 +354,9 @@ class TlsHandshakeHelloRandom(ParsableBase):
     def time(self, value):
         self._time = value
 
+    def __eq__(self, other):
+        return self.time == other.time and self.random == other.random
+
     @classmethod
     def _parse(cls, parsable):
         parser = ParserBinary(parsable)
@@ -322,12 +364,12 @@ class TlsHandshakeHelloRandom(ParsableBase):
         parser.parse_numeric('time', 4, datetime.datetime.utcfromtimestamp)
         parser.parse_parsable('random', TlsHandshakeHelloRandomBytes)
 
-        return TlsHandshakeHelloRandom(time, parser['random']), parser.parsed_length
+        return TlsHandshakeHelloRandom(parser['time'], parser['random']), parser.parsed_length
 
     def compose(self):
         composer = ComposerBinary()
 
-        composer.compose_numeric(int(time.mktime(self._time.timetuple())), 4)
+        composer.compose_numeric(int(calendar.timegm(self._time.utctimetuple())), 4)
         composer.compose_bytes(self._random)
 
         return composer.composed_bytes
@@ -413,25 +455,21 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
 
         handshake_header_parser = cls._parse_handshake_header(parsable)
 
-        payload_parser = cls._parse_hello_header(parsable)
+        parser = cls._parse_hello_header(handshake_header_parser['payload'])
+        parser.parse_parsable('cipher_suites', TlsCipherSuiteVector)
+        parser.parse_parsable('compression_methods', TlsCompressionMethodVector)
 
-        cipher_suites = TlsVector._parse(remaining_bytes, int, elem_size=2, max_elem_num=2 ** 16 - 2)
-        remaining_bytes = remaining_bytes[cipher_suites.size:]
-
-        compression_methods = TlsVector._parse(remaining_bytes, int, elem_size=1, max_elem_num=2 ** 8 - 1)
-        remaining_bytes = remaining_bytes[compression_methods.size:]
-
-        extensions, len_consumed_for_extensions = cls._parse_extensions(payload_parser)
-        remaining_bytes = remaining_bytes[len_consumed_for_extensions:]
+        if parser.parsed_length < handshake_header_parser['handshake_length']:
+            cls._parse_extensions(parser)
 
         return TlsHandshakeClientHello(
-            handshake_header_parser['protocol_version'],
-            handshake_header_parser['random'],
-            handshake_header_parser['session_id'],
-            cipher_suites,
-            compression_methods,
-            extensions),
-        len(parsable) - len(remaining_bytes)
+            parser['cipher_suites'],
+            parser['protocol_version'],
+            parser['random'],
+            parser['session_id'],
+            parser['compression_methods'],
+            extensions=parser['extensions'] if hasattr(parser, 'extensions') else TlsExtensions([]),
+        ), handshake_header_parser.parsed_length
 
     def compose(self):
         payload_composer = ComposerBinary()
@@ -487,7 +525,7 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
             session_id=parser['session_id'],
             compression_method=parser['compression_method'],
             cipher_suite=parser['cipher_suite'],
-            extensions=parser['extensions'] if hasattr(parser, 'extensions') else None,
+            extensions=parser['extensions'] if hasattr(parser, 'extensions') else TlsExtensions([]),
         ), handshake_header_parser.parsed_length
 
     def compose(self):
@@ -495,19 +533,22 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
 
         payload_composer = ComposerBinary()
 
+        payload_composer.compose_parsable(self.protocol_version)
+        payload_composer.compose_parsable(self.random)
+        payload_composer.compose_parsable(self.session_id)
         payload_composer.compose_parsable(self.cipher_suite)
-        payload_composer.compose_parsable(self.compression_method)
+        payload_composer.compose_numeric(self.compression_method.value, 1)
 
-        # FIXME parsable += self._compose_extensions()
+        extension_bytes = self._compose_extensions()
 
-        header_bytes = self._compose_header(payload_composer.composed_length)
+        header_bytes = self._compose_header(payload_composer.composed_length + len(extension_bytes))
 
-        return header_bytes + payload_composer.composed_bytes
+        return header_bytes + payload_composer.composed_bytes + extension_bytes
 
 
 class TlsCertificate(ParsableBase):
     def __init__(self, certificate):
-        self._certificate = certificate
+        self.certificate = certificate
 
     @classmethod
     def _parse(cls, parsable):
@@ -516,24 +557,18 @@ class TlsCertificate(ParsableBase):
         parser.parse_numeric('certificate_length', 3)
         parser.parse_bytes('certificate', parser['certificate_length'])
 
-        try:
-            certificate = cryptography.x509.load_der_x509_certificate(
-                bytes(parser['certificate']),
-                cryptography.hazmat.backends.default_backend()
-            )
-        except ValueError:
-            raise InvalidValue(value=parser['certificate'])
-
-        return TlsCertificate(certificate), parser.parsed_length
+        return TlsCertificate(parser['certificate']), parser.parsed_length
 
     def compose(self):
-        return bytearray(self._certificate.tbs_certificate_bytes)
+        composer = ComposerBinary()
+
+        composer.compose_numeric(len(self.certificate), 3)
+        composer.compose_bytes(self.certificate)
+
+        return composer.composed_bytes
 
     def __eq__(self, other):
-        return self.compose() == other.compose()
-
-    def __hash__(self):
-        return hash(self._certificate.tbs_certificate_bytes)
+        return self.certificate == other.certificate
 
 
 class TlsCertificates(VectorParsable):
@@ -569,13 +604,12 @@ class TlsHandshakeCertificate(TlsHandshakeMessage):
         ), handshake_header_parser.parsed_length
 
     def compose(self):
-        body_composer = ComposerBinary()
-        body_composer.compose_parsable(self.certificate_chain)
+        payload_composer = ComposerBinary()
+        payload_composer.compose_parsable(self.certificate_chain)
 
-        header_composer = ComposerBinary()
-        header_composer.compose_numeric(body_composer.composed_length)
+        header_bytes = self._compose_header(payload_composer.composed_length)
 
-        return header_composer.composed + body_composer.composed_bytes
+        return header_bytes + payload_composer.composed_bytes
 
 
 class TlsHandshakeServerHelloDone(TlsHandshakeMessage):
@@ -593,14 +627,14 @@ class TlsHandshakeServerHelloDone(TlsHandshakeMessage):
         handshake_header_parser = cls._parse_handshake_header(parsable)
 
         if handshake_header_parser['handshake_length'] != 0:
-            raise InvalidValue()
+            raise InvalidValue(handshake_header_parser['handshake_length'], TlsHandshakeServerHelloDone)
 
         return TlsHandshakeServerHelloDone(), handshake_header_parser.parsed_length
 
     def compose(self):
         # type: () -> bytes
 
-        return bytearray()
+        return self._compose_header(0)
 
 
 class TlsDHParamVector(Vector):
@@ -699,17 +733,38 @@ class SslErrorType(enum.IntEnum):
     UNSUPPORTED_CERTIFICATE_TYPE_ERROR  = 0x0004
 
 
-class SslSessionIdVector(Vector):
+class SslError(SslMessageBase):
+    def __init__(self, error_type):
+        self.error_type = error_type
+
     @classmethod
-    def get_param(cls):
-        return VectorParamNumeric(item_size=1, min_byte_num=0, max_byte_num=16)
+    def get_message_type(cls):
+        return SslMessageType.ERROR
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('error_type', 2, SslErrorType)
+
+        return SslError(parser['error_type']), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric(self.error_type, 2)
+
+        return composer.composed_bytes
+
+    def __eq__(self, other):
+        return self.error_type == other.error_type
 
 
 class SslHandshakeClientHello(SslMessageBase):
     def __init__(
         self,
         cipher_kinds,
-        session_id=SslSessionIdVector([]),
+        session_id=bytearray(),
         challenge=bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32)),
     ):
         self.cipher_kinds = cipher_kinds
@@ -720,8 +775,24 @@ class SslHandshakeClientHello(SslMessageBase):
     def get_message_type(cls):
         return SslMessageType.CLIENT_HELLO
 
-    def _parse(self, parsable_bytes):
-        raise NotImplementedError()
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('version', 2, SslVersion)
+        parser.parse_numeric('cipher_kinds_length', 2)
+        parser.parse_numeric('session_id_length', 2)
+        parser.parse_numeric('challenge_length', 2)
+        parser.parse_parsable_array('cipher_kinds', parser['cipher_kinds_length'], SslCipherKindFactory)
+        parser.parse_bytes('session_id', parser['session_id_length'])
+        parser.parse_bytes('challenge', parser['challenge_length'])
+
+        return SslHandshakeClientHello(
+            cipher_kinds=parser['cipher_kinds'],
+            session_id=parser['session_id'],
+            challenge=parser['challenge']
+        ), parser.parsed_length
+
 
     def compose(self):
         composer = ComposerBinary()
@@ -729,10 +800,11 @@ class SslHandshakeClientHello(SslMessageBase):
         composer.compose_numeric(SslVersion.SSL2, 2)
 
         composer.compose_numeric(len(self.cipher_kinds) * 3, 2)
-        composer.compose_numeric(0, 2)
+        composer.compose_numeric(len(self.session_id), 2)
         composer.compose_numeric(len(self.challenge), 2)
 
         composer.compose_parsable_array(self.cipher_kinds)
+        composer.compose_bytes(self.session_id)
         composer.compose_bytes(self.challenge)
 
         return composer.composed_bytes
@@ -747,11 +819,13 @@ class SslHandshakeServerHello(SslMessageBase):
         self,
         certificate,
         cipher_kinds,
-        connection_id=SslSessionIdVector([]),
+        connection_id=bytearray(),
+        session_id_hit=False
     ):
         self.cipher_kinds = cipher_kinds
         self.certificate = certificate
         self.connection_id = connection_id
+        self.session_id_hit = session_id_hit
 
     @classmethod
     def get_message_type(cls):
@@ -771,19 +845,62 @@ class SslHandshakeServerHello(SslMessageBase):
         parser.parse_parsable_array('cipher_kinds', parser['cipher_kinds_length'], SslCipherKindFactory)
         parser.parse_bytes('connection_id', parser['connection_id_length'])
 
-        try:
-            certificate = cryptography.x509.load_der_x509_certificate(
-                bytes(parser['certificate']),
-                cryptography.hazmat.backends.default_backend()
-            )
-        except ValueError:
-            raise InvalidValue(value=parser['certificate'])
-
         return SslHandshakeServerHello(
-            certificate=certificate,
+            certificate=parser['certificate'],
             cipher_kinds=parser['cipher_kinds'],
             connection_id=parser['connection_id'],
+            session_id_hit=parser['session_id_hit']
         ), parser.parsed_length
 
     def compose(self):
-        raise NotImplementedError()
+        composer = ComposerBinary()
+
+        composer.compose_numeric(1 if self.session_id_hit else 0, 1)
+        composer.compose_numeric(SslCertificateType.X509_CERTIFICATE, 1)
+        composer.compose_numeric(SslVersion.SSL2, 2)
+        composer.compose_numeric(len(self.certificate), 2)
+        composer.compose_numeric(len(self.cipher_kinds) * 3, 2)
+        composer.compose_numeric(len(self.connection_id), 2)
+        composer.compose_bytes(self.certificate)
+        composer.compose_parsable_array(self.cipher_kinds)
+        composer.compose_bytes(self.connection_id)
+
+        return composer.composed_bytes
+
+
+class TlsHandshakeMessageVariant(VariantParsable):
+    _VARIANTS = {
+        TlsHandshakeType.CLIENT_HELLO: TlsHandshakeClientHello,
+        TlsHandshakeType.SERVER_HELLO: TlsHandshakeServerHello,
+        TlsHandshakeType.CERTIFICATE: TlsHandshakeCertificate,
+        TlsHandshakeType.SERVER_KEY_EXCHANGE: TlsHandshakeServerKeyExchange,
+        TlsHandshakeType.SERVER_HELLO_DONE: TlsHandshakeServerHelloDone,
+    }
+
+    @classmethod
+    def _get_variants(cls):
+        return cls._VARIANTS
+
+
+class TlsSubprotocolMessageParser(SubprotocolParser):
+    _SUBPROTOCOL_PARSERS = {
+        TlsContentType.CHANGE_CIPHER_SPEC: TlsChangeCipherSpecMessage,
+        TlsContentType.ALERT: TlsAlertMessage,
+        TlsContentType.HANDSHAKE: TlsHandshakeMessageVariant,
+        TlsContentType.APPLICATION_DATA: TlsApplicationDataMessage,
+    }
+
+    @classmethod
+    def _get_subprotocol_parsers(cls):
+        return cls._SUBPROTOCOL_PARSERS
+
+class SslSubprotocolMessageParser(SubprotocolParser):
+    _SUBPROTOCOL_PARSERS = {
+        SslMessageType.ERROR: SslError,
+        SslMessageType.CLIENT_HELLO: SslHandshakeClientHello,
+        SslMessageType.SERVER_HELLO: SslHandshakeServerHello,
+    }
+
+    @classmethod
+    def _get_subprotocol_parsers(cls):
+        return cls._SUBPROTOCOL_PARSERS

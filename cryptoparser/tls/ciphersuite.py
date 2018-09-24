@@ -29,7 +29,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_NULL_WITH_NULL_NULL = CipherSuiteParams(
         code=0x0000,
         key_exchange=None,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=None,
         block_cipher_mode=None,
         mac=None,
@@ -221,7 +221,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_RC4_128_MD5 = CipherSuiteParams(
         code=0x0018,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.RC4_128,
         block_cipher_mode=None,
         mac=MAC.MD5,
@@ -237,7 +237,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x001a,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.DES,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
@@ -245,7 +245,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x001b,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.TRIPLE_DES_EDE,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
@@ -429,7 +429,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0034,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.AES_128,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
@@ -477,7 +477,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x003a,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.AES_256,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
@@ -573,7 +573,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0046,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.CAMELLIA_128,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
@@ -621,7 +621,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x006c,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.AES_128,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA256,
@@ -629,7 +629,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x006d,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.AES_256,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA256,
@@ -677,7 +677,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0089,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.CAMELLIA_256,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
@@ -821,7 +821,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x009b,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.SEED,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
@@ -909,7 +909,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00a6,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.AES_128,
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA256,
@@ -917,7 +917,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00a7,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.AES_256,
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA384,
@@ -1109,7 +1109,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00bf,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.CAMELLIA_128,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA256,
@@ -1157,7 +1157,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c5,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.CAMELLIA_256,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA256,
@@ -1325,7 +1325,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_ECDH_anon_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc015,
         key_exchange=KeyExchange.ECDH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=None,
         block_cipher_mode=None,
         mac=MAC.SHA,
@@ -1333,7 +1333,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_ECDH_anon_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc016,
         key_exchange=KeyExchange.ECDH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.RC4_128,
         block_cipher_mode=None,
         mac=MAC.SHA,
@@ -1341,7 +1341,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc017,
         key_exchange=KeyExchange.ECDH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.TRIPLE_DES_EDE,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
@@ -1349,7 +1349,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_ECDH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc018,
         key_exchange=KeyExchange.ECDH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.AES_128,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
@@ -1357,7 +1357,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_ECDH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc019,
         key_exchange=KeyExchange.ECDH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.AES_256,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
@@ -1717,7 +1717,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc046,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.ARIA_128,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA256,
@@ -1725,7 +1725,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc047,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.ARIA_256,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA384,
@@ -1877,7 +1877,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc05a,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.ARIA_128,
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA256,
@@ -1885,7 +1885,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc05b,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.ARIA_256,
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA384,
@@ -2213,7 +2213,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc084,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.CAMELLIA_128,
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA256,
@@ -2221,7 +2221,7 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
     TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc085,
         key_exchange=KeyExchange.DH,
-        authentication=None,
+        authentication=Authentication.anon,
         block_cipher=BlockCipher.CAMELLIA_256,
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA384,
