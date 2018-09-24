@@ -3,12 +3,11 @@
 
 import abc
 
-import cryptoparser.common.utils as utils
-
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
-from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsContentType, SslMessageBase, SslMessageType
+from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsSubprotocolMessageParser, TlsContentType
+from cryptoparser.tls.subprotocol import SslMessageBase, SslMessageType, SslSubprotocolMessageParser
 
 
 class RecordBase(ParsableBase):
@@ -67,18 +66,8 @@ class TlsRecord(RecordBase):
 
         messages = []
         while parser.parsed_length < parser['record_length'] + header_size:
-            for subclass in utils.get_leaf_classes(TlsSubprotocolMessageBase):
-                if subclass.get_content_type() != parser['content_type']:
-                    continue
-
-                try:
-                    parser.parse_parsable('message', subclass)
-                    messages.append(parser['message'])
-                    break
-                except InvalidValue:
-                    continue
-            else:
-                raise InvalidValue(parser['content_type'], TlsRecord, 'content type')
+            parser.parse_variant('message', TlsSubprotocolMessageParser(parser['content_type']))
+            messages.append(parser['message'])
 
         return TlsRecord(messages=messages, protocol_version=parser['protocol_version']), parser.parsed_length
 
@@ -140,17 +129,7 @@ class SslRecord(RecordBase):
         except InvalidValue as e:
             raise InvalidValue(e.value, SslMessageType)
 
-        for subclass in utils.get_leaf_classes(SslMessageBase):
-            if subclass.get_message_type() != parser['message_type']:
-                continue
-
-            try:
-                parser.parse_parsable('message', subclass)
-                break
-            except InvalidValue:
-                continue
-        else:
-            raise InvalidValue(parser['message_type'], SslRecord, 'message type')
+        parser.parse_variant('message', SslSubprotocolMessageParser(parser['message_type']))
         parser.parse_bytes('padding', padding_length)
 
         return SslRecord(message=parser['message']), parser.parsed_length
