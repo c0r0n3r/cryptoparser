@@ -35,6 +35,41 @@ class JSONSerializable(object):  # pylint: disable=too-few-public-methods
         return json.dumps(self.__dict__)
 
 
+class VariantParsable(ParsableBase):
+    def __init__(self, variant):
+        self._variant = variant
+
+    def __repr__(self):
+        return repr(self._variant)
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_variants(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def register_variant_parser(cls, variant_tag, parsable_class):
+        variants = cls._get_variants()
+        variants[variant_tag] = parsable_class
+
+    @classmethod
+    def _parse(cls, parsable):
+        for variant_parser in cls._get_variants().values():
+            try:
+                parsed_object, unparsed_bytes = variant_parser.parse_immutable(parsable)
+                return cls(parsed_object), len(parsable) - len(unparsed_bytes)
+            except InvalidType:
+                continue
+
+        raise InvalidValue(parsable, cls)
+
+    def compose(self):
+        return self._variant.compose()
+
+    def __getattr__(self, name):
+        return getattr(self._variant, name)
+
+
 class VectorParamBase(object):  # pylint: disable=too-few-public-methods
     def __init__(self, min_byte_num, max_byte_num):
         self.min_byte_num = min_byte_num
