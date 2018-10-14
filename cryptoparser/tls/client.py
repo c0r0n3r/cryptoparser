@@ -140,10 +140,13 @@ class TlsHandshakeClientHelloBasic(TlsHandshakeClientHello):
 
 
 class L7Client(object):
-    def __init__(self, host, port):
+    _DEFAULT_TIMEOUT = 5
+
+    def __init__(self, host, port, timeout=None):
         self._host = host
         self._port = port
         self._socket = None
+        self._timeout = self._DEFAULT_TIMEOUT if timeout is None else timeout
         self._buffer = bytearray()
 
     def _do_handshake(
@@ -267,9 +270,7 @@ class L7ClientTls(L7Client):
         return 443
 
     def _connect(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self._host, self._port))
-        return sock
+        return socket.create_connection((self._host, self._port), self._timeout)
 
 
 class L7ClientHTTPS(L7Client):
@@ -282,9 +283,7 @@ class L7ClientHTTPS(L7Client):
         return 443
 
     def _connect(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self._host, self._port))
-        return sock
+        return socket.create_connection((self._host, self._port), self._timeout)
 
 
 class ClientPOP3(L7Client):
