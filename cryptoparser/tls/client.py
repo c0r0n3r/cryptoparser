@@ -141,10 +141,13 @@ class TlsHandshakeClientHelloBasic(TlsHandshakeClientHello):
 
 
 class L7Client(object):
-    def __init__(self, host, port):
+    _DEFAULT_TIMEOUT = 5
+
+    def __init__(self, host, port, timeout=None):
         self._host = host
         self._port = port
         self._socket = None
+        self._timeout = self._DEFAULT_TIMEOUT if timeout is None else timeout
         self._buffer = bytearray()
 
     def _do_handshake(
@@ -231,11 +234,11 @@ class L7Client(object):
         self._buffer = self._buffer[byte_num:]
 
     @classmethod
-    def from_scheme(cls, scheme, host, port=None):
+    def from_scheme(cls, scheme, host, port=None, timeout=None):
         for client_class in get_leaf_classes(L7Client):
             if client_class.get_scheme() == scheme:
                 port = client_class.get_default_port() if port is None else port
-                return client_class(host, port)
+                return client_class(host, port, timeout)
 
         raise ValueError()
 
@@ -268,9 +271,7 @@ class L7ClientTls(L7Client):
         return 443
 
     def _connect(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self._host, self._port))
-        return sock
+        return socket.create_connection((self._host, self._port), self._timeout)
 
 
 class L7ClientHTTPS(L7Client):
@@ -283,14 +284,12 @@ class L7ClientHTTPS(L7Client):
         return 443
 
     def _connect(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self._host, self._port))
-        return sock
+        return socket.create_connection((self._host, self._port), self._timeout)
 
 
 class ClientPOP3(L7Client):
-    def __init__(self, host, port):
-        super(ClientPOP3, self).__init__(host, port)
+    def __init__(self, host, port, timeout=None):
+        super(ClientPOP3, self).__init__(host, port, timeout)
 
         self.client = None
 
@@ -303,7 +302,7 @@ class ClientPOP3(L7Client):
         return 110
 
     def _connect(self):
-        self.client = poplib.POP3(self._host, self._port)
+        self.client = poplib.POP3(self._host, self._port, self._timeout)
         if 'STLS' not in self.client.capa():
             raise ValueError
         response = self.client._shortcmd('STLS')  # pylint: disable=protected-access
@@ -317,8 +316,8 @@ class ClientPOP3(L7Client):
 
 
 class ClientSMTP(L7Client):
-    def __init__(self, host, port):
-        super(ClientSMTP, self).__init__(host, port)
+    def __init__(self, host, port, timeout=None):
+        super(ClientSMTP, self).__init__(host, port, timeout)
 
         self.client = None
 
@@ -331,7 +330,7 @@ class ClientSMTP(L7Client):
         return 587
 
     def _connect(self):
-        self.client = smtplib.SMTP()
+        self.client = smtplib.SMTP(timeout=self._timeout)
         self.client.connect(self._host, self._port)
         self.client.ehlo()
         if not self.client.has_extn('STARTTLS'):
@@ -347,8 +346,8 @@ class ClientSMTP(L7Client):
 
 
 class ClientIMAP(L7Client):
-    def __init__(self, host, port):
-        super(ClientIMAP, self).__init__(host, port)
+    def __init__(self, host, port, timeout=None):
+        super(ClientIMAP, self).__init__(host, port, timeout)
 
         self.client = None
 
