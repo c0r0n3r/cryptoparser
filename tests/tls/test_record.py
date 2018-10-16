@@ -8,7 +8,7 @@ import six
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 
 from cryptoparser.tls.record import TlsRecord
-from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase
+from cryptoparser.tls.subprotocol import TlsContentType, TlsSubprotocolMessageBase
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
 from cryptoparser.tls.subprotocol import TlsAlertMessage, TlsAlertLevel, TlsAlertDescription
@@ -82,7 +82,7 @@ class TestTlsRecord(unittest.TestCase):
             record = TlsRecord.parse_exact_size(
                 b'\x16' +          # type = handshake
                 b'\x03\x01' +      # version = TLS 1.0
-                b'\x00\x07' +      # length = 7
+                b'\x00\x06' +      # length = 6
                 b'\x01'            # handshake_type: CLIENT_HELLO
                 b'\x00\x00\x03' +  # handshake_length = 3
                 b'\x03\x03' +      # version = TLS 1.2
@@ -129,6 +129,7 @@ class TestTlsRecord(unittest.TestCase):
     def test_parse(self):
         record = TlsRecord.parse_exact_size(self.test_record_bytes)
 
+        self.assertEqual(record.content_type, TlsContentType.ALERT)
         self.assertEqual(len(record.messages), 1)
         self.assertEqual(
             record.messages[0],
