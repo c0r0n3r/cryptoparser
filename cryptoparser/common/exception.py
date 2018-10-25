@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import enum
-
 
 class InvalidDataLength(Exception):
     def __init__(self, bytes_needed=None):
@@ -33,15 +31,3 @@ class InvalidValue(Exception):
 
 class InvalidType(Exception):
     pass
-
-
-class NetworkErrorType(enum.IntEnum):
-    NO_CONNECTION = 0
-    NO_RESPONSE = 1
-
-
-class NetworkError(IOError):
-    def __init__(self, error):
-        super(NetworkError, self).__init__()
-
-        self.error = error
