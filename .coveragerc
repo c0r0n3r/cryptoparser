@@ -7,5 +7,4 @@ exclude_lines =
     raise NotImplementedError
 fail_under = 100
 include = cryptoparser/*
-omit = cryptoparser/tls/client.py
 show_missing = True
