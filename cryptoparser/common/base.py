@@ -22,6 +22,8 @@ def _default(
         result = obj.as_json()
     elif hasattr(obj, '__dict__'):
         result = {name: value for name, value in obj.__dict__.items() if not name.startswith('_')}
+    else:
+        result = str(obj)
 
     return result
 
@@ -91,6 +93,14 @@ class VectorParamNumeric(VectorParamBase):  # pylint: disable=too-few-public-met
 
     def get_item_size(self, item):
         return self.item_size
+
+
+class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
+    def __init__(self, min_byte_num, max_byte_num):
+        super(OpaqueParam, self).__init__(1, min_byte_num, max_byte_num)
+
+    def get_item_size(self, item):
+        return 1
 
 
 class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-methods
@@ -276,32 +286,28 @@ class VectorParsableDerived(VectorBase):
         return header_composer.composed_bytes + body_composer.composed_bytes
 
 
-class Opaque(Vector):
+class Opaque(VectorBase):
     @classmethod
     def _parse(cls, parsable):
-        composer = ComposerBinary()
-        vector_param = cls.get_param()
-        composer.compose_numeric(vector_param.min_byte_num, vector_param.item_num_size)
+        parser = ParserBinary(parsable)
 
-        try:
-            vector, parsed_length = super(Opaque, cls)._parse(composer.composed_bytes + parsable)
-        except NotEnoughData:
-            raise NotEnoughData(cls.get_byte_num())
+        parser.parse_numeric('item_byte_num', cls.get_param().item_num_size)
+        parser.parse_bytes('items', parser['item_byte_num'])
 
-        return cls(vector), parsed_length - vector_param.item_num_size
+        return cls(parser['items']), parser.parsed_length
 
     def compose(self):
-        return super(Opaque, self).compose()[self.param.item_num_size:]
+        composer = ComposerBinary()
+
+        composer.compose_numeric(len(self._items), self.get_param().item_num_size)
+        composer.compose_bytes(bytearray(self._items))
+
+        return composer.composed_bytes
 
     @classmethod
     @abc.abstractmethod
-    def get_byte_num(cls):
-        raise NotImplementedError()
-
-    @classmethod
     def get_param(cls):
-        byte_num = cls.get_byte_num()
-        return VectorParamNumeric(item_size=1, min_byte_num=byte_num, max_byte_num=byte_num)
+        raise NotImplementedError()
 
 
 class NByteEnumParsable(ParsableBase):
