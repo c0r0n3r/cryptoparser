@@ -7,11 +7,11 @@ import datetime
 import enum
 import random
 
-from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorParamParsable, VectorParsable
+from cryptoparser.common.base import OpaqueParam, Vector, VectorParamNumeric, VectorParamParsable, VectorParsable
 from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
-from cryptoparser.tls.extension import TlsExtensions
+from cryptoparser.tls.extension import TlsExtensions, TlsCertificateStatusType
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory, SslCipherKindFactory
 
@@ -305,10 +305,23 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
         return composer.composed_bytes
 
 
-class TlsHandshakeHelloRandomBytes(Opaque):
+class TlsHandshakeHelloRandomBytes(Vector):
     @classmethod
-    def get_byte_num(cls):
-        return 28
+    def _parse(cls, parsable):
+        composer = ComposerBinary()
+        vector_param = cls.get_param()
+        composer.compose_numeric(vector_param.min_byte_num, vector_param.item_num_size)
+
+        vector, parsed_length = super(TlsHandshakeHelloRandomBytes, cls)._parse(composer.composed_bytes + parsable)
+
+        return cls(vector), parsed_length - vector_param.item_num_size
+
+    def compose(self):
+        return super(TlsHandshakeHelloRandomBytes, self).compose()[self.get_param().item_num_size:]
+
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(min_byte_num=28, max_byte_num=28)
 
 
 class TlsHandshakeHelloRandom(ParsableBase):
@@ -626,6 +639,44 @@ class TlsHandshakeCertificate(TlsHandshakeMessage):
         return header_bytes + payload_composer.composed_bytes
 
 
+class TlsHandshakeCertificateStatus(TlsHandshakeMessage):
+    def __init__(self, status_type, status):
+        super(TlsHandshakeCertificateStatus, self).__init__()
+
+        self.status_type = status_type
+        self.status = status
+
+    @classmethod
+    def get_handshake_type(cls):
+        return TlsHandshakeType.CERTIFICATE_STATUS
+
+    @classmethod
+    def _parse(cls, parsable):
+        handshake_header_parser = cls._parse_handshake_header(parsable)
+
+        parser = ParserBinary(handshake_header_parser['payload'])
+
+        parser.parse_numeric('status_type', 1, TlsCertificateStatusType)
+        parser.parse_numeric('status_length', 3)
+        parser.parse_bytes('status', parser['status_length'])
+
+        return TlsHandshakeCertificateStatus(
+            parser['status_type'],
+            parser['status']
+        ), handshake_header_parser.parsed_length
+
+    def compose(self):
+        body_composer = ComposerBinary()
+        body_composer.compose_numeric(self.status_type, 1)
+
+        body_composer.compose_numeric(len(self.status), 3)
+        body_composer.compose_bytes(self.status)
+
+        header_bytes = self._compose_header(body_composer.composed_length)
+
+        return header_bytes + body_composer.composed_bytes
+
+
 class TlsHandshakeServerHelloDone(TlsHandshakeMessage):
     @classmethod
     def get_handshake_type(cls):
@@ -852,6 +903,7 @@ class TlsHandshakeMessageVariant(VariantParsable):
         TlsHandshakeType.SERVER_HELLO: TlsHandshakeServerHello,
         TlsHandshakeType.CERTIFICATE: TlsHandshakeCertificate,
         TlsHandshakeType.SERVER_KEY_EXCHANGE: TlsHandshakeServerKeyExchange,
+        TlsHandshakeType.CERTIFICATE_STATUS: TlsHandshakeCertificateStatus,
         TlsHandshakeType.SERVER_HELLO_DONE: TlsHandshakeServerHelloDone,
     }
 

@@ -66,6 +66,14 @@ class VectorParamNumeric(VectorParamBase):  # pylint: disable=too-few-public-met
         return self.item_size
 
 
+class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
+    def __init__(self, min_byte_num, max_byte_num):
+        super(OpaqueParam, self).__init__(1, min_byte_num, max_byte_num)
+
+    def get_item_size(self, item):
+        return 1
+
+
 class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-methods
     def __init__(self, item_class, min_byte_num, max_byte_num, fallback_class):
         super(VectorParamParsable, self).__init__(min_byte_num, max_byte_num)
@@ -239,32 +247,35 @@ class VectorParsableDerived(VectorBase):
         return header_composer.composed_bytes + body_composer.composed_bytes
 
 
-class Opaque(Vector):
+class Opaque(VectorBase):
+    def __init__(self, items):
+        if isinstance(items, (bytes, bytearray)):
+            items = [ord(items[i:i + 1]) for i in range(len(items))]
+
+        super(Opaque, self).__init__(items)
+
     @classmethod
     def _parse(cls, parsable):
-        composer = ComposerBinary()
-        vector_param = cls.get_param()
-        composer.compose_numeric(vector_param.min_byte_num, vector_param.item_num_size)
+        parser = ParserBinary(parsable)
 
-        try:
-            vector, parsed_length = super(Opaque, cls)._parse(composer.composed_bytes + parsable)
-        except NotEnoughData:
-            raise NotEnoughData(cls.get_byte_num())
+        parser.parse_numeric('item_byte_num', cls.get_param().item_num_size)
+        parser.parse_bytes('items', parser['item_byte_num'])
 
-        return cls(vector), parsed_length - vector_param.item_num_size
+        items = parser['items']
+        return cls([ord(items[i:i + 1]) for i in range(len(items))]), parser.parsed_length
 
     def compose(self):
-        return super(Opaque, self).compose()[self.param.item_num_size:]
+        composer = ComposerBinary()
+
+        composer.compose_numeric(len(self._items), self.get_param().item_num_size)
+        composer.compose_numeric_array(self._items, 1)
+
+        return composer.composed_bytes
 
     @classmethod
     @abc.abstractmethod
-    def get_byte_num(cls):
-        raise NotImplementedError()
-
-    @classmethod
     def get_param(cls):
-        byte_num = cls.get_byte_num()
-        return VectorParamNumeric(item_size=1, min_byte_num=byte_num, max_byte_num=byte_num)
+        raise NotImplementedError()
 
 
 class NByteEnumParsable(ParsableBase):
