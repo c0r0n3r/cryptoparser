@@ -9,7 +9,7 @@ import math
 from collections import MutableSequence
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
-from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue, InvalidType
 
 
 def _default(
@@ -403,3 +403,48 @@ class ThreeByteEnumComposer(NByteEnumComposer):
     @classmethod
     def get_byte_num(cls):
         return 3
+
+
+class OpaqueEnumParsable(Vector):
+    @classmethod
+    def _parse(cls, parsable):
+        opaque, parsed_length = super(OpaqueEnumParsable, cls)._parse(parsable)
+        code = bytearray(opaque).decode(cls.get_encoding())
+
+        try: 
+            parsed_object = next(iter([
+                enum_item
+                for enum_item in cls.get_enum_class()
+                if enum_item.value.code == code
+            ]))
+        except StopIteration:
+            raise ValueError
+
+        return parsed_object, parsed_length
+
+    @abc.abstractmethod
+    def get_enum_class(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def get_encoding(cls):
+        return 'ascii'
+
+
+class OpaqueEnumComposer(object):
+    def __repr__(self):
+        return self.__class__.__name__ + '.' + self.name
+
+    def compose(self):
+        composer = ComposerBinary()
+        value = self.value.code.encode(self.get_encoding())
+
+        composer.compose_numeric(len(value), 1)
+        composer.compose_bytes(value)
+
+        return composer.composed_bytes
+
+
+    @classmethod
+    def get_encoding(cls):
+        return 'ascii'

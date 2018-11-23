@@ -158,6 +158,8 @@ class ParserBinary(object):
 
         try:
             return self._parse_parsable_array(name, items_size, [item_class, ])
+        except NotEnoughData as e:
+            raise e
         except ValueError as e:
             raise InvalidValue(e.args[0], item_class, name)
 

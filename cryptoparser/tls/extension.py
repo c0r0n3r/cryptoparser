@@ -5,16 +5,18 @@ import abc
 import enum
 import collections
 
-from cryptoparser.common.base import Opaque, OpaqueParam, Vector, VectorParsable, VectorParsableDerived
+from cryptoparser.common.base import Opaque, OpaqueParam, Vector, VectorParsable, VectorParsableDerived, VariantParsable
 from cryptoparser.common.base import VectorParamNumeric, VectorParamParsable
 from cryptoparser.common.algorithm import Authentication, MAC, NamedGroup
-from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptoparser.common.base import OpaqueEnumParsable, OpaqueEnumComposer, TwoByteEnumComposer, TwoByteEnumParsable
+from cryptoparser.common.base import OneByteEnumComposer, OneByteEnumParsable
+from cryptoparser.common.exception import NotEnoughData, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.tls.version import TlsProtocolVersionBase
 
 
 TlsNamedCurveParams = collections.namedtuple('TlsNamedCurveParams', ['code', 'named_group', ])
+TlsProtocolNameParams = collections.namedtuple('TlsNamedCurveParams', ['code', ])
 
 
 class TlsExtensionType(enum.IntEnum):
@@ -67,11 +69,11 @@ class TlsExtensionType(enum.IntEnum):
     RECORD_HEADER = 0xff03                           # [DRAFT-FOSSATI-TLS-EXT-HEADER]
 
 
-class TlsExtensions(VectorParsableDerived):
+class TlsExtensions(VectorParsable):
     @classmethod
     def get_param(cls):
         return VectorParamParsable(
-            item_class=TlsExtensionParsed,
+            item_class=TlsExtensionVariant,
             fallback_class=TlsExtensionUnparsed,
             min_byte_num=0, max_byte_num=2 ** 16 - 1
         )
@@ -111,32 +113,46 @@ class TlsExtensionBase(ParsableBase):
         return header_composer.composed_bytes
 
 
-class TlsExtensionUnparsed(TlsExtensionBase):
+class TlsExtensionUnusedData(TlsExtensionBase):
     def __init__(self, extension_type, extension_data):
-        super(TlsExtensionUnparsed, self).__init__(extension_type)
+        super(TlsExtensionUnusedData, self).__init__(extension_type)
 
-        self._extension_data = extension_data
+        self.extension_data = extension_data
 
     @classmethod
-    def _parse(cls, parsable):
-        parser = super(TlsExtensionUnparsed, cls)._parse_header(parsable)
+    def _parse_header_and_data(cls, parsable):
+        parser = super(TlsExtensionUnusedData, cls)._parse_header(parsable)
 
         parser.parse_bytes('extension_data', parser['extension_length'])
 
-        return TlsExtensionUnparsed(parser['extension_type'], parser['extension_data']), parser.parsed_length
+        return parser
 
     def compose(self):
         payload_composer = ComposerBinary()
-        payload_composer.compose_bytes(self._extension_data)
+        payload_composer.compose_bytes(self.extension_data)
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
         return header_bytes + payload_composer.composed_bytes
 
+    def get_extension_type(self):
+        return self._extension_type
+
+    
+class TlsExtensionUnparsed(TlsExtensionUnusedData):
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header_and_data(parsable)
+
+        return TlsExtensionUnparsed(parser['extension_type'], parser['extension_data']), parser.parsed_length
+
 
 class TlsExtensionParsed(TlsExtensionBase):
-    def __init__(self):
-        super(TlsExtensionParsed, self).__init__(self.get_extension_type())
+    def __init__(self, extension_type=None):
+        if extension_type is None:
+            extension_type = self.get_extension_type()
+
+        super(TlsExtensionParsed, self).__init__(extension_type)
 
     @classmethod
     @abc.abstractmethod
@@ -148,7 +164,7 @@ class TlsExtensionParsed(TlsExtensionBase):
         parser = super(TlsExtensionParsed, cls)._parse_header(parsable)
 
         if parser['extension_type'] != cls.get_extension_type():
-            raise InvalidValue(parser['extension_type'], TlsExtensionParsed, 'extension type')
+            raise InvalidType()
 
         return parser
 
@@ -892,3 +908,350 @@ class TlsExtensionCertificateStatusRequest(TlsExtensionParsed):
         header_bytes = self._compose_header(payload_composer.composed_length)
 
         return header_bytes + payload_composer.composed_bytes
+
+
+class TlsRenegotiatedConnection(Opaque):
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(
+            min_byte_num=0,
+            max_byte_num=2 ** 8 - 1,
+        )
+
+
+class TlsExtensionRenegotiationInfo(TlsExtensionParsed):
+    def __init__(self, renegotiated_connection=TlsRenegotiatedConnection([])):
+        super(TlsExtensionRenegotiationInfo, self).__init__()
+
+        self.renegotiated_connection = TlsRenegotiatedConnection(renegotiated_connection)
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.RENEGOTIATION_INFO
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionRenegotiationInfo, cls)._parse_header(parsable)
+
+        parser.parse_parsable('renegotiated_connection', TlsRenegotiatedConnection)
+
+        return TlsExtensionRenegotiationInfo(parser['renegotiated_connection']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.renegotiated_connection)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+class TlsExtensionSessionTicket(TlsExtensionParsed):
+    def __init__(self, session_ticket=bytearray([])):
+        super(TlsExtensionSessionTicket, self).__init__()
+
+        self.session_ticket = bytearray(session_ticket)
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.SESSION_TICKET
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionSessionTicket, cls)._parse_header(parsable)
+
+        parser.parse_bytes('session_ticket', parser['extension_length'])
+
+        return TlsExtensionSessionTicket(parser['session_ticket']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_bytes(self.session_ticket)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+class TlsProtocolNameFactory(OpaqueEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsProtocolName
+
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(
+            min_byte_num=1, max_byte_num=2 ** 8 - 1
+        )
+
+
+class TlsProtocolName(OpaqueEnumComposer, enum.Enum):
+    C_WEBRTC = TlsProtocolNameParams(
+        code='c-webrtc',
+    )
+    COAP = TlsProtocolNameParams(
+        code='coap',
+    )
+    FTP = TlsProtocolNameParams(
+        code='ftp',
+    )
+    H2 = TlsProtocolNameParams(
+        code='h2',
+    )
+    H2_14 = TlsProtocolNameParams(
+        code='h2-14',
+    )
+    H2_15 = TlsProtocolNameParams(
+        code='h2-15',
+    )
+    H2_16 = TlsProtocolNameParams(
+        code='h2-16',
+    )
+    H2C = TlsProtocolNameParams(
+        code='h2c',
+    )
+    HTTP_0_9 = TlsProtocolNameParams(
+        code='http/0.9',
+    )
+    HTTP_1_0 = TlsProtocolNameParams(
+        code='http/1.0',
+    )
+    HTTP_1_1 = TlsProtocolNameParams(
+        code='http/1.1',
+    )
+    IMAP = TlsProtocolNameParams(
+        code='imap',
+    )
+    MANAGESIEVE = TlsProtocolNameParams(
+        code='managesieve',
+    )
+    POP3 = TlsProtocolNameParams(
+        code='pop3',
+    )
+    SPDY_1 = TlsProtocolNameParams(
+        code='spdy/1',
+    )
+    SPDY_2 = TlsProtocolNameParams(
+        code='spdy/2',
+    )
+    SPDY_3 = TlsProtocolNameParams(
+        code='spdy/3',
+    )
+    SPDY_3_1 = TlsProtocolNameParams(
+        code='spdy/3.1',
+    )
+    STUN_NAT_DISCOVERY = TlsProtocolNameParams(
+        code='stun.nat-discovery',
+    )
+    STUN_TURN = TlsProtocolNameParams(
+        code='stun.turn',
+    )
+    WEBRTC = TlsProtocolNameParams(
+        code='webrtc',
+    )
+    XMPP_CLIENT = TlsProtocolNameParams(
+        code='xmpp-client',
+    )
+    XMPP_SERVER = TlsProtocolNameParams(
+        code='xmpp-server',
+    )
+
+
+class TlsProtocolNameList(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsProtocolNameFactory,
+            fallback_class=None,
+            min_byte_num=2, max_byte_num=2 ** 16 - 1
+        )
+
+
+class TlsExtensionApplicationLayerProtocolNegotiation(TlsExtensionParsed):
+    def __init__(self, protocol_names):
+        super(TlsExtensionApplicationLayerProtocolNegotiation, self).__init__()
+
+        self.protocol_names = TlsProtocolNameList(protocol_names)
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionApplicationLayerProtocolNegotiation, cls)._parse_header(parsable)
+
+        parser.parse_parsable('protocol_names', TlsProtocolNameList)
+
+        return TlsExtensionApplicationLayerProtocolNegotiation(parser['protocol_names']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.protocol_names)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+TLS_EXTENSION_TYPES_GREASE = [
+    extension_type
+    for extension_type in TlsExtensionType
+    if extension_type.name.startswith('GREASE_')
+]
+
+
+class TlsExtensionGrease(TlsExtensionUnusedData):
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionGrease, cls)._parse_header_and_data(parsable)
+
+        if parser['extension_type'] not in TLS_EXTENSION_TYPES_GREASE:
+            raise InvalidType()
+
+        return TlsExtensionGrease(parser['extension_type'], parser['extension_data']), parser.parsed_length
+
+
+class TlsExtensionPadding(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.PADDING
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header_and_data(parsable)
+
+        if parser['extension_type'] != cls.get_extension_type():
+            raise InvalidType()
+
+        return TlsExtensionPadding(parser['extension_type'], parser['extension_data']), parser.parsed_length
+
+
+class TlsExtensionExtendedMasterSecret(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.EXTENDED_MASTER_SECRET
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header_and_data(parsable)
+
+        if parser['extension_type'] != cls.get_extension_type():
+            raise InvalidType()
+        if parser['extension_data']:
+            raise InvalidValue()
+
+        return TlsExtensionExtendedMasterSecret(parser['extension_type'], parser['extension_data']), parser.parsed_length
+
+
+class TlsExtensionRecordSizeLimit(TlsExtensionParsed):
+    def __init__(self, record_size_limit):
+        super(TlsExtensionRecordSizeLimit, self).__init__()
+
+        self.record_size_limit = record_size_limit
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.RECORD_SIZE_LIMIT
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_numeric('record_size_limit', 2)
+
+        return TlsExtensionRecordSizeLimit(parser['record_size_limit']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_numeric(self.record_size_limit, 2)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+class TlsPskKeyExchangeMode(OneByteEnumComposer, enum.IntEnum):
+    PSK_KE = 0
+    PSK_DHE_KE = 1
+
+
+class TlsPskKeyExchangeModeVector(Vector):
+    @classmethod
+    def get_param(cls):
+        return VectorParamNumeric(
+            item_size=1,
+            min_byte_num=1,
+            max_byte_num=2 ** 8 - 1,
+            numeric_class=TlsPskKeyExchangeMode
+        )
+
+
+class TlsExtensionPskKeyExchangeModes(TlsExtensionParsed):
+    def __init__(self, key_exhange_modes):
+        super(TlsExtensionPskKeyExchangeModes, self).__init__()
+
+        self.key_exhange_modes = key_exhange_modes
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.PSK_KEY_EXCHANGE_MODES
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_parsable('key_exhange_modes', TlsPskKeyExchangeModeVector)
+
+        return TlsExtensionPskKeyExchangeModes(parser['key_exhange_modes']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.key_exhange_modes)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+class TlsExtensionVariant(VariantParsable):
+    _VARIANTS = collections.OrderedDict(
+        [
+            (TlsExtensionType.SERVER_NAME, TlsExtensionServerName),
+            (TlsExtensionType.STATUS_REQUEST, TlsExtensionCertificateStatusRequest),
+            (TlsExtensionType.SUPPORTED_GROUPS, TlsExtensionEllipticCurves),
+            (TlsExtensionType.EC_POINT_FORMATS, TlsExtensionECPointFormats),
+            (TlsExtensionType.SIGNATURE_ALGORITHMS, TlsExtensionSignatureAlgorithms),
+            (TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION, TlsExtensionApplicationLayerProtocolNegotiation),
+            (TlsExtensionType.PADDING, TlsExtensionPadding),
+            (TlsExtensionType.EXTENDED_MASTER_SECRET, TlsExtensionExtendedMasterSecret),
+            (TlsExtensionType.RECORD_SIZE_LIMIT, TlsExtensionRecordSizeLimit),
+            (TlsExtensionType.SESSION_TICKET, TlsExtensionSessionTicket),
+            (TlsExtensionType.KEY_SHARE_RESERVED, TlsExtensionKeyShareReserved),
+            (TlsExtensionType.SUPPORTED_VERSIONS, TlsExtensionSupportedVersions),
+            (TlsExtensionType.PSK_KEY_EXCHANGE_MODES, TlsExtensionPskKeyExchangeModes),
+            (TlsExtensionType.SIGNATURE_ALGORITHMS_CERT, TlsExtensionSignatureAlgorithmsCert),
+            (TlsExtensionType.KEY_SHARE, TlsExtensionKeyShare),
+            (TlsExtensionType.RENEGOTIATION_INFO, TlsExtensionRenegotiationInfo),
+        ] + [
+            (extension_type, TlsExtensionGrease)
+            for extension_type in TLS_EXTENSION_TYPES_GREASE
+        ]
+    )
+
+    @classmethod
+    def _get_variants(cls):
+        variants = collections.OrderedDict(cls._VARIANTS)
+
+        variants.update([
+            (extension_type, TlsExtensionUnparsed)
+            for extension_type in TlsExtensionType
+            if extension_type not in cls._VARIANTS
+        ])
+
+        return variants
