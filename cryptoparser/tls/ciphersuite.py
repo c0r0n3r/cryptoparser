@@ -2745,6 +2745,30 @@ class TlsCipherSuite(JSONSerializable, TwoByteEnumComposer, enum.Enum):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA,
     )
+    TLS_EMPTY_RENEGOTIATION_INFO_SCSV = CipherSuiteParams(
+        code=0x00ff,
+        key_exchange=None,
+        authentication=None,
+        block_cipher=None,
+        block_cipher_mode=None,
+        mac=None,
+    )
+    GREASE_5A5A = CipherSuiteParams(
+        code=0x5a5a,
+        key_exchange=None,
+        authentication=None,
+        block_cipher=None,
+        block_cipher_mode=None,
+        mac=None,
+    )
+    GREASE_AAAA = CipherSuiteParams(
+        code=0xaaaa,
+        key_exchange=None,
+        authentication=None,
+        block_cipher=None,
+        block_cipher_mode=None,
+        mac=None,
+    )
 
 
 class SslCipherKindFactory(ThreeByteEnumParsable):

@@ -47,19 +47,19 @@ class TlsExtensionType(enum.IntEnum):
     TOKEN_BINDING = 0x0018                           # [DRAFT-IETF-TOKBIND-NEGOTIATION]
     CACHED_INFO = 0x0019                             # [RFC7924]
     CERTIFICATE_COMPERSSION = 0x001b                 # [DRAFT-IETF-TLS-CERTIFICATE-COMPRESSION-04]
-    RECORD_SIZE_LIMIT = 0X001C                       # [RFC8849]
-    PWD_PROTECT = 0X001D                             # [RFC-HARKINS-TLS-DRAGONFLY-03]
-    PWD_CLEAR = 0X001E                               # [RFC-HARKINS-TLS-DRAGONFLY-03]
-    PASSWORD_SALT = 0X001F                           # [RFC-HARKINS-TLS-DRAGONFLY-03]
-    SESSION_TICKET = 0X0023                          # [RFC4507]
-    KEY_SHARE_RESERVED = 0X0028                      # [DRAFT-IETF-TLS-TLS13-20]
-    PRE_SHARED_KEY = 0X0029                          # [DRAFT-IETF-TLS-TLS13-20]
-    EARLY_DATA = 0X002A                              # [DRAFT-IETF-TLS-TLS13-20]
-    SUPPORTED_VERSIONS = 0X002B                      # [DRAFT-IETF-TLS-TLS13-20]
-    COOKIE = 0X002C                                  # [DRAFT-IETF-TLS-TLS13-20]
-    PSK_KEY_EXCHANGE_MODES = 0X002D                  # [DRAFT-IETF-TLS-TLS13-20]
-    CERTIFICATE_AUTHORITIES = 0X002F                 # [DRAFT-IETF-TLS-TLS13-20]
-    OID_FILTERS = 0X0030                             # [DRAFT-IETF-TLS-TLS13-20]
+    RECORD_SIZE_LIMIT = 0x001c                       # [RFC8849]
+    PWD_PROTECT = 0x001d                             # [RFC-HARKINS-TLS-DRAGONFLY-03]
+    PWD_CLEAR = 0x001e                               # [RFC-HARKINS-TLS-DRAGONFLY-03]
+    PASSWORD_SALT = 0x001f                           # [RFC-HARKINS-TLS-DRAGONFLY-03]
+    SESSION_TICKET = 0x0023                          # [RFC4507]
+    KEY_SHARE_RESERVED = 0x0028                      # [DRAFT-IETF-TLS-TLS13-20]
+    PRE_SHARED_KEY = 0x0029                          # [DRAFT-IETF-TLS-TLS13-20]
+    EARLY_DATA = 0x002a                              # [DRAFT-IETF-TLS-TLS13-20]
+    SUPPORTED_VERSIONS = 0x002b                      # [DRAFT-IETF-TLS-TLS13-20]
+    COOKIE = 0x002c                                  # [DRAFT-IETF-TLS-TLS13-20]
+    PSK_KEY_EXCHANGE_MODES = 0x002d                  # [DRAFT-IETF-TLS-TLS13-20]
+    CERTIFICATE_AUTHORITIES = 0x002f                 # [DRAFT-IETF-TLS-TLS13-20]
+    OID_FILTERS = 0x0030                             # [DRAFT-IETF-TLS-TLS13-20]
     POST_HANDSHAKE_AUTH = 0x0031                     # [DRAFT-IETF-TLS-TLS13-20]
     SIGNATURE_ALGORITHMS_CERT = 0x0032               # [DRAFT-IETF-TLS-TLS13-23]
     KEY_SHARE = 0x0033                               # [DRAFT-IETF-TLS-TLS13-23]
@@ -67,6 +67,17 @@ class TlsExtensionType(enum.IntEnum):
     CHANNEL_ID = 0x7550                              # [DRAFT-BALFANZ-TLS-OBC-01]
     RENEGOTIATION_INFO = 0xff01                      # [RFC5746]
     RECORD_HEADER = 0xff03                           # [DRAFT-FOSSATI-TLS-EXT-HEADER]
+    GREASE_0A0A = 0x0a0a                             # [DRAFT-IETF-TLS-GREASE-01]
+    GREASE_1A1A = 0x1a1a                             # [DRAFT-IETF-TLS-GREASE-01]
+    GREASE_2A2A = 0x2a2a                             # [DRAFT-IETF-TLS-GREASE-01]
+    GREASE_3A3A = 0x3a3a                             # [DRAFT-IETF-TLS-GREASE-01]
+    GREASE_4A4A = 0x4a4a                             # [DRAFT-IETF-TLS-GREASE-01]
+    GREASE_5A5A = 0x5a5a                             # [DRAFT-IETF-TLS-GREASE-01]
+    GREASE_6A6A = 0x6a6a                             # [DRAFT-IETF-TLS-GREASE-01]
+    GREASE_7A7A = 0x7a7a                             # [DRAFT-IETF-TLS-GREASE-01]
+    GREASE_8A8A = 0x8a8a                             # [DRAFT-IETF-TLS-GREASE-01]
+    GREASE_9A9A = 0x9a9a                             # [DRAFT-IETF-TLS-GREASE-01]
+    GREASE_AAAA = 0xaaaa                             # [DRAFT-IETF-TLS-GREASE-01]
 
 
 class TlsExtensions(VectorParsable):
@@ -422,6 +433,14 @@ class TlsNamedCurve(TwoByteEnumComposer, enum.Enum):
         code=0x0104,
         named_group=NamedGroup.FFDHE8192,
     )
+    GREASE_0A0A = TlsNamedCurveParams(
+        code=0x8a8a,
+        named_group=None,
+    )
+    GREASE_BABA = TlsNamedCurveParams(
+        code=0xbaba,
+        named_group=None,
+    )
 
     ARBITRARY_EXPLICIT_PRIME_CURVES = TlsNamedCurveParams(
         code=0xff01,
@@ -742,7 +761,7 @@ class TlsExtensionSignatureAlgorithmsBase(TlsExtensionParsed):
 
         parser.parse_parsable('hash_and_signature_algorithms', TlsSignatureAndHashAlgorithmVector)
 
-        return TlsExtensionSignatureAlgorithms(parser['hash_and_signature_algorithms']), parser.parsed_length
+        return cls(parser['hash_and_signature_algorithms']), parser.parsed_length
 
     def compose(self):
         payload_composer = ComposerBinary()
@@ -776,6 +795,9 @@ class TlsKeyShareEntry(ParsableBase):
     def __init__(self, group, key_exchange):
         self.group = TlsNamedCurve(group)
         self.key_exchange = TlsKeyExchangeVector(key_exchange)
+
+    def __eq__(self, other):
+        return self.group == other.group and self.key_exchange == other.key_exchange
 
     @classmethod
     def _parse(cls, parsable_bytes):
@@ -821,7 +843,7 @@ class TlsExtensionKeyShare(TlsExtensionParsed):
 
         parser.parse_parsable('key_share_entries', TlsKeyShareEntryVector)
 
-        return TlsExtensionKeyShare(parser['key_share_entries']), parser.parsed_length
+        return cls(parser['key_share_entries']), parser.parsed_length
 
     def compose(self):
         payload_composer = ComposerBinary()
