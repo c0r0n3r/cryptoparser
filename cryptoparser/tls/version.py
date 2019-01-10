@@ -175,6 +175,33 @@ class TlsProtocolVersionDraft(TlsProtocolVersionBase):
         self._minor = value
 
 
+class TlsVersionGrease(enum.IntEnum):
+    GREASE_0A0A = 0x0A0A
+    GREASE_1A1A = 0x1A1A
+    GREASE_2A2A = 0x2A2A
+    GREASE_3A3A = 0x3A3A
+    GREASE_4A4A = 0x4A4A
+    GREASE_5A5A = 0x5A5A
+    GREASE_6A6A = 0x6A6A
+    GREASE_7A7A = 0x7A7A
+    GREASE_8A8A = 0x8A8A
+    GREASE_9A9A = 0x9A9A
+    GREASE_AAAA = 0xAAAA
+    GREASE_BABA = 0xBABA
+    GREASE_CACA = 0xCACA
+    GREASE_DADA = 0xDADA
+    GREASE_EAEA = 0xEAEA
+    GREASE_FAFA = 0xFAFA
+
+
+class TlsProtocolVersionGrease(TlsProtocolVersionBase):
+    def __init__(self, grease):
+        major = grease.value >> 8
+        minor = grease.value & 0x00ff
+
+        super(TlsProtocolVersionGrease, self).__init__(major, minor)
+
+
 class SslVersion(enum.IntEnum):
     SSL2 = 0x0002
 
