@@ -3,7 +3,9 @@
 
 import abc
 import enum
+import calendar
 import collections
+import datetime
 
 from cryptoparser.common.base import Opaque, OpaqueParam, Vector, VectorParsable, VectorParsableDerived
 from cryptoparser.common.base import VectorParamNumeric, VectorParamParsable
@@ -751,6 +753,108 @@ class TlsExtensionCertificateStatusRequest(TlsExtensionParsed):
         payload_composer.compose_numeric(TlsCertificateStatusType.OCSP, 1)
         payload_composer.compose_parsable(self.responder_id_list)
         payload_composer.compose_parsable(self.request_extensions)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+class SignedCertificateTimestampVersion(enum.IntEnum):
+    V1 = 0x00  # pylint: disable=invalid-name
+
+
+class SignedCertificateTimestampExtensions(Opaque):
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(
+            min_byte_num=0,
+            max_byte_num=2 ** 16 - 1,
+        )
+
+
+class SignedCertificateTimestamp(ParsableBase):
+    def __init__(self, version, log_id, timestamp, extensions, signature_algorithm, signature):  # pylint: disable=too-many-arguments
+        self.version = version
+        self.log_id = log_id
+        self.timestamp = timestamp
+        self.extensions = extensions
+        self.signature_algorithm = signature_algorithm
+        self.signature = signature
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('length', 2)
+        parser.parse_numeric('version', 1, SignedCertificateTimestampVersion)
+        parser.parse_bytes('log_id', 32)
+        parser.parse_numeric('timestamp', 8)
+        parser.parse_parsable('extensions', SignedCertificateTimestampExtensions)
+        parser.parse_parsable('signature_algorithm', TlsSignatureAndHashAlgorithmFactory)
+        parser.parse_numeric('signature_length', 2)
+        parser.parse_bytes('signature', parser['signature_length'])
+
+        timestamp = datetime.datetime.utcfromtimestamp(parser['timestamp'] / 1000) + \
+            datetime.timedelta(microseconds=(parser['timestamp'] % 1000) * 1000)
+
+        return SignedCertificateTimestamp(
+            parser['version'],
+            parser['log_id'],
+            timestamp,
+            parser['extensions'],
+            parser['signature_algorithm'],
+            parser['signature'],
+        ), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_numeric(self.version, 1)
+        payload_composer.compose_bytes(self.log_id)
+        payload_composer.compose_numeric(
+            calendar.timegm(self.timestamp.utctimetuple()) * 1000 + int(self.timestamp.microsecond / 1000), 8
+        )
+        payload_composer.compose_parsable(self.extensions)
+        payload_composer.compose_parsable(self.signature_algorithm)
+        payload_composer.compose_numeric(len(self.signature), 2)
+        payload_composer.compose_bytes(self.signature)
+
+        return payload_composer.composed_bytes
+
+
+class SignedCertificateTimestampVector(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=SignedCertificateTimestamp,
+            fallback_class=None,
+            min_byte_num=0, max_byte_num=2 ** 16 - 1
+        )
+
+
+class TlsExtensionSignedCertificateTimestamp(TlsExtensionParsed):
+    def __init__(self, scts):
+        super(TlsExtensionSignedCertificateTimestamp, self).__init__()
+
+        self.scts = SignedCertificateTimestampVector(scts)
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionSignedCertificateTimestamp, cls)._parse_header(parsable)
+
+        parser.parse_parsable('scts', SignedCertificateTimestampVector)
+
+        return TlsExtensionSignedCertificateTimestamp(parser['scts']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        if self.scts:
+            payload_composer.compose_parsable(self.scts)
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 

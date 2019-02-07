@@ -48,6 +48,7 @@ class ParserBinary(object):
         2: '!H',
         3: '!I',
         4: '!I',
+        8: '!Q',
     }
 
     def __init__(self, parsable):
@@ -168,6 +169,7 @@ class ComposerBinary(object):
         2: '!H',
         3: '!I',
         4: '!I',
+        8: '!Q',
     }
 
     def __init__(self):
