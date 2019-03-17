@@ -8,7 +8,7 @@ from cryptoparser.common.base import Vector, VectorParamNumeric
 from cryptoparser.common.base import VectorParsable, VectorParamParsable
 from cryptoparser.common.base import VectorParsableDerived, Opaque
 
-from cryptoparser.tls.ciphersuite import TlsCipherSuite
+from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 
 from tests.common.classes import OneByteParsable, TwoByteParsable
 from tests.common.classes import ConditionalParsable
@@ -256,3 +256,4 @@ class TestOpaque(unittest.TestCase):
 class TestEnum(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(len(TlsCipherSuite.TLS_NULL_WITH_NULL_NULL.compose()), TlsCipherSuite.get_byte_num())
+        self.assertEqual(len(SslCipherKind.RC4_128_WITH_MD5.compose()), SslCipherKind.get_byte_num())

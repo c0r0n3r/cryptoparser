@@ -174,6 +174,14 @@ class TestSslRecord(unittest.TestCase):
             )
         self.assertEqual(context_manager.exception.bytes_needed, 3)
 
+        with self.assertRaises(InvalidValue) as context_manager:
+            SslRecord.parse_exact_size(
+                b'\x80\x03' +  # length = 3
+                b'\x00' +      # message_type = ERROR
+                b'\x00\xff' +  # error_type = INVALID
+                b''
+            )
+
         with self.assertRaises(InvalidValue):
             self.test_record.protocol_version = 'invalid version'
         with self.assertRaises(InvalidValue):

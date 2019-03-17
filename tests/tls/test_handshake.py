@@ -8,13 +8,14 @@ import six
 
 from cryptoparser.common.exception import InvalidValue, InvalidType, NotEnoughData
 
-from cryptoparser.tls.ciphersuite import TlsCipherSuite
+from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 from cryptoparser.tls.extension import TlsExtensionSupportedVersions
 from cryptoparser.tls.subprotocol import TlsHandshakeClientHello, TlsHandshakeServerHello, TlsHandshakeHelloRandom
 from cryptoparser.tls.subprotocol import TlsCipherSuiteVector, TlsCompressionMethodVector, TlsCompressionMethod
 from cryptoparser.tls.subprotocol import TlsSessionIdVector, TlsExtensions, TlsContentType, TlsHandshakeType
 from cryptoparser.tls.subprotocol import TlsHandshakeCertificate, TlsCertificates, TlsCertificate
 from cryptoparser.tls.subprotocol import TlsHandshakeServerHelloDone, TlsHandshakeServerKeyExchange
+from cryptoparser.tls.subprotocol import SslMessageType, SslHandshakeClientHello, SslHandshakeServerHello
 from cryptoparser.tls.record import TlsRecord
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
@@ -318,3 +319,70 @@ class TestTlsHandshakeServerKeyExcahnge(unittest.TestCase):
 
     def test_compose(self):
         self.assertEqual(self.server_key_exchange.compose(), self.server_key_exchange_bytes)
+
+
+class TestSslHandshakeClientHello(unittest.TestCase):
+    def setUp(self):
+        self.client_hello_bytes = bytearray(
+            b'\x00\x02' +                          # version = SSL2
+            b'\x00\x06' +                          # cipher_kinds_length = 0x06
+            b'\x00\x08' +                          # session_id_length = 0x08
+            b'\x00\x10' +                          # challenge_length = 0x10
+            b'\x01\x00\x80\x07\x00\xc0' +          # cipher_kinds
+            b'\x00\x01\x02\x03\x04\x05\x06\x07' +  # session_id
+            b'\x00\x01\x02\x03\x04\x05\x06\x07' +  # challenge
+            b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+            b''
+        )
+
+        self.client_hello = SslHandshakeClientHello(
+            cipher_kinds=[
+                SslCipherKind.RC4_128_WITH_MD5,
+                SslCipherKind.DES_192_EDE3_CBC_WITH_MD5
+            ],
+            session_id=b'\x00\x01\x02\x03\x04\x05\x06\x07',
+            challenge=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
+        )
+
+    def test_parse(self):
+        client_hello_minimal = SslHandshakeClientHello.parse_exact_size(self.client_hello_bytes)
+
+        self.assertEqual(client_hello_minimal.get_message_type(), SslMessageType.CLIENT_HELLO)
+
+    def test_compose(self):
+        self.assertEqual(self.client_hello.compose(), self.client_hello_bytes)
+
+
+class TestSslHandshakeServerHello(unittest.TestCase):
+    def setUp(self):
+        self.server_hello_bytes = bytearray(
+            b'\x00' +                              # session_id_hit = False
+            b'\x01' +                              # certificate_type = X509_CERTIFICATE
+            b'\x00\x02' +                          # version = SSL2
+            b'\x00\x0b' +                          # certificate_length = 0x0b
+            b'\x00\x06' +                          # cipher_kinds_length = 0x06
+            b'\x00\x10' +                          # connection_id_length = 0x10
+            b'certificate' +                       # certificate
+            b'\x01\x00\x80\x07\x00\xc0' +          # cipher_kinds
+            b'\x00\x01\x02\x03\x04\x05\x06\x07' +  # connection_id
+            b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+            b''
+        )
+
+        self.server_hello = SslHandshakeServerHello(
+            certificate=b'certificate',
+            cipher_kinds=[
+                SslCipherKind.RC4_128_WITH_MD5,
+                SslCipherKind.DES_192_EDE3_CBC_WITH_MD5
+            ],
+            connection_id=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+            session_id_hit=False
+        )
+
+    def test_parse(self):
+        server_hello_minimal = SslHandshakeServerHello.parse_exact_size(self.server_hello_bytes)
+
+        self.assertEqual(server_hello_minimal.get_message_type(), SslMessageType.SERVER_HELLO)
+
+    def test_compose(self):
+        self.assertEqual(self.server_hello.compose(), self.server_hello_bytes)
