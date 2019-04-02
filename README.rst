@@ -4,7 +4,7 @@ CryptoParser
 What is it and what is it not?
 ------------------------------
 
-As the project name CryptoParser implies, it is an cryptographic protocol parser. The main purpose of creating this
+As the project name CryptoParser implies, it is a cryptographic protocol parser. The main purpose of creating this
 library is the fact, that cryptography protocol analysis differs in many aspect from establishing a connection using a 
 cryptographic protocol.  Analysis is mostly testing where we trigger special and corner cases of the protocol and we 
 also trying to establish connection with hardly supported, experimental, obsoleted or even deprecated mechanisms or 
