@@ -126,7 +126,7 @@ class TlsProtocolVersionFinal(TlsProtocolVersionBase):
 @attr.s(init=False, eq=False, order=False)
 class TlsProtocolVersionDraft(TlsProtocolVersionBase):
     _MAJOR = 0x7f
-    MAX_DRAFT_NUMBER = 0xff
+    MAX_DRAFT_NUMBER = 28
 
     major = attr.ib()
     minor = attr.ib()
@@ -139,10 +139,10 @@ class TlsProtocolVersionDraft(TlsProtocolVersionBase):
 
     @property
     def identifier(self):
-        return 'tls1_3_draft{}'.format(self.minor - 1)
+        return 'tls1_3_draft{}'.format(self.minor)
 
     def __str__(self):
-        return 'TLS 1.3 Draft {}'.format(self.minor - 1)
+        return 'TLS 1.3 Draft {}'.format(self.minor)
 
     @major.validator
     def major_validator(self, attribute, value):  # pylint: disable=unused-argument
