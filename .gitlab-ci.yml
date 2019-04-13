@@ -69,3 +69,6 @@ coveralls:
     - pip install coveralls
     - coverage run --source=cryptoparser setup.py test
     - coveralls
+  only:
+    refs:
+      - master
