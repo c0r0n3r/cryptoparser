@@ -6,7 +6,15 @@ from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidVal
 from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary, ByteOrder
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
 
-from .classes import OneByteParsable, TwoByteParsable, ConditionalParsable, OneByteOddParsable, FlagEnum
+from .classes import (
+    ConditionalParsable,
+    FlagEnum,
+    OneByteOddParsable,
+    OneByteParsable,
+    SerializableEnum,
+    SerializableEnumFactory,
+    TwoByteParsable,
+)
 
 
 class TestParsable(unittest.TestCase):
@@ -38,6 +46,12 @@ class TestParsable(unittest.TestCase):
         parsable = bytearray([0x01, 0x02])
         OneByteParsable.parse_mutable(parsable)
         self.assertEqual(parsable, b'\x02')
+
+        parsed_value, unparsed_bytes = SerializableEnumFactory.parse_immutable(b'\x00\x01')
+        self.assertEqual(parsed_value, SerializableEnum.first)
+
+    def test_repr(self):
+        self.assertEqual(repr(SerializableEnum.first), 'SerializableEnum.first')
 
 
 class TestParserBinary(unittest.TestCase):
@@ -168,6 +182,11 @@ class TestParserBinary(unittest.TestCase):
         parser = ParserBinary(b'\x01\x02')
         with self.assertRaises(InvalidValue):
             parser.parse_parsable_array('array', items_size=2, item_class=OneByteOddParsable)
+
+        parser = ParserBinary(b'\x00')
+        with self.assertRaises(NotEnoughData) as context_manager:
+            parser.parse_parsable_array('array', items_size=3, item_class=OneByteOddParsable)
+        self.assertEqual(context_manager.exception.bytes_needed, 2)
 
     def test_parse_parsable_derived_array(self):
         parser = ParserBinary(b'\x01\x02\x00')
@@ -334,3 +353,8 @@ class TestComposerBinary(unittest.TestCase):
             b'\x01\x02\x03',
             composer.composed_bytes
         )
+
+    def test_compose_enum(self):
+        composer = ComposerBinary()
+        composer.compose_parsable(SerializableEnum.second)
+        self.assertEqual(b'\x00\x02', composer.composed_bytes)

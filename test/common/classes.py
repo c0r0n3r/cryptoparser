@@ -5,7 +5,7 @@ import enum
 import attr
 import six
 
-from cryptoparser.common.base import Serializable
+from cryptoparser.common.base import Serializable, TwoByteEnumParsable, TwoByteEnumComposer
 from cryptoparser.common.exception import TooMuchData, InvalidValue
 from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
 
@@ -142,7 +142,17 @@ class SerializableIterables(Serializable):
         self.tuple_value = tuple(['value', ])
 
 
-class SerializableParamEnum(enum.Enum):
+class SerializableEnumFactory(TwoByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return SerializableEnum
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+class SerializableEnum(Serializable, TwoByteEnumComposer):
     first = SerializableEnumValue(
         code=0x0001,
     )
@@ -158,7 +168,7 @@ class SerializableStringEnum(enum.Enum):
 
 class SerializableEnums(Serializable):
     def __init__(self):
-        self.param_enum = SerializableParamEnum.first
+        self.param_enum = SerializableEnum.first
         self.string_enum = SerializableStringEnum.second
 
 

@@ -283,8 +283,14 @@ class TestOpaque(unittest.TestCase):
 
 class TestEnum(unittest.TestCase):
     def test_compose(self):
-        self.assertEqual(len(TlsCipherSuite.TLS_NULL_WITH_NULL_NULL.compose()), TlsCipherSuite.get_byte_num())
-        self.assertEqual(len(SslCipherKind.SSL_CK_RC4_128_WITH_MD5.compose()), SslCipherKind.get_byte_num())
+        self.assertEqual(
+            len(TlsCipherSuite.TLS_NULL_WITH_NULL_NULL.compose()),  # pylint: disable=no-member
+            TlsCipherSuite.get_byte_num()
+        )
+        self.assertEqual(
+            len(SslCipherKind.SSL_CK_RC4_128_WITH_MD5.compose()),  # pylint: disable=no-member
+            SslCipherKind.get_byte_num()
+        )
 
 
 class TestSerializable(unittest.TestCase):

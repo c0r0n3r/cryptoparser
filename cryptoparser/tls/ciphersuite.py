@@ -37,7 +37,7 @@ class CipherSuiteParams(object):
     authenticated_encryption = attr.ib(validator=attr.validators.instance_of(bool))
 
 
-class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
+class TlsCipherSuite(Serializable, TwoByteEnumComposer):
     TLS_NULL_WITH_NULL_NULL = CipherSuiteParams(
         code=0x0000,
         key_exchange=None,
@@ -3579,7 +3579,7 @@ class SslCipherKindFactory(ThreeByteEnumParsable):
         raise NotImplementedError()
 
 
-class SslCipherKind(Serializable, ThreeByteEnumComposer, enum.Enum):
+class SslCipherKind(Serializable, ThreeByteEnumComposer):
     SSL_CK_NULL_WITH_MD5 = CipherSuiteParams(
         code=0x000000,
         key_exchange=KeyExchange.RSA,

@@ -5,12 +5,19 @@ import enum
 import six
 import attr
 
-from cryptoparser.common.base import Serializable
-from cryptoparser.common.base import OneByteEnumComposer, OneByteEnumParsable
-from cryptoparser.common.base import Vector, VectorParsable, VectorParsableDerived
-from cryptoparser.common.base import VectorParamNumeric, VectorParamParsable
 from cryptoparser.common.algorithm import Authentication, MAC, NamedGroup
-from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
+from cryptoparser.common.base import (
+    OneByteEnumComposer,
+    OneByteEnumParsable,
+    Serializable,
+    TwoByteEnumComposer,
+    TwoByteEnumParsable,
+    Vector,
+    VectorParamNumeric,
+    VectorParamParsable,
+    VectorParsable,
+    VectorParsableDerived,
+)
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.tls.grease import TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
@@ -380,9 +387,9 @@ class TlsECPointFormatFactory(OneByteEnumParsable):
 
 
 class TlsECPointFormat(Serializable, OneByteEnumComposer, enum.Enum):
-    UNCOMPRESSED = TlsECPointFormatParams(code=0x0)
-    ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x1)
-    ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x2)
+    UNCOMPRESSED = TlsECPointFormatParams(code=0x00)
+    ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x01)
+    ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x02)
 
 
 class TlsECPointFormatVector(VectorParsable):
@@ -432,7 +439,7 @@ class TlsNamedCurveFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-class TlsNamedCurve(TwoByteEnumComposer, enum.Enum):
+class TlsNamedCurve(TwoByteEnumComposer):
     SECT163K1 = TlsNamedCurveParams(
         code=0x0001,
         named_group=NamedGroup.SECT163K1,
@@ -703,7 +710,7 @@ class HashAndSignatureAlgorithmParam(object):
     signature_algorithm = attr.ib(validator=attr.validators.optional(attr.validators.in_(Authentication)))
 
 
-class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
+class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer):
     ANONYMOUS_NONE = HashAndSignatureAlgorithmParam(
         code=0x0000,
         signature_algorithm=Authentication.anon,

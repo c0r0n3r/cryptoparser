@@ -404,7 +404,7 @@ class NByteEnumParsable(ParsableBase):
 
         parser.parse_numeric('code', cls.get_byte_num())
 
-        for enum_item in cls.get_enum_class():
+        for enum_item in list(cls.get_enum_class()):
             if enum_item.value.code == parser['code']:
                 return enum_item, cls.get_byte_num()
 
@@ -454,7 +454,10 @@ class ThreeByteEnumParsable(NByteEnumParsable):
         raise NotImplementedError()
 
 
-class NByteEnumComposer(object):
+class NByteEnumComposer(enum.Enum):
+    def __repr__(self):
+        return self.__class__.__name__ + '.' + self.name
+
     def compose(self):
         composer = ComposerBinary()
 
