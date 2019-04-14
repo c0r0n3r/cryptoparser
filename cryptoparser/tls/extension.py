@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import collections
 import enum
 import six
 import attr
@@ -12,13 +13,14 @@ from cryptoparser.common.base import (
     Serializable,
     TwoByteEnumComposer,
     TwoByteEnumParsable,
+    VariantParsable,
     Vector,
     VectorParamNumeric,
     VectorParamParsable,
     VectorParsable,
     VectorParsableDerived,
 )
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.tls.grease import TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsProtocolVersionBase
@@ -212,11 +214,11 @@ class TlsExtensionType(Serializable, TwoByteEnumComposer, enum.Enum):
     )
 
 
-class TlsExtensions(VectorParsableDerived):
+class TlsExtensions(VectorParsable):
     @classmethod
     def get_param(cls):
         return VectorParamParsable(
-            item_class=TlsExtensionParsed,
+            item_class=TlsExtensionVariant,
             fallback_class=TlsExtensionUnparsed,
             min_byte_num=0, max_byte_num=2 ** 16 - 1
         )
@@ -318,7 +320,7 @@ class TlsExtensionParsed(TlsExtensionBase):
         parser = super(TlsExtensionParsed, cls)._check_header(parsable)
 
         if parser['extension_type'] != cls.get_extension_type():
-            raise InvalidValue(parser['extension_type'], TlsExtensionParsed, 'extension type')
+            raise InvalidType()
 
         return parser
 
@@ -912,3 +914,27 @@ class TlsExtensionSignatureAlgorithms(TlsExtensionParsed):
         header_bytes = self._compose_header(payload_composer.composed_length)
 
         return header_bytes + payload_composer.composed_bytes
+
+
+class TlsExtensionVariant(VariantParsable):
+    _VARIANTS = collections.OrderedDict(
+        [
+            (TlsExtensionType.SERVER_NAME, (TlsExtensionServerName, )),
+            (TlsExtensionType.SUPPORTED_GROUPS, (TlsExtensionEllipticCurves, )),
+            (TlsExtensionType.EC_POINT_FORMATS, (TlsExtensionECPointFormats, )),
+            (TlsExtensionType.SIGNATURE_ALGORITHMS, (TlsExtensionSignatureAlgorithms, )),
+            (TlsExtensionType.SUPPORTED_VERSIONS, (TlsExtensionSupportedVersions, )),
+        ]
+    )
+
+    @classmethod
+    def _get_variants(cls):
+        variants = collections.OrderedDict(cls._VARIANTS)
+
+        variants.update([
+            (extension_type, (TlsExtensionUnparsed, ))
+            for extension_type in TlsExtensionType
+            if extension_type not in cls._VARIANTS
+        ])
+
+        return variants

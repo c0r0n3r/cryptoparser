@@ -95,23 +95,6 @@ class TestVariantParsable(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(TlsHandshakeMessageVariant(self.server_hello_done).compose(), self.server_hello_done_bytes)
 
-    def test_registered_parser(self):
-        message = TlsHandshakeMessageVariant.parse_exact_size(self.server_hello_done_bytes)
-        self.assertEqual(message.compose(), self.server_hello_done_bytes)
-
-        TlsHandshakeMessageVariant.register_variant_parser(TlsHandshakeType.SERVER_HELLO_DONE, TestVariantMessage)
-        with self.assertRaises(NotImplementedError):
-            TlsHandshakeMessageVariant.parse_exact_size(self.server_hello_done_bytes)
-
-        TlsHandshakeMessageVariant.register_variant_parser(
-            TlsHandshakeType.SERVER_HELLO_DONE,
-            TlsHandshakeServerHelloDone
-        )
-        parsed_object = TlsHandshakeMessageVariant.parse_exact_size(self.server_hello_done_bytes)
-        self.assertEqual(parsed_object.compose(), self.server_hello_done_bytes)
-        self.assertEqual(parsed_object.get_content_type(), TlsContentType.HANDSHAKE)
-        self.assertEqual(parsed_object.get_handshake_type(), TlsHandshakeType.SERVER_HELLO_DONE)
-
 
 class TestTlsCipherSuiteVector(unittest.TestCase):
     def test_parse(self):

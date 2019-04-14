@@ -2,6 +2,7 @@
 
 import abc
 import calendar
+import collections
 import datetime
 import enum
 import random
@@ -9,7 +10,14 @@ import attr
 
 import six
 
-from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorParamParsable, VectorParsable
+from cryptoparser.common.base import (
+    Opaque,
+    VariantParsable,
+    Vector,
+    VectorParamNumeric,
+    VectorParamParsable,
+    VectorParsable,
+)
 from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
@@ -61,35 +69,6 @@ class SubprotocolParser(object):
             return parsed_object, len(parsable) - len(unparsed_bytes)
 
         raise InvalidValue(self._subprotocol_type, TlsSubprotocolMessageBase)
-
-
-@attr.s
-class VariantParsable(ParsableBase):
-    variant = attr.ib(validator=attr.validators.instance_of(ParsableBase))
-
-    @classmethod
-    @abc.abstractmethod
-    def _get_variants(cls):
-        raise NotImplementedError()
-
-    @classmethod
-    def register_variant_parser(cls, variant_tag, parsable_class):
-        variants = cls._get_variants()
-        variants[variant_tag] = parsable_class
-
-    @classmethod
-    def _parse(cls, parsable):
-        for variant_parser in cls._get_variants().values():
-            try:
-                parsed_object, unparsed_bytes = variant_parser.parse_immutable(parsable)
-                return parsed_object, len(parsable) - len(unparsed_bytes)
-            except InvalidType:
-                continue
-
-        raise InvalidValue(parsable, cls)
-
-    def compose(self):
-        return self.variant.compose()
 
 
 class TlsSubprotocolMessageBase(ParsableBase):
@@ -881,13 +860,13 @@ class SslHandshakeServerHello(SslMessageBase):
 
 
 class TlsHandshakeMessageVariant(VariantParsable):
-    _VARIANTS = {
-        TlsHandshakeType.CLIENT_HELLO: TlsHandshakeClientHello,
-        TlsHandshakeType.SERVER_HELLO: TlsHandshakeServerHello,
-        TlsHandshakeType.CERTIFICATE: TlsHandshakeCertificate,
-        TlsHandshakeType.SERVER_KEY_EXCHANGE: TlsHandshakeServerKeyExchange,
-        TlsHandshakeType.SERVER_HELLO_DONE: TlsHandshakeServerHelloDone,
-    }
+    _VARIANTS = collections.OrderedDict([
+        (TlsHandshakeType.CLIENT_HELLO, [TlsHandshakeClientHello, ]),
+        (TlsHandshakeType.SERVER_HELLO, [TlsHandshakeServerHello, ]),
+        (TlsHandshakeType.CERTIFICATE, [TlsHandshakeCertificate, ]),
+        (TlsHandshakeType.SERVER_KEY_EXCHANGE, [TlsHandshakeServerKeyExchange, ]),
+        (TlsHandshakeType.SERVER_HELLO_DONE, [TlsHandshakeServerHelloDone, ]),
+    ])
 
     @classmethod
     def _get_variants(cls):

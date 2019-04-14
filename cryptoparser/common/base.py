@@ -17,7 +17,7 @@ import attr
 import six
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
-from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue, InvalidType
 
 
 def _default(
@@ -174,6 +174,67 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
     def as_markdown(self):
         _, result = self._as_markdown(0)
         return result
+
+
+@attr.s
+class VariantParsable(ParsableBase):
+    variant = attr.ib()
+
+    _REGISTERED_VARIANTS = OrderedDict()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_variants(cls):
+        raise NotImplementedError()
+
+    @variant.validator
+    def _validator_variant(self, _, value):
+        for variant_type in self._get_variant_types():
+            if issubclass(variant_type, NByteEnumParsable):
+                variant_type = variant_type.get_enum_class()
+
+            if isinstance(value, variant_type):
+                break
+        else:
+            raise InvalidValue(value, VariantParsable)
+
+    @classmethod
+    def _get_variant_types(cls):
+        variant_types = []
+
+        for variant_type_list in list(cls._get_variants().values()) + list(cls._get_registered_variants().values()):
+            variant_types.extend(variant_type_list)
+
+        return variant_types
+
+    @classmethod
+    def _get_registered_variants(cls):
+        if cls not in cls._REGISTERED_VARIANTS:
+            cls._REGISTERED_VARIANTS[cls] = OrderedDict()
+
+        return cls._REGISTERED_VARIANTS[cls]
+
+    @classmethod
+    def register_variant_parser(cls, variant_tag, parsable_class):
+        registered_variants = cls._get_registered_variants()
+        if variant_tag not in registered_variants:
+            registered_variants[variant_tag] = []
+
+        registered_variants[variant_tag].append(parsable_class)
+
+    @classmethod
+    def _parse(cls, parsable):
+        for variant_parser in cls._get_variant_types():
+            try:
+                parsed_object, unparsed_bytes = variant_parser.parse_immutable(parsable)
+                return parsed_object, len(parsable) - len(unparsed_bytes)
+            except InvalidType:
+                pass
+
+        raise InvalidValue(parsable, cls)
+
+    def compose(self):
+        return self.variant.compose()
 
 
 @attr.s

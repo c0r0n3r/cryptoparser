@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import collections
 import enum
 import attr
 import six
 
-from cryptoparser.common.base import Serializable, TwoByteEnumParsable, TwoByteEnumComposer
-from cryptoparser.common.exception import TooMuchData, InvalidValue
+from cryptoparser.common.base import Serializable, TwoByteEnumParsable, TwoByteEnumComposer, VariantParsable
+from cryptoparser.common.exception import TooMuchData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
 
 
@@ -114,6 +115,31 @@ class AlwaysUnknowTypeParsable(ParsableBase):
 
     def compose(self):
         raise TooMuchData()
+
+
+class AlwaysInvalidTypeParsable(ParsableBase):
+    @classmethod
+    def _parse(cls, parsable):
+        raise InvalidType()
+
+    def compose(self):
+        raise TooMuchData()
+
+
+class AlwaysInvalidTypeVariantParsable(VariantParsable):
+    @classmethod
+    def _get_variants(cls):
+        return collections.OrderedDict([
+            (AlwaysInvalidTypeParsable, (AlwaysInvalidTypeParsable, ))
+        ])
+
+
+class SerializableEnumVariantParsable(VariantParsable):
+    @classmethod
+    def _get_variants(cls):
+        return collections.OrderedDict([
+            (SerializableEnum, (SerializableEnum, ))
+        ])
 
 
 @attr.s
