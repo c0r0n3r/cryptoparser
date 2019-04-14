@@ -178,8 +178,17 @@ class TlsExtensionType(Serializable, TwoByteEnumComposer, enum.Enum):
     EXTERNAL_SESSION_ID = TlsExtensionTypeParams(                     # [RFC-IETF-MMUSIC-SDP-UKS-07]
         code=0x0038
     )
+    NEXT_PROTOCOL_NEGOTIATION = TlsExtensionTypeParams(               # [DRAFT-AGL-TLS-NEXTPROTONEG-04]
+        code=0x3374
+    )
+    CHANNEL_ID = TlsExtensionTypeParams(                              # [DRAFT-BALFANZ-TLS-OBC-01]
+        code=0x7550
+    )
     RENEGOTIATION_INFO = TlsExtensionTypeParams(                      # [DRAFT-AGL-TLS-NEXTPROTONEG-03]
         code=0xff01
+    )
+    RECORD_HEADER = TlsExtensionTypeParams(                           # [DRAFT-FOSSATI-TLS-EXT-HEADER]
+        code=0xff03
     )
 
 
