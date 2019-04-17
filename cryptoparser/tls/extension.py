@@ -19,7 +19,7 @@ from cryptoparser.common.base import (
     VectorParsable,
     VectorParsableDerived,
 )
-from cryptoparser.common.exception import NotEnoughData, InvalidType
+from cryptoparser.common.exception import NotEnoughData, InvalidType, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.tls.algorithm import (
     TlsNamedCurve,
@@ -301,7 +301,7 @@ class TlsExtensionUnparsed(TlsExtensionBase):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionUnparsed, cls)._check_header(parsable)
+        parser = cls._check_header(parsable)
 
         parser.parse_raw('extension_data', parser['extension_length'])
 
@@ -311,12 +311,7 @@ class TlsExtensionUnparsed(TlsExtensionBase):
         composer.compose_parsable(self.extension_type)
 
     def compose(self):
-        payload_composer = ComposerBinary()
-        payload_composer.compose_raw(self.extension_data)
-
-        header_bytes = self._compose_header(payload_composer.composed_length)
-
-        return header_bytes + payload_composer.composed_bytes
+        return self._compose_header(len(self.extension_data)) + self.extension_data
 
 
 @attr.s
@@ -346,6 +341,27 @@ class TlsExtensionParsed(TlsExtensionBase):
             raise InvalidType()
 
         return parser
+
+
+class TlsExtensionUnusedData(TlsExtensionParsed):
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_raw('extension_data', parser['extension_length'])
+
+        if parser['extension_data']:
+            raise InvalidValue(parser['extension_data'], cls)
+
+        return cls(), parser.parsed_length
+
+    def compose(self):
+        return self._compose_header(0)
+
+    @classmethod
+    @abc.abstractmethod
+    def get_extension_type(cls):
+        raise NotImplementedError()
 
 
 class TlsServerNameType(enum.IntEnum):
@@ -823,6 +839,18 @@ class TlsExtensionCertificateStatusRequest(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
+class TlsExtensionEncryptThenMAC(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.ENCRYPT_THEN_MAC
+
+
+class TlsExtensionExtendedMasterSecret(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.EXTENDED_MASTER_SECRET
+
+
 class TlsExtensionVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -846,6 +874,8 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
     @classmethod
     def _get_parsed_extensions(cls):
         return collections.OrderedDict([
+            (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
+            (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
             (TlsExtensionType.SERVER_NAME, [TlsExtensionServerName, ]),
             (TlsExtensionType.SUPPORTED_GROUPS, [TlsExtensionEllipticCurves, ]),
             (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
@@ -860,6 +890,8 @@ class TlsExtensionVariantServer(TlsExtensionVariantBase):
     def _get_parsed_extensions(cls):
         return collections.OrderedDict([
             (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
+            (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
+            (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
             (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClientHelloRetry, TlsExtensionKeyShareServer]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsServer, ]),
         ])

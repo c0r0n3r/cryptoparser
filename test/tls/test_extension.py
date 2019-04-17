@@ -3,7 +3,7 @@
 import collections
 import unittest
 
-from cryptoparser.common.exception import NotEnoughData, InvalidType
+from cryptoparser.common.exception import NotEnoughData, InvalidType, InvalidValue
 from cryptoparser.tls.algorithm import TlsSignatureAndHashAlgorithm, TlsECPointFormat, TlsNamedCurve
 from cryptoparser.tls.extension import (
     TlsCertificateStatusRequestExtensions,
@@ -12,6 +12,8 @@ from cryptoparser.tls.extension import (
     TlsExtensionCertificateStatusRequest,
     TlsExtensionECPointFormats,
     TlsExtensionEllipticCurves,
+    TlsExtensionEncryptThenMAC,
+    TlsExtensionExtendedMasterSecret,
     TlsExtensionKeyShareClient,
     TlsExtensionKeyShareClientHelloRetry,
     TlsExtensionKeyShareServer,
@@ -27,6 +29,8 @@ from cryptoparser.tls.extension import (
 )
 from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
+
+from .classes import TestUnusedDataExtension
 
 
 class TestExtensionUnparsed(unittest.TestCase):
@@ -451,3 +455,41 @@ class TestExtensionCertificateStatusRequest(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(self.status_request_minimal.compose(), self.status_request_minimal_bytes)
         self.assertEqual(self.status_request.compose(), self.status_request_bytes)
+
+
+class TestExtensionUnusedData(unittest.TestCase):
+    def test_error(self):
+        extension_unused_data_dict = collections.OrderedDict([
+            ('extension_type', b'\xff\x01'),
+            ('extension_length', b'\x00\x01'),
+            ('extension_data', b'\xff'),
+        ])
+        extension_unused_data_bytes = b''.join(extension_unused_data_dict.values())
+        with self.assertRaises(InvalidValue) as context_manager:
+            # pylint: disable=expression-not-assigned
+            TestUnusedDataExtension.parse_exact_size(extension_unused_data_bytes)
+        self.assertEqual(context_manager.exception.value, b'\xff')
+
+
+class TestExtensionEncryptThenMAC(unittest.TestCase):
+    def test_parse(self):
+        extension_encrypt_then_mac_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x16'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_encrypt_then_mac_bytes = b''.join(extension_encrypt_then_mac_dict.values())
+        extension_encrypt_then_mac = TlsExtensionEncryptThenMAC.parse_exact_size(extension_encrypt_then_mac_bytes)
+        self.assertEqual(extension_encrypt_then_mac.compose(), extension_encrypt_then_mac_bytes)
+
+
+class TestExtensionExtendedMasterSecret(unittest.TestCase):
+    def test_parse(self):
+        extension_extended_master_secret_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x17'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_extended_master_secret_bytes = b''.join(extension_extended_master_secret_dict.values())
+        extended_master_secret = TlsExtensionExtendedMasterSecret.parse_exact_size(
+            extension_extended_master_secret_bytes
+        )
+        self.assertEqual(extended_master_secret.compose(), extension_extended_master_secret_bytes)
