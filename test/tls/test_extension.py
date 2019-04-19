@@ -19,6 +19,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionKeyShareServer,
     TlsExtensionKeyShareReservedClient,
     TlsExtensionServerName,
+    TlsExtensionSessionTicket,
     TlsExtensionSignatureAlgorithms,
     TlsExtensionSignatureAlgorithmsCert,
     TlsExtensionSupportedVersionsClient,
@@ -455,6 +456,21 @@ class TestExtensionCertificateStatusRequest(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(self.status_request_minimal.compose(), self.status_request_minimal_bytes)
         self.assertEqual(self.status_request.compose(), self.status_request_bytes)
+
+
+class TestExtensionSessionTicket(unittest.TestCase):
+    def test_parse(self):
+        extension_session_ticket_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x23'),
+            ('extension_length', b'\x00\x08'),
+            ('session_ticket', b'\x00\x01\x02\x03\x04\x05\x06\x07'),
+        ])
+        extension_session_ticket_bytes = b''.join(extension_session_ticket_dict.values())
+        extension_session_ticket = TlsExtensionSessionTicket.parse_exact_size(
+            extension_session_ticket_bytes
+        )
+        self.assertEqual(extension_session_ticket.session_ticket, b'\x00\x01\x02\x03\x04\x05\x06\x07')
+        self.assertEqual(extension_session_ticket.compose(), extension_session_ticket_bytes)
 
 
 class TestExtensionUnusedData(unittest.TestCase):

@@ -839,6 +839,35 @@ class TlsExtensionCertificateStatusRequest(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
+@attr.s
+class TlsExtensionSessionTicket(TlsExtensionParsed):
+    session_ticket = attr.ib(
+        default=bytearray([]),
+        validator=attr.validators.instance_of((bytes, bytearray))
+    )
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.SESSION_TICKET
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionSessionTicket, cls)._parse_header(parsable)
+
+        parser.parse_raw('session_ticket', parser['extension_length'])
+
+        return TlsExtensionSessionTicket(parser['session_ticket']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_raw(self.session_ticket)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
 class TlsExtensionEncryptThenMAC(TlsExtensionUnusedData):
     @classmethod
     def get_extension_type(cls):
@@ -877,6 +906,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
             (TlsExtensionType.SERVER_NAME, [TlsExtensionServerName, ]),
+            (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
             (TlsExtensionType.SUPPORTED_GROUPS, [TlsExtensionEllipticCurves, ]),
             (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
             (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClient, ]),
@@ -893,5 +923,6 @@ class TlsExtensionVariantServer(TlsExtensionVariantBase):
             (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
             (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClientHelloRetry, TlsExtensionKeyShareServer]),
+            (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsServer, ]),
         ])
