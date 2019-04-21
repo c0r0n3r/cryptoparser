@@ -7,10 +7,12 @@ import enum
 import six
 import attr
 
+from cryptoparser.tls.algorithm import TlsProtocolName
 from cryptoparser.common.base import (
     Opaque,
     OpaqueParam,
     TwoByteEnumComposer,
+    OpaqueEnumParsable,
     TwoByteEnumParsable,
     VariantParsable,
     Vector,
@@ -868,6 +870,57 @@ class TlsExtensionSessionTicket(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
+class TlsProtocolNameFactory(OpaqueEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsProtocolName
+
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(
+            min_byte_num=1, max_byte_num=2 ** 8 - 1
+        )
+
+
+class TlsProtocolNameList(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsProtocolNameFactory,
+            fallback_class=None,
+            min_byte_num=2, max_byte_num=2 ** 16 - 1
+        )
+
+
+@attr.s
+class TlsExtensionApplicationLayerProtocolNegotiation(TlsExtensionParsed):
+    protocol_names = attr.ib(
+        converter=TlsProtocolNameList,
+        validator=attr.validators.instance_of(TlsProtocolNameList),
+    )
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionApplicationLayerProtocolNegotiation, cls)._parse_header(parsable)
+
+        parser.parse_parsable('protocol_names', TlsProtocolNameList)
+
+        return TlsExtensionApplicationLayerProtocolNegotiation(parser['protocol_names']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.protocol_names)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
 class TlsExtensionEncryptThenMAC(TlsExtensionUnusedData):
     @classmethod
     def get_extension_type(cls):
@@ -903,6 +956,8 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
     @classmethod
     def _get_parsed_extensions(cls):
         return collections.OrderedDict([
+            (TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION,
+                [TlsExtensionApplicationLayerProtocolNegotiation, ]),
             (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
             (TlsExtensionType.SERVER_NAME, [TlsExtensionServerName, ]),
@@ -919,6 +974,8 @@ class TlsExtensionVariantServer(TlsExtensionVariantBase):
     @classmethod
     def _get_parsed_extensions(cls):
         return collections.OrderedDict([
+            (TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION,
+                [TlsExtensionApplicationLayerProtocolNegotiation, ]),
             (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
             (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),

@@ -4,11 +4,17 @@ import collections
 import unittest
 
 from cryptoparser.common.exception import NotEnoughData, InvalidType, InvalidValue
-from cryptoparser.tls.algorithm import TlsSignatureAndHashAlgorithm, TlsECPointFormat, TlsNamedCurve
+from cryptoparser.tls.algorithm import (
+    TlsECPointFormat,
+    TlsNamedCurve,
+    TlsProtocolName,
+    TlsSignatureAndHashAlgorithm,
+)
 from cryptoparser.tls.extension import (
     TlsCertificateStatusRequestExtensions,
     TlsCertificateStatusRequestResponderId,
     TlsCertificateStatusRequestResponderIdList,
+    TlsExtensionApplicationLayerProtocolNegotiation,
     TlsExtensionCertificateStatusRequest,
     TlsExtensionECPointFormats,
     TlsExtensionEllipticCurves,
@@ -27,6 +33,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionUnparsed,
     TlsExtensionParsed,
     TlsExtensionType,
+    TlsProtocolNameList,
 )
 from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
@@ -471,6 +478,25 @@ class TestExtensionSessionTicket(unittest.TestCase):
         )
         self.assertEqual(extension_session_ticket.session_ticket, b'\x00\x01\x02\x03\x04\x05\x06\x07')
         self.assertEqual(extension_session_ticket.compose(), extension_session_ticket_bytes)
+
+
+class TestExtensionApplicationLayerProtocolNegotiation(unittest.TestCase):
+    def test_parse(self):
+        extension_alpn_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x10'),
+            ('extension_length', b'\x00\x09'),
+            ('protocol_name_list_length', b'\x00\x07'),
+            ('protocol_name_h2_length', b'\x02'),
+            ('protocol_name_h2', b'h2'),
+            ('protocol_name_h2c_length', b'\x03'),
+            ('protocol_name_h2c', b'h2c'),
+        ])
+        extension_alpn_bytes = b''.join(extension_alpn_dict.values())
+        extension_alpn = TlsExtensionApplicationLayerProtocolNegotiation.parse_exact_size(
+            extension_alpn_bytes
+        )
+        self.assertEqual(extension_alpn.protocol_names, TlsProtocolNameList([TlsProtocolName.H2, TlsProtocolName.H2C]))
+        self.assertEqual(extension_alpn.compose(), extension_alpn_bytes)
 
 
 class TestExtensionUnusedData(unittest.TestCase):

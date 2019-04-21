@@ -5,7 +5,13 @@ import abc
 import attr
 
 from cryptoparser.common.algorithm import Authentication, Hash, NamedGroup
-from cryptoparser.common.base import OneByteEnumParsable, OneByteEnumComposer, TwoByteEnumComposer, TwoByteEnumParsable
+from cryptoparser.common.base import (
+    OneByteEnumComposer,
+    OneByteEnumParsable,
+    OpaqueEnumComposer,
+    TwoByteEnumComposer,
+    TwoByteEnumParsable
+)
 
 
 class TlsNamedCurveFactory(TwoByteEnumParsable):
@@ -453,3 +459,80 @@ class TlsECPointFormat(OneByteEnumComposer):
     UNCOMPRESSED = TlsECPointFormatParams(code=0x00)
     ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x01)
     ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x02)
+
+
+@attr.s(frozen=True)
+class TlsProtocolNameParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(str))
+
+
+class TlsProtocolName(OpaqueEnumComposer):
+    C_WEBRTC = TlsProtocolNameParams(
+        code='c-webrtc',
+    )
+    COAP = TlsProtocolNameParams(
+        code='coap',
+    )
+    FTP = TlsProtocolNameParams(
+        code='ftp',
+    )
+    H2 = TlsProtocolNameParams(
+        code='h2',
+    )
+    H2_14 = TlsProtocolNameParams(
+        code='h2-14',
+    )
+    H2_15 = TlsProtocolNameParams(
+        code='h2-15',
+    )
+    H2_16 = TlsProtocolNameParams(
+        code='h2-16',
+    )
+    H2C = TlsProtocolNameParams(
+        code='h2c',
+    )
+    HTTP_0_9 = TlsProtocolNameParams(
+        code='http/0.9',
+    )
+    HTTP_1_0 = TlsProtocolNameParams(
+        code='http/1.0',
+    )
+    HTTP_1_1 = TlsProtocolNameParams(
+        code='http/1.1',
+    )
+    IMAP = TlsProtocolNameParams(
+        code='imap',
+    )
+    MANAGESIEVE = TlsProtocolNameParams(
+        code='managesieve',
+    )
+    POP3 = TlsProtocolNameParams(
+        code='pop3',
+    )
+    SPDY_1 = TlsProtocolNameParams(
+        code='spdy/1',
+    )
+    SPDY_2 = TlsProtocolNameParams(
+        code='spdy/2',
+    )
+    SPDY_3 = TlsProtocolNameParams(
+        code='spdy/3',
+    )
+    SPDY_3_1 = TlsProtocolNameParams(
+        code='spdy/3.1',
+    )
+    STUN_NAT_DISCOVERY = TlsProtocolNameParams(
+        code='stun.nat-discovery',
+    )
+    STUN_TURN = TlsProtocolNameParams(
+        code='stun.turn',
+    )
+    WEBRTC = TlsProtocolNameParams(
+        code='webrtc',
+    )
+    XMPP_CLIENT = TlsProtocolNameParams(
+        code='xmpp-client',
+    )
+    XMPP_SERVER = TlsProtocolNameParams(
+        code='xmpp-server',
+    )
