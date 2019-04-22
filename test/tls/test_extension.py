@@ -24,6 +24,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionKeyShareClientHelloRetry,
     TlsExtensionKeyShareServer,
     TlsExtensionKeyShareReservedClient,
+    TlsExtensionRenegotiationInfo,
     TlsExtensionServerName,
     TlsExtensionSessionTicket,
     TlsExtensionSignatureAlgorithms,
@@ -34,6 +35,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionParsed,
     TlsExtensionType,
     TlsProtocolNameList,
+    TlsRenegotiatedConnection,
 )
 from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
@@ -463,6 +465,25 @@ class TestExtensionCertificateStatusRequest(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(self.status_request_minimal.compose(), self.status_request_minimal_bytes)
         self.assertEqual(self.status_request.compose(), self.status_request_bytes)
+
+
+class TestExtensionRenegotiationInfo(unittest.TestCase):
+    def test_parse(self):
+        extension_renegotiation_info_dict = collections.OrderedDict([
+            ('extension_type', b'\xff\x01'),
+            ('extension_length', b'\x00\x09'),
+            ('renegotiated_connection_length', b'\x08'),
+            ('renegotiated_connection', b'\x00\x01\x02\x03\x04\x05\x06\x07'),
+        ])
+        extension_renegotiation_info_bytes = b''.join(extension_renegotiation_info_dict.values())
+        extension_renegotiation_info = TlsExtensionRenegotiationInfo.parse_exact_size(
+            extension_renegotiation_info_bytes
+        )
+        self.assertEqual(
+            extension_renegotiation_info.renegotiated_connection,
+            TlsRenegotiatedConnection(b'\x00\x01\x02\x03\x04\x05\x06\x07')
+        )
+        self.assertEqual(extension_renegotiation_info.compose(), extension_renegotiation_info_bytes)
 
 
 class TestExtensionSessionTicket(unittest.TestCase):
