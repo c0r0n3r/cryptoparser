@@ -6,7 +6,7 @@ import unittest
 from cryptoparser.common.exception import NotEnoughData, TooMuchData
 from cryptoparser.common.base import Vector, VectorParamNumeric
 from cryptoparser.common.base import VectorParsable, VectorParamParsable
-from cryptoparser.common.base import VectorParsableDerived, Opaque
+from cryptoparser.common.base import VectorParsableDerived, Opaque, OpaqueParam
 
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 
@@ -77,8 +77,8 @@ class VectorFallbackParsableTest(VectorParsableDerived):
 
 class OpaqueTest(Opaque):
     @classmethod
-    def get_byte_num(cls):
-        return 3
+    def get_param(cls):
+        return OpaqueParam(min_byte_num=3, max_byte_num=3)
 
 
 class TestVectorNumeric(unittest.TestCase):
@@ -265,19 +265,27 @@ class TestVectorDerived(unittest.TestCase):
 class TestOpaque(unittest.TestCase):
     def test_error(self):
         with self.assertRaises(NotEnoughData) as context_manager:
-            OpaqueTest.parse_exact_size(b'\x01\x02')
-        self.assertEqual(context_manager.exception.bytes_needed, 3)
+            OpaqueTest.parse_exact_size(b'\x03\x01\x02')
+        self.assertEqual(context_manager.exception.bytes_needed, 1)
 
     def test_parse(self):
         self.assertEqual(
             [1, 2, 3],
-            list(OpaqueTest.parse_exact_size(b'\x01\x02\x03'))
+            list(OpaqueTest.parse_exact_size(b'\x03\x01\x02\x03'))
         )
 
     def test_compose(self):
         self.assertEqual(
-            b'\x01\x02\x03',
+            b'\x03\x01\x02\x03',
             OpaqueTest([1, 2, 3]).compose()
+        )
+        self.assertEqual(
+            b'\x03\x01\x02\x03',
+            OpaqueTest(b'\x01\x02\x03').compose()
+        )
+        self.assertEqual(
+            b'\x03\x01\x02\x03',
+            OpaqueTest(bytearray(b'\x01\x02\x03')).compose()
         )
 
 

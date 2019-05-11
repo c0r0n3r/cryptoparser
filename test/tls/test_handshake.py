@@ -49,7 +49,7 @@ from cryptoparser.tls.subprotocol import (
 from cryptoparser.tls.record import TlsRecord
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
-from .classes import TestMessage, TestVariantMessage
+from .classes import TestMessage
 
 
 class TestSubprotocolParser(unittest.TestCase):
@@ -86,6 +86,8 @@ class TestVariantParsable(unittest.TestCase):
             ('version', b'\x03\x01'),  # TLS1_0
             ('length', b'\x00\x01'),
             ('invalid_data', b'\xff'),
+            ('content_type', b'\x17'),
+            ('data', b'\x00\x00\x00'),
         ])
         invalid_tls_message_bytes = b''.join(invalid_tls_message_dict.values())
 

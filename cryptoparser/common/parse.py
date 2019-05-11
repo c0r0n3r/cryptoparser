@@ -99,6 +99,7 @@ class ParserBinary(object):
                 except ValueError as e:
                     six.raise_from(InvalidValue(item, item_numeric_class), e)
         else:
+            print(item_size)
             raise NotImplementedError()
 
         self._parsed_length += item_num * item_size

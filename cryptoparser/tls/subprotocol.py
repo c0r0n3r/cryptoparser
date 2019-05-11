@@ -11,7 +11,7 @@ import attr
 import six
 
 from cryptoparser.common.base import (
-    Opaque,
+    OpaqueParam,
     VariantParsable,
     Vector,
     VectorParamNumeric,
@@ -277,10 +277,23 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
         return composer.composed_bytes
 
 
-class TlsHandshakeHelloRandomBytes(Opaque):
+class TlsHandshakeHelloRandomBytes(Vector):
     @classmethod
-    def get_byte_num(cls):
-        return 28
+    def _parse(cls, parsable):
+        composer = ComposerBinary()
+        vector_param = cls.get_param()
+        composer.compose_numeric(vector_param.min_byte_num, vector_param.item_num_size)
+
+        vector, parsed_length = super(TlsHandshakeHelloRandomBytes, cls)._parse(composer.composed_bytes + parsable)
+
+        return cls(vector), parsed_length - vector_param.item_num_size
+
+    def compose(self):
+        return super(TlsHandshakeHelloRandomBytes, self).compose()[self.get_param().item_num_size:]
+
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(min_byte_num=28, max_byte_num=28)
 
 
 @attr.s
