@@ -24,6 +24,7 @@ from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidTy
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.extension import (
+    TlsCertificateStatusType,
     TlsExtensionType,
     TlsExtensionsClient,
     TlsExtensionsServer,
@@ -671,6 +672,42 @@ class TlsHandshakeCertificate(TlsHandshakeMessage):
         return header_bytes + payload_composer.composed_bytes
 
 
+class TlsHandshakeCertificateStatus(TlsHandshakeMessage):
+    def __init__(self, status_type, status):
+        super(TlsHandshakeCertificateStatus, self).__init__()
+
+        self.status_type = status_type
+        self.status = status
+
+    @classmethod
+    def get_handshake_type(cls):
+        return TlsHandshakeType.CERTIFICATE_STATUS
+
+    @classmethod
+    def _parse(cls, parsable):
+        handshake_header_parser = cls._parse_handshake_header(parsable)
+
+        parser = ParserBinary(handshake_header_parser['payload'])
+
+        parser.parse_numeric('status_type', 1, TlsCertificateStatusType)
+        parser.parse_bytes('status', 3)
+
+        return TlsHandshakeCertificateStatus(
+            parser['status_type'],
+            parser['status']
+        ), handshake_header_parser.parsed_length
+
+    def compose(self):
+        body_composer = ComposerBinary()
+        body_composer.compose_numeric(self.status_type, 1)
+
+        body_composer.compose_bytes(self.status, 3)
+
+        header_bytes = self._compose_header(body_composer.composed_length)
+
+        return header_bytes + body_composer.composed_bytes
+
+
 class TlsHandshakeServerHelloDone(TlsHandshakeMessage):
     @classmethod
     def get_handshake_type(cls):
@@ -1071,6 +1108,7 @@ class TlsHandshakeMessageVariant(VariantParsable):
         (TlsHandshakeType.CERTIFICATE, [TlsHandshakeCertificate, ]),
         (TlsHandshakeType.SERVER_KEY_EXCHANGE, [TlsHandshakeServerKeyExchange, ]),
         (TlsHandshakeType.CERTIFICATE_REQUEST, [TlsHandshakeCertificateRequest, ]),
+        (TlsHandshakeType.CERTIFICATE_STATUS, [TlsHandshakeCertificateStatus, ]),
         (TlsHandshakeType.SERVER_HELLO_DONE, [TlsHandshakeServerHelloDone, ]),
         (TlsHandshakeType.HELLO_RETRY_REQUEST, [TlsHandshakeHelloRetryRequest, ]),
     ])

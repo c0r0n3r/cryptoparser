@@ -30,6 +30,7 @@ from cryptoparser.tls.subprotocol import (
     SslMessageType,
     TlsAlertMessage,
     TlsCertificate,
+    TlsCertificateStatusType,
     TlsCertificates,
     TlsClientCertificateType,
     TlsCipherSuiteVector,
@@ -42,6 +43,7 @@ from cryptoparser.tls.subprotocol import (
     TlsExtensionsServer,
     TlsHandshakeCertificate,
     TlsHandshakeCertificateRequest,
+    TlsHandshakeCertificateStatus,
     TlsHandshakeClientHello,
     TlsHandshakeHelloRandom,
     TlsHandshakeHelloRandomBytes,
@@ -54,6 +56,7 @@ from cryptoparser.tls.subprotocol import (
     TlsSessionIdVector,
     TlsSubprotocolMessageParser,
 )
+
 from cryptoparser.tls.record import TlsRecord
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
@@ -90,10 +93,6 @@ class TestVariantParsable(unittest.TestCase):
 
     def test_error(self):
         invalid_tls_message_dict = collections.OrderedDict([
-            ('type', b'\x16'),         # HANDSHAKE
-            ('version', b'\x03\x01'),  # TLS1_0
-            ('length', b'\x00\x01'),
-            ('invalid_data', b'\xff'),
             ('content_type', b'\x17'),
             ('data', b'\x00\x00\x00'),
         ])
@@ -704,6 +703,32 @@ class TestTlsHandshakeServerKeyExcahnge(unittest.TestCase):
 
     def test_compose(self):
         self.assertEqual(self.server_key_exchange.compose(), self.server_key_exchange_bytes)
+
+
+class TestTlsHandshakeCertificateStatus(unittest.TestCase):
+    def setUp(self):
+        self.status_bytes = b'\x00\x01\x02\x03\x04\x05\x06\x07'
+        self.certificate_status_bytes = bytes(
+            b'\x16' +                              # handshake_type = CERTIFICATE_STATUS
+            b'\x00\x00\x0c' +                      # length = 0x0c
+            b'\x01' +                              # status_type = OCSP
+            b'\x00\x00\x08' +                      # length = 0x08
+            self.status_bytes +                    # status_bytes
+            b''
+        )
+
+        self.certificate_status = TlsHandshakeCertificateStatus(TlsCertificateStatusType.OCSP, self.status_bytes)
+
+    def test_parse(self):
+        certificate_status = TlsHandshakeCertificateStatus.parse_exact_size(self.certificate_status_bytes)
+
+        self.assertEqual(certificate_status.get_content_type(), TlsContentType.HANDSHAKE)
+        self.assertEqual(certificate_status.get_handshake_type(), TlsHandshakeType.CERTIFICATE_STATUS)
+
+        self.assertEqual(certificate_status.status, self.status_bytes)
+
+    def test_compose(self):
+        self.assertEqual(self.certificate_status.compose(), self.certificate_status_bytes)
 
 
 class TestSslHandshakeClientHello(unittest.TestCase):
