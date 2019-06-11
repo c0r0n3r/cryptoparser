@@ -3,8 +3,8 @@
 import json
 import unittest
 
-from cryptoparser.common.exception import NotEnoughData, TooMuchData
-from cryptoparser.common.base import Vector, VectorParamNumeric
+from cryptoparser.common.exception import InvalidValue, NotEnoughData, TooMuchData
+from cryptoparser.common.base import Vector, VectorString, VectorParamNumeric, VectorParamString
 from cryptoparser.common.base import VectorParsable, VectorParamParsable
 from cryptoparser.common.base import VectorParsableDerived, Opaque, OpaqueParam
 
@@ -12,6 +12,7 @@ from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 
 from .classes import (
     ConditionalParsable,
+    EnumStringValue,
     OneByteOddParsable,
     OneByteParsable,
     SerializableEmptyValues,
@@ -23,6 +24,8 @@ from .classes import (
     SerializableSimpleTypes,
     SerializableSingle,
     SerializableUnhandled,
+    StringEnum,
+    StringEnumFactory,
     TestObject,
     TwoByteEvenParsable,
     TwoByteParsable,
@@ -39,6 +42,18 @@ class VectorNumericTest(Vector):
     @classmethod
     def get_param(cls):
         return VectorParamNumeric(item_size=2, min_byte_num=0, max_byte_num=0xff)
+
+
+class VectorStringTest(VectorString):
+    @classmethod
+    def get_param(cls):
+        return VectorParamString(
+            min_byte_num=0,
+            max_byte_num=16,
+            separator=';',
+            item_class=StringEnumFactory,
+            fallback_class=str
+        )
 
 
 class VectorOneByteParsableTest(VectorParsable):
@@ -142,6 +157,30 @@ class TestVectorNumeric(unittest.TestCase):
         self.assertEqual(vector[0], 0)
         self.assertEqual(len(vector), 1)
         self.assertEqual(str(vector), '[0]')
+
+
+class TestVectorString(unittest.TestCase):
+    def test_error(self):
+        pass
+
+    def test_parse(self):
+        self.assertEqual(len(VectorStringTest.parse_exact_size(b'\x00')), 0)
+
+        self.assertEqual(
+            [StringEnum.ONE, StringEnum.TWO, ],
+            list(VectorStringTest.parse_exact_size(b'\x09one;two'))
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            b'\x00',
+            VectorStringTest([]).compose(),
+        )
+
+        self.assertEqual(
+            b'\x07one;two',
+            VectorStringTest([StringEnum.ONE, StringEnum.TWO, ]).compose(),
+        )
 
 
 class TestVectorParsable(unittest.TestCase):
@@ -301,6 +340,23 @@ class TestEnum(unittest.TestCase):
         )
 
 
+class TestEnumString(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            StringEnumFactory.parse_exact_size(b'four')
+        self.assertEqual(context_manager.exception.value, b'four')
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            StringEnumFactory.parse_exact_size(b'\xffthree')
+        self.assertEqual(context_manager.exception.value, b'\xffthree')
+
+    def test_parse(self):
+        self.assertEqual(StringEnumFactory.parse_exact_size(b'one'), StringEnum.ONE)
+
+    def test_compose(self):
+        self.assertEqual(StringEnum.ONE.compose(), b'one')
+
+
 class TestSerializable(unittest.TestCase):
     def test_json(self):
         self.assertEqual(
@@ -345,6 +401,10 @@ class TestSerializable(unittest.TestCase):
             '}'
         )
         self.assertEqual(json.dumps(TestObject()), '{}')
+        self.assertEqual(
+            json.dumps(EnumStringValue.ONE),
+            '{"ONE": "one"}'
+        )
 
     def test_markdown(self):
         self.assertEqual(

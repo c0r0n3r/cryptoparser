@@ -6,9 +6,18 @@ import enum
 import attr
 import six
 
-from cryptoparser.common.base import Serializable, TwoByteEnumParsable, TwoByteEnumComposer, VariantParsable
+from cryptoparser.common.base import (
+    ParsableBase,
+    ParserBinary,
+    ComposerBinary,
+    Serializable,
+    StringEnumComposer,
+    StringEnumParsable,
+    TwoByteEnumComposer,
+    TwoByteEnumParsable,
+    VariantParsable
+)
 from cryptoparser.common.exception import TooMuchData, InvalidValue, InvalidType
-from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
 
 
 class NByteParsable(ParsableBase):
@@ -149,6 +158,9 @@ class SerializableEnumValue(Serializable):
     def _as_markdown(self, level):
         return False, self.code
 
+    def _asdict(self):
+        return {'code': self.code}
+
 
 class TestObject(object):
     pass
@@ -244,3 +256,33 @@ class FlagEnum(enum.IntEnum):
     TWO = 2
     FOUR = 4
     EIGHT = 8
+
+
+StringEnumParams = attr.make_class('StringEnumParams', ['code', ])
+
+
+class StringEnum(StringEnumComposer, enum.Enum):
+    ONE = StringEnumParams(
+        code='one',
+    )
+    TWO = StringEnumParams(
+        code='two',
+    )
+    THREE = StringEnumParams(
+        code='three',
+    )
+
+
+class StringEnumFactory(StringEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return StringEnum
+
+    def compose(self):
+        raise NotImplementedError()
+
+
+class EnumStringValue(enum.Enum):
+    ONE = 'one'
+    TWO = 'two'
+    THREE = 'three'

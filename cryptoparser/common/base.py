@@ -13,10 +13,9 @@ except ImportError:  # pragma: no cover
 from collections import OrderedDict
 
 import attr
-
 import six
 
-from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
+from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ParserText, ComposerText
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue, InvalidType
 
 
@@ -275,6 +274,17 @@ class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
 
 
 @attr.s
+class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-methods
+    separator = attr.ib(validator=attr.validators.instance_of(six.string_types), default=',')
+    encoding = attr.ib(validator=attr.validators.instance_of(six.string_types), default='ascii')
+    item_class = attr.ib(validator=attr.validators.instance_of(type), default=str)
+    fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)), default=None)
+
+    def get_item_size(self, item):
+        return len(item.value.code)
+
+
+@attr.s
 class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-methods
     item_class = attr.ib(validator=attr.validators.instance_of(type))
     fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)))
@@ -378,6 +388,42 @@ class Vector(VectorBase):
         return composer.composed_bytes
 
 
+class VectorString(VectorBase):
+    @classmethod
+    @abc.abstractmethod
+    def get_param(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        vector_param = cls.get_param()
+
+        header_parser = ParserBinary(parsable[:vector_param.item_num_size])
+
+        header_parser.parse_numeric('item_byte_num', vector_param.item_num_size)
+
+        body_parser = ParserText(
+            parsable[vector_param.item_num_size:header_parser['item_byte_num'] + vector_param.item_num_size]
+        )
+
+        body_parser.parse_string_array(
+            'items', vector_param.separator, vector_param.item_class
+        )
+
+        return cls(body_parser['items']), header_parser.parsed_length + body_parser.parsed_length
+
+    def compose(self):
+        vector_param = self.get_param()
+
+        body_composer = ComposerText(vector_param.encoding)
+        body_composer.compose_parsable_array(self._items, vector_param.separator)
+
+        header_composer = ComposerBinary()
+        header_composer.compose_numeric(body_composer.composed_length, self.param.item_num_size)
+
+        return header_composer.composed + body_composer.composed
+
+
 class VectorParsable(VectorBase):
     @classmethod
     @abc.abstractmethod
@@ -442,6 +488,7 @@ class VectorParsableDerived(VectorBase):
         return header_composer.composed_bytes + body_composer.composed_bytes
 
 
+@attr.s(init=False)
 class Opaque(VectorBase):
     def __init__(self, items):
         if isinstance(items, (bytes, bytearray)):
@@ -542,7 +589,7 @@ class NByteEnumComposer(enum.Enum):
             self.get_byte_num()
         )
 
-        return composer.composed_bytes
+        return composer.composed
 
     @classmethod
     @abc.abstractmethod
@@ -566,3 +613,37 @@ class ThreeByteEnumComposer(NByteEnumComposer):
     @classmethod
     def get_byte_num(cls):
         return 3
+
+
+class StringEnumParsable(ParsableBase, Serializable):
+    @classmethod
+    def _parse(cls, parsable):
+        enum_items = [
+            enum_item
+            for enum_item in cls.get_enum_class()
+            if len(enum_item.value.code) <= len(parsable)
+        ]
+        enum_items.sort(key=lambda color: len(color.value.code), reverse=True)
+
+        for enum_item in enum_items:
+            try:
+                value = parsable[:len(enum_item.value.code)].decode('ascii')
+                if enum_item.value.code == value:
+                    return enum_item, len(enum_item.value.code)
+            except UnicodeDecodeError:
+                pass
+
+        raise InvalidValue(parsable, cls, 'code')
+
+    def _asdict(self):
+        return getattr(self, 'value').code
+
+    @classmethod
+    @abc.abstractmethod
+    def get_enum_class(cls):
+        raise NotImplementedError()
+
+
+class StringEnumComposer(object):
+    def compose(self):
+        return getattr(self, 'value').code.encode('ascii')

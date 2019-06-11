@@ -3,9 +3,10 @@
 import abc
 import enum
 import struct
-import attr
 
+import attr
 import six
+from six.moves import collections_abc
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 import cryptoparser.common.utils
@@ -58,11 +59,20 @@ class ByteOrder(enum.Enum):
 
 
 @attr.s
-class ParserBinary(object):
+class ParserBase(collections_abc.Mapping):
     _parsable = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
-    byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
     _parsed_length = attr.ib(init=False, default=0)
-    _parsed_values = attr.ib(init=False, default=dict())
+    _parsed_values = attr.ib(init=False, default=None)
+
+    def __attrs_post_init__(self):
+        if self._parsed_values is None:
+            self._parsed_values = dict()
+
+    def __len__(self):
+        return len(self._parsed_values)
+
+    def __iter__(self):
+        return iter(self._parsed_values)
 
     def __getitem__(self, key):
         return self._parsed_values[key]
@@ -78,6 +88,199 @@ class ParserBinary(object):
     @property
     def unparsed_length(self):
         return len(self._parsable) - self._parsed_length
+
+    def parse_parsable(self, name, parsable_class):
+        parsed_object, parsed_length = parsable_class.parse_immutable(
+            self._parsable[self._parsed_length:]
+        )
+        self._parsed_length += parsed_length
+        self._parsed_values[name] = parsed_object
+
+    def _parse_string_by_length(
+            self,
+            name,
+            item_min_length,
+            item_max_length,
+            encoding,
+            item_class
+    ):  # pylint: disable=too-many-arguments
+        if item_min_length > self.unparsed_length:
+            raise NotEnoughData(item_min_length - self.unparsed_length)
+
+        if item_max_length is None:
+            parsable_length = len(self._parsable) - self.parsed_length
+        else:
+            parsable_length = min(item_max_length, self.unparsed_length)
+
+        value = self._parsable[self._parsed_length:self._parsed_length + parsable_length]
+        try:
+            value = value.decode(encoding)
+            if item_class != str:
+                value = item_class(value)
+            self._parsed_values[name] = value
+        except UnicodeError as e:
+            six.raise_from(InvalidValue(value, type(self), name), e)
+        except ValueError as e:
+            six.raise_from(InvalidValue(value, type(self), name), e)
+
+        self._parsed_length += parsable_length
+
+
+class ParserText(ParserBase):
+    def __init__(self, parsable, encoding='ascii'):
+        super(ParserText, self).__init__(parsable)
+        self._encoding = encoding
+
+    def _check_separators(  # pylint: disable=too-many-arguments
+            self,
+            name,
+            count_offset,
+            separator,
+            min_count,
+            max_count
+    ):
+        count = 0
+        actual_offset = count_offset
+        while actual_offset < len(self._parsable) and self._parsable[actual_offset:].startswith(separator):
+            actual_offset += len(separator)
+            count += 1
+
+            if count > max_count:
+                raise InvalidValue(self._parsable[count_offset:], type(self), name)
+
+        if count < min_count:
+            raise InvalidValue(self._parsable[count_offset:], type(self), name)
+
+        return actual_offset - count_offset
+
+    def parse_separator(self, separator, min_length=1, max_length=1):
+        separator = bytearray(separator, self._encoding)
+        self._parsed_length += self._check_separators(
+            'separator', self._parsed_length, separator, min_length, max_length
+        )
+
+    def _parse_numeric_array(self, name, item_num, separator, item_numeric_class):
+        value = list()
+        last_item_offset = self._parsed_length
+        item_offset = self._parsed_length
+        while True:
+            while item_offset < len(self._parsable) and self._parsable[item_offset:item_offset + 1].isdigit():
+                item_offset += 1
+
+            if item_offset == last_item_offset:
+                raise InvalidValue(self._parsable[self._parsed_length:], type(self), name)
+
+            if item_offset != last_item_offset:
+                value.append(item_numeric_class(self._parsable[last_item_offset:item_offset]))
+
+            if item_offset == len(self._parsable) or (item_num is not None and len(value) == item_num):
+                break
+
+            if separator:
+                try:
+                    item_offset += self._check_separators(name, item_offset, separator, 1, 1)
+                except InvalidValue as e:
+                    six.raise_from(InvalidValue(self._parsable[self._parsed_length:item_offset], type(self), name), e)
+
+            last_item_offset = item_offset
+
+        self._parsed_length = item_offset
+        self._parsed_values[name] = value
+
+    def parse_numeric(self, name, numeric_class=int):
+        self._parse_numeric_array(name, 1, None, numeric_class)
+        self._parsed_values[name] = self._parsed_values[name][0]
+
+    def parse_numeric_array(self, name, item_num, separator, numeric_class=int):
+        separator = bytearray(separator, self._encoding)
+        self._parse_numeric_array(name, item_num, separator, numeric_class)
+
+    def parse_string_by_length(self, name, min_length=1, max_length=None, item_class=str):
+        self._parse_string_by_length(name, min_length, max_length, self._encoding, item_class)
+
+    def _parse_string_until_separator(  # pylint: disable=too-many-arguments
+            self,
+            name,
+            item_offset,
+            separator,
+            item_class,
+            may_end=False
+    ):
+        item_end = self._parsable.find(separator, item_offset)
+        if item_end < 0:
+            if may_end:
+                item_end = len(self._parsable)
+            else:
+                raise InvalidValue(self._parsable[item_offset:], type(self), name)
+
+        try:
+            if issubclass(item_class, ParsableBase):
+                item = item_class.parse_exact_size(self._parsable[item_offset:item_end])
+            elif issubclass(item_class, str):
+                item = self._parsable[item_offset:item_end].decode(self._encoding)
+            else:
+                item = item_class(self._parsable[item_offset:item_end].decode(self._encoding))
+        except UnicodeError as e:
+            six.raise_from(InvalidValue(self._parsable[item_offset:], type(self), name), e)
+        except ValueError as e:
+            six.raise_from(InvalidValue(self._parsable[item_offset:], type(self), name), e)
+
+        return item, item_end - item_offset
+
+    def parse_string_until_separator(self, name, separator, item_class=str):
+        separator = bytearray(separator, self._encoding)
+        parsed_value, parsed_length = self._parse_string_until_separator(
+            name, self._parsed_length, separator, item_class, False
+        )
+
+        self._parsed_values[name] = parsed_value
+        self._parsed_length += parsed_length
+
+    def parse_string_until_separator_or_end(self, name, separator, item_class=str):
+        separator = bytearray(separator, self._encoding)
+        parsed_value, parsed_length = self._parse_string_until_separator(
+            name, self._parsed_length, separator, item_class, True
+        )
+
+        self._parsed_values[name] = parsed_value
+        self._parsed_length += parsed_length
+
+    def _parse_string_array(self, name, separator, item_num=None, item_class=str):
+        value = []
+        item_offset = self._parsed_length
+        separator = bytearray(separator, self._encoding)
+
+        while item_offset < len(self._parsable):
+            parsed_value, parsed_length = self._parse_string_until_separator(
+                name, item_offset, separator, item_class, True
+            )
+
+            value.append(parsed_value)
+            item_offset += parsed_length
+
+            if item_offset == len(self._parsable) or (item_num is not None and len(value) == item_num):
+                break
+
+            item_offset += self._check_separators(name, item_offset, separator, 1, 1)
+
+        self._parsed_values[name] = value
+        self._parsed_length = item_offset
+
+    def parse_string_array(self, name, separator, item_class=str):
+        self._parse_string_array(name, separator, item_class=item_class)
+
+
+@attr.s
+class ParserBinary(ParserBase):
+    byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
+
+    _INT_FORMATER_BY_SIZE = {
+        1: '!B',
+        2: '!H',
+        3: '!I',
+        4: '!I',
+        8: '!Q',
+    }
 
     def _parse_numeric_array(self, name, item_num, item_size, item_numeric_class):
         if self._parsed_length + (item_num * item_size) > len(self._parsable):
@@ -97,43 +300,59 @@ class ParserBinary(object):
                 try:
                     value.append(item_numeric_class(item))
                 except ValueError as e:
-                    six.raise_from(InvalidValue(item, item_numeric_class), e)
+                    six.raise_from(InvalidValue(item, item_numeric_class, name), e)
         else:
             raise NotImplementedError()
 
-        self._parsed_length += item_num * item_size
-        self._parsed_values[name] = value
+        return value, item_num * item_size
 
     def parse_numeric(self, name, size, numeric_class=int):
-        self._parse_numeric_array(name, 1, size, numeric_class)
-        self._parsed_values[name] = self._parsed_values[name][0]
+        value, parsed_length = self._parse_numeric_array(name, 1, size, numeric_class)
+
+        self._parsed_length += parsed_length
+        self._parsed_values[name] = value[0]
 
     def parse_numeric_array(self, name, item_num, item_size, numeric_class=int):
-        self._parse_numeric_array(name, item_num, item_size, numeric_class)
+        value, parsed_length = self._parse_numeric_array(name, item_num, item_size, numeric_class)
+
+        self._parsed_length += parsed_length
+        self._parsed_values[name] = value
 
     def parse_numeric_flags(self, name, size, flags_class):
-        self._parse_numeric_array(name, 1, size, int)
-        self._parsed_values[name] = [
-            flags_class(flag & self._parsed_values[name][0])
+        value, parsed_length = self._parse_numeric_array(name, 1, size, int)
+        value = [
+            flags_class(flag & value[0])
             for flag in flags_class
-            if flag & self._parsed_values[name][0]
+            if flag & value[0]
         ]
 
-    def parse_bytes(self, name, size):
+        self._parsed_length += parsed_length
+        self._parsed_values[name] = value
+
+    def _parse_bytes(self, size):
         if self.unparsed_length < size:
             raise NotEnoughData(bytes_needed=size - self.unparsed_length)
 
-        self._parsed_values[name] = self._parsable[self._parsed_length: self._parsed_length + size]
-        self._parsed_length += size
+        return self._parsable[self._parsed_length: self._parsed_length + size]
 
-    def parse_parsable(self, name, parsable_class):
-        parsed_object, parsed_length = parsable_class.parse_immutable(
-            self._parsable[self._parsed_length:]
-        )
+    def parse_bytes(self, name, size):
+        parsed_bytes = self._parse_bytes(size)
+
+        self._parsed_values[name] = parsed_bytes
+        self._parsed_length += len(parsed_bytes)
+
+    def parse_string(self, name, item_size, encoding):
+        value, parsed_length = self._parse_numeric_array(name, 1, item_size, int)
+        value = value[0]
         self._parsed_length += parsed_length
-        self._parsed_values[name] = parsed_object
 
-    def _parse_parsable_array(self, name, items_size, item_classes, fallback_class=None):
+        try:
+            self._parse_string_by_length(name, value, value, encoding, str)
+        except InvalidValue as e:
+            self._parsed_length -= parsed_length
+            raise e
+
+    def _parse_parsable_derived_array(self, name, items_size, item_classes, fallback_class=None):
         if items_size > self.unparsed_length:
             raise NotEnoughData(bytes_needed=items_size - self.unparsed_length)
 
@@ -161,7 +380,7 @@ class ParserBinary(object):
 
     def parse_parsable_array(self, name, items_size, item_class, fallback_class=None):
         try:
-            return self._parse_parsable_array(name, items_size, [item_class, ], fallback_class)
+            return self._parse_parsable_derived_array(name, items_size, [item_class, ], fallback_class)
         except NotEnoughData as e:
             raise e
         except ValueError as e:
@@ -170,11 +389,11 @@ class ParserBinary(object):
     def parse_parsable_derived_array(self, name, items_size, item_base_class, fallback_class=None):
         item_classes = cryptoparser.common.utils.get_leaf_classes(item_base_class)
         try:
-            return self._parse_parsable_array(name, items_size, item_classes, fallback_class)
+            return self._parse_parsable_derived_array(name, items_size, item_classes, fallback_class)
         except NotEnoughData as e:
             raise e
         except ValueError as e:
-            six.raise_from(InvalidValue(e.args[0], item_base_class), e)
+            six.raise_from(InvalidValue(e.args[0], item_base_class, name), e)
 
     def parse_variant(self, name, variant):
         parsed_object, value_length = variant.parse(self._parsable[self._parsed_length:])
@@ -184,9 +403,79 @@ class ParserBinary(object):
 
 
 @attr.s
-class ComposerBinary(object):
+class ComposerBase(object):
     _composed = attr.ib(init=False, default=bytes())
+
+    @property
+    def composed(self):
+        return self._composed
+
+    @property
+    def composed_length(self):
+        return len(self._composed)
+
+    def _compose_string_array(self, values, encoding, separator):
+        separator = bytearray(separator.encode(encoding))
+        composed_str = bytearray()
+
+        for value in values:
+            try:
+                composed_str += value.encode(encoding)
+            except UnicodeError as e:
+                six.raise_from(InvalidValue(value, type(self)), e)
+
+            composed_str += separator
+
+        self._composed += composed_str[:len(composed_str) - len(separator)]
+
+
+class ComposerText(ComposerBase):
+    def __init__(self, encoding='ascii'):
+        super(ComposerText, self).__init__()
+        self._encoding = encoding
+
+    def _compose_numeric_array(self, values, separator):
+        composed_str = str()
+
+        for value in values:
+            composed_str += '{:d}{}'.format(value, separator)
+
+        self._composed += composed_str[:len(composed_str) - len(separator)].encode(self._encoding)
+
+    def compose_numeric(self, value):
+        self._compose_numeric_array([value, ], separator='')
+
+    def compose_numeric_array(self, values, separator):
+        self._compose_numeric_array(values, separator)
+
+    def compose_string(self, value):
+        self._compose_string_array([value, ], encoding=self._encoding, separator='')
+
+    def compose_string_array(self, value, separator=','):
+        self._compose_string_array(value, encoding=self._encoding, separator=separator)
+
+    def compose_parsable(self, value):
+        self._composed += value.compose()
+
+    def compose_parsable_array(self, values, separator=','):
+        separator = separator.encode(self._encoding)
+
+        self._composed += bytearray(separator).join(map(lambda item: item.compose(), values))
+
+    def compose_separator(self, value):
+        self.compose_string(value)
+
+
+@attr.s
+class ComposerBinary(ComposerBase):
     byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
+
+    _INT_FORMATER_BY_SIZE = {
+        1: '!B',
+        2: '!H',
+        3: '!I',
+        4: '!I',
+    }
 
     def _compose_numeric_array(self, values, item_size):
         composed_bytes = bytearray()
@@ -222,15 +511,19 @@ class ComposerBinary(object):
         self._composed += value.compose()
 
     def compose_parsable_array(self, values):
-        composed_bytes = bytearray()
-
-        for item in values:
-            composed_bytes += item.compose()
-
-        self._composed += composed_bytes
+        self._composed += bytearray().join(map(lambda item: item.compose(), values))
 
     def compose_bytes(self, value):
         self._composed += value
+
+    def compose_string(self, value, encoding, item_size):
+        try:
+            value = value.encode(encoding)
+        except UnicodeError as e:
+            six.raise_from(InvalidValue(value, type(self)), e)
+
+        self.compose_numeric(len(value), item_size)
+        self.compose_bytes(value)
 
     @property
     def composed_bytes(self):
