@@ -204,6 +204,11 @@ class Authentication(AlgortihmOIDBase, enum.Enum):
 
 
 class BlockCipher(enum.Enum):
+    ACSS = BlockCipherParams(
+        name='ACSS',
+        key_size=40,
+        block_size=None,
+    )
     AES_128 = BlockCipherParams(
         name='AES_128',
         key_size=128,
@@ -234,6 +239,27 @@ class BlockCipher(enum.Enum):
         key_size=256,
         block_size=128,
     )
+    BLOWFISH = BlockCipherParams(
+        name='BLOWFISH',
+        key_size=32,  # min
+        # key_size_max=448,
+        block_size=64,
+    )
+    TWOFISH128 = BlockCipherParams(
+        name='TWOFISH',
+        key_size=128,
+        block_size=128,
+    )
+    TWOFISH192 = BlockCipherParams(
+        name='TWOFISH',
+        key_size=192,
+        block_size=192,
+    )
+    TWOFISH256 = BlockCipherParams(
+        name='TWOFISH',
+        key_size=256,
+        block_size=256,
+    )
     CAMELLIA_128 = BlockCipherParams(
         name='CAMELLIA_128',
         key_size=128,
@@ -244,10 +270,27 @@ class BlockCipher(enum.Enum):
         key_size=256,
         block_size=128,
     )
+    CAST_128 = BlockCipherParams(
+        name='CAST_128',
+        key_size=40,  # min
+        # key_size_max=128,
+        block_size=64,
+    )
+    CAST_256 = BlockCipherParams(
+        name='CAST_256',
+        key_size=128,  # min
+        # key_size_max=256,
+        block_size=128,
+    )
     CHACHA20 = BlockCipherParams(
         name='CHACHA20',
         key_size=128,  # min
-        #  key_size_max=256,
+        # key_size_max=256,
+        block_size=None,
+    )
+    CRYPTICORE = BlockCipherParams(  # Rabbit
+        name='CryptiCore',
+        key_size=128,
         block_size=None,
     )
     DES = BlockCipherParams(
@@ -335,6 +378,11 @@ class BlockCipher(enum.Enum):
         key_size=128,
         block_size=None,
     )
+    RC4_256 = BlockCipherParams(
+        name='RC4_256',
+        key_size=256,
+        block_size=None,
+    )
     SALSA20 = BlockCipherParams(
         name='Salsa20',
         key_size=256,
@@ -345,16 +393,31 @@ class BlockCipher(enum.Enum):
         key_size=128,
         block_size=128,
     )
+    SERPENT_128 = BlockCipherParams(
+        name='SERPENT_128',
+        key_size=128,
+        block_size=128,
+    )
+    SERPENT_192 = BlockCipherParams(
+        name='SERPENT_192',
+        key_size=192,
+        block_size=128,
+    )
+    SERPENT_256 = BlockCipherParams(
+        name='SERPENT_256',
+        key_size=256,
+        block_size=128,
+    )
     TRIPLE_DES = BlockCipherParams(
         name='3DES',
         key_size=128,  # min
-        #  key_size_max=192,
+        # key_size_max=192,
         block_size=64,
     )
     TRIPLE_DES_EDE = BlockCipherParams(
         name='3DES_EDE',
         key_size=128,  # min
-        #  key_size_max=192,
+        # key_size_max=192,
         block_size=64,
     )
 
@@ -378,6 +441,9 @@ class BlockCipherMode(enum.Enum):
     CTR = BlockCipherModeParams(
         name='CTR',
     )
+    ECB = BlockCipherModeParams(
+        name='ECB',
+    )
     EAX = BlockCipherModeParams(
         name='EAX',
     )
@@ -387,10 +453,13 @@ class BlockCipherMode(enum.Enum):
     MGM = BlockCipherModeParams(
         name='MGM',
     )
+    OFB = BlockCipherModeParams(
+        name='OFB',
+    )
 
 
 @attr.s(frozen=True)
-class HashParams(AlgortihmOIDParams):
+class HashParams(AlgortihmOIDOptionalParams):
     digest_size = attr.ib(attr.validators.instance_of(int))
 
 
@@ -424,6 +493,21 @@ class Hash(AlgortihmOIDBase, enum.Enum):
         name='MD5',
         oid='1.2.840.113549.2.5',
         digest_size=64
+    )
+    RIPEMD128 = HashParams(
+        name='RIPEMD-128',
+        oid='1.3.36.3.2.2',
+        digest_size=128
+    )
+    RIPEMD160 = HashParams(
+        name='RIPEMD-160',
+        oid='1.3.36.3.2.1',
+        digest_size=160
+    )
+    RIPEMD256 = HashParams(
+        name='RIPEMD-256',
+        oid='1.3.36.3.2.3',
+        digest_size=256
     )
     SHA1 = HashParams(
         name='SHA1',
@@ -490,6 +574,36 @@ class Hash(AlgortihmOIDBase, enum.Enum):
         oid='2.16.840.1.101.3.4.2.12',
         digest_size=256
     )
+    TIGER_128 = HashParams(
+        name='TIGER_128',
+        oid=None,
+        digest_size=128
+    )
+    TIGER_128_96 = HashParams(
+        name='TIGER_128_96',
+        oid=None,
+        digest_size=96
+    )
+    TIGER_160 = HashParams(
+        name='TIGER_160',
+        oid=None,
+        digest_size=160
+    )
+    TIGER_160_96 = HashParams(
+        name='TIGER_160_96',
+        oid=None,
+        digest_size=96
+    )
+    TIGER_192 = HashParams(
+        name='TIGER_192',
+        oid='1.3.6.1.4.1.11591.12.2',
+        digest_size=192
+    )
+    TIGER_192_96 = HashParams(
+        name='TIGER_192_96',
+        oid=None,
+        digest_size=96
+    )
     ED25519PH = HashParams(
         name='Ed25519ph',
         oid='1.3.101.114',
@@ -522,6 +636,31 @@ class HMACParams(MACParamsBase):
 
 
 class MAC(AlgortihmOIDBase, enum.Enum):
+    AEAD_AES_128_CCM = MACParams(
+        name='AEAD_AES_128_CCM',
+        oid=None,
+        digest_size=128
+    )
+    AEAD_AES_128_GCM = MACParams(
+        name='AEAD_AES_128_GCM',
+        oid=None,
+        digest_size=128
+    )
+    AEAD_AES_256_CCM = MACParams(
+        name='AEAD_AES_256_CCM',
+        oid=None,
+        digest_size=256
+    )
+    AEAD_AES_256_GCM = MACParams(
+        name='AEAD_AES_256_GCM',
+        oid=None,
+        digest_size=256
+    )
+    CRYPTICORE = MACParams(
+        name='CryptiCore',  # Badger
+        oid=None,
+        digest_size=128
+    )
     IMIT_GOST28147 = MACParams(
         name='IMIT_GOST28147',
         oid='1.2.643.2.2.22',
@@ -561,6 +700,21 @@ class MAC(AlgortihmOIDBase, enum.Enum):
         name='POLY1305',
         oid=None,
         digest_size=128
+    )
+    RIPEMD128 = HMACParams(
+        name='RIPEMD-128',
+        oid=None,
+        hash_algo=Hash.RIPEMD128,
+    )
+    RIPEMD160 = HMACParams(
+        name='RIPEMD-160',
+        oid=None,
+        hash_algo=Hash.RIPEMD160,
+    )
+    RIPEMD256 = HMACParams(
+        name='RIPEMD-256',
+        oid=None,
+        hash_algo=Hash.RIPEMD256,
     )
     SHA1 = HMACParams(
         name='SHA1',
@@ -616,6 +770,56 @@ class MAC(AlgortihmOIDBase, enum.Enum):
         name='SHA3_512',
         oid='2.16.840.1.101.3.4.2.16',
         hash_algo=Hash.SHA3_512
+    )
+    TIGER_128 = HMACParams(
+        name='TIGER_128',
+        oid=None,
+        hash_algo=Hash.TIGER_128
+    )
+    TIGER_128_96 = HMACParams(
+        name='TIGER_128_96',
+        oid=None,
+        hash_algo=Hash.TIGER_128_96
+    )
+    TIGER_160 = HMACParams(
+        name='TIGER_160',
+        oid=None,
+        hash_algo=Hash.TIGER_160
+    )
+    TIGER_160_96 = HMACParams(
+        name='TIGER_160_96',
+        oid=None,
+        hash_algo=Hash.TIGER_160_96
+    )
+    TIGER_192 = HMACParams(
+        name='TIGER_192',
+        oid='1.3.6.1.5.5.8.1.3',
+        hash_algo=Hash.TIGER_192
+    )
+    TIGER_192_96 = HMACParams(
+        name='TIGER_192_96',
+        oid=None,
+        hash_algo=Hash.TIGER_192_96
+    )
+    UMAC_32 = MACParams(
+        name='UMAC_32',
+        oid=None,
+        digest_size=32
+    )
+    UMAC_64 = MACParams(
+        name='UMAC_64',
+        oid=None,
+        digest_size=64
+    )
+    UMAC_96 = MACParams(
+        name='UMAC_96',
+        oid=None,
+        digest_size=96
+    )
+    UMAC_128 = MACParams(
+        name='UMAC_128',
+        oid=None,
+        digest_size=128
     )
     ED25519PH = HMACParams(
         name='Ed25519ph',
