@@ -9,9 +9,9 @@ import attr
 
 import six
 
-from cryptoparser.common.base import Serializable
+from cryptoparser.common.base import ProtocolVersionBase
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
-from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
+from cryptoparser.common.parse import ParserBinary, ComposerBinary
 
 
 class TlsVersion(enum.IntEnum):
@@ -23,9 +23,8 @@ class TlsVersion(enum.IntEnum):
 
 
 @attr.s(order=False, eq=False, hash=True)
-@six.add_metaclass(abc.ABCMeta)
 @functools.total_ordering
-class TlsProtocolVersionBase(Serializable, ParsableBase):
+class TlsProtocolVersionBase(ProtocolVersionBase):
     _SIZE = 2
 
     major = attr.ib()
@@ -70,12 +69,6 @@ class TlsProtocolVersionBase(Serializable, ParsableBase):
             return self.minor < other.minor
 
         return isinstance(self, TlsProtocolVersionDraft) == (other.minor == TlsVersion.TLS1_3)
-
-    def as_json(self):
-        return json.dumps(self.identifier)
-
-    def _as_markdown(self, level):
-        return self._markdown_result(str(self), level)
 
     @property
     @abc.abstractmethod
@@ -170,7 +163,7 @@ class SslVersion(enum.IntEnum):
 
 @attr.s(eq=True, order=False, hash=True)
 @functools.total_ordering
-class SslProtocolVersion(Serializable, ParsableBase):
+class SslProtocolVersion(ProtocolVersionBase):
     _SIZE = 2
 
     def __lt__(self, other):

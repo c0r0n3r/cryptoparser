@@ -50,6 +50,7 @@ setup(
     packages=[
         'cryptoparser',
         'cryptoparser.common',
+        'cryptoparser.ssh',
         'cryptoparser.tls',
     ],
 
