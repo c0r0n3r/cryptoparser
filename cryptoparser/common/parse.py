@@ -121,10 +121,19 @@ class ParserBase(collections_abc.Mapping):
     def unparsed_length(self):
         return len(self._parsable) - self._parsed_length
 
-    def parse_parsable(self, name, parsable_class):
-        parsed_object, parsed_length = parsable_class.parse_immutable(
-            self._parsable[self._parsed_length:]
-        )
+    def parse_parsable(self, name, parsable_class, item_size=None):
+        if item_size is None:
+            parsed_object, parsed_length = parsable_class.parse_immutable(
+                self._parsable[self._parsed_length:]
+            )
+        else:
+            parsable_length, _ = self._parse_numeric_array(name, 1, item_size, int)
+            parsable_length = parsable_length[0]
+            parsed_object = parsable_class.parse_exact_size(
+                self._parsable[self._parsed_length + item_size:self._parsed_length + parsable_length + item_size]
+            )
+            parsed_length = item_size + parsable_length
+
         self._parsed_length += parsed_length
         self._parsed_values[name] = parsed_object
 
@@ -263,8 +272,11 @@ class ParserText(ParserBase):
             fallback_class,
             may_end):
         try:
-            if issubclass(item_class, ParsableBaseNoABC):
-                item = item_class.parse_exact_size(self._parsable[item_offset:item_end])
+            if not isinstance(item_class, type):
+                item = item_class(self._parsable[item_offset:item_end].decode(self._encoding))
+            elif issubclass(item_class, ParsableBaseNoABC):
+                item, parsed_length = item_class.parse_immutable(self._parsable[item_offset:item_end])
+                item_end = item_offset + parsed_length
             elif issubclass(item_class, str):
                 item = self._parsable[item_offset:item_end].decode(self._encoding)
             else:

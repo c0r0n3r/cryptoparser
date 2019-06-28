@@ -7,7 +7,7 @@ import six
 
 from cryptoparser.common.exception import NotEnoughData
 
-from cryptoparser.ssh.record import SshRecord
+from cryptoparser.ssh.record import SshRecordInit, SshRecordKexDH, SshRecordKexDHGroup
 from cryptoparser.ssh.subprotocol import SshDisconnectMessage, SshReasonCode
 
 
@@ -18,7 +18,7 @@ class TestRecord(unittest.TestCase):
             six.text_type(six.ensure_text('αβγ')),
             six.text_type('en-US')
         )
-        self.test_record = SshRecord(self.test_packet)
+        self.test_record = SshRecordInit(self.test_packet)
         self.test_record_bytes = bytes(
             b'\x00\x00\x00\x24' +                     # length = 0x01020304
             b'\x0b' +                                 # padding length = 0x00
@@ -35,17 +35,27 @@ class TestRecord(unittest.TestCase):
 
     def test_error(self):
         with self.assertRaises(NotEnoughData) as context_manager:
-            SshRecord.parse_exact_size(b'')
+            SshRecordInit.parse_exact_size(b'')
         self.assertEqual(context_manager.exception.bytes_needed, 4)
 
         with self.assertRaises(NotEnoughData) as context_manager:
-            SshRecord.parse_exact_size(
+            SshRecordInit.parse_exact_size(
                 b'\x01\x02\x03\x04'  # length = 0x01020304
             )
         self.assertEqual(context_manager.exception.bytes_needed, 0x01020304)
 
     def test_parse(self):
-        record = SshRecord.parse_exact_size(self.test_record_bytes)
+        record = SshRecordInit.parse_exact_size(self.test_record_bytes)
+        self.assertEqual(record.packet.reason, SshReasonCode.PROTOCOL_ERROR)
+        self.assertEqual(record.packet.description, six.ensure_text('αβγ'))
+        self.assertEqual(record.packet.language, 'en-US')
+
+        record = SshRecordKexDH.parse_exact_size(self.test_record_bytes)
+        self.assertEqual(record.packet.reason, SshReasonCode.PROTOCOL_ERROR)
+        self.assertEqual(record.packet.description, six.ensure_text('αβγ'))
+        self.assertEqual(record.packet.language, 'en-US')
+
+        record = SshRecordKexDHGroup.parse_exact_size(self.test_record_bytes)
         self.assertEqual(record.packet.reason, SshReasonCode.PROTOCOL_ERROR)
         self.assertEqual(record.packet.description, six.ensure_text('αβγ'))
         self.assertEqual(record.packet.language, 'en-US')

@@ -1,17 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import abc
+
 import attr
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData
 
-from cryptoparser.ssh.subprotocol import SshHandshakeMessageVariant, SshMessageBase
+from cryptoparser.ssh.subprotocol import (
+    SshMessageBase,
+    SshMessageVariantInit,
+    SshMessageVariantKexDH,
+    SshMessageVariantKexDHGroup,
+)
 
 
 @attr.s
-class SshRecord(ParsableBase):
+class SshRecordBase(ParsableBase):
+    HEADER_SIZE = 6
+
     packet = attr.ib(validator=attr.validators.instance_of(SshMessageBase))
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_variant_class(cls):
+        raise NotImplementedError()
 
     @classmethod
     def _parse(cls, parsable):
@@ -22,11 +36,11 @@ class SshRecord(ParsableBase):
             raise NotEnoughData(parser['packet_length'] - parser.unparsed_length)
         parser.parse_numeric('padding_length', 1)
 
-        parser.parse_parsable('packet', SshHandshakeMessageVariant)
+        parser.parse_parsable('packet', cls._get_variant_class())
 
         parser.parse_raw('padding', parser['padding_length'])
 
-        return SshRecord(packet=parser['packet']), parser.parsed_length
+        return cls(packet=parser['packet']), parser.parsed_length
 
     def compose(self):
         body_composer = ComposerBinary()
@@ -45,3 +59,21 @@ class SshRecord(ParsableBase):
         header_composer.compose_numeric(padding_length, 1)
 
         return header_composer.composed + body_composer.composed
+
+
+class SshRecordInit(SshRecordBase):
+    @classmethod
+    def _get_variant_class(cls):
+        return SshMessageVariantInit
+
+
+class SshRecordKexDH(SshRecordBase):
+    @classmethod
+    def _get_variant_class(cls):
+        return SshMessageVariantKexDH
+
+
+class SshRecordKexDHGroup(SshRecordBase):
+    @classmethod
+    def _get_variant_class(cls):
+        return SshMessageVariantKexDHGroup

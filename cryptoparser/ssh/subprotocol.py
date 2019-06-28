@@ -9,12 +9,14 @@ import six
 
 import attr
 
-from cryptoparser.common.base import VectorString, VectorParamString
+from cryptoparser.common.base import (
+    VariantParsable,
+    VectorParamString,
+    VectorString,
+)
 from cryptoparser.common.classes import LanguageTag
 from cryptoparser.common.exception import InvalidValue, InvalidType, TooMuchData
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ParserText, ComposerText
-
-from cryptoparser.tls.subprotocol import VariantParsable
 
 from cryptoparser.ssh.ciphersuite import (
     SshKexAlgorithm,
@@ -23,7 +25,6 @@ from cryptoparser.ssh.ciphersuite import (
     SshMacAlgorithm,
     SshCompressionAlgorithm,
 )
-
 from cryptoparser.ssh.version import SshProtocolVersion
 
 
@@ -36,6 +37,12 @@ class SshMessageCode(enum.IntEnum):
     SERVICE_ACCEPT = 0x6
     KEXINIT = 0x14
     NEWKEYS = 0x15
+    DH_KEX_INIT = 0x1e
+    DH_KEX_REPLY = 0x1f
+    DH_GEX_GROUP = 0x1f
+    DH_GEX_INIT = 0x20
+    DH_GEX_REPLY = 0x21
+    DH_GEX_REQUEST = 0x22
 
 
 class SshMessageBase(ParsableBase):
@@ -346,10 +353,249 @@ class SshDisconnectMessage(SshMessageBase):
         return composer.composed
 
 
-class SshHandshakeMessageVariant(VariantParsable):
+@attr.s
+class SshUnimplementedMessage(SshMessageBase):
+    sequence_number = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.UNIMPLEMENTED
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_numeric('sequence_number', 4)
+
+        return SshUnimplementedMessage(parser['sequence_number']), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_numeric(self.sequence_number, 4)
+
+        return composer.composed
+
+
+@attr.s
+class SshDHKeyExchangeInitBase(SshMessageBase):
+    ephemeral_public_key = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    @abc.abstractmethod
+    def get_message_code(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        header_parser = cls._parse_header(parsable)
+
+        body_parser = ParserBinary(parsable[header_parser.parsed_length:])
+        body_parser.parse_bytes('ephemeral_public_key', 4)
+
+        return cls(
+            body_parser['ephemeral_public_key']
+        ), header_parser.parsed_length + body_parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_bytes(self.ephemeral_public_key, 4)
+
+        return composer.composed
+
+
+class SshDHKeyExchangeInit(SshDHKeyExchangeInitBase):
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.DH_KEX_INIT
+
+
+class SshDHGroupExchangeInit(SshDHKeyExchangeInitBase):
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.DH_GEX_INIT
+
+
+@attr.s
+class SshDHKeyExchangeReplyBase(SshMessageBase):
+    host_public_key = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+    ephemeral_public_key = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+    signature = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    @abc.abstractmethod
+    def get_message_code(cls):
+        raise NotImplementedError()
+
+    @staticmethod
+    def _parse_ssh_key(parser):
+        parser.parse_bytes('host_public_key', 4)
+        parser.parse_bytes('ephemeral_public_key', 4)
+        parser.parse_bytes('signature', 4)
+
+        return parser['host_public_key'], parser['ephemeral_public_key'], parser['signature']
+
+    @staticmethod
+    def _compose_ssh_key(composer, host_public_key, ephemeral_public_key_bytes, signature_bytes):
+        composer.compose_bytes(host_public_key, 4)
+        composer.compose_bytes(ephemeral_public_key_bytes, 4)
+        composer.compose_bytes(signature_bytes, 4)
+
+    @classmethod
+    def _parse(cls, parsable):
+
+        parser = cls._parse_header(parsable)
+
+        host_public_key, ephemeral_public_key, signature = cls._parse_ssh_key(parser)
+
+        return cls(
+            host_public_key,
+            ephemeral_public_key,
+            signature,
+        ), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        self._compose_ssh_key(composer, self.host_public_key, self.ephemeral_public_key, self.signature)
+
+        return composer.composed
+
+
+class SshDHKeyExchangeReply(SshDHKeyExchangeReplyBase):
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.DH_KEX_REPLY
+
+
+class SshDHGroupExchangeReply(SshDHKeyExchangeReplyBase):
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.DH_GEX_REPLY
+
+
+@attr.s
+class SshDHGroupExchangeRequest(SshMessageBase):
+    gex_min = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    gex_number = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    gex_max = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.DH_GEX_REQUEST
+
+    @classmethod
+    def _parse(cls, parsable):
+        header_parser = cls._parse_header(parsable)
+
+        body_parser = ParserBinary(parsable[header_parser.parsed_length:])
+        body_parser.parse_numeric('gex_min', 4)
+        body_parser.parse_numeric('gex_number', 4)
+        body_parser.parse_numeric('gex_max', 4)
+
+        return SshDHGroupExchangeRequest(
+            body_parser['gex_min'],
+            body_parser['gex_number'],
+            body_parser['gex_max'],
+        ), header_parser.parsed_length + body_parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_numeric(self.gex_min, 4)
+        composer.compose_numeric(self.gex_number, 4)
+        composer.compose_numeric(self.gex_max, 4)
+
+        return composer.composed
+
+
+@attr.s
+class SshDHGroupExchangeGroup(SshMessageBase):
+    p = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+    g = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.DH_GEX_GROUP
+
+    @classmethod
+    def _parse(cls, parsable):
+        header_parser = cls._parse_header(parsable)
+
+        body_parser = ParserBinary(parsable[header_parser.parsed_length:])
+        body_parser.parse_bytes('p', 4)
+        body_parser.parse_bytes('g', 4)
+
+        return SshDHGroupExchangeGroup(
+            body_parser['p'],
+            body_parser['g'],
+        ), header_parser.parsed_length + body_parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_bytes(self.p, 4)
+        composer.compose_bytes(self.g, 4)
+
+        return composer.composed
+
+
+@attr.s
+class SshNewKeys(SshMessageBase):
+    @classmethod
+    def get_message_code(cls):
+        return SshMessageCode.NEWKEYS
+
+    @classmethod
+    def _parse(cls, parsable):
+        header_parser = cls._parse_header(parsable)
+
+        return SshNewKeys(), header_parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        return composer.composed
+
+
+class SshMessageVariantInit(VariantParsable):
+    _VARIANTS = collections.OrderedDict([
+        (SshMessageCode.DISCONNECT, (SshDisconnectMessage, )),
+        (SshMessageCode.UNIMPLEMENTED, (SshUnimplementedMessage, )),
+        (SshMessageCode.KEXINIT, (SshKeyExchangeInit, )),
+    ])
+
+    @classmethod
+    def _get_variants(cls):
+        return cls._VARIANTS
+
+
+class SshMessageVariantKexDH(VariantParsable):
     _VARIANTS = collections.OrderedDict([
         (SshMessageCode.DISCONNECT, (SshDisconnectMessage, )),
         (SshMessageCode.KEXINIT, (SshKeyExchangeInit, )),
+        (SshMessageCode.UNIMPLEMENTED, (SshUnimplementedMessage, )),
+        (SshMessageCode.DH_KEX_INIT, (SshDHKeyExchangeInit, )),
+        (SshMessageCode.DH_KEX_REPLY, (SshDHKeyExchangeReply, )),
+        (SshMessageCode.NEWKEYS, (SshNewKeys, )),
+    ])
+
+    @classmethod
+    def _get_variants(cls):
+        return cls._VARIANTS
+
+
+class SshMessageVariantKexDHGroup(VariantParsable):
+    _VARIANTS = collections.OrderedDict([
+        (SshMessageCode.DISCONNECT, (SshDisconnectMessage, )),
+        (SshMessageCode.KEXINIT, (SshKeyExchangeInit, )),
+        (SshMessageCode.UNIMPLEMENTED, (SshUnimplementedMessage, )),
+        (SshMessageCode.DH_GEX_REQUEST, (SshDHGroupExchangeRequest, )),
+        (SshMessageCode.DH_GEX_GROUP, (SshDHGroupExchangeGroup, )),
+        (SshMessageCode.DH_GEX_INIT, (SshDHGroupExchangeInit, )),
+        (SshMessageCode.DH_GEX_REPLY, (SshDHGroupExchangeReply, )),
+        (SshMessageCode.NEWKEYS, (SshNewKeys, )),
     ])
 
     @classmethod

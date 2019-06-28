@@ -1174,9 +1174,19 @@ class SshHostKeyAlgorithm(StringEnumParsable, enum.Enum):
         key_type=SshHostKeyType.KEY,
         authentication=Authentication.RSA,
     )
+    RSA_SHA2_256_CERT_V01_OPENSSH_COM = HostKeyAlgorithmParams(
+        code='rsa-sha2-256-cert-v01@openssh.com',
+        key_type=SshHostKeyType.CERTIFICATE,
+        authentication=Authentication.RSA,
+    )
     RSA_SHA2_512 = HostKeyAlgorithmParams(
         code='rsa-sha2-512',
         key_type=SshHostKeyType.KEY,
+        authentication=Authentication.RSA,
+    )
+    RSA_SHA2_512_CERT_V01_OPENSSH_COM = HostKeyAlgorithmParams(
+        code='rsa-sha2-512-cert-v01@openssh.com',
+        key_type=SshHostKeyType.CERTIFICATE,
         authentication=Authentication.RSA,
     )
     SSH_DSS = HostKeyAlgorithmParams(
@@ -1202,12 +1212,12 @@ class SshHostKeyAlgorithm(StringEnumParsable, enum.Enum):
     ECDSA_SHA2_1_3_132_0_10 = HostKeyAlgorithmParams(
         code='ecdsa-sha2-1.3.132.0.10',
         key_type=SshHostKeyType.KEY,
-        authentication=Authentication.DSS,
+        authentication=Authentication.ECDSA,
     )
     ECDSA_SHA2_1_3_132_0_10_CERT_V01_OPENSSH_COM = HostKeyAlgorithmParams(
         code='ecdsa-sha2-1.3.132.0.10-cert-v01@openssh.com',
         key_type=SshHostKeyType.CERTIFICATE,
-        authentication=Authentication.DSS,
+        authentication=Authentication.ECDSA,
     )
     ECDSA_SHA2_NISTP256 = HostKeyAlgorithmParams(
         code='ecdsa-sha2-nistp256',
@@ -1357,22 +1367,22 @@ class SshHostKeyAlgorithm(StringEnumParsable, enum.Enum):
     SSH_RSA_SHA224_SSH_COM = HostKeyAlgorithmParams(
         code='ssh-rsa-sha224@ssh.com',
         key_type=SshHostKeyType.KEY,
-        authentication=Authentication.DSS,
+        authentication=Authentication.RSA,
     )
     SSH_RSA_SHA256_SSH_COM = HostKeyAlgorithmParams(
         code='ssh-rsa-sha256@ssh.com',
         key_type=SshHostKeyType.KEY,
-        authentication=Authentication.DSS,
+        authentication=Authentication.RSA,
     )
     SSH_RSA_SHA384_SSH_COM = HostKeyAlgorithmParams(
         code='ssh-rsa-sha384@ssh.com',
         key_type=SshHostKeyType.KEY,
-        authentication=Authentication.DSS,
+        authentication=Authentication.RSA,
     )
     SSH_RSA_SHA512_SSH_COM = HostKeyAlgorithmParams(
         code='ssh-rsa-sha512@ssh.com',
         key_type=SshHostKeyType.KEY,
-        authentication=Authentication.DSS,
+        authentication=Authentication.RSA,
     )
     X509V3_ECDSA_SHA2_1_3_132_0_10 = HostKeyAlgorithmParams(
         code='x509v3-ecdsa-sha2-1.3.132.0.10',

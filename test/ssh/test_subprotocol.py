@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import collections
 import unittest
 
 import six
@@ -15,7 +16,21 @@ from cryptoparser.ssh.ciphersuite import (
     SshKexAlgorithm,
     SshMacAlgorithm,
 )
-from cryptoparser.ssh.subprotocol import SshProtocolMessage, SshKeyExchangeInit, SshHandshakeMessageVariant
+from cryptoparser.ssh.subprotocol import (
+    SshDHGroupExchangeInit,
+    SshDHGroupExchangeGroup,
+    SshDHGroupExchangeReply,
+    SshDHGroupExchangeRequest,
+    SshDHKeyExchangeInit,
+    SshDHKeyExchangeReply,
+    SshKeyExchangeInit,
+    SshMessageVariantInit,
+    SshMessageVariantKexDH,
+    SshMessageVariantKexDHGroup,
+    SshNewKeys,
+    SshProtocolMessage,
+    SshUnimplementedMessage,
+)
 from cryptoparser.ssh.version import SshProtocolVersion, SshVersion
 
 
@@ -192,7 +207,214 @@ class TestKeyExchangeInitMessage(unittest.TestCase):
         )
 
     def test_parse(self):
-        SshHandshakeMessageVariant.parse_exact_size(self.key_exchange_init_bytes)
+        SshMessageVariantInit.parse_exact_size(self.key_exchange_init_bytes)
 
     def test_compose(self):
         self.assertEqual(self.key_exchange_init.compose(), self.key_exchange_init_bytes)
+
+
+class TestUnimplementedMessage(unittest.TestCase):
+    def setUp(self):
+        self.unimplemented_bytes = bytes(
+            b'\x03' +                           # message_code = SshMessageCode.UNIMPLEMENTED
+            b'\x01\x02\x03\x04' +               # sequence_number
+            b''
+        )
+        self.unimplemented = SshUnimplementedMessage(
+            sequence_number=0x01020304
+        )
+
+    def test_parse(self):
+        message = SshMessageVariantInit.parse_exact_size(self.unimplemented_bytes)
+        self.assertEqual(message.sequence_number, 0x01020304)
+
+    def test_compose(self):
+        self.assertEqual(self.unimplemented.compose(), self.unimplemented_bytes)
+
+
+class TestDHKeyExchangeInit(unittest.TestCase):
+    def setUp(self):
+        self.dh_key_exchange_init_bytes = bytes(
+            b'\x1e' +                              # message_code = SshMessageCode.DH_KEX_INIT
+            b'\x00\x00\x00\x10' +                  # ephemeral_public_key length
+            b'\x00\x01\x02\x03\x04\x05\x06\x07' +  # ephemeral_public_key length
+            b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+            b''
+        )
+        self.dh_key_exchange_init = SshDHKeyExchangeInit(
+            ephemeral_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
+        )
+
+    def test_parse(self):
+        message = SshMessageVariantKexDH.parse_exact_size(self.dh_key_exchange_init_bytes)
+        self.assertEqual(message.ephemeral_public_key, self.dh_key_exchange_init.ephemeral_public_key)
+
+    def test_compose(self):
+        self.assertEqual(self.dh_key_exchange_init.compose(), self.dh_key_exchange_init_bytes)
+
+
+class TestDHGroupExchangeInit(unittest.TestCase):
+    def setUp(self):
+        self.dh_group_exchange_init_bytes = bytes(
+            b'\x20' +                              # message_code = SshMessageCode.DH_KEX_INIT
+            b'\x00\x00\x00\x10' +                  # ephemeral_public_key length
+            b'\x00\x01\x02\x03\x04\x05\x06\x07' +  # ephemeral_public_key length
+            b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+            b''
+        )
+        self.dh_group_exchange_init = SshDHGroupExchangeInit(
+            ephemeral_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
+        )
+
+    def test_parse(self):
+        message = SshMessageVariantKexDHGroup.parse_exact_size(self.dh_group_exchange_init_bytes)
+        self.assertEqual(message, self.dh_group_exchange_init)
+
+    def test_compose(self):
+        self.assertEqual(self.dh_group_exchange_init.compose(), self.dh_group_exchange_init_bytes)
+
+
+class TestDHKeyExchangeReply(unittest.TestCase):
+    def setUp(self):
+        self.dh_key_exchange_reply_dict = collections.OrderedDict([
+            ('message_code', b'\x1f'),  # DH_KEX_REPLY
+            ('host_key_length', b'\x00\x00\x00\x10'),
+            ('host_public_key', (
+                b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+                b''
+            )),
+            ('ephemeral_public_key_length', b'\x00\x00\x00\x10'),
+            ('ephemeral_public_key', (
+                b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+                b''
+            )),
+            ('signature_length', b'\x00\x00\x00\x10'),
+            ('signature_key', (
+                b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+                b''
+            )),
+        ])
+        self.dh_key_exchange_reply_bytes = b''.join(self.dh_key_exchange_reply_dict.values())
+        self.dh_key_exchange_reply = SshDHKeyExchangeReply(
+            host_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+            ephemeral_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+            signature=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+        )
+
+    def test_parse(self):
+        message = SshMessageVariantKexDH.parse_exact_size(self.dh_key_exchange_reply_bytes)
+        self.assertEqual(message, self.dh_key_exchange_reply)
+
+    def test_compose(self):
+        self.assertEqual(self.dh_key_exchange_reply.compose(), self.dh_key_exchange_reply_bytes)
+
+
+class TestDHGroupExchangeReply(unittest.TestCase):
+    def setUp(self):
+        self.dh_group_exchange_reply_dict = collections.OrderedDict([
+            ('message_code', b'\x21'),  # DH_GEX_REPLY
+            ('host_key_length', b'\x00\x00\x00\x10'),
+            ('host_public_key', (
+                b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+                b''
+            )),
+            ('ephemeral_public_key_length', b'\x00\x00\x00\x10'),
+            ('ephemeral_public_keylic_key', (
+                b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+                b''
+            )),
+            ('signature_length', b'\x00\x00\x00\x10'),
+            ('signature_key', (
+                b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+                b''
+            )),
+        ])
+        self.dh_group_exchange_reply_bytes = b''.join(self.dh_group_exchange_reply_dict.values())
+        self.dh_group_exchange_reply = SshDHGroupExchangeReply(
+            host_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+            ephemeral_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+            signature=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+        )
+
+    def test_parse(self):
+        message = SshMessageVariantKexDHGroup.parse_exact_size(self.dh_group_exchange_reply_bytes)
+        self.assertEqual(message, self.dh_group_exchange_reply)
+
+    def test_compose(self):
+        self.assertEqual(self.dh_group_exchange_reply.compose(), self.dh_group_exchange_reply_bytes)
+
+
+class TestDHGroupExchangeRequest(unittest.TestCase):
+    def setUp(self):
+        self.dh_group_exchange_reply_dict = collections.OrderedDict([
+            ('message_code', b'\x22'),  # DH_GEX_REQUEST
+            ('gex_min', b'\x00\x00\x04\x00'),
+            ('gex_number', b'\x00\x00\x08\x00'),
+            ('gex_max', b'\x00\x00\x10\x00'),
+        ])
+        self.dh_group_exchange_reply_bytes = b''.join(self.dh_group_exchange_reply_dict.values())
+        self.dh_group_exchange_reply = SshDHGroupExchangeRequest(
+            gex_min=1024,
+            gex_number=2048,
+            gex_max=4096,
+        )
+
+    def test_parse(self):
+        message = SshMessageVariantKexDHGroup.parse_exact_size(self.dh_group_exchange_reply_bytes)
+        self.assertEqual(message, self.dh_group_exchange_reply)
+
+    def test_compose(self):
+        self.assertEqual(self.dh_group_exchange_reply.compose(), self.dh_group_exchange_reply_bytes)
+
+
+class TestDHGroupExchangeGroup(unittest.TestCase):
+    def setUp(self):
+        self.dh_group_exchange_group_dict = collections.OrderedDict([
+            ('message_code', b'\x1f'),  # DH_GEX_GROUP
+            ('p_length', b'\x00\x00\x00\x10'),
+            ('p', (
+                b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+                b''
+            )),
+            ('g_length', b'\x00\x00\x00\x10'),
+            ('g', (
+                b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+                b''
+            )),
+        ])
+        self.dh_group_exchange_group_bytes = b''.join(self.dh_group_exchange_group_dict.values())
+        self.dh_group_exchange_group = SshDHGroupExchangeGroup(
+            p=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+            g=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+        )
+
+    def test_parse(self):
+        message = SshMessageVariantKexDHGroup.parse_exact_size(self.dh_group_exchange_group_bytes)
+        self.assertEqual(message, self.dh_group_exchange_group)
+
+    def test_compose(self):
+        self.assertEqual(self.dh_group_exchange_group.compose(), self.dh_group_exchange_group_bytes)
+
+
+class TestNewKeys(unittest.TestCase):
+    def setUp(self):
+        self.new_keys_dict = collections.OrderedDict([
+            ('message_code', b'\x15'),  # NEWKEYS
+        ])
+        self.new_keys_bytes = b''.join(self.new_keys_dict.values())
+        self.new_keys = SshNewKeys()
+
+    def test_parse(self):
+        message = SshNewKeys.parse_exact_size(self.new_keys_bytes)
+        self.assertEqual(message, self.new_keys)
+
+    def test_compose(self):
+        self.assertEqual(self.new_keys.compose(), self.new_keys_bytes)
