@@ -1,13 +1,12 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import abc
 import collections
 import enum
 import random
-import six
 
 import attr
+import six
 
 from cryptoparser.common.base import (
     VariantParsable,
@@ -25,6 +24,7 @@ from cryptoparser.ssh.ciphersuite import (
     SshMacAlgorithm,
     SshCompressionAlgorithm,
 )
+from cryptoparser.ssh.key import SshPublicKeyBase, SshHostPublicKeyVariant
 from cryptoparser.ssh.version import (
     SshProtocolVersion,
     SshSoftwareVersionBase,
@@ -424,7 +424,7 @@ class SshDHGroupExchangeInit(SshDHKeyExchangeInitBase):
 
 @attr.s
 class SshDHKeyExchangeReplyBase(SshMessageBase):
-    host_public_key = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+    host_public_key = attr.ib(validator=attr.validators.instance_of(SshPublicKeyBase))
     ephemeral_public_key = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
     signature = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
 
@@ -435,7 +435,7 @@ class SshDHKeyExchangeReplyBase(SshMessageBase):
 
     @staticmethod
     def _parse_ssh_key(parser):
-        parser.parse_bytes('host_public_key', 4)
+        parser.parse_parsable('host_public_key', SshHostPublicKeyVariant, 4)
         parser.parse_bytes('ephemeral_public_key', 4)
         parser.parse_bytes('signature', 4)
 
@@ -443,7 +443,7 @@ class SshDHKeyExchangeReplyBase(SshMessageBase):
 
     @staticmethod
     def _compose_ssh_key(composer, host_public_key, ephemeral_public_key_bytes, signature_bytes):
-        composer.compose_bytes(host_public_key, 4)
+        composer.compose_parsable(host_public_key, 4)
         composer.compose_bytes(ephemeral_public_key_bytes, 4)
         composer.compose_bytes(signature_bytes, 4)
 
