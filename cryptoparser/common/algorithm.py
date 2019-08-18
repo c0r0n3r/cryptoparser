@@ -14,6 +14,10 @@ CipherSuiteParams = collections.namedtuple('TlsCipherSuiteParams', ['key_exchang
 
 
 class KeyExchange(enum.Enum):
+    ADH = KeyExchangeParams(
+        name='ADH',
+        pfs=False
+    )
     DH = KeyExchangeParams(  # pylint: disable=invalid-name
         name='DH',
         pfs=False

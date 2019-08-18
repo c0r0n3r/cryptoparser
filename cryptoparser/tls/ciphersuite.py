@@ -245,7 +245,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_EXPORT_WITH_RC4_40_MD5 = CipherSuiteParams(
         code=0x0017,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.RC4_40,
         block_cipher_mode=None,
@@ -254,7 +254,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_RC4_128_MD5 = CipherSuiteParams(
         code=0x0018,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.RC4_128,
         block_cipher_mode=None,
@@ -263,7 +263,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x0019,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.DES40,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -272,7 +272,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x001a,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.DES,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -281,7 +281,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x001b,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -488,7 +488,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0034,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_128,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -542,7 +542,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x003a,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_256,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -650,7 +650,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0046,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_128,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -704,7 +704,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x006c,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_128,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -713,7 +713,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x006d,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_256,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -767,7 +767,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0089,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_256,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -929,7 +929,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x009b,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.SEED,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -1028,7 +1028,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00a6,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_128,
         block_cipher_mode=BlockCipherMode.GCM,
@@ -1037,7 +1037,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00a7,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_256,
         block_cipher_mode=BlockCipherMode.GCM,
@@ -1253,7 +1253,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00bf,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_128,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -1307,7 +1307,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c5,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_256,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -1937,7 +1937,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc046,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.ARIA_128,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -1946,7 +1946,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc047,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.ARIA_256,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -2117,7 +2117,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc05a,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.ARIA_128,
         block_cipher_mode=BlockCipherMode.GCM,
@@ -2126,7 +2126,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc05b,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.ARIA_256,
         block_cipher_mode=BlockCipherMode.GCM,
@@ -2495,7 +2495,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc084,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_128,
         block_cipher_mode=BlockCipherMode.GCM,
@@ -2504,7 +2504,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
     )
     TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc085,
-        key_exchange=KeyExchange.DH,
+        key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_256,
         block_cipher_mode=BlockCipherMode.GCM,
