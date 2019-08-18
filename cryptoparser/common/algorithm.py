@@ -7,7 +7,7 @@ import collections
 KeyExchangeParams = collections.namedtuple('KeyExchangeParams', ['name', 'pfs', ])
 AuthenticationParams = collections.namedtuple('AuthenticationParams', ['name', 'anonymous', ])
 BlockCipherParams = collections.namedtuple('BlockCipherParams', ['name', 'key_size', 'block_size', ])
-BlockCipherModeParams = collections.namedtuple('BlockCipherModeParams', ['name', 'aead', ])
+BlockCipherModeParams = collections.namedtuple('BlockCipherModeParams', ['name', ])
 MACParams = collections.namedtuple('MACParams', ['name', 'digest_size', ])
 NamedGroupParams = collections.namedtuple('NamedGroupParams', ['name', 'size', 'group_type', ])
 CipherSuiteParams = collections.namedtuple('TlsCipherSuiteParams', ['key_exchange', ])
@@ -188,19 +188,15 @@ class BlockCipher(enum.Enum):
 class BlockCipherMode(enum.Enum):
     CBC = BlockCipherModeParams(
         name='CBC',
-        aead=False
     )
     CCM = BlockCipherModeParams(
         name='CCM',
-        aead=True
     )
     CCM_8 = BlockCipherModeParams(
         name='CCM_8',
-        aead=True
     )
     GCM = BlockCipherModeParams(
         name='GCM',
-        aead=True
     )
 
 
