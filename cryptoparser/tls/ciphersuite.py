@@ -2576,80 +2576,80 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CHACHA20,
-        block_cipher_mode=BlockCipherMode.POLY1305,
-        mac=MAC.SHA256,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
     )
     OLD_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcc14,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CHACHA20,
-        block_cipher_mode=BlockCipherMode.POLY1305,
-        mac=MAC.SHA256,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
     )
     OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcc15,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CHACHA20,
-        block_cipher_mode=BlockCipherMode.POLY1305,
-        mac=MAC.SHA256,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
     )
     TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcca8,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CHACHA20,
-        block_cipher_mode=BlockCipherMode.POLY1305,
-        mac=MAC.SHA256,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
     )
     TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcca9,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CHACHA20,
-        block_cipher_mode=BlockCipherMode.POLY1305,
-        mac=MAC.SHA256,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
     )
     TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccaa,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CHACHA20,
-        block_cipher_mode=BlockCipherMode.POLY1305,
-        mac=MAC.SHA256,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
     )
     TLS_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccab,
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CHACHA20,
-        block_cipher_mode=BlockCipherMode.POLY1305,
-        mac=MAC.SHA256,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
     )
     TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccac,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CHACHA20,
-        block_cipher_mode=BlockCipherMode.POLY1305,
-        mac=MAC.SHA256,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
     )
     TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccad,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CHACHA20,
-        block_cipher_mode=BlockCipherMode.POLY1305,
-        mac=MAC.SHA256,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
     )
     TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccae,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CHACHA20,
-        block_cipher_mode=BlockCipherMode.POLY1305,
-        mac=MAC.SHA256,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
     )
 
 

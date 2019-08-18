@@ -202,16 +202,16 @@ class BlockCipherMode(enum.Enum):
         name='GCM',
         aead=True
     )
-    POLY1305 = BlockCipherModeParams(
-        name='POLY1305',
-        aead=True
-    )
 
 
 class MAC(enum.Enum):
     MD5 = MACParams(
         name='MD5',
         digest_size=64
+    )
+    POLY1305 = MACParams(
+        name='POLY1305',
+        digest_size=128
     )
     SHA1 = MACParams(
         name='SHA1',
