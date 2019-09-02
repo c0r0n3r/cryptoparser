@@ -7,7 +7,7 @@ from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidVal
 from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
 
-from tests.common.classes import OneByteParsable, TwoByteParsable, ConditionalParsable, OneByteOddParsable
+from .classes import OneByteParsable, TwoByteParsable, ConditionalParsable, OneByteOddParsable
 
 
 class TestParsable(unittest.TestCase):
