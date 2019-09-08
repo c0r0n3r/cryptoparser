@@ -4,47 +4,51 @@
 import enum
 import collections
 
-KeyExchangeParams = collections.namedtuple('KeyExchangeParams', ['name', 'pfs', ])
+KeyExchangeParams = collections.namedtuple('KeyExchangeParams', ['name', 'fs', ])
 AuthenticationParams = collections.namedtuple('AuthenticationParams', ['name', 'anonymous', ])
 BlockCipherParams = collections.namedtuple('BlockCipherParams', ['name', 'key_size', 'block_size', ])
-BlockCipherModeParams = collections.namedtuple('BlockCipherModeParams', ['name', 'aead', ])
+BlockCipherModeParams = collections.namedtuple('BlockCipherModeParams', ['name', ])
 MACParams = collections.namedtuple('MACParams', ['name', 'digest_size', ])
 NamedGroupParams = collections.namedtuple('NamedGroupParams', ['name', 'size', 'group_type', ])
 CipherSuiteParams = collections.namedtuple('TlsCipherSuiteParams', ['key_exchange', ])
 
 
 class KeyExchange(enum.Enum):
+    ADH = KeyExchangeParams(
+        name='ADH',
+        fs=False
+    )
     DH = KeyExchangeParams(  # pylint: disable=invalid-name
         name='DH',
-        pfs=False
+        fs=False
     )
     DHE = KeyExchangeParams(
         name='DHE',
-        pfs=True
+        fs=True
     )
     ECDH = KeyExchangeParams(
         name='ECDH',
-        pfs=False
+        fs=False
     )
     ECDHE = KeyExchangeParams(
         name='ECDHE',
-        pfs=True
+        fs=True
     )
     KRB5 = KeyExchangeParams(
         name='KRB5',
-        pfs=False
+        fs=False
     )
     PSK = KeyExchangeParams(
         name='PSK',
-        pfs=False
+        fs=False
     )
     RSA = KeyExchangeParams(
         name='RSA',
-        pfs=False
+        fs=False
     )
     SRP = KeyExchangeParams(
         name='SRP',
-        pfs=False
+        fs=False
     )
 
 
@@ -188,23 +192,15 @@ class BlockCipher(enum.Enum):
 class BlockCipherMode(enum.Enum):
     CBC = BlockCipherModeParams(
         name='CBC',
-        aead=False
     )
     CCM = BlockCipherModeParams(
         name='CCM',
-        aead=True
     )
     CCM_8 = BlockCipherModeParams(
         name='CCM_8',
-        aead=True
     )
     GCM = BlockCipherModeParams(
         name='GCM',
-        aead=True
-    )
-    POLY1305 = BlockCipherModeParams(
-        name='POLY1305',
-        aead=True
     )
 
 
@@ -212,6 +208,10 @@ class MAC(enum.Enum):
     MD5 = MACParams(
         name='MD5',
         digest_size=64
+    )
+    POLY1305 = MACParams(
+        name='POLY1305',
+        digest_size=128
     )
     SHA1 = MACParams(
         name='SHA1',
