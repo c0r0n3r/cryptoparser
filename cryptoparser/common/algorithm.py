@@ -4,7 +4,7 @@
 import enum
 import collections
 
-KeyExchangeParams = collections.namedtuple('KeyExchangeParams', ['name', 'pfs', ])
+KeyExchangeParams = collections.namedtuple('KeyExchangeParams', ['name', 'fs', ])
 AuthenticationParams = collections.namedtuple('AuthenticationParams', ['name', 'anonymous', ])
 BlockCipherParams = collections.namedtuple('BlockCipherParams', ['name', 'key_size', 'block_size', ])
 BlockCipherModeParams = collections.namedtuple('BlockCipherModeParams', ['name', ])
@@ -16,39 +16,39 @@ CipherSuiteParams = collections.namedtuple('TlsCipherSuiteParams', ['key_exchang
 class KeyExchange(enum.Enum):
     ADH = KeyExchangeParams(
         name='ADH',
-        pfs=False
+        fs=False
     )
     DH = KeyExchangeParams(  # pylint: disable=invalid-name
         name='DH',
-        pfs=False
+        fs=False
     )
     DHE = KeyExchangeParams(
         name='DHE',
-        pfs=True
+        fs=True
     )
     ECDH = KeyExchangeParams(
         name='ECDH',
-        pfs=False
+        fs=False
     )
     ECDHE = KeyExchangeParams(
         name='ECDHE',
-        pfs=True
+        fs=True
     )
     KRB5 = KeyExchangeParams(
         name='KRB5',
-        pfs=False
+        fs=False
     )
     PSK = KeyExchangeParams(
         name='PSK',
-        pfs=False
+        fs=False
     )
     RSA = KeyExchangeParams(
         name='RSA',
-        pfs=False
+        fs=False
     )
     SRP = KeyExchangeParams(
         name='SRP',
-        pfs=False
+        fs=False
     )
 
 
