@@ -716,7 +716,7 @@ class SslErrorType(enum.IntEnum):
     UNSUPPORTED_CERTIFICATE_TYPE_ERROR = 0x0004
 
 
-class SslError(SslMessageBase):
+class SslErrorMessage(SslMessageBase):
     def __init__(self, error_type):
         self.error_type = error_type
 
@@ -730,7 +730,7 @@ class SslError(SslMessageBase):
 
         parser.parse_numeric('error_type', 2, SslErrorType)
 
-        return SslError(parser['error_type']), parser.parsed_length
+        return SslErrorMessage(parser['error_type']), parser.parsed_length
 
     def compose(self):
         composer = ComposerBinary()
@@ -875,7 +875,7 @@ class TlsSubprotocolMessageParser(SubprotocolParser):
 
 class SslSubprotocolMessageParser(SubprotocolParser):
     _SUBPROTOCOL_PARSERS = {
-        SslMessageType.ERROR: SslError,
+        SslMessageType.ERROR: SslErrorMessage,
         SslMessageType.CLIENT_HELLO: SslHandshakeClientHello,
         SslMessageType.SERVER_HELLO: SslHandshakeServerHello,
     }
