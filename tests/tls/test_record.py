@@ -12,7 +12,7 @@ from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsContentTy
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
 from cryptoparser.tls.subprotocol import TlsAlertMessage, TlsAlertLevel, TlsAlertDescription
-from cryptoparser.tls.subprotocol import SslError, SslErrorType, SslMessageType, SslVersion
+from cryptoparser.tls.subprotocol import SslErrorMessage, SslErrorType, SslMessageType, SslVersion
 
 
 class TestTlsSubprotocolMessageBase(unittest.TestCase):
@@ -146,7 +146,7 @@ class TestTlsRecord(unittest.TestCase):
 
 class TestSslRecord(unittest.TestCase):
     def setUp(self):
-        self.test_message = SslError(
+        self.test_message = SslErrorMessage(
             error_type=SslErrorType.NO_CIPHER_ERROR
         )
         self.test_record = SslRecord(
