@@ -86,7 +86,7 @@ class TlsProtocolVersionBase(Serializable, ParsableBase):
         return self._major
 
     @major.setter
-    @abc.abstractproperty
+    @abc.abstractmethod
     def major(self, value):
         raise NotImplementedError()
 
