@@ -1,6 +1,18 @@
 Changelog
 =========
 
+.. _v0-2-0:
+
+0.2.0 - 2019-12-02
+------------------
+
+Bugs
+^^^^
+
+* clarify TLS related parameter names
+* several packaging fixes
+* some minor fixes
+
 .. _v0-1-0:
 
 0.1.0 - 2019-03-20

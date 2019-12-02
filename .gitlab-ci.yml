@@ -85,3 +85,4 @@ obs:
   only:
     refs:
       - master
+      - tags
