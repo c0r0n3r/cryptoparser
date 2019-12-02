@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import json
@@ -11,11 +10,11 @@ from cryptoparser.common.base import VectorParsableDerived, Opaque
 
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 
-from tests.common.classes import OneByteParsable, TwoByteParsable
-from tests.common.classes import ConditionalParsable
-from tests.common.classes import TestObject
-from tests.common.classes import SerializableSimpleTypes, SerializableIterables, SerializableEnum
-from tests.common.classes import SerializableHidden, SerializableUnhandled, SerializableRecursive
+from .classes import OneByteParsable, TwoByteParsable
+from .classes import ConditionalParsable
+from .classes import TestObject
+from .classes import SerializableSimpleTypes, SerializableIterables, SerializableEnum
+from .classes import SerializableHidden, SerializableUnhandled, SerializableRecursive
 
 
 class VectorNumericTestErrors(Vector):

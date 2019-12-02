@@ -18,12 +18,13 @@ with codecs.open(os.path.join(this_directory, 'README.rst'), encoding='utf-8') a
 test_requirements = [
     "unittest2",
     "coverage",
+    "six",
 ]
 
 
 def test_discover():
     test_loader = unittest.TestLoader()
-    test_suite = test_loader.discover('tests', pattern='test_*.py')
+    test_suite = test_loader.discover('test', pattern='test_*.py')
     return test_suite
 
 
@@ -34,7 +35,7 @@ setup(
     long_description=long_description,
     author='Szilárd Pfeiffer',
     author_email='coroner@pfeifferszilard.hu',
-    license='MPL 2.0',
+    license='MPL-2.0',
     url='https://gitlab.com/coroner/cryptoparser',
 
     install_requires=install_requirements,

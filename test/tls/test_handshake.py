@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import unittest
@@ -20,7 +19,7 @@ from cryptoparser.tls.subprotocol import SslMessageType, SslHandshakeClientHello
 from cryptoparser.tls.record import TlsRecord
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
-from tests.tls.classes import TestMessage, TestVariantMessage
+from .classes import TestMessage, TestVariantMessage
 
 
 class TestSubprotocolParser(unittest.TestCase):
