@@ -879,6 +879,49 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer):
         hash_algorithm=MAC.GOST_R3411_12_512,
     )
 
+    RSA_PSS_RSAE_SHA256 = HashAndSignatureAlgorithmParam(
+        code=0x0804,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_256
+    )
+    RSA_PSS_RSAE_SHA384 = HashAndSignatureAlgorithmParam(
+        code=0x0805,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_384
+    )
+    RSA_PSS_RSAE_SHA512 = HashAndSignatureAlgorithmParam(
+        code=0x0806,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_512
+    )
+
+    ED25519 = HashAndSignatureAlgorithmParam(
+        code=0x0807,
+        signature_algorithm=Authentication.EDDSA,
+        hash_algorithm=MAC.ED25519PH
+    )
+    ED448 = HashAndSignatureAlgorithmParam(
+        code=0x0808,
+        signature_algorithm=Authentication.EDDSA,
+        hash_algorithm=MAC.ED448PH
+    )
+
+    RSA_PSS_PSS_SHA256 = HashAndSignatureAlgorithmParam(
+        code=0x0809,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_256
+    )
+    RSA_PSS_PSS_SHA384 = HashAndSignatureAlgorithmParam(
+        code=0x080a,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_384
+    )
+    RSA_PSS_PSS_SHA512 = HashAndSignatureAlgorithmParam(
+        code=0x080b,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_512
+    )
+
 
 class TlsSignatureAndHashAlgorithmVector(VectorParsable):
     @classmethod
