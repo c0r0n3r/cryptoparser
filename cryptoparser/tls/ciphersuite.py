@@ -2978,6 +2978,51 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.POLY1305,
         ae=True,
     )
+    TLS_AES_128_GCM_SHA256 = CipherSuiteParams(
+        code=0x1301,
+        key_exchange=None,
+        authentication=None,
+        bulk_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.GCM,
+        mac=MAC.SHA256,
+        ae=True,
+    )
+    TLS_AES_256_GCM_SHA384 = CipherSuiteParams(
+        code=0x1302,
+        key_exchange=None,
+        authentication=None,
+        bulk_cipher=BlockCipher.AES_256,
+        block_cipher_mode=BlockCipherMode.GCM,
+        mac=MAC.SHA384,
+        ae=True,
+    )
+    TLS_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
+        code=0x1303,
+        key_exchange=None,
+        authentication=None,
+        bulk_cipher=BlockCipher.CHACHA20,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
+        ae=True,
+    )
+    TLS_AES_128_CCM_SHA256 = CipherSuiteParams(
+        code=0x1304,
+        key_exchange=None,
+        authentication=None,
+        bulk_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.CCM,
+        mac=MAC.SHA256,
+        ae=True,
+    )
+    TLS_AES_128_CCM_8_SHA256 = CipherSuiteParams(
+        code=0x1305,
+        key_exchange=None,
+        authentication=None,
+        bulk_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.CCM_8,
+        mac=MAC.SHA256,
+        ae=True,
+    )
 
 
 class SslCipherKindFactory(ThreeByteEnumParsable):
