@@ -675,7 +675,7 @@ class TlsSupportedVersionVector(VectorParsableDerived):
 
 @attr.s
 class TlsExtensionSupportedVersions(TlsExtensionParsed):
-    supported_versions = attr.ib(validator=attr.validators.instance_of(TlsSupportedVersionVector))
+    supported_versions = attr.ib(converter=TlsSupportedVersionVector)
 
     @classmethod
     def get_extension_type(cls):
@@ -685,8 +685,12 @@ class TlsExtensionSupportedVersions(TlsExtensionParsed):
     def _parse(cls, parsable):
         parser = super(TlsExtensionSupportedVersions, cls)._parse_header(parsable)
 
-        parser.parse_parsable('supported_versions', TlsSupportedVersionVector)
+        # it possible only when the extension is part of the server hello message
+        if parser['extension_length'] == 2:
+            parser.parse_parsable('supported_version', TlsProtocolVersionBase)
+            return TlsExtensionSupportedVersions([parser['supported_version'], ]), parser.parsed_length
 
+        parser.parse_parsable('supported_versions', TlsSupportedVersionVector)
         return TlsExtensionSupportedVersions(parser['supported_versions']), parser.parsed_length
 
     def compose(self):
@@ -938,23 +942,24 @@ class TlsSignatureAndHashAlgorithmVector(VectorParsable):
 
 
 @attr.s
-class TlsExtensionSignatureAlgorithms(TlsExtensionParsed):
+class TlsExtensionSignatureAlgorithmsBase(TlsExtensionParsed):
     hash_and_signature_algorithms = attr.ib(
         converter=TlsSignatureAndHashAlgorithmVector,
         validator=attr.validators.instance_of(TlsSignatureAndHashAlgorithmVector)
     )
 
     @classmethod
+    @abc.abstractmethod
     def get_extension_type(cls):
-        return TlsExtensionType.SIGNATURE_ALGORITHMS
+        raise NotImplementedError()
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionSignatureAlgorithms, cls)._parse_header(parsable)
+        parser = super(TlsExtensionSignatureAlgorithmsBase, cls)._parse_header(parsable)
 
         parser.parse_parsable('hash_and_signature_algorithms', TlsSignatureAndHashAlgorithmVector)
 
-        return TlsExtensionSignatureAlgorithms(parser['hash_and_signature_algorithms']), parser.parsed_length
+        return cls(parser['hash_and_signature_algorithms']), parser.parsed_length
 
     def compose(self):
         payload_composer = ComposerBinary()
@@ -964,6 +969,128 @@ class TlsExtensionSignatureAlgorithms(TlsExtensionParsed):
         header_bytes = self._compose_header(payload_composer.composed_length)
 
         return header_bytes + payload_composer.composed_bytes
+
+
+class TlsExtensionSignatureAlgorithms(TlsExtensionSignatureAlgorithmsBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.SIGNATURE_ALGORITHMS
+
+
+class TlsExtensionSignatureAlgorithmsCert(TlsExtensionSignatureAlgorithmsBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.SIGNATURE_ALGORITHMS_CERT
+
+
+class TlsKeyExchangeVector(Vector):
+    @classmethod
+    def get_param(cls):
+        return VectorParamNumeric(item_size=1, min_byte_num=1, max_byte_num=2 ** 16 - 1)
+
+
+@attr.s
+class TlsKeyShareEntry(ParsableBase):
+    group = attr.ib(validator=attr.validators.instance_of(TlsNamedCurve))
+    key_exchange = attr.ib(converter=TlsKeyExchangeVector)
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_parsable('group', TlsNamedCurveFactory)
+        parser.parse_parsable('key_exchange', TlsKeyExchangeVector)
+
+        return TlsKeyShareEntry(parser['group'], parser['key_exchange']), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_parsable(self.group)
+        composer.compose_parsable(self.key_exchange)
+
+        return composer.composed_bytes
+
+
+class TlsKeyShareEntryVector(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsKeyShareEntry,
+            fallback_class=None,
+            min_byte_num=0, max_byte_num=2 ** 16 - 1
+        )
+
+
+class TlsExtensionKeyShareBase(TlsExtensionParsed):
+    @classmethod
+    @abc.abstractmethod
+    def get_extension_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionKeyShareBase, cls)._parse_header(parsable)
+
+        if parser.unparsed_length == 2:
+            parser.parse_parsable('selected_group', TlsNamedCurveFactory)
+            return TlsExtensionKeyShareHelloRetryRequest(parser['selected_group']), parser.parsed_length
+
+        parser.parse_parsable('key_share_entries', TlsKeyShareEntryVector)
+        return cls(parser['key_share_entries']), parser.parsed_length  # pylint: disable=too-many-function-args
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+@attr.s
+class TlsExtensionKeyShareHelloRetryRequest(TlsExtensionKeyShareBase):
+    selected_group = attr.ib(validator=attr.validators.instance_of(TlsNamedCurve))
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.KEY_SHARE
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.selected_group)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+@attr.s
+class TlsExtensionKeyShareEntriesBase(TlsExtensionKeyShareBase):
+    key_share_entries = attr.ib(converter=TlsKeyShareEntryVector)
+
+    @classmethod
+    @abc.abstractmethod
+    def get_extension_type(cls):
+        raise NotImplementedError()
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.key_share_entries)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+class TlsExtensionKeyShare(TlsExtensionKeyShareEntriesBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.KEY_SHARE
+
+
+class TlsExtensionKeyShareReserved(TlsExtensionKeyShareEntriesBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.KEY_SHARE_RESERVED
 
 
 class TlsExtensionVariant(VariantParsable):

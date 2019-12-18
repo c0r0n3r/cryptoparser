@@ -94,6 +94,10 @@ class TestTlsProtocolVersion(unittest.TestCase):
             TlsProtocolVersionDraft(TlsProtocolVersionDraft.MAX_DRAFT_NUMBER),
             TlsProtocolVersionFinal(TlsVersion.TLS1_3)
         )
+        self.assertGreater(
+            TlsProtocolVersionFinal(TlsVersion.TLS1_3),
+            TlsProtocolVersionDraft(TlsProtocolVersionDraft.MAX_DRAFT_NUMBER)
+        )
 
     def test_set(self):
         self.assertEqual(

@@ -4,15 +4,25 @@ import collections
 import unittest
 
 from cryptoparser.common.exception import NotEnoughData, InvalidType
-from cryptoparser.tls.extension import TlsExtensionUnparsed, TlsExtensionParsed
-from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
-
-from cryptoparser.tls.extension import TlsExtensionServerName
-from cryptoparser.tls.extension import TlsExtensionECPointFormats, TlsECPointFormat
-from cryptoparser.tls.extension import TlsExtensionEllipticCurves, TlsNamedCurve
-from cryptoparser.tls.extension import TlsExtensionSupportedVersions
-from cryptoparser.tls.extension import TlsExtensionSignatureAlgorithms, TlsSignatureAndHashAlgorithm
+from cryptoparser.tls.extension import (
+    TlsECPointFormat,
+    TlsExtensionECPointFormats,
+    TlsExtensionEllipticCurves,
+    TlsExtensionKeyShare,
+    TlsExtensionKeyShareHelloRetryRequest,
+    TlsExtensionKeyShareReserved,
+    TlsExtensionServerName,
+    TlsExtensionSignatureAlgorithms,
+    TlsExtensionSignatureAlgorithmsCert,
+    TlsExtensionSupportedVersions,
+    TlsExtensionUnparsed,
+    TlsExtensionParsed,
+    TlsExtensionType,
+    TlsNamedCurve,
+    TlsSignatureAndHashAlgorithm,
+)
 from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
+from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
 
 
 class TestExtensionUnparsed(unittest.TestCase):
@@ -190,6 +200,30 @@ class TestExtensionSupportedVersions(unittest.TestCase):
         )
         self.assertEqual(extension_supported_versions.compose(), extension_supported_versions_bytes)
 
+        extension_supported_versions_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x2b'),
+            ('extension_length', b'\x00\x02'),
+            ('supported_version_list', b'\x03\x03'),
+        ])
+        extension_supported_versions_bytes = b''.join(extension_supported_versions_dict.values())
+        extension_supported_versions = TlsExtensionSupportedVersions.parse_exact_size(
+            extension_supported_versions_bytes
+        )
+        self.assertEqual(
+            list(extension_supported_versions.supported_versions),
+            [
+                TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+            ]
+        )
+        extension_supported_versions_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x2b'),
+            ('extension_length', b'\x00\x03'),
+            ('supported_version_list_length', b'\x02'),
+            ('supported_version_list', b'\x03\x03'),
+        ])
+        extension_supported_versions_bytes = b''.join(extension_supported_versions_dict.values())
+        self.assertEqual(extension_supported_versions.compose(), extension_supported_versions_bytes)
+
 
 class TestExtensionSignatureAlgorithms(unittest.TestCase):
     def test_parse(self):
@@ -203,6 +237,7 @@ class TestExtensionSignatureAlgorithms(unittest.TestCase):
         extension_signature_algorithms = TlsExtensionSignatureAlgorithms.parse_exact_size(
             extension_signature_algorithms_bytes
         )
+        self.assertEqual(extension_signature_algorithms.extension_type, TlsExtensionType.SIGNATURE_ALGORITHMS)
         self.assertEqual(
             list(extension_signature_algorithms.hash_and_signature_algorithms),
             [
@@ -214,3 +249,101 @@ class TestExtensionSignatureAlgorithms(unittest.TestCase):
             ]
         )
         self.assertEqual(extension_signature_algorithms.compose(), extension_signature_algorithms_bytes)
+
+
+class TestExtensionSignatureAlgorithmsCert(unittest.TestCase):
+    def test_parse(self):
+        extension_signature_algorithms_cert_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x32'),
+            ('extension_length', b'\x00\x0a'),
+            ('signature_algorithm_list_length', b'\x00\x08'),
+            ('signature_algorithm_list', b'\x01\x00\x02\x01\x03\x02\x04\x03'),
+        ])
+        extension_signature_algorithms_cert_bytes = b''.join(extension_signature_algorithms_cert_dict.values())
+        extension_signature_algorithms_cert = TlsExtensionSignatureAlgorithmsCert.parse_exact_size(
+            extension_signature_algorithms_cert_bytes
+        )
+        self.assertEqual(extension_signature_algorithms_cert.extension_type, TlsExtensionType.SIGNATURE_ALGORITHMS_CERT)
+        self.assertEqual(
+            list(extension_signature_algorithms_cert.hash_and_signature_algorithms),
+            [
+                TlsSignatureAndHashAlgorithm.ANONYMOUS_MD5,
+                TlsSignatureAndHashAlgorithm.RSA_SHA1,
+                TlsSignatureAndHashAlgorithm.DSA_SHA224,
+                TlsSignatureAndHashAlgorithm.ECDSA_SHA256,
+            ]
+        )
+        self.assertEqual(extension_signature_algorithms_cert.compose(), extension_signature_algorithms_cert_bytes)
+
+
+class TestExtensionKeyShare(unittest.TestCase):
+    def test_parse(self):
+        extension_key_share_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x33'),
+            ('extension_length', b'\x00\x26'),
+            ('key_share_length', b'\x00\x24'),
+            ('group', b'\x00\x1d'),
+            ('key_exchange_length', b'\x00\x20'),
+            ('key_exchange',
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'')
+        ])
+        extension_key_share_bytes = b''.join(extension_key_share_dict.values())
+        extension_key_share = TlsExtensionKeyShare.parse_exact_size(
+            extension_key_share_bytes
+        )
+        key_share_entries = extension_key_share.key_share_entries  # pylint: disable=no-member
+        self.assertEqual(len(key_share_entries), 1)
+        self.assertEqual(key_share_entries[0].group, TlsNamedCurve.X25519)
+        self.assertEqual(
+            bytearray(key_share_entries[0].key_exchange),
+            extension_key_share_dict['key_exchange']
+        )
+        self.assertEqual(extension_key_share.compose(), extension_key_share_bytes)
+
+
+class TestExtensionKeyShareReserved(unittest.TestCase):
+    def test_parse(self):
+        extension_key_share_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x28'),
+            ('extension_length', b'\x00\x26'),
+            ('key_share_length', b'\x00\x24'),
+            ('group', b'\x00\x1d'),
+            ('key_exchange_length', b'\x00\x20'),
+            ('key_exchange',
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'')
+        ])
+        extension_key_share_bytes = b''.join(extension_key_share_dict.values())
+        extension_key_share = TlsExtensionKeyShareReserved.parse_exact_size(
+            extension_key_share_bytes
+        )
+        key_share_entries = extension_key_share.key_share_entries  # pylint: disable=no-member
+        self.assertEqual(len(key_share_entries), 1)
+        self.assertEqual(key_share_entries[0].group, TlsNamedCurve.X25519)
+        self.assertEqual(
+            bytearray(key_share_entries[0].key_exchange),
+            extension_key_share_dict['key_exchange']
+        )
+        self.assertEqual(extension_key_share.compose(), extension_key_share_bytes)
+
+
+class TestExtensionKeyShareHelloRetryRequest(unittest.TestCase):
+    def test_parse(self):
+        extension_key_share_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x33'),
+            ('extension_length', b'\x00\x02'),
+            ('group', b'\x00\x1d'),
+        ])
+        extension_key_share_bytes = b''.join(extension_key_share_dict.values())
+        extension_key_share = TlsExtensionKeyShareHelloRetryRequest.parse_exact_size(
+            extension_key_share_bytes
+        )
+        self.assertEqual(extension_key_share.selected_group, TlsNamedCurve.X25519)
+        self.assertEqual(extension_key_share.compose(), extension_key_share_bytes)

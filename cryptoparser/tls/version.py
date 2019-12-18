@@ -67,8 +67,10 @@ class TlsProtocolVersionBase(ProtocolVersionBase):
     def __lt__(self, other):
         if self.major == other.major:
             return self.minor < other.minor
+        if isinstance(self, TlsProtocolVersionDraft):
+            return other.minor == TlsVersion.TLS1_3
 
-        return isinstance(self, TlsProtocolVersionDraft) == (other.minor == TlsVersion.TLS1_3)
+        return self.minor != TlsVersion.TLS1_3
 
     @property
     @abc.abstractmethod
