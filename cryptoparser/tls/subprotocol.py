@@ -12,7 +12,13 @@ from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.extension import TlsExtensions
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
-from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory, SslCipherKindFactory
+from cryptoparser.tls.ciphersuite import (
+    SslCipherKindFactory,
+    TlsCipherSuite,
+    TlsCipherSuiteExtension,
+    TlsCipherSuiteExtensionFactory,
+    TlsCipherSuiteFactory,
+)
 
 
 class TlsContentType(enum.IntEnum):
@@ -423,7 +429,7 @@ class TlsCipherSuiteVector(VectorParsable):
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsCipherSuiteFactory,
-            fallback_class=None,
+            fallback_class=TlsCipherSuiteExtensionFactory,
             min_byte_num=2, max_byte_num=2 ** 16 - 2
         )
 
@@ -458,11 +464,15 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
             session_id=TlsSessionIdVector(()),
             compression_methods=TlsCompressionMethodVector([TlsCompressionMethod.NULL, ]),
             extensions=(),
+            fallback_scsv=False,
+            empty_renegotiation_info_scsv=False,
     ):
         super(TlsHandshakeClientHello, self).__init__(protocol_version, random_bytes, session_id, extensions)
 
         self.cipher_suites = TlsCipherSuiteVector(cipher_suites)
         self.compression_methods = compression_methods
+        self.fallback_scsv = fallback_scsv
+        self.empty_renegotiation_info_scsv = empty_renegotiation_info_scsv
 
     @classmethod
     def get_handshake_type(cls):
@@ -479,13 +489,26 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
 
         extension_parser = cls._parse_extensions(handshake_header_parser, parser)
 
+        cipher_suites = []
+        fallback_scsv = False
+        empty_renegotiation_info_scsv = False
+        for cipher_suite in parser['cipher_suites']:
+            if isinstance(cipher_suite, TlsCipherSuite):
+                cipher_suites.append(cipher_suite)
+            elif cipher_suite == TlsCipherSuiteExtension.FALLBACK_SCSV:
+                fallback_scsv = True
+            elif cipher_suite == TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV:
+                empty_renegotiation_info_scsv = True
+
         return TlsHandshakeClientHello(
-            parser['cipher_suites'],
+            cipher_suites,
             parser['protocol_version'],
             parser['random'],
             parser['session_id'],
             parser['compression_methods'],
             extensions=parser['extensions'] if extension_parser else TlsExtensions([]),
+            fallback_scsv=fallback_scsv,
+            empty_renegotiation_info_scsv=empty_renegotiation_info_scsv,
         ), handshake_header_parser.parsed_length
 
     def compose(self):
@@ -494,7 +517,15 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
         payload_composer.compose_parsable(self.protocol_version)
         payload_composer.compose_parsable(self.random)
         payload_composer.compose_parsable(self.session_id)
+        if self.fallback_scsv:
+            self.cipher_suites.append(TlsCipherSuiteExtension.FALLBACK_SCSV)
+        if self.empty_renegotiation_info_scsv:
+            self.cipher_suites.append(TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV)
         payload_composer.compose_parsable(self.cipher_suites)
+        if self.fallback_scsv:
+            del self.cipher_suites[-1]
+        if self.empty_renegotiation_info_scsv:
+            del self.cipher_suites[-1]
         payload_composer.compose_parsable(self.compression_methods)
 
         extension_bytes = self._compose_extensions()

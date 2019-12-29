@@ -93,10 +93,10 @@ class TlsExtensionBase(ParsableBase):
         raise NotImplementedError()
 
     @classmethod
-    def _parse_header(cls, parsable):
+    def _check_header(cls, parsable, extension_type_class):
         parser = ParserBinary(parsable)
 
-        parser.parse_numeric('extension_type', 2, TlsExtensionType)
+        parser.parse_numeric('extension_type', 2, extension_type_class)
         parser.parse_numeric('extension_length', 2)
 
         if parser.unparsed_length < parser['extension_length']:
@@ -121,7 +121,7 @@ class TlsExtensionUnparsed(TlsExtensionBase):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionUnparsed, cls)._parse_header(parsable)
+        parser = super(TlsExtensionUnparsed, cls)._check_header(parsable, int)
 
         parser.parse_bytes('extension_data', parser['extension_length'])
 
@@ -147,7 +147,7 @@ class TlsExtensionParsed(TlsExtensionBase):
 
     @classmethod
     def _parse_header(cls, parsable):
-        parser = super(TlsExtensionParsed, cls)._parse_header(parsable)
+        parser = super(TlsExtensionParsed, cls)._check_header(parsable, TlsExtensionType)
 
         if parser['extension_type'] != cls.get_extension_type():
             raise InvalidValue(parser['extension_type'], TlsExtensionParsed, 'extension type')

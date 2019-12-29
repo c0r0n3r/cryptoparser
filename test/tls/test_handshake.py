@@ -8,7 +8,7 @@ import six
 
 from cryptoparser.common.exception import InvalidValue, InvalidType, NotEnoughData
 
-from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
+from cryptoparser.tls.ciphersuite import TlsCipherSuite, TlsCipherSuiteExtension, SslCipherKind
 from cryptoparser.tls.extension import TlsExtensionSupportedVersions
 from cryptoparser.tls.subprotocol import TlsSubprotocolMessageParser, TlsHandshakeMessageVariant
 from cryptoparser.tls.subprotocol import TlsHandshakeClientHello, TlsHandshakeServerHello, TlsHandshakeHelloRandom
@@ -84,6 +84,31 @@ class TestVariantParsable(unittest.TestCase):
         self.assertEqual(parsed_object.get_handshake_type(), TlsHandshakeType.SERVER_HELLO_DONE)
 
 
+class TestTlsCipherSuiteVector(unittest.TestCase):
+    def test_parse(self):
+        cipher_suites = TlsCipherSuiteVector.parse_exact_size(b'\x00\x02\x00\x00')
+        self.assertEqual(cipher_suites, TlsCipherSuiteVector([TlsCipherSuite.TLS_NULL_WITH_NULL_NULL]))
+
+        cipher_suites = TlsCipherSuiteVector.parse_exact_size(b'\x00\x04\x56\x00\x00\xff')
+        self.assertEqual(
+            cipher_suites,
+            TlsCipherSuiteVector([
+                TlsCipherSuiteExtension.FALLBACK_SCSV,
+                TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV,
+            ])
+        )
+
+        cipher_suites = TlsCipherSuiteVector.parse_exact_size(b'\x00\x06\x56\x00\x00\x00\x00\xff')
+        self.assertEqual(
+            cipher_suites,
+            TlsCipherSuiteVector([
+                TlsCipherSuiteExtension.FALLBACK_SCSV,
+                TlsCipherSuite.TLS_NULL_WITH_NULL_NULL,
+                TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV,
+            ])
+        )
+
+
 class TestTlsHandshake(unittest.TestCase):
     def setUp(self):
         self.server_hello_done_dict = collections.OrderedDict([
@@ -133,7 +158,7 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             ('cipher_suite_length', b'\x00\x10'),
             ('cipher_suites',
              b'\x00\x00\x00\x01\x00\x02\x00\x03' +
-             b'\x00\x04\x00\x05\x00\x06\x00\x07' +
+             b'\x00\x04\x00\x05\x56\x00\x00\xff' +
              b''),
             ('compression_method_length', b'\x01'),
             ('compression_methods', b'\x00'),
@@ -166,8 +191,6 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
                 TlsCipherSuite.TLS_RSA_EXPORT_WITH_RC4_40_MD5,
                 TlsCipherSuite.TLS_RSA_WITH_RC4_128_MD5,
                 TlsCipherSuite.TLS_RSA_WITH_RC4_128_SHA,
-                TlsCipherSuite.TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5,
-                TlsCipherSuite.TLS_RSA_WITH_IDEA_CBC_SHA
             ]),
             TlsProtocolVersionFinal(TlsVersion.TLS1_2),
             TlsHandshakeHelloRandom(
@@ -183,6 +206,8 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             TlsSessionIdVector(()),
             TlsCompressionMethodVector([TlsCompressionMethod.NULL, ]),
             TlsExtensions(()),
+            fallback_scsv=True,
+            empty_renegotiation_info_scsv=True,
         )
 
     def test_parse(self):
@@ -219,6 +244,8 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             client_hello_minimal.extensions,
             self.client_hello_minimal.extensions
         )
+        self.assertTrue(client_hello_minimal.fallback_scsv)
+        self.assertTrue(client_hello_minimal.empty_renegotiation_info_scsv)
 
         client_hello_extension = TlsHandshakeClientHello.parse_exact_size(self.client_hello_extension_bytes)
         self.assertEqual(

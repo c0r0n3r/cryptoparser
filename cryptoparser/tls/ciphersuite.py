@@ -10,6 +10,35 @@ from cryptoparser.common.base import Serializable
 from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.base import ThreeByteEnumParsable, ThreeByteEnumComposer
 
+
+class TlsCipherSuiteExtensionFactory(TwoByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsCipherSuiteExtension
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+CipherSuiteExtensionParams = collections.namedtuple('CipherSuiteExtensionParams', ['code', ])
+
+
+class TlsCipherSuiteExtension(Serializable, TwoByteEnumComposer, enum.Enum):
+    FALLBACK_SCSV = CipherSuiteExtensionParams(code=0x5600)
+    EMPTY_RENEGOTIATION_INFO_SCSV = CipherSuiteExtensionParams(code=0x00ff)
+
+
+class TlsCipherSuiteFactory(TwoByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsCipherSuite
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
 CipherSuiteParams = collections.namedtuple(
     'CipherSuiteParams',
     [
@@ -22,16 +51,6 @@ CipherSuiteParams = collections.namedtuple(
         'ae',
     ]
 )
-
-
-class TlsCipherSuiteFactory(TwoByteEnumParsable):
-    @classmethod
-    def get_enum_class(cls):
-        return TlsCipherSuite
-
-    @abc.abstractmethod
-    def compose(self):
-        raise NotImplementedError()
 
 
 class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
@@ -3022,6 +3041,24 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=MAC.SHA256,
         ae=True,
+    )
+    SSL_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
+        code=0xfefe,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.DES,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        ae=False,
+    )
+    SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+        code=0xfeff,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        ae=False,
     )
 
 
