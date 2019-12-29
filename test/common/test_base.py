@@ -10,7 +10,7 @@ from cryptoparser.common.base import VectorParsableDerived, Opaque
 
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 
-from .classes import OneByteParsable, TwoByteParsable
+from .classes import OneByteParsable, TwoByteParsable, OneByteOddParsable, TwoByteEvenParsable
 from .classes import ConditionalParsable
 from .classes import TestObject
 from .classes import SerializableSimpleTypes, SerializableIterables, SerializableEnum
@@ -45,6 +45,14 @@ class VectorConsditionalParsableTest(VectorParsableDerived):
     @classmethod
     def get_param(cls):
         return VectorParamParsable(ConditionalParsable, min_byte_num=0, max_byte_num=0xff, fallback_class=None)
+
+
+class VectorFallbackParsableTest(VectorParsableDerived):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            OneByteOddParsable, min_byte_num=0, max_byte_num=0xff, fallback_class=TwoByteEvenParsable
+        )
 
 
 class OpaqueTest(Opaque):
@@ -149,6 +157,11 @@ class TestVectorParsable(unittest.TestCase):
         self.assertEqual(
             [1, 2, ],
             list(map(int, VectorTwoByteParsableTest.parse_exact_size(b'\x00\x04\x00\x01\x00\x02')))
+        )
+
+        self.assertEqual(
+            [0x01, 0x0200],
+            list(map(int, VectorFallbackParsableTest.parse_exact_size(b'\x03\x01\x02\x00')))
         )
 
     def test_compose(self):

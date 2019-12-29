@@ -205,7 +205,8 @@ class VectorParsable(VectorBase):
             parser.parse_parsable_array(
                 'items',
                 items_size=parser['item_byte_num'],
-                item_class=vector_param.item_class
+                item_class=vector_param.item_class,
+                fallback_class=vector_param.fallback_class
             )
         except NotEnoughData as e:
             raise NotEnoughData(e.bytes_needed)

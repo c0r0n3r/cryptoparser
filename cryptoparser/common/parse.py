@@ -136,12 +136,12 @@ class ParserBinary(object):
         self._parsed_values[name] = items
         self._parsed_length += items_size
 
-    def parse_parsable_array(self, name, items_size, item_class):
+    def parse_parsable_array(self, name, items_size, item_class, fallback_class=None):
         if self.unparsed_length < items_size:
             raise NotEnoughData(items_size)
 
         try:
-            return self._parse_parsable_array(name, items_size, [item_class, ])
+            return self._parse_parsable_array(name, items_size, [item_class, ], fallback_class)
         except ValueError as e:
             raise InvalidValue(e.args[0], item_class, name)
 
