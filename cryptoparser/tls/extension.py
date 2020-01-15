@@ -48,8 +48,8 @@ class TlsExtensionType(enum.IntEnum):
     PWD_PROTECT = 0x001d                             # [RFC-HARKINS-TLS-DRAGONFLY-03]
     PWD_CLEAR = 0x001e                               # [RFC-HARKINS-TLS-DRAGONFLY-03]
     PASSWORD_SALT = 0x001f                           # [RFC-HARKINS-TLS-DRAGONFLY-03]
-    TICKET_PINNING = 0X0020                          # [RFC8672]
-    TLS_CERT_WITH_EXTERN_PSK = 0X0021                # [RFC-IETF-TLS-TLS13-CERT-WITH-EXTERN-PSK-07]
+    TICKET_PINNING = 0x0020                          # [RFC8672]
+    TLS_CERT_WITH_EXTERN_PSK = 0x0021                # [RFC-IETF-TLS-TLS13-CERT-WITH-EXTERN-PSK-07]
     SESSION_TICKET = 0x0023                          # [RFC4507]
     KEY_SHARE_RESERVED = 0x0028                      # [DRAFT-IETF-TLS-TLS13-20]
     PRE_SHARED_KEY = 0x0029                          # [DRAFT-IETF-TLS-TLS13-20]
@@ -62,11 +62,11 @@ class TlsExtensionType(enum.IntEnum):
     POST_HANDSHAKE_AUTH = 0x0031                     # [DRAFT-IETF-TLS-TLS13-20]
     SIGNATURE_ALGORITHMS_CERT = 0x0032               # [DRAFT-IETF-TLS-TLS13-23]
     KEY_SHARE = 0x0033                               # [DRAFT-IETF-TLS-TLS13-23]
-    TRANSPARENCY_INFO = 0X0034                       # [DRAFT-IETF-TRANS-RFC6962-BIS]
-    CONNECTION_ID = 0X0035                           # [DRAFT-IETF-TLS-DTLS-CONNECTION-ID]
-    EXTERNAL_ID_HASH = 0X0037                        # [RFC-IETF-MMUSIC-SDP-UKS-07]
-    EXTERNAL_SESSION_ID = 0X0038                     # [RFC-IETF-MMUSIC-SDP-UKS-07]
-    RENEGOTIATION_INFO = 0Xff01                      # [RFC5746]
+    TRANSPARENCY_INFO = 0x0034                       # [DRAFT-IETF-TRANS-RFC6962-BIS]
+    CONNECTION_ID = 0x0035                           # [DRAFT-IETF-TLS-DTLS-CONNECTION-ID]
+    EXTERNAL_ID_HASH = 0x0037                        # [RFC-IETF-MMUSIC-SDP-UKS-07]
+    EXTERNAL_SESSION_ID = 0x0038                     # [RFC-IETF-MMUSIC-SDP-UKS-07]
+    RENEGOTIATION_INFO = 0xff01                      # [DRAFT-AGL-TLS-NEXTPROTONEG-03]
 
 
 class TlsExtensions(VectorParsableDerived):
