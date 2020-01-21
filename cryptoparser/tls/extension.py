@@ -5,10 +5,11 @@ import enum
 import collections
 
 from cryptoparser.common.base import Serializable
-from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
+from cryptoparser.common.base import OneByteEnumComposer, OneByteEnumParsable
 from cryptoparser.common.base import Vector, VectorParsable, VectorParsableDerived
 from cryptoparser.common.base import VectorParamNumeric, VectorParamParsable
 from cryptoparser.common.algorithm import Authentication, MAC, NamedGroup
+from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.tls.version import TlsProtocolVersionBase
@@ -16,6 +17,7 @@ from cryptoparser.tls.version import TlsProtocolVersionBase
 
 TlsNamedCurveParams = collections.namedtuple('TlsNamedCurveParams', ['code', 'named_group', ])
 TlsExtensionTypeParams = collections.namedtuple('TlsExtensionTypeParams', ['code', ])
+TlsECPointFormatParams = collections.namedtuple('TlsECPointFormatParams', ['code', ])
 
 
 class TlsExtensionTypeFactory(TwoByteEnumParsable):
@@ -345,20 +347,30 @@ class TlsExtensionServerName(TlsExtensionParsed):
         return header_bytes + composer.composed_bytes
 
 
-class TlsECPointFormat(enum.IntEnum):
-    UNCOMPRESSED = 0x0
-    ANSIX962_COMPRESSED_PRIME = 0x1
-    ANSIX962_COMPRESSED_CHAR2 = 0x2
+class TlsECPointFormatFactory(OneByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsECPointFormat
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
 
 
-class TlsECPointFormatVector(Vector):
+class TlsECPointFormat(Serializable, OneByteEnumComposer, enum.Enum):
+    UNCOMPRESSED = TlsECPointFormatParams(code=0x0)
+    ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x1)
+    ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x2)
+
+
+class TlsECPointFormatVector(VectorParsable):
     @classmethod
     def get_param(cls):
-        return VectorParamNumeric(
-            item_size=1,
+        return VectorParamParsable(
+            item_class=TlsECPointFormatFactory,
+            fallback_class=None,
             min_byte_num=1,
             max_byte_num=2 ** 8 - 1,
-            numeric_class=TlsECPointFormat
         )
 
 
