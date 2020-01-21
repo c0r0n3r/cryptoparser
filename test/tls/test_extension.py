@@ -7,6 +7,7 @@ from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.tls.extension import TlsExtensionUnparsed, TlsExtensionParsed
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
 
+from cryptoparser.tls.extension import TlsExtensionType
 from cryptoparser.tls.extension import TlsExtensionServerName
 from cryptoparser.tls.extension import TlsExtensionECPointFormats, TlsECPointFormat
 from cryptoparser.tls.extension import TlsExtensionEllipticCurves, TlsNamedCurve
@@ -74,7 +75,7 @@ class TestExtensionParsed(unittest.TestCase):
         with self.assertRaises(InvalidValue) as context_manager:
             # pylint: disable=expression-not-assigned
             ExtensionInvalidType.parse_exact_size(extension_invalid_type_bytes)
-        self.assertEqual(context_manager.exception.value, 0x0000)
+        self.assertEqual(context_manager.exception.value, TlsExtensionType.SERVER_NAME)
 
 
 class TestExtensionHostname(unittest.TestCase):
