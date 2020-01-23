@@ -12,6 +12,7 @@ from cryptoparser.common.algorithm import Authentication, MAC, NamedGroup
 from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
+from cryptoparser.tls.grease import TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsProtocolVersionBase
 
 
@@ -251,9 +252,12 @@ class TlsExtensionUnparsed(TlsExtensionBase):
 
         self._extension_data = extension_data
 
+    def __eq__(self, other):
+        return self.extension_type == other.extension_type and self._extension_data == other._extension_data
+
     @classmethod
     def _parse_type(cls, parser, name):
-        parser.parse_numeric(name, 2)
+        parser.parse_parsable(name, TlsInvalidTypeTwoByte)
 
     @classmethod
     def _parse(cls, parsable):
@@ -264,7 +268,7 @@ class TlsExtensionUnparsed(TlsExtensionBase):
         return TlsExtensionUnparsed(parser['extension_type'], parser['extension_data']), parser.parsed_length
 
     def _compose_type(self, composer):
-        composer.compose_numeric(self.extension_type, 2)
+        composer.compose_parsable(self.extension_type)
 
     def compose(self):
         payload_composer = ComposerBinary()
@@ -377,7 +381,7 @@ class TlsECPointFormatVector(VectorParsable):
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsECPointFormatFactory,
-            fallback_class=None,
+            fallback_class=TlsInvalidTypeOneByte,
             min_byte_num=1,
             max_byte_num=2 ** 8 - 1,
         )
@@ -580,7 +584,7 @@ class TlsEllipticCurveVector(VectorParsable):
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsNamedCurveFactory,
-            fallback_class=None,
+            fallback_class=TlsInvalidTypeTwoByte,
             min_byte_num=1, max_byte_num=2 ** 16 - 1
         )
 
@@ -618,7 +622,7 @@ class TlsSupportedVersionVector(VectorParsableDerived):
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsProtocolVersionBase,
-            fallback_class=None,
+            fallback_class=TlsInvalidTypeTwoByte,
             min_byte_num=2, max_byte_num=2 ** 8 - 2
         )
 
@@ -818,7 +822,7 @@ class TlsSignatureAndHashAlgorithmVector(VectorParsable):
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsSignatureAndHashAlgorithmFactory,
-            fallback_class=None,
+            fallback_class=TlsInvalidTypeTwoByte,
             min_byte_num=2, max_byte_num=2 ** 16 - 2
         )
 

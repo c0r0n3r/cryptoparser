@@ -68,6 +68,33 @@ Operating systems
 * macOS
 * Windows
 
+Protocol Specific Features
+--------------------------
+
+Transport Layer Security (TLS)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Only features that cannot be or difficultly implemented by some of the most popular SSL/TLS implementations (eg:
+`GnuTls <https://www.gnutls.org/>`_, `LibreSSL <https://www.libressl.org/>`_, `OpenSSL <https://www.openssl.org/>`_,
+`wolfSSL <https://www.wolfssl.com/>`_, ...) are listed.
+
+Generic
+"""""""
+
+#. supports `Generate Random Extensions And Sustain Extensibility <https://tools.ietf.org/html/draft-ietf-tls-grease-04>`_
+   (GREASE) values for
+
+   * protocol version
+   * extension type
+   * ciphers suite
+   * signature algorithms
+   * named group
+
+Cipher Suites
+"""""""""""""
+
+#. supports each cipher suites discussed on `ciphersuite.info <https://ciphersuite.info>`_
+
 License
 -------
 

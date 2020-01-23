@@ -11,22 +11,9 @@ from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.base import ThreeByteEnumParsable, ThreeByteEnumComposer
 
 
-class TlsCipherSuiteExtensionFactory(TwoByteEnumParsable):
-    @classmethod
-    def get_enum_class(cls):
-        return TlsCipherSuiteExtension
-
-    @abc.abstractmethod
-    def compose(self):
-        raise NotImplementedError()
-
-
-CipherSuiteExtensionParams = collections.namedtuple('CipherSuiteExtensionParams', ['code', ])
-
-
-class TlsCipherSuiteExtension(Serializable, TwoByteEnumComposer, enum.Enum):
-    FALLBACK_SCSV = CipherSuiteExtensionParams(code=0x5600)
-    EMPTY_RENEGOTIATION_INFO_SCSV = CipherSuiteExtensionParams(code=0x00ff)
+class TlsCipherSuiteExtension(enum.IntEnum):
+    FALLBACK_SCSV = 0x5600
+    EMPTY_RENEGOTIATION_INFO_SCSV = 0x00ff
 
 
 class TlsCipherSuiteFactory(TwoByteEnumParsable):

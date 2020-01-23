@@ -9,7 +9,8 @@ import six
 from cryptoparser.common.exception import InvalidValue, InvalidType, NotEnoughData
 
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, TlsCipherSuiteExtension, SslCipherKind
-from cryptoparser.tls.extension import TlsExtensionSupportedVersions
+from cryptoparser.tls.extension import TlsExtensionSupportedVersions, TlsExtensionUnparsed
+from cryptoparser.tls.grease import TlsGreaseTwoByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.subprotocol import TlsSubprotocolMessageParser, TlsHandshakeMessageVariant
 from cryptoparser.tls.subprotocol import TlsHandshakeClientHello, TlsHandshakeServerHello, TlsHandshakeHelloRandom
 from cryptoparser.tls.subprotocol import TlsCipherSuiteVector, TlsCompressionMethodVector, TlsCompressionMethod
@@ -93,8 +94,8 @@ class TestTlsCipherSuiteVector(unittest.TestCase):
         self.assertEqual(
             cipher_suites,
             TlsCipherSuiteVector([
-                TlsCipherSuiteExtension.FALLBACK_SCSV,
-                TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV,
+                TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.FALLBACK_SCSV),
+                TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV),
             ])
         )
 
@@ -102,9 +103,9 @@ class TestTlsCipherSuiteVector(unittest.TestCase):
         self.assertEqual(
             cipher_suites,
             TlsCipherSuiteVector([
-                TlsCipherSuiteExtension.FALLBACK_SCSV,
+                TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.FALLBACK_SCSV),
                 TlsCipherSuite.TLS_NULL_WITH_NULL_NULL,
-                TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV,
+                TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV),
             ])
         )
 
@@ -157,7 +158,7 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             ('session_id_length', b'\x00'),
             ('cipher_suite_length', b'\x00\x10'),
             ('cipher_suites',
-             b'\x00\x00\x00\x01\x00\x02\x00\x03' +
+             b'\x0a\x0a\x00\x01\x00\x02\x00\x03' +
              b'\x00\x04\x00\x05\x56\x00\x00\xff' +
              b''),
             ('compression_method_length', b'\x01'),
@@ -165,11 +166,13 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
         ])
         self.client_hello_minimal_bytes = b''.join(self.client_hello_minimal_dict.values())
         self.client_hello_minimal_extensions_dict = collections.OrderedDict([
-            ('extensions_length', b'\x00\x09'),
+            ('extensions_length', b'\x00\x0d'),
             ('extension_type', b'\x00\x2b'),  # SUPPORTED_VERSIONS
             ('extension_length', b'\x00\x05'),
             ('supported_version_list_length', b'\x04'),
             ('supported_version_list', b'\x03\x02\x03\x03'),  # TLS1_1, TLS1_2
+            ('extension_grease', b'\x0a\x0a'),
+            ('extension_grease_length', b'\x00\x00'),
         ])
         self.client_hello_minimal_extensions_bytes = b''.join(self.client_hello_minimal_extensions_dict.values())
         self.client_hello_extension_bytes = bytearray(
@@ -185,7 +188,7 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
         self.random_time = datetime.datetime(2018, 8, 10, tzinfo=None)
         self.client_hello_minimal = TlsHandshakeClientHello(
             TlsCipherSuiteVector([
-                TlsCipherSuite.TLS_NULL_WITH_NULL_NULL,
+                TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A),
                 TlsCipherSuite.TLS_RSA_WITH_NULL_MD5,
                 TlsCipherSuite.TLS_RSA_WITH_NULL_SHA,
                 TlsCipherSuite.TLS_RSA_EXPORT_WITH_RC4_40_MD5,
@@ -248,12 +251,16 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
         self.assertTrue(client_hello_minimal.empty_renegotiation_info_scsv)
 
         client_hello_extension = TlsHandshakeClientHello.parse_exact_size(self.client_hello_extension_bytes)
+        print(client_hello_extension.extensions)
         self.assertEqual(
             client_hello_extension.extensions,
-            TlsExtensions([TlsExtensionSupportedVersions([
-                TlsProtocolVersionFinal(TlsVersion.TLS1_1),
-                TlsProtocolVersionFinal(TlsVersion.TLS1_2),
-            ])])
+            TlsExtensions([
+                TlsExtensionSupportedVersions([
+                    TlsProtocolVersionFinal(TlsVersion.TLS1_1),
+                    TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+                ]),
+                TlsExtensionUnparsed(TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A), b'')
+            ])
         )
 
     def test_compose(self):

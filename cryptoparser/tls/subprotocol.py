@@ -11,12 +11,11 @@ from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidTy
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.extension import TlsExtensions
+from cryptoparser.tls.grease import TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
 from cryptoparser.tls.ciphersuite import (
     SslCipherKindFactory,
-    TlsCipherSuite,
     TlsCipherSuiteExtension,
-    TlsCipherSuiteExtensionFactory,
     TlsCipherSuiteFactory,
 )
 
@@ -429,7 +428,7 @@ class TlsCipherSuiteVector(VectorParsable):
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsCipherSuiteFactory,
-            fallback_class=TlsCipherSuiteExtensionFactory,
+            fallback_class=TlsInvalidTypeTwoByte,
             min_byte_num=2, max_byte_num=2 ** 16 - 2
         )
 
@@ -493,12 +492,12 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
         fallback_scsv = False
         empty_renegotiation_info_scsv = False
         for cipher_suite in parser['cipher_suites']:
-            if isinstance(cipher_suite, TlsCipherSuite):
-                cipher_suites.append(cipher_suite)
-            elif cipher_suite == TlsCipherSuiteExtension.FALLBACK_SCSV:
+            if cipher_suite.value.code == TlsCipherSuiteExtension.FALLBACK_SCSV:
                 fallback_scsv = True
-            elif cipher_suite == TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV:
+            elif cipher_suite.value.code == TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV:
                 empty_renegotiation_info_scsv = True
+            else:
+                cipher_suites.append(cipher_suite)
 
         return TlsHandshakeClientHello(
             cipher_suites,
@@ -518,9 +517,9 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
         payload_composer.compose_parsable(self.random)
         payload_composer.compose_parsable(self.session_id)
         if self.fallback_scsv:
-            self.cipher_suites.append(TlsCipherSuiteExtension.FALLBACK_SCSV)
+            self.cipher_suites.append(TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.FALLBACK_SCSV))
         if self.empty_renegotiation_info_scsv:
-            self.cipher_suites.append(TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV)
+            self.cipher_suites.append(TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV))
         payload_composer.compose_parsable(self.cipher_suites)
         if self.fallback_scsv:
             del self.cipher_suites[-1]
