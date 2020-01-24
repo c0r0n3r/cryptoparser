@@ -10,8 +10,8 @@ from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorP
 from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
-from cryptoparser.tls.extension import TlsExtensions
-from cryptoparser.tls.grease import TlsInvalidTypeTwoByte
+from cryptoparser.tls.extension import TlsExtensions, TlsExtensionType
+from cryptoparser.tls.grease import TlsInvalidType, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
 from cryptoparser.tls.ciphersuite import (
     SslCipherKindFactory,
@@ -532,6 +532,43 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
         header_bytes = self._compose_header(payload_composer.composed_length + len(extension_bytes))
 
         return header_bytes + payload_composer.composed_bytes + extension_bytes
+
+    def ja3(self):
+        parser = ParserBinary(self.protocol_version.compose())
+        parser.parse_numeric('tls_protocol_version', 2)
+
+        cipher_suites = [str(cipher_suite.value.code) for cipher_suite in self.cipher_suites]
+
+        extension_types = []
+        named_curves = []
+        ec_point_formats = []
+        for extension in self.extensions:
+            if (not isinstance(extension.extension_type, TlsInvalidTypeTwoByte) or
+                    extension.extension_type.value.value_type != TlsInvalidType.GREASE):
+                extension_types.append(str(extension.extension_type.value.code))
+
+            if extension.extension_type == TlsExtensionType.SUPPORTED_GROUPS:
+                named_curves = [
+                    str(named_curve.value.code)
+                    for named_curve in extension.elliptic_curves
+                    if (not isinstance(named_curve, TlsInvalidTypeTwoByte) or
+                        named_curve.value.value_type != TlsInvalidType.GREASE)
+                ]
+            elif extension.extension_type == TlsExtensionType.EC_POINT_FORMATS:
+                ec_point_formats = [
+                    str(point_format.value.code)
+                    for point_format in extension.point_formats
+                    if (not isinstance(point_format, TlsInvalidTypeOneByte) or
+                        point_format.value.value_type != TlsInvalidType.GREASE)
+                ]
+
+        return ','.join([
+            str(parser['tls_protocol_version']),
+            '-'.join(cipher_suites),
+            '-'.join(extension_types),
+            '-'.join(named_curves),
+            '-'.join(ec_point_formats),
+        ])
 
 
 class TlsHandshakeServerHello(TlsHandshakeHello):

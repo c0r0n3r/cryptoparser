@@ -3,14 +3,22 @@
 import unittest
 
 import collections
+import copy
 import datetime
 import six
 
 from cryptoparser.common.exception import InvalidValue, InvalidType, NotEnoughData
 
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, TlsCipherSuiteExtension, SslCipherKind
-from cryptoparser.tls.extension import TlsExtensionSupportedVersions, TlsExtensionUnparsed
-from cryptoparser.tls.grease import TlsGreaseTwoByte, TlsInvalidTypeTwoByte
+from cryptoparser.tls.extension import (
+    TlsExtensionSupportedVersions,
+    TlsExtensionUnparsed,
+    TlsExtensionEllipticCurves,
+    TlsNamedCurve,
+    TlsExtensionECPointFormats,
+    TlsECPointFormat,
+)
+from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.subprotocol import TlsSubprotocolMessageParser, TlsHandshakeMessageVariant
 from cryptoparser.tls.subprotocol import TlsHandshakeClientHello, TlsHandshakeServerHello, TlsHandshakeHelloRandom
 from cryptoparser.tls.subprotocol import TlsCipherSuiteVector, TlsCompressionMethodVector, TlsCompressionMethod
@@ -251,7 +259,6 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
         self.assertTrue(client_hello_minimal.empty_renegotiation_info_scsv)
 
         client_hello_extension = TlsHandshakeClientHello.parse_exact_size(self.client_hello_extension_bytes)
-        print(client_hello_extension.extensions)
         self.assertEqual(
             client_hello_extension.extensions,
             TlsExtensions([
@@ -273,6 +280,20 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             client_hello_extension.compose(),
             self.client_hello_extension_bytes
         )
+
+    def test_ja3(self):
+        client_hello_minimal = copy.copy(self.client_hello_minimal)
+        self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,,,')
+
+        client_hello_minimal.extensions.append(TlsExtensionEllipticCurves([TlsNamedCurve.SECT163K1]))
+        self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10,1,')
+        client_hello_minimal.extensions[0].elliptic_curves.append(TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A))
+        self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10,1,')
+
+        client_hello_minimal.extensions.append(TlsExtensionECPointFormats([TlsECPointFormat.UNCOMPRESSED]))
+        self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10-11,1,0')
+        client_hello_minimal.extensions[1].point_formats.append(TlsInvalidTypeOneByte(TlsGreaseOneByte.GREASE_0B))
+        self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10-11,1,0')
 
 
 class TestTlsHandshakeServerHello(unittest.TestCase):

@@ -90,6 +90,9 @@ Generic
    * signature algorithms
    * named group
 
+#. supports easy `JA3 fingerprint <https://engineering.salesforce.com/tls-fingerprinting-with-ja3-and-ja3s-247362855967>`_
+   generation
+
 Cipher Suites
 """""""""""""
 
