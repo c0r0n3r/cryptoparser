@@ -41,6 +41,10 @@ class TestTlsRecord(unittest.TestCase):
         )
 
     def test_error(self):
+        with self.assertRaises(NotEnoughData) as context_manager:
+            record = TlsRecord.parse_exact_size(b'')
+        self.assertEqual(context_manager.exception.bytes_needed, TlsRecord.HEADER_SIZE)
+
         with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid TlsContentType'):
             record = TlsRecord.parse_exact_size(
                 b'\xff' +      # type = INVALID

@@ -34,11 +34,16 @@ class RecordBase(ParsableBase):
 
 
 class TlsRecord(RecordBase):
+    HEADER_SIZE = 5
+
     def __init__(self, messages, protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2)):
         super(TlsRecord, self).__init__(messages, protocol_version)
 
     @classmethod
-    def _parse(cls, parsable):
+    def parse_header(cls, parsable):
+        if len(parsable) < cls.HEADER_SIZE:
+            raise NotEnoughData(cls.HEADER_SIZE - len(parsable))
+
         parser = ParserBinary(parsable)
 
         try:
