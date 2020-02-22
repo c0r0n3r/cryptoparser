@@ -6,8 +6,6 @@ stages:
 - deploy
 
 before_script:
-- curl -O https://bootstrap.pypa.io/get-pip.py
-- python get-pip.py
 - pip install -r dev-requirements.txt
 
 pylint:
