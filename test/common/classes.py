@@ -2,7 +2,7 @@
 
 import abc
 import enum
-import collections
+import attr
 
 from cryptoparser.common.base import Serializable
 from cryptoparser.common.exception import TooMuchData, InvalidValue
@@ -115,12 +115,8 @@ class AlwaysUnknowTypeParsable(ParsableBase):
         raise TooMuchData()
 
 
-SerializableEnumValue = collections.namedtuple(
-    'SerializableEnumValue',
-    [
-        'code',
-    ]
-)
+class SerializableEnumValue(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
 
 
 class TestObject(object):

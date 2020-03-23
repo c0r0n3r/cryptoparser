@@ -2,7 +2,7 @@
 
 import abc
 import enum
-import collections
+import attr
 
 from cryptoparser.common.base import Serializable
 from cryptoparser.common.base import OneByteEnumComposer, OneByteEnumParsable
@@ -16,9 +16,20 @@ from cryptoparser.tls.grease import TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsProtocolVersionBase
 
 
-TlsNamedCurveParams = collections.namedtuple('TlsNamedCurveParams', ['code', 'named_group', ])
-TlsExtensionTypeParams = collections.namedtuple('TlsExtensionTypeParams', ['code', ])
-TlsECPointFormatParams = collections.namedtuple('TlsECPointFormatParams', ['code', ])
+@attr.s(frozen=True)
+class TlsNamedCurveParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+    named_group = attr.ib(validator=attr.validators.optional(attr.validators.in_(NamedGroup)))
+
+
+@attr.s(frozen=True)
+class TlsExtensionTypeParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+
+
+@attr.s(frozen=True)
+class TlsECPointFormatParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
 
 
 class TlsExtensionTypeFactory(TwoByteEnumParsable):
@@ -668,10 +679,11 @@ class TlsSignatureAndHashAlgorithmFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-HashAndSignatureAlgorithmParam = collections.namedtuple(
-    'HashAndSignatureAlgorithmParam',
-    ['code', 'hash_algorithm', 'signature_algorithm']
-)
+@attr.s(frozen=True)
+class HashAndSignatureAlgorithmParam(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+    hash_algorithm = attr.ib(validator=attr.validators.optional(attr.validators.in_(MAC)))
+    signature_algorithm = attr.ib(validator=attr.validators.optional(attr.validators.in_(Authentication)))
 
 
 class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):

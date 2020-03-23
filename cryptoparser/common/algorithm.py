@@ -1,15 +1,44 @@
 # -*- coding: utf-8 -*-
 
 import enum
-import collections
+import attr
 
-KeyExchangeParams = collections.namedtuple('KeyExchangeParams', ['name', 'fs', ])
-AuthenticationParams = collections.namedtuple('AuthenticationParams', ['name', 'anonymous', ])
-BlockCipherParams = collections.namedtuple('BlockCipherParams', ['name', 'key_size', 'block_size', ])
-BlockCipherModeParams = collections.namedtuple('BlockCipherModeParams', ['name', ])
-MACParams = collections.namedtuple('MACParams', ['name', 'digest_size', ])
-NamedGroupParams = collections.namedtuple('NamedGroupParams', ['name', 'size', 'group_type', ])
-CipherSuiteParams = collections.namedtuple('TlsCipherSuiteParams', ['key_exchange', ])
+
+@attr.s(frozen=True)
+class KeyExchangeParams(object):
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    fs = attr.ib(validator=attr.validators.instance_of(bool))
+
+
+@attr.s(frozen=True)
+class AuthenticationParams(object):
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    anonymous = attr.ib(validator=attr.validators.instance_of(bool))
+
+
+@attr.s(frozen=True)
+class BlockCipherParams(object):
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    key_size = attr.ib(validator=attr.validators.instance_of(int))
+    block_size = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
+
+
+@attr.s(frozen=True)
+class BlockCipherModeParams(object):
+    name = attr.ib(validator=attr.validators.instance_of(str))
+
+
+@attr.s(frozen=True)
+class MACParams(object):
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    digest_size = attr.ib(validator=attr.validators.instance_of(int))
+
+
+@attr.s(frozen=True)
+class NamedGroupParams(object):
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    size = attr.ib(validator=attr.validators.instance_of(int))
+    group_type = attr.ib()
 
 
 class KeyExchange(enum.Enum):

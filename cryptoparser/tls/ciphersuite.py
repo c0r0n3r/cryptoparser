@@ -3,7 +3,7 @@
 
 import abc
 import enum
-import collections
+import attr
 
 from cryptoparser.common.algorithm import Authentication, BlockCipher, BlockCipherMode, KeyExchange, MAC
 from cryptoparser.common.base import Serializable
@@ -26,18 +26,15 @@ class TlsCipherSuiteFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-CipherSuiteParams = collections.namedtuple(
-    'CipherSuiteParams',
-    [
-        'code',
-        'key_exchange',
-        'authentication',
-        'bulk_cipher',
-        'block_cipher_mode',
-        'mac',
-        'ae',
-    ]
-)
+@attr.s
+class CipherSuiteParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+    key_exchange = attr.ib(validator=attr.validators.optional(attr.validators.in_(KeyExchange)))
+    authentication = attr.ib(validator=attr.validators.optional(attr.validators.in_(Authentication)))
+    bulk_cipher = attr.ib(validator=attr.validators.optional(attr.validators.in_(BlockCipher)))
+    block_cipher_mode = attr.ib(validator=attr.validators.optional(attr.validators.in_(BlockCipherMode)))
+    mac = attr.ib(validator=attr.validators.optional(attr.validators.in_(MAC)))
+    ae = attr.ib(validator=attr.validators.instance_of(bool))
 
 
 class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):

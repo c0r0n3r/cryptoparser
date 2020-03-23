@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import abc
-import collections
 import enum
+import attr
 
 from cryptoparser.common.base import ParsableBase
 from cryptoparser.common.parse import ParserBinary, ComposerBinary
@@ -13,7 +13,10 @@ class TlsInvalidType(enum.IntEnum):
     UNKNOWN = 1
 
 
-TlsInvalidTypeParams = collections.namedtuple('TlsInvalidTypeParams', ['code', 'value_type', ])
+@attr.s(frozen=True)
+class TlsInvalidTypeParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+    value_type = attr.ib(validator=attr.validators.in_(TlsInvalidType))
 
 
 class TlsInvalidTypeBase(ParsableBase):

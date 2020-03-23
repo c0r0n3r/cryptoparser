@@ -12,6 +12,8 @@ except ImportError:  # pragma: no cover
 
 from collections import OrderedDict
 
+import attr
+
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 
@@ -28,8 +30,8 @@ def _default(
         self,  # pylint: disable=unused-argument
         obj
 ):
-    if isinstance(obj, enum.Enum) and hasattr(obj.value, '_asdict'):
-        result = {obj.name: obj.value._asdict()}
+    if isinstance(obj, enum.Enum):
+        result = {obj.name: attr.asdict(obj.value)}
     elif hasattr(obj, '_asdict'):
         result = obj._asdict()
     elif hasattr(obj, '__dict__'):
