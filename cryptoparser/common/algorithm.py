@@ -7,7 +7,7 @@ import attr
 @attr.s(frozen=True)
 class KeyExchangeParams(object):
     name = attr.ib(validator=attr.validators.instance_of(str))
-    fs = attr.ib(validator=attr.validators.instance_of(bool))
+    forward_secret = attr.ib(validator=attr.validators.instance_of(bool))
 
 
 @attr.s(frozen=True)
@@ -44,39 +44,39 @@ class NamedGroupParams(object):
 class KeyExchange(enum.Enum):
     ADH = KeyExchangeParams(
         name='ADH',
-        fs=False
+        forward_secret=False
     )
     DH = KeyExchangeParams(  # pylint: disable=invalid-name
         name='DH',
-        fs=False
+        forward_secret=False
     )
     DHE = KeyExchangeParams(
         name='DHE',
-        fs=True
+        forward_secret=True
     )
     ECDH = KeyExchangeParams(
         name='ECDH',
-        fs=False
+        forward_secret=False
     )
     ECDHE = KeyExchangeParams(
         name='ECDHE',
-        fs=True
+        forward_secret=True
     )
     KRB5 = KeyExchangeParams(
         name='KRB5',
-        fs=False
+        forward_secret=False
     )
     PSK = KeyExchangeParams(
         name='PSK',
-        fs=False
+        forward_secret=False
     )
     RSA = KeyExchangeParams(
         name='RSA',
-        fs=False
+        forward_secret=False
     )
     SRP = KeyExchangeParams(
         name='SRP',
-        fs=False
+        forward_secret=False
     )
 
 
