@@ -3,7 +3,7 @@
 import unittest
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
-from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
+from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary, ByteOrder
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
 
 from .classes import OneByteParsable, TwoByteParsable, ConditionalParsable, OneByteOddParsable
@@ -86,6 +86,19 @@ class TestParserBinary(unittest.TestCase):
         parser = ParserBinary(b'\x01\x02\x03\x04')
         parser.parse_numeric('first_four_bytes', 4)
         self.assertEqual(parser['first_four_bytes'], 0x01020304)
+
+    def test_parse_byte_order(self):
+        parser = ParserBinary(b'\x01\x02\x03\x04', byte_order=ByteOrder.BIG_ENDIAN)
+        parser.parse_numeric('number', 4)
+        self.assertEqual(parser['number'], 0x01020304)
+
+        parser = ParserBinary(b'\x01\x02\x03\x04', byte_order=ByteOrder.LITTLE_ENDIAN)
+        parser.parse_numeric('number', 4)
+        self.assertEqual(parser['number'], 0x04030201)
+
+        parser = ParserBinary(b'\x01\x02\x03\x04', byte_order=ByteOrder.NETWORK)
+        parser.parse_numeric('number', 4)
+        self.assertEqual(parser['number'], 0x01020304)
 
     def test_parse_numeric_array(self):
         parser = ParserBinary(b'\x01\x02')
@@ -227,6 +240,19 @@ class TestComposerBinary(unittest.TestCase):
         self.assertEqual(composer.composed_bytes, b'\x01\x02\x03')
 
         composer = ComposerBinary()
+        composer.compose_numeric(0x01020304, 4)
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
+
+    def test_compose_byte_order(self):
+        composer = ComposerBinary(byte_order=ByteOrder.BIG_ENDIAN)
+        composer.compose_numeric(0x01020304, 4)
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
+
+        composer = ComposerBinary(byte_order=ByteOrder.LITTLE_ENDIAN)
+        composer.compose_numeric(0x01020304, 4)
+        self.assertEqual(composer.composed_bytes, b'\x04\x03\x02\x01')
+
+        composer = ComposerBinary(byte_order=ByteOrder.NETWORK)
         composer.compose_numeric(0x01020304, 4)
         self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
 
