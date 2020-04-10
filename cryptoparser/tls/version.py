@@ -74,7 +74,12 @@ class TlsProtocolVersionBase(Serializable, ParsableBase):
         return hash(str(self))
 
     def _asdict(self):
-        return repr(self)
+        return self.identifier
+
+    @abc.abstractmethod
+    @property
+    def identifier(self):
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def __str__(self):
@@ -105,7 +110,8 @@ class TlsProtocolVersionFinal(TlsProtocolVersionBase):
     def __init__(self, tls_version):
         super(TlsProtocolVersionFinal, self).__init__(self._MAJOR, tls_version)
 
-    def __repr__(self):
+    @property
+    def identifier(self):
         if self.minor == TlsVersion.SSL3:
             result = 'ssl3'
         elif self.minor == TlsVersion.TLS1_0:
@@ -146,7 +152,8 @@ class TlsProtocolVersionDraft(TlsProtocolVersionBase):
     def __init__(self, draft_number):
         super(TlsProtocolVersionDraft, self).__init__(self._MAJOR, draft_number)
 
-    def __repr__(self):
+    @property
+    def identifier(self):
         return 'tls1_3_draft{}'.format(self.minor - 1)
 
     def __str__(self):
@@ -188,7 +195,8 @@ class SslProtocolVersion(Serializable, ParsableBase):
     def __hash__(self):
         return hash(str(self))
 
-    def __repr__(self):
+    @property
+    def identifier(self):
         return 'ssl2'
 
     def __str__(self):
