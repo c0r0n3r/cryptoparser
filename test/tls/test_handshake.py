@@ -17,15 +17,35 @@ from cryptoparser.tls.extension import (
     TlsNamedCurve,
     TlsExtensionECPointFormats,
     TlsECPointFormat,
+    TlsECPointFormatVector,
+    TlsEllipticCurveVector,
+    TlsSupportedVersionVector,
 )
 from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
-from cryptoparser.tls.subprotocol import TlsSubprotocolMessageParser, TlsHandshakeMessageVariant
-from cryptoparser.tls.subprotocol import TlsHandshakeClientHello, TlsHandshakeServerHello, TlsHandshakeHelloRandom
-from cryptoparser.tls.subprotocol import TlsCipherSuiteVector, TlsCompressionMethodVector, TlsCompressionMethod
-from cryptoparser.tls.subprotocol import TlsSessionIdVector, TlsExtensions, TlsContentType, TlsHandshakeType
-from cryptoparser.tls.subprotocol import TlsHandshakeCertificate, TlsCertificates, TlsCertificate
-from cryptoparser.tls.subprotocol import TlsHandshakeServerHelloDone, TlsHandshakeServerKeyExchange, TlsAlertMessage
-from cryptoparser.tls.subprotocol import SslMessageType, SslHandshakeClientHello, SslHandshakeServerHello
+from cryptoparser.tls.subprotocol import (
+    SslHandshakeClientHello,
+    SslHandshakeServerHello,
+    SslMessageType,
+    TlsAlertMessage,
+    TlsCertificate,
+    TlsCertificates,
+    TlsCipherSuiteVector,
+    TlsCompressionMethod,
+    TlsCompressionMethodVector,
+    TlsContentType,
+    TlsExtensions,
+    TlsHandshakeCertificate,
+    TlsHandshakeClientHello,
+    TlsHandshakeHelloRandom,
+    TlsHandshakeHelloRandomBytes,
+    TlsHandshakeMessageVariant,
+    TlsHandshakeServerHello,
+    TlsHandshakeServerHelloDone,
+    TlsHandshakeServerKeyExchange,
+    TlsHandshakeType,
+    TlsSessionIdVector,
+    TlsSubprotocolMessageParser,
+)
 from cryptoparser.tls.record import TlsRecord
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
@@ -206,13 +226,13 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             TlsProtocolVersionFinal(TlsVersion.TLS1_2),
             TlsHandshakeHelloRandom(
                 self.random_time,
-                bytearray(
+                TlsHandshakeHelloRandomBytes(bytearray(
                     b'\x04\x05\x06\x07' +
                     b'\x00\x01\x02\x03\x04\x05\x06\x07' +
                     b'\x00\x01\x02\x03\x04\x05\x06\x07' +
                     b'\x00\x01\x02\x03\x04\x05\x06\x07' +
                     b''
-                )
+                ))
             ),
             TlsSessionIdVector(()),
             TlsCompressionMethodVector([TlsCompressionMethod.NULL, ]),
@@ -262,10 +282,10 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
         self.assertEqual(
             client_hello_extension.extensions,
             TlsExtensions([
-                TlsExtensionSupportedVersions([
+                TlsExtensionSupportedVersions(TlsSupportedVersionVector([
                     TlsProtocolVersionFinal(TlsVersion.TLS1_1),
                     TlsProtocolVersionFinal(TlsVersion.TLS1_2),
-                ]),
+                    ])),
                 TlsExtensionUnparsed(TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A), b'')
             ])
         )
@@ -285,12 +305,16 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
         client_hello_minimal = copy.copy(self.client_hello_minimal)
         self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,,,')
 
-        client_hello_minimal.extensions.append(TlsExtensionEllipticCurves([TlsNamedCurve.SECT163K1]))
+        client_hello_minimal.extensions.append(
+            TlsExtensionEllipticCurves(TlsEllipticCurveVector([TlsNamedCurve.SECT163K1]))
+        )
         self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10,1,')
         client_hello_minimal.extensions[0].elliptic_curves.append(TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A))
         self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10,1,')
 
-        client_hello_minimal.extensions.append(TlsExtensionECPointFormats([TlsECPointFormat.UNCOMPRESSED]))
+        client_hello_minimal.extensions.append(
+            TlsExtensionECPointFormats(TlsECPointFormatVector([TlsECPointFormat.UNCOMPRESSED]))
+        )
         self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10-11,1,0')
         client_hello_minimal.extensions[1].point_formats.append(TlsInvalidTypeOneByte(TlsGreaseOneByte.GREASE_0B))
         self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10-11,1,0')
@@ -318,13 +342,13 @@ class TestTlsHandshakeServerHello(unittest.TestCase):
             TlsProtocolVersionFinal(TlsVersion.TLS1_2),
             TlsHandshakeHelloRandom(
                 datetime.datetime(2018, 8, 10, tzinfo=None),
-                bytearray(
+                TlsHandshakeHelloRandomBytes(bytearray(
                     b'\x04\x05\x06\x07' +
                     b'\x00\x01\x02\x03\x04\x05\x06\x07' +
                     b'\x00\x01\x02\x03\x04\x05\x06\x07' +
                     b'\x00\x01\x02\x03\x04\x05\x06\x07' +
                     b''
-                )
+                ))
             ),
             TlsSessionIdVector(()),
             TlsCompressionMethod.NULL,
@@ -474,6 +498,12 @@ class TestSslHandshakeClientHello(unittest.TestCase):
             session_id=b'\x00\x01\x02\x03\x04\x05\x06\x07',
             challenge=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
         )
+
+    def test_default(self):
+        self.assertEqual(SslHandshakeClientHello([]).session_id, b'')
+        self.assertNotEqual(SslHandshakeClientHello([]).challenge, SslHandshakeClientHello([]).challenge)
+
+        self.assertEqual(SslHandshakeServerHello(b'', []).connection_id, b'')
 
     def test_parse(self):
         client_hello_minimal = SslHandshakeClientHello.parse_exact_size(self.client_hello_bytes)

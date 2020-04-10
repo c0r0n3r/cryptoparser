@@ -60,47 +60,50 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         return json.dumps(self._asdict())
 
 
+@attr.s
 class VectorParamBase(object):  # pylint: disable=too-few-public-methods
-    def __init__(self, min_byte_num, max_byte_num):
-        self.min_byte_num = min_byte_num
-        self.max_byte_num = max_byte_num
+    min_byte_num = attr.ib(validator=attr.validators.instance_of(int))
+    max_byte_num = attr.ib(validator=attr.validators.instance_of(int))
+    item_num_size = attr.ib(init=False, validator=attr.validators.instance_of(int))
 
+    def __attrs_post_init__(self):
         self.item_num_size = int(math.log(self.max_byte_num, 2) / 8) + 1
+
+        attr.validate(self)
 
     @abc.abstractmethod
     def get_item_size(self, item):
         raise NotImplementedError()
 
 
+@attr.s
 class VectorParamNumeric(VectorParamBase):  # pylint: disable=too-few-public-methods
-    def __init__(self, item_size, min_byte_num, max_byte_num, numeric_class=int):
-        super(VectorParamNumeric, self).__init__(min_byte_num, max_byte_num)
-
-        self.item_size = item_size
-        self.numeric_class = numeric_class
+    item_size = attr.ib(validator=attr.validators.instance_of(int))
+    numeric_class = attr.ib(default=int, validator=attr.validators.instance_of(type))
 
     def get_item_size(self, item):
         return self.item_size
 
 
+@attr.s
 class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-methods
-    def __init__(self, item_class, min_byte_num, max_byte_num, fallback_class):
-        super(VectorParamParsable, self).__init__(min_byte_num, max_byte_num)
-
-        self.item_class = item_class
-        self.fallback_class = fallback_class
+    item_class = attr.ib(validator=attr.validators.instance_of(type))
+    fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)))
 
     def get_item_size(self, item):
         return len(item.compose())
 
 
+@attr.s
 class VectorBase(ParsableBase, MutableSequence):
-    def __init__(self, items):
-        super(VectorBase, self).__init__()
+    _items = attr.ib()
+    _items_size = attr.ib(init=False, default=0)
+    param = attr.ib(init=False, default=None)
+
+    def __attrs_post_init__(self):
+        items = self._items
 
         self.param = self.get_param()
-
-        self._items_size = 0
         self._items = []
 
         for item in items:
@@ -108,6 +111,8 @@ class VectorBase(ParsableBase, MutableSequence):
             self._items_size += self.param.get_item_size(item)
 
         self._update_items_size(del_item=None, insert_item=None)
+
+        attr.validate(self)
 
     def _update_items_size(self, del_item=None, insert_item=None):
         size_diff = 0
@@ -129,9 +134,6 @@ class VectorBase(ParsableBase, MutableSequence):
     def get_param(cls):
         raise NotImplementedError()
 
-    def __repr__(self):
-        return "<{0} {1}>".format(self.__class__.__name__, self._items)
-
     def __len__(self):
         return len(self._items)
 
@@ -149,9 +151,6 @@ class VectorBase(ParsableBase, MutableSequence):
 
     def __str__(self):
         return str(self._items)
-
-    def __eq__(self, other):
-        return self._items == other._items  # pylint: disable=protected-access
 
     def insert(self, index, value):
         self._update_items_size(insert_item=value)

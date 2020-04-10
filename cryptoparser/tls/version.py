@@ -3,6 +3,7 @@
 import abc
 import enum
 import functools
+import attr
 
 import six
 
@@ -19,17 +20,14 @@ class TlsVersion(enum.IntEnum):
     TLS1_3 = 0x04
 
 
+@attr.s(order=False, eq=False, hash=True)
 @six.add_metaclass(abc.ABCMeta)
 @functools.total_ordering
 class TlsProtocolVersionBase(Serializable, ParsableBase):
     _SIZE = 2
 
-    def __init__(self, major, minor):
-        self._major = None
-        self._minor = None
-
-        self.major = major
-        self.minor = minor
+    major = attr.ib()
+    minor = attr.ib()
 
     @classmethod
     def _parse(cls, parsable):
@@ -46,6 +44,7 @@ class TlsProtocolVersionBase(Serializable, ParsableBase):
                 version = subclass.__new__(subclass)
                 version.major = parser['major']
                 version.minor = parser['minor']
+                attr.validate(version)
             except InvalidValue:
                 pass
             else:
@@ -70,14 +69,11 @@ class TlsProtocolVersionBase(Serializable, ParsableBase):
 
         return isinstance(self, TlsProtocolVersionDraft) == (other.minor == TlsVersion.TLS1_3)
 
-    def __hash__(self):
-        return hash(str(self))
-
     def _asdict(self):
         return self.identifier
 
-    @abc.abstractmethod
     @property
+    @abc.abstractmethod
     def identifier(self):
         raise NotImplementedError()
 
@@ -85,30 +81,19 @@ class TlsProtocolVersionBase(Serializable, ParsableBase):
     def __str__(self):
         raise NotImplementedError()
 
-    @property
-    def major(self):
-        return self._major
 
-    @major.setter
-    @abc.abstractmethod
-    def major(self, value):
-        raise NotImplementedError()
-
-    @property
-    def minor(self):
-        return self._minor
-
-    @minor.setter
-    @abc.abstractmethod
-    def minor(self, value):
-        raise NotImplementedError()
-
-
+@attr.s(init=False, eq=False, order=False)
 class TlsProtocolVersionFinal(TlsProtocolVersionBase):
     _MAJOR = 0x03
 
+    major = attr.ib()
+    minor = attr.ib()
+
     def __init__(self, tls_version):
-        super(TlsProtocolVersionFinal, self).__init__(self._MAJOR, tls_version)
+        self.major = self._MAJOR
+        self.minor = tls_version
+
+        attr.validate(self)
 
     @property
     def identifier(self):
@@ -127,30 +112,32 @@ class TlsProtocolVersionFinal(TlsProtocolVersionBase):
 
         return 'TLS 1.{}'.format(self.minor - 1)
 
-    # pylint: disable=no-member
-    @TlsProtocolVersionBase.major.setter
-    def major(self, value):
+    @major.validator
+    def major_validator(self, attribute, value):
         if value != self._MAJOR:
             raise InvalidValue(value, TlsProtocolVersionFinal, 'major')
 
-        self._major = value
-
-    @TlsProtocolVersionBase.minor.setter
-    def minor(self, value):
+    @minor.validator
+    def minor_validator(self, attribute, value):  # pylint: disable=no-self-use
         try:
             TlsVersion(value)
         except ValueError as e:
             raise InvalidValue(e.args[0], TlsProtocolVersionFinal)
 
-        self._minor = value
 
-
+@attr.s(init=False, eq=False, order=False)
 class TlsProtocolVersionDraft(TlsProtocolVersionBase):
     _MAJOR = 0x7f
     MAX_DRAFT_NUMBER = 0xff
 
+    major = attr.ib()
+    minor = attr.ib()
+
     def __init__(self, draft_number):
-        super(TlsProtocolVersionDraft, self).__init__(self._MAJOR, draft_number)
+        self.major = self._MAJOR
+        self.minor = draft_number
+
+        attr.validate(self)
 
     @property
     def identifier(self):
@@ -159,45 +146,37 @@ class TlsProtocolVersionDraft(TlsProtocolVersionBase):
     def __str__(self):
         return 'TLS 1.3 Draft {}'.format(self.minor - 1)
 
-    # pylint: disable=no-member
-    @TlsProtocolVersionBase.major.setter
-    def major(self, value):
+    @major.validator
+    def major_validator(self, attribute, value):
         if value != self._MAJOR:
             raise InvalidValue(value, TlsProtocolVersionFinal, 'major')
 
-        self._major = value
-
-    @TlsProtocolVersionBase.minor.setter
-    def minor(self, value):
-        if value > 0xff:
+    @minor.validator
+    def minor_validator(self, attribute, value):
+        if value > self.MAX_DRAFT_NUMBER:
             raise InvalidValue(value, TlsProtocolVersionDraft, 'draft number')
         if value < 0x00:
             raise InvalidValue(value, TlsProtocolVersionDraft, 'draft number')
-
-        self._minor = value
 
 
 class SslVersion(enum.IntEnum):
     SSL2 = 0x0002
 
 
-@six.add_metaclass(abc.ABCMeta)
+@attr.s(eq=True, order=False, hash=True)
 @functools.total_ordering
 class SslProtocolVersion(Serializable, ParsableBase):
     _SIZE = 2
 
-    def __eq__(self, other):
-        return isinstance(other, SslProtocolVersion)
-
     def __lt__(self, other):
         return isinstance(other, TlsProtocolVersionBase)
-
-    def __hash__(self):
-        return hash(str(self))
 
     @property
     def identifier(self):
         return 'ssl2'
+
+    def _asdict(self):
+        return self.identifier
 
     def __str__(self):
         return 'SSL 2.0'

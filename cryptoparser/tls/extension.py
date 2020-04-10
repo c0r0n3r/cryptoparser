@@ -2,6 +2,7 @@
 
 import abc
 import enum
+import six
 import attr
 
 from cryptoparser.common.base import Serializable
@@ -214,9 +215,9 @@ class TlsExtensions(VectorParsableDerived):
         )
 
 
+@attr.s
 class TlsExtensionBase(ParsableBase):
-    def __init__(self, extension_type):
-        self.extension_type = extension_type
+    extension_type = attr.ib(init=False, validator=attr.validators.instance_of(TlsExtensionType))
 
     @classmethod
     @abc.abstractmethod
@@ -257,14 +258,10 @@ class TlsExtensionBase(ParsableBase):
         return header_composer.composed_bytes
 
 
+@attr.s
 class TlsExtensionUnparsed(TlsExtensionBase):
-    def __init__(self, extension_type, extension_data):
-        super(TlsExtensionUnparsed, self).__init__(extension_type)
-
-        self._extension_data = extension_data
-
-    def __eq__(self, other):
-        return self.extension_type == other.extension_type and self._extension_data == other._extension_data
+    extension_type = attr.ib(validator=attr.validators.instance_of((TlsExtensionType, TlsInvalidTypeTwoByte)))
+    extension_data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
 
     @classmethod
     def _parse_type(cls, parser, name):
@@ -283,16 +280,19 @@ class TlsExtensionUnparsed(TlsExtensionBase):
 
     def compose(self):
         payload_composer = ComposerBinary()
-        payload_composer.compose_bytes(self._extension_data)
+        payload_composer.compose_bytes(self.extension_data)
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
         return header_bytes + payload_composer.composed_bytes
 
 
+@attr.s
 class TlsExtensionParsed(TlsExtensionBase):
-    def __init__(self):
-        super(TlsExtensionParsed, self).__init__(self.get_extension_type())
+    def __attrs_post_init__(self):
+        self.extension_type = self.get_extension_type()
+
+        attr.validate(self)
 
     @classmethod
     def _parse_type(cls, parser, name):
@@ -330,12 +330,10 @@ class TlsServerName(Vector):
         )
 
 
+@attr.s
 class TlsExtensionServerName(TlsExtensionParsed):
-    def __init__(self, host_name, name_type=TlsServerNameType.HOST_NAME):
-        super(TlsExtensionServerName, self).__init__()
-
-        self.host_name = host_name
-        self.name_type = name_type
+    host_name = attr.ib(validator=attr.validators.instance_of(six.text_type))
+    name_type = attr.ib(validator=attr.validators.in_(TlsServerNameType), default=TlsServerNameType.HOST_NAME)
 
     @classmethod
     def get_extension_type(cls):
@@ -398,11 +396,9 @@ class TlsECPointFormatVector(VectorParsable):
         )
 
 
+@attr.s
 class TlsExtensionECPointFormats(TlsExtensionParsed):
-    def __init__(self, point_formats):
-        super(TlsExtensionECPointFormats, self).__init__()
-
-        self.point_formats = TlsECPointFormatVector(point_formats)
+    point_formats = attr.ib(validator=attr.validators.instance_of(TlsECPointFormatVector))
 
     @classmethod
     def get_extension_type(cls):
@@ -600,11 +596,9 @@ class TlsEllipticCurveVector(VectorParsable):
         )
 
 
+@attr.s
 class TlsExtensionEllipticCurves(TlsExtensionParsed):
-    def __init__(self, elliptic_curves):
-        super(TlsExtensionEllipticCurves, self).__init__()
-
-        self.elliptic_curves = TlsEllipticCurveVector(elliptic_curves)
+    elliptic_curves = attr.ib(validator=attr.validators.instance_of(TlsEllipticCurveVector))
 
     @classmethod
     def get_extension_type(cls):
@@ -638,14 +632,9 @@ class TlsSupportedVersionVector(VectorParsableDerived):
         )
 
 
+@attr.s
 class TlsExtensionSupportedVersions(TlsExtensionParsed):
-    def __init__(self, supported_versions):
-        super(TlsExtensionSupportedVersions, self).__init__()
-
-        self.supported_versions = TlsSupportedVersionVector(supported_versions)
-
-    def __eq__(self, other):
-        return self.supported_versions == other.supported_versions
+    supported_versions = attr.ib(validator=attr.validators.instance_of(TlsSupportedVersionVector))
 
     @classmethod
     def get_extension_type(cls):
@@ -839,11 +828,9 @@ class TlsSignatureAndHashAlgorithmVector(VectorParsable):
         )
 
 
+@attr.s
 class TlsExtensionSignatureAlgorithms(TlsExtensionParsed):
-    def __init__(self, hash_and_signature_algorithms):
-        super(TlsExtensionSignatureAlgorithms, self).__init__()
-
-        self.hash_and_signature_algorithms = TlsSignatureAndHashAlgorithmVector(hash_and_signature_algorithms)
+    hash_and_signature_algorithms = attr.ib(validator=attr.validators.instance_of(TlsSignatureAndHashAlgorithmVector))
 
     @classmethod
     def get_extension_type(cls):

@@ -115,6 +115,7 @@ class AlwaysUnknowTypeParsable(ParsableBase):
         raise TooMuchData()
 
 
+@attr.s
 class SerializableEnumValue(object):
     code = attr.ib(validator=attr.validators.instance_of(int))
 

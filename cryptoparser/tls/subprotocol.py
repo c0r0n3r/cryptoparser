@@ -5,6 +5,7 @@ import calendar
 import datetime
 import enum
 import random
+import attr
 
 from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorParamParsable, VectorParsable
 from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
@@ -12,9 +13,17 @@ from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.extension import TlsExtensions, TlsExtensionType
 from cryptoparser.tls.grease import TlsInvalidType, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
-from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
+from cryptoparser.tls.version import (
+    SslProtocolVersion,
+    SslVersion,
+    TlsProtocolVersionBase,
+    TlsProtocolVersionFinal,
+    TlsVersion,
+)
 from cryptoparser.tls.ciphersuite import (
+    SslCipherKind,
     SslCipherKindFactory,
+    TlsCipherSuite,
     TlsCipherSuiteExtension,
     TlsCipherSuiteFactory,
 )
@@ -28,9 +37,9 @@ class TlsContentType(enum.IntEnum):
     HEARTBEAT = 0x18
 
 
+@attr.s
 class SubprotocolParser(object):
-    def __init__(self, subprotocol_type):
-        self._subprotocol_type = subprotocol_type
+    _subprotocol_type = attr.ib(validator=attr.validators.instance_of(enum.IntEnum))
 
     @classmethod
     @abc.abstractmethod
@@ -52,9 +61,9 @@ class SubprotocolParser(object):
         raise InvalidValue(self._subprotocol_type, TlsSubprotocolMessageBase)
 
 
+@attr.s
 class VariantParsable(ParsableBase):
-    def __init__(self, variant):
-        self._variant = variant
+    variant = attr.ib(validator=attr.validators.instance_of(ParsableBase))
 
     @classmethod
     @abc.abstractmethod
@@ -71,17 +80,14 @@ class VariantParsable(ParsableBase):
         for variant_parser in cls._get_variants().values():
             try:
                 parsed_object, unparsed_bytes = variant_parser.parse_immutable(parsable)
-                return cls(parsed_object), len(parsable) - len(unparsed_bytes)
+                return parsed_object, len(parsable) - len(unparsed_bytes)
             except InvalidType:
                 continue
 
         raise InvalidValue(parsable, cls)
 
     def compose(self):
-        return self._variant.compose()
-
-    def __getattr__(self, name):
-        return getattr(self._variant, name)
+        return self.variant.compose()
 
 
 class TlsSubprotocolMessageBase(ParsableBase):
@@ -128,12 +134,12 @@ class TlsAlertDescription(enum.IntEnum):
     NO_APPLICATION_PROTOCOL = 0x78
 
 
+@attr.s
 class TlsAlertMessage(TlsSubprotocolMessageBase):
     _SIZE = 2
 
-    def __init__(self, level, description):
-        self.level = level
-        self.description = description
+    level = attr.ib()
+    description = attr.ib()
 
     @classmethod
     def get_content_type(cls):
@@ -159,32 +165,19 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
 
         return composer.composed_bytes
 
-    @property
-    def level(self):
-        return self._level
-
-    @level.setter
-    def level(self, value):
+    @level.validator
+    def _validator_level(self, attribute, value):
         try:
-            # pylint: disable=attribute-defined-outside-init
-            self._level = TlsAlertLevel(value)
+            self.level = TlsAlertLevel(value)
         except ValueError:
             raise InvalidValue(value, TlsAlertLevel, 'level')
 
-    @property
-    def description(self):
-        return self._description
-
-    @description.setter
-    def description(self, value):
+    @description.validator
+    def _validator_description(self, attribute, value):
         try:
-            # pylint: disable=attribute-defined-outside-init
-            self._description = TlsAlertDescription(value)
+            self.description = TlsAlertDescription(value)
         except ValueError:
             raise InvalidValue(value, TlsAlertDescription)
-
-    def __eq__(self, other):
-        return self.level == other.level and self.description == other.description
 
 
 TlsSubprotocolMessageBase.register(TlsAlertMessage)
@@ -194,11 +187,12 @@ class TlsChangeCipherSpecType(enum.IntEnum):
     CHANGE_CIPHER_SPEC = 0x01
 
 
+@attr.s
 class TlsChangeCipherSpecMessage(TlsSubprotocolMessageBase):
-    def __init__(self, change_cipher_spec_type=TlsChangeCipherSpecType.CHANGE_CIPHER_SPEC):
-        super(TlsChangeCipherSpecMessage, self).__init__()
-
-        self._change_cipher_spec_type = change_cipher_spec_type
+    _change_cipher_spec_type = attr.ib(
+        default=TlsChangeCipherSpecType.CHANGE_CIPHER_SPEC,
+        validator=attr.validators.in_(TlsChangeCipherSpecType)
+    )
 
     @classmethod
     def get_content_type(cls):
@@ -219,15 +213,10 @@ class TlsChangeCipherSpecMessage(TlsSubprotocolMessageBase):
 
         return composer.composed_bytes
 
-    def __eq__(self, other):
-        return self._change_cipher_spec_type == other._change_cipher_spec_type  # pylint: disable=protected-access
 
-
+@attr.s
 class TlsApplicationDataMessage(TlsSubprotocolMessageBase):
-    def __init__(self, data):
-        super(TlsApplicationDataMessage, self).__init__()
-
-        self.data = data
+    data = attr.ib(attr.validators.instance_of(bytearray))
 
     @classmethod
     def get_content_type(cls):
@@ -239,9 +228,6 @@ class TlsApplicationDataMessage(TlsSubprotocolMessageBase):
 
     def compose(self):
         return self.data
-
-    def __eq__(self, other):
-        return self.data == other.data
 
 
 class TlsHandshakeType(enum.IntEnum):
@@ -262,6 +248,7 @@ class TlsHandshakeType(enum.IntEnum):
     SUPPLEMENTAL_DATA = 0x17
 
 
+@attr.s
 class TlsHandshakeMessage(TlsSubprotocolMessageBase):
     """The payload of a handshake record.
     """
@@ -315,36 +302,20 @@ class TlsHandshakeHelloRandomBytes(Opaque):
         return 28
 
 
+@attr.s
 class TlsHandshakeHelloRandom(ParsableBase):
-    def __init__(
-            self,
-            time=datetime.datetime.now(),
-            random_bytes=bytearray.fromhex('{:28x}'.format(random.getrandbits(224)).zfill(56))
-    ):
-        self._time = None
-        self._random = None
+    time = attr.ib(validator=attr.validators.instance_of(datetime.datetime))
+    random = attr.ib(validator=attr.validators.instance_of(TlsHandshakeHelloRandomBytes))
 
-        self.time = time
-        self.random = random_bytes
+    @time.default
+    def _default_time(self):  # pylint: disable=no-self-use
+        return datetime.datetime.now()
 
-    @property
-    def random(self):
-        return bytearray(self._random)
-
-    @random.setter
-    def random(self, value):
-        self._random = TlsHandshakeHelloRandomBytes(value)
-
-    @property
-    def time(self):
-        return self._time
-
-    @time.setter
-    def time(self, value):
-        self._time = value
-
-    def __eq__(self, other):
-        return self.time == other.time and self.random == other.random
+    @random.default
+    def _default_random(self):  # pylint: disable=no-self-use
+        return TlsHandshakeHelloRandomBytes(
+            bytearray.fromhex('{:28x}'.format(random.getrandbits(224)).zfill(56))
+        )
 
     @classmethod
     def _parse(cls, parsable):
@@ -358,21 +329,14 @@ class TlsHandshakeHelloRandom(ParsableBase):
     def compose(self):
         composer = ComposerBinary()
 
-        composer.compose_numeric(int(calendar.timegm(self._time.utctimetuple())), 4)
-        composer.compose_parsable(self._random)
+        composer.compose_numeric(int(calendar.timegm(self.time.utctimetuple())), 4)
+        composer.compose_parsable(self.random)
 
         return composer.composed_bytes
 
 
+@attr.s
 class TlsHandshakeHello(TlsHandshakeMessage):
-    def __init__(self, protocol_version, random_bytes, session_id, extensions):
-        super(TlsHandshakeHello, self).__init__()
-
-        self.protocol_version = protocol_version
-        self.random = random_bytes
-        self.session_id = session_id
-        self.extensions = extensions
-
     @classmethod
     def _parse_hello_header(cls, parsable):
         parser = ParserBinary(parsable)
@@ -401,14 +365,15 @@ class TlsHandshakeHello(TlsHandshakeMessage):
 
         return parser
 
-    def _compose_extensions(self):
+    @staticmethod
+    def _compose_extensions(extensions):
         extension_bytes = bytearray()
 
-        for extension in self.extensions:
+        for extension in extensions:
             extension_bytes += extension.compose()
 
         payload_composer = ComposerBinary()
-        if self.extensions:
+        if extensions:
             payload_composer.compose_numeric(len(extension_bytes), 2)
 
         return payload_composer.composed_bytes + extension_bytes
@@ -454,24 +419,28 @@ class TlsSessionIdVector(Vector):
         return VectorParamNumeric(item_size=1, min_byte_num=0, max_byte_num=32)
 
 
+@attr.s  # pylint: disable=too-many-instance-attributes
 class TlsHandshakeClientHello(TlsHandshakeHello):
-    def __init__(  # pylint: disable=too-many-arguments
-            self,
-            cipher_suites,
-            protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
-            random_bytes=TlsHandshakeHelloRandom(),
-            session_id=TlsSessionIdVector(()),
-            compression_methods=TlsCompressionMethodVector([TlsCompressionMethod.NULL, ]),
-            extensions=(),
-            fallback_scsv=False,
-            empty_renegotiation_info_scsv=False,
-    ):
-        super(TlsHandshakeClientHello, self).__init__(protocol_version, random_bytes, session_id, extensions)
-
-        self.cipher_suites = TlsCipherSuiteVector(cipher_suites)
-        self.compression_methods = compression_methods
-        self.fallback_scsv = fallback_scsv
-        self.empty_renegotiation_info_scsv = empty_renegotiation_info_scsv
+    cipher_suites = attr.ib(converter=TlsCipherSuiteVector)
+    protocol_version = attr.ib(
+        default=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+        validator=attr.validators.instance_of((TlsProtocolVersionBase, SslProtocolVersion)),
+    )
+    random = attr.ib(
+        default=TlsHandshakeHelloRandom(),
+        validator=attr.validators.instance_of(TlsHandshakeHelloRandom),
+    )
+    session_id = attr.ib(
+        default=TlsSessionIdVector(()),
+        validator=attr.validators.instance_of(TlsSessionIdVector),
+    )
+    compression_methods = attr.ib(
+        default=TlsCompressionMethodVector([TlsCompressionMethod.NULL, ]),
+        validator=attr.validators.instance_of(TlsCompressionMethodVector),
+    )
+    extensions = attr.ib(default=TlsExtensions(()), validator=attr.validators.instance_of(TlsExtensions))
+    fallback_scsv = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    empty_renegotiation_info_scsv = attr.ib(default=False, validator=attr.validators.instance_of(bool))
 
     @classmethod
     def get_handshake_type(cls):
@@ -527,7 +496,7 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
             del self.cipher_suites[-1]
         payload_composer.compose_parsable(self.compression_methods)
 
-        extension_bytes = self._compose_extensions()
+        extension_bytes = self._compose_extensions(self.extensions)
 
         header_bytes = self._compose_header(payload_composer.composed_length + len(extension_bytes))
 
@@ -571,20 +540,26 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
         ])
 
 
+@attr.s
 class TlsHandshakeServerHello(TlsHandshakeHello):
-    def __init__(  # pylint: disable=too-many-arguments
-            self,
-            protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
-            random_bytes=TlsHandshakeHelloRandom(),
-            session_id=TlsSessionIdVector((random.randint(0, 255) for i in range(32))),
-            compression_method=TlsCompressionMethod.NULL,
-            cipher_suite=None,
-            extensions=None,
-    ):
-        super(TlsHandshakeServerHello, self).__init__(protocol_version, random_bytes, session_id, extensions)
-
-        self.cipher_suite = cipher_suite
-        self.compression_method = compression_method
+    protocol_version = attr.ib(
+        default=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+        validator=attr.validators.instance_of((TlsProtocolVersionBase, SslProtocolVersion)),
+    )
+    random = attr.ib(
+        default=TlsHandshakeHelloRandom(),
+        validator=attr.validators.instance_of(TlsHandshakeHelloRandom),
+    )
+    session_id = attr.ib(
+        default=TlsSessionIdVector((random.randint(0, 255) for i in range(32))),
+        validator=attr.validators.instance_of(TlsSessionIdVector),
+    )
+    compression_method = attr.ib(
+        default=TlsCompressionMethod.NULL,
+        validator=attr.validators.in_(TlsCompressionMethod),
+    )
+    cipher_suite = attr.ib(default=None, validator=attr.validators.in_(TlsCipherSuite))
+    extensions = attr.ib(default=None, validator=attr.validators.instance_of(TlsExtensions))
 
     @classmethod
     def get_handshake_type(cls):
@@ -597,13 +572,13 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
         parser = cls._parse_hello_header(handshake_header_parser['payload'])
 
         parser.parse_parsable('cipher_suite', TlsCipherSuiteFactory)
-        parser.parse_numeric('compression_method', 1)
+        parser.parse_numeric('compression_method', 1, TlsCompressionMethod)
 
         extension_parser = cls._parse_extensions(handshake_header_parser, parser)
 
         return TlsHandshakeServerHello(
             protocol_version=parser['protocol_version'],
-            random_bytes=parser['random'],
+            random=parser['random'],
             session_id=parser['session_id'],
             compression_method=parser['compression_method'],
             cipher_suite=parser['cipher_suite'],
@@ -619,16 +594,16 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
         payload_composer.compose_parsable(self.cipher_suite)
         payload_composer.compose_numeric(self.compression_method.value, 1)
 
-        extension_bytes = self._compose_extensions()
+        extension_bytes = self._compose_extensions(self.extensions)
 
         header_bytes = self._compose_header(payload_composer.composed_length + len(extension_bytes))
 
         return header_bytes + payload_composer.composed_bytes + extension_bytes
 
 
+@attr.s
 class TlsCertificate(ParsableBase):
-    def __init__(self, certificate):
-        self.certificate = certificate
+    certificate = attr.ib(validator=attr.validators.instance_of(bytes))
 
     @classmethod
     def _parse(cls, parsable):
@@ -637,7 +612,7 @@ class TlsCertificate(ParsableBase):
         parser.parse_numeric('certificate_length', 3)
         parser.parse_bytes('certificate', parser['certificate_length'])
 
-        return TlsCertificate(parser['certificate']), parser.parsed_length
+        return TlsCertificate(bytes(parser['certificate'])), parser.parsed_length
 
     def compose(self):
         composer = ComposerBinary()
@@ -646,9 +621,6 @@ class TlsCertificate(ParsableBase):
         composer.compose_bytes(self.certificate)
 
         return composer.composed_bytes
-
-    def __eq__(self, other):
-        return self.certificate == other.certificate
 
 
 class TlsCertificates(VectorParsable):
@@ -661,11 +633,9 @@ class TlsCertificates(VectorParsable):
         )
 
 
+@attr.s
 class TlsHandshakeCertificate(TlsHandshakeMessage):
-    def __init__(self, certificate_chain):
-        super(TlsHandshakeCertificate, self).__init__()
-
-        self.certificate_chain = certificate_chain
+    certificate_chain = attr.ib(validator=attr.validators.instance_of(TlsCertificates))
 
     @classmethod
     def get_handshake_type(cls):
@@ -716,11 +686,9 @@ class TlsECCurveType(enum.IntEnum):
     NAMED_CURVE = 3
 
 
+@attr.s
 class TlsHandshakeServerKeyExchange(TlsHandshakeMessage):
-    def __init__(self, param_bytes):
-        super(TlsHandshakeServerKeyExchange, self).__init__()
-
-        self.param_bytes = param_bytes
+    param_bytes = attr.ib(validator=attr.validators.instance_of(bytes))
 
     @classmethod
     def get_handshake_type(cls):
@@ -731,11 +699,11 @@ class TlsHandshakeServerKeyExchange(TlsHandshakeMessage):
         handshake_header_parser = cls._parse_handshake_header(parsable)
 
         return TlsHandshakeServerKeyExchange(
-            handshake_header_parser['payload']
+            bytes(handshake_header_parser['payload'])
         ), handshake_header_parser.parsed_length
 
     def compose(self):
-        return self._compose_header(len(self.param_bytes)) + self.param_bytes
+        return self._compose_header(len(self.param_bytes)) + bytes(self.param_bytes)
 
 
 class SslMessageBase(ParsableBase):
@@ -782,9 +750,9 @@ class SslErrorType(enum.IntEnum):
     UNSUPPORTED_CERTIFICATE_TYPE_ERROR = 0x0004
 
 
+@attr.s
 class SslErrorMessage(SslMessageBase):
-    def __init__(self, error_type):
-        self.error_type = error_type
+    error_type = attr.ib(validator=attr.validators.in_(SslErrorType))
 
     @classmethod
     def get_message_type(cls):
@@ -805,20 +773,20 @@ class SslErrorMessage(SslMessageBase):
 
         return composer.composed_bytes
 
-    def __eq__(self, other):
-        return self.error_type == other.error_type
 
-
+@attr.s
 class SslHandshakeClientHello(SslMessageBase):
-    def __init__(
-            self,
-            cipher_kinds,
-            session_id=bytearray(),
-            challenge=bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32)),
-    ):
-        self.cipher_kinds = cipher_kinds
-        self.session_id = session_id
-        self.challenge = challenge
+    cipher_kinds = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.in_(SslCipherKind)))
+    session_id = attr.ib(validator=attr.validators.instance_of(bytes))
+    challenge = attr.ib(validator=attr.validators.instance_of(bytes))
+
+    @session_id.default
+    def _default_session_id(self):  # pylint: disable=no-self-use
+        return bytes()
+
+    @challenge.default
+    def _default_challenge(self):  # pylint: disable=no-self-use
+        return bytes(bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32)))
 
     @classmethod
     def get_message_type(cls):
@@ -838,8 +806,8 @@ class SslHandshakeClientHello(SslMessageBase):
 
         return SslHandshakeClientHello(
             cipher_kinds=parser['cipher_kinds'],
-            session_id=parser['session_id'],
-            challenge=parser['challenge']
+            session_id=bytes(parser['session_id']),
+            challenge=bytes(parser['challenge']),
         ), parser.parsed_length
 
     def compose(self):
@@ -858,18 +826,16 @@ class SslHandshakeClientHello(SslMessageBase):
         return composer.composed_bytes
 
 
+@attr.s
 class SslHandshakeServerHello(SslMessageBase):
-    def __init__(
-            self,
-            certificate,
-            cipher_kinds,
-            connection_id=bytearray(),
-            session_id_hit=False
-    ):
-        self.cipher_kinds = cipher_kinds
-        self.certificate = certificate
-        self.connection_id = connection_id
-        self.session_id_hit = session_id_hit
+    certificate = attr.ib(validator=attr.validators.instance_of(bytes))
+    cipher_kinds = attr.ib(validator=attr.validators.deep_iterable(member_validator=attr.validators.in_(SslCipherKind)))
+    connection_id = attr.ib(validator=attr.validators.instance_of(bytes))
+    session_id_hit = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+
+    @connection_id.default
+    def _default_connection_id(self):  # pylint: disable=no-self-use
+        return bytes()
 
     @classmethod
     def get_message_type(cls):
@@ -890,10 +856,10 @@ class SslHandshakeServerHello(SslMessageBase):
         parser.parse_bytes('connection_id', parser['connection_id_length'])
 
         return SslHandshakeServerHello(
-            certificate=parser['certificate'],
+            certificate=bytes(parser['certificate']),
             cipher_kinds=parser['cipher_kinds'],
-            connection_id=parser['connection_id'],
-            session_id_hit=parser['session_id_hit']
+            connection_id=bytes(parser['connection_id']),
+            session_id_hit=bool(parser['session_id_hit']),
         ), parser.parsed_length
 
     def compose(self):

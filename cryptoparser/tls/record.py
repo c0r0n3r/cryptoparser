@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import abc
+import attr
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
@@ -9,35 +9,17 @@ from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsSubprotoc
 from cryptoparser.tls.subprotocol import SslMessageBase, SslMessageType, SslSubprotocolMessageParser
 
 
-class RecordBase(ParsableBase):
-    def __init__(self, messages, protocol_version):
-        self._protocol_version = protocol_version
-        self._messages = messages
-
-    @classmethod
-    @abc.abstractmethod
-    def _parse(cls, parsable):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def compose(self):
-        raise NotImplementedError()
-
-    @property
-    def protocol_version(self):
-        return self._protocol_version
-
-    @protocol_version.setter
-    @abc.abstractmethod
-    def protocol_version(self, value):
-        raise NotImplementedError()
-
-
-class TlsRecord(RecordBase):
+@attr.s
+class TlsRecord(ParsableBase):
     HEADER_SIZE = 5
 
-    def __init__(self, messages, protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2)):
-        super(TlsRecord, self).__init__(messages, protocol_version)
+    messages = attr.ib(
+        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(TlsSubprotocolMessageBase))
+    )
+    protocol_version = attr.ib(
+        default=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+        validator=attr.validators.instance_of(TlsProtocolVersionBase),
+    )
 
     @classmethod
     def parse_header(cls, parsable):
@@ -74,43 +56,25 @@ class TlsRecord(RecordBase):
 
     def compose(self):
         body_composer = ComposerBinary()
-        body_composer.compose_parsable(self._messages[0])
+        body_composer.compose_parsable(self.messages[0])
 
         header_composer = ComposerBinary()
-        content_type = self._messages[0].get_content_type()
+        content_type = self.messages[0].get_content_type()
         header_composer.compose_numeric(content_type, 1)
         header_composer.compose_parsable(self.protocol_version)
         header_composer.compose_numeric(body_composer.composed_length, 2)
 
         return header_composer.composed_bytes + body_composer.composed_bytes
 
-    @RecordBase.protocol_version.setter  # noqa: F821, pylint: disable=no-member
-    def protocol_version(self, value):
-        if not isinstance(value, TlsProtocolVersionBase):
-            raise InvalidValue(value, TlsRecord, 'protocol version')
-
-        self._protocol_version = value  # pylint: disable=attribute-defined-outside-init
-
     @property
     def content_type(self):
-        return self._messages[0].get_content_type()
-
-    @property
-    def messages(self):
-        return self._messages
-
-    @messages.setter
-    def messages(self, value):
-        if not all([issubclass(type(item), TlsSubprotocolMessageBase) for item in value]):
-            raise InvalidValue(value, TlsRecord, 'messages')
-
-        # pylint: disable=attribute-defined-outside-init
-        self._messages = value
+        return self.messages[0].get_content_type()
 
 
-class SslRecord(RecordBase):
-    def __init__(self, message):
-        super(SslRecord, self).__init__([message, ], SslVersion.SSL2)
+@attr.s
+class SslRecord(ParsableBase):
+    message = attr.ib(validator=attr.validators.instance_of(SslMessageBase))
+    protocol_version = attr.ib(init=False, default=SslVersion.SSL2, validator=attr.validators.in_(SslVersion))
 
     @classmethod
     def _parse(cls, parsable):
@@ -141,35 +105,15 @@ class SslRecord(RecordBase):
 
     def compose(self):
         body_composer = ComposerBinary()
-        message_type = self._messages[0].get_message_type()
+        message_type = self.message.get_message_type()
         body_composer.compose_numeric(message_type, 1)
-        body_composer.compose_parsable(self._messages[0])
+        body_composer.compose_parsable(self.message)
 
         header_composer = ComposerBinary()
         header_composer.compose_numeric(body_composer.composed_length | (2 ** 15), 2)
 
         return header_composer.composed_bytes + body_composer.composed_bytes
 
-    @RecordBase.protocol_version.setter  # noqa: F821, pylint: disable=no-member
-    def protocol_version(self, value):
-        if value != SslVersion.SSL2:
-            raise InvalidValue(value, SslRecord, 'protocol version')
-
-        # pylint: disable=attribute-defined-outside-init
-        self._protocol_version = value
-
-    @property
-    def message(self):
-        return self._messages[0]
-
-    @message.setter
-    def message(self, value):
-        if not issubclass(type(value), SslMessageBase):
-            raise InvalidValue(value, SslRecord, 'messages')
-
-        # pylint: disable=attribute-defined-outside-init
-        self._messages = [value, ]
-
     @property
     def content_type(self):
-        return self._messages[0].get_message_type()
+        return self.message.get_message_type()

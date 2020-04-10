@@ -62,16 +62,12 @@ class TestTlsRecord(unittest.TestCase):
             )
         self.assertEqual(context_manager.exception.bytes_needed, 1)
 
-        record = TlsRecord.parse_exact_size(
+        TlsRecord.parse_exact_size(
             b'\x15' +      # type = alert
             b'\x03\x03' +  # version = TLS 1.2
             b'\x00\x02' +  # length = 2
             b'\x02\x28'
         )
-        with self.assertRaises(InvalidValue):
-            record.protocol_version = 'invalid version'
-        with self.assertRaises(InvalidValue):
-            record.messages = ['invalid message', ]
 
         with self.assertRaises(NotEnoughData) as context_manager:
             TlsRecord.parse_exact_size(
@@ -184,11 +180,6 @@ class TestSslRecord(unittest.TestCase):
                 b'\x00\xff' +  # error_type = INVALID
                 b''
             )
-
-        with self.assertRaises(InvalidValue):
-            self.test_record.protocol_version = 'invalid version'
-        with self.assertRaises(InvalidValue):
-            self.test_record.message = 'invalid message'
 
         with self.assertRaises(NotEnoughData) as context_manager:
             SslRecord.parse_exact_size(

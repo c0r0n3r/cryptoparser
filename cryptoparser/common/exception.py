@@ -1,24 +1,28 @@
 # -*- coding: utf-8 -*-
 
 import enum
+import attr
 
 
+@attr.s
 class InvalidDataLength(Exception):
-    def __init__(self, bytes_needed=None):
-        super(InvalidDataLength, self).__init__()
-
-        self.bytes_needed = bytes_needed
+    bytes_needed = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(int)))
 
 
+@attr.s
 class NotEnoughData(InvalidDataLength):
     pass
 
 
+@attr.s
 class TooMuchData(InvalidDataLength):
     pass
 
 
+@attr.s(init=False)
 class InvalidValue(Exception):
+    value = attr.ib()
+
     def __init__(self, value, type_class, class_member=None):
         if isinstance(value, enum.IntEnum):
             message = hex(value.value)
