@@ -61,6 +61,7 @@ class ByteOrder(enum.Enum):
 @attr.s
 class ParserBinary(object):
     _parsable = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+    byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
     _parsed_length = attr.ib(init=False, default=0)
     _parsed_values = attr.ib(init=False, default=dict())
 
