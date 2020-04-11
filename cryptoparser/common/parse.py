@@ -107,6 +107,14 @@ class ParserBinary(object):
     def parse_numeric_array(self, name, item_num, item_size, numeric_class=int):
         self._parse_numeric_array(name, item_num, item_size, numeric_class)
 
+    def parse_numeric_flags(self, name, size, flags_class):
+        self._parse_numeric_array(name, 1, size, int)
+        self._parsed_values[name] = [
+            flags_class(flag & self._parsed_values[name][0])
+            for flag in flags_class
+            if flag & self._parsed_values[name][0]
+        ]
+
     def parse_bytes(self, name, size):
         if self.unparsed_length < size:
             raise NotEnoughData(bytes_needed=size - self.unparsed_length)
@@ -199,6 +207,12 @@ class ComposerBinary(object):
 
     def compose_numeric_array(self, values, item_size):
         self._compose_numeric_array(values, item_size)
+
+    def compose_numeric_flags(self, values, item_size):
+        flag = 0
+        for value in values:
+            flag |= value
+        self._compose_numeric_array([flag, ], item_size)
 
     def compose_parsable(self, value):
         self._composed += value.compose()

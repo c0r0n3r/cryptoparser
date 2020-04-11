@@ -171,3 +171,10 @@ class SerializableRecursive(Serializable):
         self.json_serializable_in_list = list([SerializableHidden(), ])
         self.json_serializable_in_tuple = tuple([SerializableHidden(), ])
         self.json_serializable_in_dict = dict({'key': SerializableHidden()})
+
+
+class FlagEnum(enum.IntEnum):
+    ONE = 1
+    TWO = 2
+    FOUR = 4
+    EIGHT = 8
