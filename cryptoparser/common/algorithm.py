@@ -80,6 +80,10 @@ class Authentication(enum.Enum):
         name='SRP',
         anonymous=False,
     )
+    EDDSA = AuthenticationParams(
+        name='EdDSA',
+        anonymous=False,
+    )
 
 
 class BlockCipher(enum.Enum):
@@ -231,6 +235,14 @@ class MAC(enum.Enum):
     SHA512 = MACParams(
         name='SHA512',
         digest_size=512
+    )
+    ED25519PH = MACParams(
+        name='Ed25519ph',
+        digest_size=255
+    )
+    ED448PH = MACParams(
+        name='Ed448ph',
+        digest_size=448
     )
 
 

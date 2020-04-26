@@ -10,6 +10,22 @@ from cryptoparser.common.base import Serializable
 from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.base import ThreeByteEnumParsable, ThreeByteEnumComposer
 
+
+class TlsCipherSuiteExtension(enum.IntEnum):
+    FALLBACK_SCSV = 0x5600
+    EMPTY_RENEGOTIATION_INFO_SCSV = 0x00ff
+
+
+class TlsCipherSuiteFactory(TwoByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsCipherSuite
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
 CipherSuiteParams = collections.namedtuple(
     'CipherSuiteParams',
     [
@@ -22,16 +38,6 @@ CipherSuiteParams = collections.namedtuple(
         'ae',
     ]
 )
-
-
-class TlsCipherSuiteFactory(TwoByteEnumParsable):
-    @classmethod
-    def get_enum_class(cls):
-        return TlsCipherSuite
-
-    @abc.abstractmethod
-    def compose(self):
-        raise NotImplementedError()
 
 
 class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
@@ -2977,6 +2983,69 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         ae=True,
+    )
+    TLS_AES_128_GCM_SHA256 = CipherSuiteParams(
+        code=0x1301,
+        key_exchange=None,
+        authentication=None,
+        bulk_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.GCM,
+        mac=MAC.SHA256,
+        ae=True,
+    )
+    TLS_AES_256_GCM_SHA384 = CipherSuiteParams(
+        code=0x1302,
+        key_exchange=None,
+        authentication=None,
+        bulk_cipher=BlockCipher.AES_256,
+        block_cipher_mode=BlockCipherMode.GCM,
+        mac=MAC.SHA384,
+        ae=True,
+    )
+    TLS_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
+        code=0x1303,
+        key_exchange=None,
+        authentication=None,
+        bulk_cipher=BlockCipher.CHACHA20,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
+        ae=True,
+    )
+    TLS_AES_128_CCM_SHA256 = CipherSuiteParams(
+        code=0x1304,
+        key_exchange=None,
+        authentication=None,
+        bulk_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.CCM,
+        mac=MAC.SHA256,
+        ae=True,
+    )
+    TLS_AES_128_CCM_8_SHA256 = CipherSuiteParams(
+        code=0x1305,
+        key_exchange=None,
+        authentication=None,
+        bulk_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.CCM_8,
+        mac=MAC.SHA256,
+        ae=True,
+    )
+    SSL_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
+        code=0xfefe,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.DES,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        ae=False,
+    )
+    SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+        code=0xfeff,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        ae=False,
     )
 
 

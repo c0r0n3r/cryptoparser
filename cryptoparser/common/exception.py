@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import enum
+
 
 class InvalidDataLength(Exception):
     def __init__(self, bytes_needed=None):
@@ -18,7 +20,14 @@ class TooMuchData(InvalidDataLength):
 
 class InvalidValue(Exception):
     def __init__(self, value, type_class, class_member=None):
-        message = hex(value) if isinstance(value, int) else '{}'.format(value)
+        if isinstance(value, enum.IntEnum):
+            message = hex(value.value)
+        elif isinstance(value, enum.Enum):
+            message = hex(value.value.code)
+        elif isinstance(value, int):
+            message = hex(value)
+        else:
+            message = '{}'.format(value)
         message = '{} is not a valid {}'.format(message, type_class.__name__)
         if class_member is not None:
             message = '{} {} value'.format(message, class_member)

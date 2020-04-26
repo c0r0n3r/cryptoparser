@@ -2,13 +2,23 @@
 
 import unittest
 
+import collections
+import copy
 import datetime
 import six
 
 from cryptoparser.common.exception import InvalidValue, InvalidType, NotEnoughData
 
-from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
-from cryptoparser.tls.extension import TlsExtensionSupportedVersions
+from cryptoparser.tls.ciphersuite import TlsCipherSuite, TlsCipherSuiteExtension, SslCipherKind
+from cryptoparser.tls.extension import (
+    TlsExtensionSupportedVersions,
+    TlsExtensionUnparsed,
+    TlsExtensionEllipticCurves,
+    TlsNamedCurve,
+    TlsExtensionECPointFormats,
+    TlsECPointFormat,
+)
+from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.subprotocol import TlsSubprotocolMessageParser, TlsHandshakeMessageVariant
 from cryptoparser.tls.subprotocol import TlsHandshakeClientHello, TlsHandshakeServerHello, TlsHandshakeHelloRandom
 from cryptoparser.tls.subprotocol import TlsCipherSuiteVector, TlsCompressionMethodVector, TlsCompressionMethod
@@ -24,11 +34,11 @@ from .classes import TestMessage, TestVariantMessage
 
 class TestSubprotocolParser(unittest.TestCase):
     def test_registered_parser(self):
-        tls_message_bytes = bytes(
-            b'\x02' +      # level = FATAL
-            b'\x28' +      # description = HANDSHAKE_FAILURE
-            b''
-        )
+        tls_message_dict = collections.OrderedDict([
+            ('level', b'\x02'),        # FATAL
+            ('description', b'\x28'),  # HANDSHAKE_FAILURE
+        ])
+        tls_message_bytes = b''.join(tls_message_dict.values())
         tls_parser = TlsSubprotocolMessageParser(TlsContentType.ALERT)
         tls_parser.parse(tls_message_bytes)
 
@@ -43,21 +53,21 @@ class TestSubprotocolParser(unittest.TestCase):
 
 class TestVariantParsable(unittest.TestCase):
     def setUp(self):
-        self.server_hello_done_bytes = bytes(
-            b'\x0e' +                              # handshake_type = SERVER_HELLO_DONE
-            b'\x00\x00\x00' +                      # length = 0x00
-            b''
-        )
+        self.server_hello_done_dict = collections.OrderedDict([
+            ('handshake_type', b'\x0e'),  # SERVER_HELLO_DONE
+            ('length', b'\x00\x00\x00'),  # 0x00
+        ])
+        self.server_hello_done_bytes = b''.join(self.server_hello_done_dict.values())
         self.server_hello_done = TlsHandshakeServerHelloDone()
 
     def test_error(self):
-        invalid_tls_message_bytes = bytes(
-            b'\x16' +      # type = HANDSHAKE
-            b'\x03\x01' +  # version = TLS1_0
-            b'\x00\x01' +  # length = 2
-            b'\xff' +
-            b''
-        )
+        invalid_tls_message_dict = collections.OrderedDict([
+            ('type', b'\x16'),         # HANDSHAKE
+            ('version', b'\x03\x01'),  # TLS1_0
+            ('length', b'\x00\x01'),
+            ('invalid_data', b'\xff'),
+        ])
+        invalid_tls_message_bytes = b''.join(invalid_tls_message_dict.values())
 
         with six.assertRaisesRegex(self, InvalidValue, 'is not a valid TlsHandshakeMessageVariant'):
             TlsHandshakeMessageVariant.parse_exact_size(invalid_tls_message_bytes)
@@ -83,19 +93,44 @@ class TestVariantParsable(unittest.TestCase):
         self.assertEqual(parsed_object.get_handshake_type(), TlsHandshakeType.SERVER_HELLO_DONE)
 
 
+class TestTlsCipherSuiteVector(unittest.TestCase):
+    def test_parse(self):
+        cipher_suites = TlsCipherSuiteVector.parse_exact_size(b'\x00\x02\x00\x00')
+        self.assertEqual(cipher_suites, TlsCipherSuiteVector([TlsCipherSuite.TLS_NULL_WITH_NULL_NULL]))
+
+        cipher_suites = TlsCipherSuiteVector.parse_exact_size(b'\x00\x04\x56\x00\x00\xff')
+        self.assertEqual(
+            cipher_suites,
+            TlsCipherSuiteVector([
+                TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.FALLBACK_SCSV),
+                TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV),
+            ])
+        )
+
+        cipher_suites = TlsCipherSuiteVector.parse_exact_size(b'\x00\x06\x56\x00\x00\x00\x00\xff')
+        self.assertEqual(
+            cipher_suites,
+            TlsCipherSuiteVector([
+                TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.FALLBACK_SCSV),
+                TlsCipherSuite.TLS_NULL_WITH_NULL_NULL,
+                TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV),
+            ])
+        )
+
+
 class TestTlsHandshake(unittest.TestCase):
     def setUp(self):
-        self.server_hello_done_bytes = bytes(
-            b'\x0e' +                              # handshake_type = SERVER_HELLO_DONE
-            b'\x00\x00\x00' +                      # length = 0x00
-            b''
-        )
-        self.server_hello_done_record_bytes = bytes(
-            b'\x16' +                              # content_type = HANDSHAKE
-            b'\x03\x01' +                          # protocol_version = TLS1_0
-            b'\x00\x04' +                          # length = 0x04
-            b''
-        )
+        self.server_hello_done_dict = collections.OrderedDict([
+            ('handshake_type', b'\x0e'),  # SERVER_HELLO_DONE
+            ('length', b'\x00\x00\x00'),
+        ])
+        self.server_hello_done_bytes = b''.join(self.server_hello_done_dict.values())
+        self.server_hello_done_record_dict = collections.OrderedDict([
+            ('content_type', b'\x16'),          # HANDSHAKE
+            ('protocol_version', b'\x03\x01'),  # TLS1_0
+            ('length', b'\x00\x04'),
+        ])
+        self.server_hello_done_record_bytes = b''.join(self.server_hello_done_record_dict.values())
 
     def test_error(self):
         with self.assertRaises(NotEnoughData) as context_manager:
@@ -118,29 +153,39 @@ class TestTlsHandshake(unittest.TestCase):
 
 class TestTlsHandshakeClientHello(unittest.TestCase):
     def setUp(self):
-        self.client_hello_minimal_bytes = bytearray(
-            b'\x01' +                              # handshake_type = CLIENT_HELLO
-            b'\x00\x00\x37' +                      # length = 0x37
-            b'\x03\x03' +                          # version = TLS1_2
-            b'\x5b\x6c\xd5\x80\x04\x05\x06\x07' +  # time + random
-            b'\x00\x01\x02\x03\x04\x05\x06\x07' +
-            b'\x00\x01\x02\x03\x04\x05\x06\x07' +
-            b'\x00\x01\x02\x03\x04\x05\x06\x07' +
-            b'\x00' +                              # session_id_length
-            b'\x00\x10' +                          # cipher_suite_length
-            b'\x00\x00\x00\x01\x00\x02\x00\x03' +  # cipher_suites
-            b'\x00\x04\x00\x05\x00\x06\x00\x07' +
-            b'\x01' +                              # compression_method_length
-            b'\x00' +                              # compression_methods
-            b''
-        )
+        self.client_hello_minimal_dict = collections.OrderedDict([
+            ('handshake_type ', b'\x01'),  # CLIENT_HELLO
+            ('length ', b'\x00\x00\x37'),
+            ('version ', b'\x03\x03'),
+            ('random ',
+             b'\x5b\x6c\xd5\x80\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b''),
+            ('session_id_length', b'\x00'),
+            ('cipher_suite_length', b'\x00\x10'),
+            ('cipher_suites',
+             b'\x0a\x0a\x00\x01\x00\x02\x00\x03' +
+             b'\x00\x04\x00\x05\x56\x00\x00\xff' +
+             b''),
+            ('compression_method_length', b'\x01'),
+            ('compression_methods', b'\x00'),
+        ])
+        self.client_hello_minimal_bytes = b''.join(self.client_hello_minimal_dict.values())
+        self.client_hello_minimal_extensions_dict = collections.OrderedDict([
+            ('extensions_length', b'\x00\x0d'),
+            ('extension_type', b'\x00\x2b'),  # SUPPORTED_VERSIONS
+            ('extension_length', b'\x00\x05'),
+            ('supported_version_list_length', b'\x04'),
+            ('supported_version_list', b'\x03\x02\x03\x03'),  # TLS1_1, TLS1_2
+            ('extension_grease', b'\x0a\x0a'),
+            ('extension_grease_length', b'\x00\x00'),
+        ])
+        self.client_hello_minimal_extensions_bytes = b''.join(self.client_hello_minimal_extensions_dict.values())
         self.client_hello_extension_bytes = bytearray(
             self.client_hello_minimal_bytes +
-            b'\x00\x09' +                          # extensions_length = 9
-            b'\x00\x2b' +                          # extension_type = SUPPORTED_VERSIONS
-            b'\x00\x05' +                          # extension_length = 5
-            b'\x04' +                              # supported_version_list_length = 4
-            b'\x03\x02\x03\x03' +                  # supported_version_list
+            self.client_hello_minimal_extensions_bytes +
             b''
         )
         self.client_hello_extension_bytes[3] += (
@@ -151,14 +196,12 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
         self.random_time = datetime.datetime(2018, 8, 10, tzinfo=None)
         self.client_hello_minimal = TlsHandshakeClientHello(
             TlsCipherSuiteVector([
-                TlsCipherSuite.TLS_NULL_WITH_NULL_NULL,
+                TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A),
                 TlsCipherSuite.TLS_RSA_WITH_NULL_MD5,
                 TlsCipherSuite.TLS_RSA_WITH_NULL_SHA,
                 TlsCipherSuite.TLS_RSA_EXPORT_WITH_RC4_40_MD5,
                 TlsCipherSuite.TLS_RSA_WITH_RC4_128_MD5,
                 TlsCipherSuite.TLS_RSA_WITH_RC4_128_SHA,
-                TlsCipherSuite.TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5,
-                TlsCipherSuite.TLS_RSA_WITH_IDEA_CBC_SHA
             ]),
             TlsProtocolVersionFinal(TlsVersion.TLS1_2),
             TlsHandshakeHelloRandom(
@@ -174,6 +217,8 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             TlsSessionIdVector(()),
             TlsCompressionMethodVector([TlsCompressionMethod.NULL, ]),
             TlsExtensions(()),
+            fallback_scsv=True,
+            empty_renegotiation_info_scsv=True,
         )
 
     def test_parse(self):
@@ -210,14 +255,19 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             client_hello_minimal.extensions,
             self.client_hello_minimal.extensions
         )
+        self.assertTrue(client_hello_minimal.fallback_scsv)
+        self.assertTrue(client_hello_minimal.empty_renegotiation_info_scsv)
 
         client_hello_extension = TlsHandshakeClientHello.parse_exact_size(self.client_hello_extension_bytes)
         self.assertEqual(
             client_hello_extension.extensions,
-            TlsExtensions([TlsExtensionSupportedVersions([
-                TlsProtocolVersionFinal(TlsVersion.TLS1_1),
-                TlsProtocolVersionFinal(TlsVersion.TLS1_2),
-            ])])
+            TlsExtensions([
+                TlsExtensionSupportedVersions([
+                    TlsProtocolVersionFinal(TlsVersion.TLS1_1),
+                    TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+                ]),
+                TlsExtensionUnparsed(TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A), b'')
+            ])
         )
 
     def test_compose(self):
@@ -231,22 +281,38 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             self.client_hello_extension_bytes
         )
 
+    def test_ja3(self):
+        client_hello_minimal = copy.copy(self.client_hello_minimal)
+        self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,,,')
+
+        client_hello_minimal.extensions.append(TlsExtensionEllipticCurves([TlsNamedCurve.SECT163K1]))
+        self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10,1,')
+        client_hello_minimal.extensions[0].elliptic_curves.append(TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A))
+        self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10,1,')
+
+        client_hello_minimal.extensions.append(TlsExtensionECPointFormats([TlsECPointFormat.UNCOMPRESSED]))
+        self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10-11,1,0')
+        client_hello_minimal.extensions[1].point_formats.append(TlsInvalidTypeOneByte(TlsGreaseOneByte.GREASE_0B))
+        self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10-11,1,0')
+
 
 class TestTlsHandshakeServerHello(unittest.TestCase):
     def setUp(self):
-        self.server_hello_minimal_bytes = bytearray(
-            b'\x02' +                              # handshake_type = SERVER_HELLO
-            b'\x00\x00\x26' +                      # length = 0x28
-            b'\x03\x03' +                          # version = TLS1_2
-            b'\x5b\x6c\xd5\x80\x04\x05\x06\x07' +  # time + random
-            b'\x00\x01\x02\x03\x04\x05\x06\x07' +
-            b'\x00\x01\x02\x03\x04\x05\x06\x07' +
-            b'\x00\x01\x02\x03\x04\x05\x06\x07' +
-            b'\x00' +                              # session_id_length
-            b'\x00\x01' +                          # cipher_suite
-            b'\x00' +                              # compression_method
-            b''
-        )
+        self.server_hello_minimal_dict = collections.OrderedDict([
+            ('handshake_type', b'\x02'),              # SERVER_HELLO
+            ('length', b'\x00\x00\x26'),
+            ('version', b'\x03\x03'),                 # TLS1_2
+            ('random',
+             b'\x5b\x6c\xd5\x80\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b''),
+            ('session_id_length', b'\x00'),
+            ('cipher_suite', b'\x00\x01'),
+            ('compression_method', b'\x00'),
+        ])
+        self.server_hello_minimal_bytes = b''.join(self.server_hello_minimal_dict.values())
 
         self.server_hello_minimal = TlsHandshakeServerHello(
             TlsProtocolVersionFinal(TlsVersion.TLS1_2),
@@ -302,16 +368,16 @@ class TestTlsHandshakeServerHello(unittest.TestCase):
 
 class TestTlsHandshakeCertificate(unittest.TestCase):
     def setUp(self):
-        self.certificate_minimal_bytes = bytearray(
-            b'\x0b' +                              # handshake_type = CERTIFICATE
-            b'\x00\x00\x31' +                      # length = 0x31
-            b'\x00\x00\x2e' +                      # cretificates length = 0x2e
-            b'\x00\x00\x10' +                      # cretificate length = 0x10
-            b'peer certificate' +                  # certificate
-            b'\x00\x00\x18' +                      # cretificate length = 0x18
-            b'intermediate certificate' +          # certificate
-            b''
-        )
+        self.certificate_minimal_dict = collections.OrderedDict([
+            ('handshake_type', b'\x0b'),                  # CERTIFICATE
+            ('length', b'\x00\x00\x31'),
+            ('cretificates', b'\x00\x00\x2e'),
+            ('peer_cretificate_length', b'\x00\x00\x10'),
+            ('peer_certificate_bytes', b'peer certificate'),
+            ('intermrdiate_cretificate_length', b'\x00\x00\x18'),
+            ('intermrdiate_certificate_bytes', b'intermediate certificate'),
+        ])
+        self.certificate_minimal_bytes = b''.join(self.certificate_minimal_dict.values())
 
         self.certificate_minimal = TlsHandshakeCertificate(
             TlsCertificates([
@@ -337,11 +403,11 @@ class TestTlsHandshakeCertificate(unittest.TestCase):
 
 class TestTlsHandshakeServerHelloDone(unittest.TestCase):
     def setUp(self):
-        self.server_hello_done_bytes = bytearray(
-            b'\x0e' +                              # handshake_type = SERVER_HELLO_DONE
-            b'\x00\x00\x00' +                      # length = 0x00
-            b''
-        )
+        self.server_hello_done_dict = collections.OrderedDict([
+            ('handshake_type', b'\x0e'),  # SERVER_HELLO_DONE
+            ('length', b'\x00\x00\x00'),  # 0x00
+        ])
+        self.server_hello_done_bytes = b''.join(self.server_hello_done_dict.values())
 
         self.server_hello_done = TlsHandshakeServerHelloDone()
 
@@ -363,12 +429,12 @@ class TestTlsHandshakeServerHelloDone(unittest.TestCase):
 class TestTlsHandshakeServerKeyExcahnge(unittest.TestCase):
     def setUp(self):
         self.param_bytes = b'\x00\x01\x02\x03\x04\x05\x06\x07'
-        self.server_key_exchange_bytes = bytes(
-            b'\x0c' +                              # handshake_type = SERVER_KEY_EXCHANGE
-            b'\x00\x00\x08' +                      # length = 0x00
-            self.param_bytes +                     # param_bytes
-            b''
-        )
+        self.server_key_exchange_dict = collections.OrderedDict([
+            ('handshake_type', b'\x0c'),       # SERVER_KEY_EXCHANGE
+            ('length', b'\x00\x00\x08'),
+            ('param_bytes', self.param_bytes),
+        ])
+        self.server_key_exchange_bytes = b''.join(self.server_key_exchange_dict.values())
 
         self.server_key_exchange = TlsHandshakeServerKeyExchange(self.param_bytes)
 
@@ -386,17 +452,19 @@ class TestTlsHandshakeServerKeyExcahnge(unittest.TestCase):
 
 class TestSslHandshakeClientHello(unittest.TestCase):
     def setUp(self):
-        self.client_hello_bytes = bytearray(
-            b'\x00\x02' +                          # version = SSL2
-            b'\x00\x06' +                          # cipher_kinds_length = 0x06
-            b'\x00\x08' +                          # session_id_length = 0x08
-            b'\x00\x10' +                          # challenge_length = 0x10
-            b'\x01\x00\x80\x07\x00\xc0' +          # cipher_kinds
-            b'\x00\x01\x02\x03\x04\x05\x06\x07' +  # session_id
-            b'\x00\x01\x02\x03\x04\x05\x06\x07' +  # challenge
-            b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
-            b''
-        )
+        self.client_hello_dict = collections.OrderedDict([
+            ('version', b'\x00\x02'),                              # SSL2
+            ('cipher_kinds_length', b'\x00\x06'),
+            ('session_id_length', b'\x00\x08'),
+            ('challenge_length', b'\x00\x10'),
+            ('cipher_kinds', b'\x01\x00\x80\x07\x00\xc0'),
+            ('session_id', b'\x00\x01\x02\x03\x04\x05\x06\x07'),
+            ('challenge',
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+             b'')
+        ])
+        self.client_hello_bytes = b''.join(self.client_hello_dict.values())
 
         self.client_hello = SslHandshakeClientHello(
             cipher_kinds=[
@@ -418,19 +486,21 @@ class TestSslHandshakeClientHello(unittest.TestCase):
 
 class TestSslHandshakeServerHello(unittest.TestCase):
     def setUp(self):
-        self.server_hello_bytes = bytearray(
-            b'\x00' +                              # session_id_hit = False
-            b'\x01' +                              # certificate_type = X509_CERTIFICATE
-            b'\x00\x02' +                          # version = SSL2
-            b'\x00\x0b' +                          # certificate_length = 0x0b
-            b'\x00\x06' +                          # cipher_kinds_length = 0x06
-            b'\x00\x10' +                          # connection_id_length = 0x10
-            b'certificate' +                       # certificate
-            b'\x01\x00\x80\x07\x00\xc0' +          # cipher_kinds
-            b'\x00\x01\x02\x03\x04\x05\x06\x07' +  # connection_id
-            b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
-            b''
-        )
+        self.server_hello_done_dict = collections.OrderedDict([
+            ('session_id_hit', b'\x00'),                    # False
+            ('certificate_type', b'\x01'),                  # X509_CERTIFICATE
+            ('version', b'\x00\x02'),                       # SSL2
+            ('certificate_length', b'\x00\x0b'),
+            ('cipher_kinds_length', b'\x00\x06'),
+            ('connection_id_length', b'\x00\x10'),
+            ('certificate', b'certificate'),
+            ('cipher_kinds', b'\x01\x00\x80\x07\x00\xc0'),
+            ('connection_id',
+             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+             b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
+             b''),
+        ])
+        self.server_hello_bytes = b''.join(self.server_hello_done_dict.values())
 
         self.server_hello = SslHandshakeServerHello(
             certificate=b'certificate',

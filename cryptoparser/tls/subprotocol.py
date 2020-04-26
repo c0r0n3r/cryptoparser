@@ -10,9 +10,14 @@ from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorP
 from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
-from cryptoparser.tls.extension import TlsExtensions
+from cryptoparser.tls.extension import TlsExtensions, TlsExtensionType
+from cryptoparser.tls.grease import TlsInvalidType, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
-from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory, SslCipherKindFactory
+from cryptoparser.tls.ciphersuite import (
+    SslCipherKindFactory,
+    TlsCipherSuiteExtension,
+    TlsCipherSuiteFactory,
+)
 
 
 class TlsContentType(enum.IntEnum):
@@ -423,7 +428,7 @@ class TlsCipherSuiteVector(VectorParsable):
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsCipherSuiteFactory,
-            fallback_class=None,
+            fallback_class=TlsInvalidTypeTwoByte,
             min_byte_num=2, max_byte_num=2 ** 16 - 2
         )
 
@@ -458,11 +463,15 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
             session_id=TlsSessionIdVector(()),
             compression_methods=TlsCompressionMethodVector([TlsCompressionMethod.NULL, ]),
             extensions=(),
+            fallback_scsv=False,
+            empty_renegotiation_info_scsv=False,
     ):
         super(TlsHandshakeClientHello, self).__init__(protocol_version, random_bytes, session_id, extensions)
 
         self.cipher_suites = TlsCipherSuiteVector(cipher_suites)
         self.compression_methods = compression_methods
+        self.fallback_scsv = fallback_scsv
+        self.empty_renegotiation_info_scsv = empty_renegotiation_info_scsv
 
     @classmethod
     def get_handshake_type(cls):
@@ -479,13 +488,26 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
 
         extension_parser = cls._parse_extensions(handshake_header_parser, parser)
 
+        cipher_suites = []
+        fallback_scsv = False
+        empty_renegotiation_info_scsv = False
+        for cipher_suite in parser['cipher_suites']:
+            if cipher_suite.value.code == TlsCipherSuiteExtension.FALLBACK_SCSV:
+                fallback_scsv = True
+            elif cipher_suite.value.code == TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV:
+                empty_renegotiation_info_scsv = True
+            else:
+                cipher_suites.append(cipher_suite)
+
         return TlsHandshakeClientHello(
-            parser['cipher_suites'],
+            cipher_suites,
             parser['protocol_version'],
             parser['random'],
             parser['session_id'],
             parser['compression_methods'],
             extensions=parser['extensions'] if extension_parser else TlsExtensions([]),
+            fallback_scsv=fallback_scsv,
+            empty_renegotiation_info_scsv=empty_renegotiation_info_scsv,
         ), handshake_header_parser.parsed_length
 
     def compose(self):
@@ -494,7 +516,15 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
         payload_composer.compose_parsable(self.protocol_version)
         payload_composer.compose_parsable(self.random)
         payload_composer.compose_parsable(self.session_id)
+        if self.fallback_scsv:
+            self.cipher_suites.append(TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.FALLBACK_SCSV))
+        if self.empty_renegotiation_info_scsv:
+            self.cipher_suites.append(TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV))
         payload_composer.compose_parsable(self.cipher_suites)
+        if self.fallback_scsv:
+            del self.cipher_suites[-1]
+        if self.empty_renegotiation_info_scsv:
+            del self.cipher_suites[-1]
         payload_composer.compose_parsable(self.compression_methods)
 
         extension_bytes = self._compose_extensions()
@@ -502,6 +532,43 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
         header_bytes = self._compose_header(payload_composer.composed_length + len(extension_bytes))
 
         return header_bytes + payload_composer.composed_bytes + extension_bytes
+
+    def ja3(self):
+        parser = ParserBinary(self.protocol_version.compose())
+        parser.parse_numeric('tls_protocol_version', 2)
+
+        cipher_suites = [str(cipher_suite.value.code) for cipher_suite in self.cipher_suites]
+
+        extension_types = []
+        named_curves = []
+        ec_point_formats = []
+        for extension in self.extensions:
+            if (not isinstance(extension.extension_type, TlsInvalidTypeTwoByte) or
+                    extension.extension_type.value.value_type != TlsInvalidType.GREASE):
+                extension_types.append(str(extension.extension_type.value.code))
+
+            if extension.extension_type == TlsExtensionType.SUPPORTED_GROUPS:
+                named_curves = [
+                    str(named_curve.value.code)
+                    for named_curve in extension.elliptic_curves
+                    if (not isinstance(named_curve, TlsInvalidTypeTwoByte) or
+                        named_curve.value.value_type != TlsInvalidType.GREASE)
+                ]
+            elif extension.extension_type == TlsExtensionType.EC_POINT_FORMATS:
+                ec_point_formats = [
+                    str(point_format.value.code)
+                    for point_format in extension.point_formats
+                    if (not isinstance(point_format, TlsInvalidTypeOneByte) or
+                        point_format.value.value_type != TlsInvalidType.GREASE)
+                ]
+
+        return ','.join([
+            str(parser['tls_protocol_version']),
+            '-'.join(cipher_suites),
+            '-'.join(extension_types),
+            '-'.join(named_curves),
+            '-'.join(ec_point_formats),
+        ])
 
 
 class TlsHandshakeServerHello(TlsHandshakeHello):

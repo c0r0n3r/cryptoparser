@@ -7,11 +7,13 @@ from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.tls.extension import TlsExtensionUnparsed, TlsExtensionParsed
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
 
+from cryptoparser.tls.extension import TlsExtensionType
 from cryptoparser.tls.extension import TlsExtensionServerName
 from cryptoparser.tls.extension import TlsExtensionECPointFormats, TlsECPointFormat
 from cryptoparser.tls.extension import TlsExtensionEllipticCurves, TlsNamedCurve
 from cryptoparser.tls.extension import TlsExtensionSupportedVersions
 from cryptoparser.tls.extension import TlsExtensionSignatureAlgorithms, TlsSignatureAndHashAlgorithm
+from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 
 
 class TestExtensionUnparsed(unittest.TestCase):
@@ -74,7 +76,7 @@ class TestExtensionParsed(unittest.TestCase):
         with self.assertRaises(InvalidValue) as context_manager:
             # pylint: disable=expression-not-assigned
             ExtensionInvalidType.parse_exact_size(extension_invalid_type_bytes)
-        self.assertEqual(context_manager.exception.value, 0x0000)
+        self.assertEqual(context_manager.exception.value, TlsExtensionType.SERVER_NAME)
 
 
 class TestExtensionHostname(unittest.TestCase):
@@ -127,14 +129,20 @@ class TestExtensionECPointFormat(unittest.TestCase):
     def test_parse(self):
         extension_ec_point_formats_dict = collections.OrderedDict([
             ('extension_type', b'\x00\x0b'),
-            ('extension_length', b'\x00\x02'),
-            ('ec_point_format_list_length', b'\x01'),
-            ('ec_point_format_list', b'\x00'),
+            ('extension_length', b'\x00\x03'),
+            ('ec_point_format_list_length', b'\x02'),
+            ('ec_point_format_list', b'\x00\x0b'),
         ])
         extension_ec_point_formats_bytes = b''.join(extension_ec_point_formats_dict.values())
 
         extension_point_formats = TlsExtensionECPointFormats.parse_exact_size(extension_ec_point_formats_bytes)
-        self.assertEqual(list(extension_point_formats.point_formats), [TlsECPointFormat.UNCOMPRESSED, ])
+        self.assertEqual(
+            list(extension_point_formats.point_formats),
+            [
+                TlsECPointFormat.UNCOMPRESSED,
+                TlsInvalidTypeOneByte(TlsGreaseOneByte.GREASE_0B),
+            ]
+        )
         self.assertEqual(extension_point_formats.compose(), extension_ec_point_formats_bytes)
 
 
@@ -142,9 +150,9 @@ class TestExtensionEllipticCurves(unittest.TestCase):
     def test_parse(self):
         extension_elliptic_curves_dict = collections.OrderedDict([
             ('extension_type', b'\x00\x0a'),
-            ('extension_length', b'\x00\x08'),
-            ('elliptic_curve_list_length', b'\x00\x06'),
-            ('elliptic_curve_list', b'\x00\x1d\x00\x17\x00\x18'),
+            ('extension_length', b'\x00\x0a'),
+            ('elliptic_curve_list_length', b'\x00\x08'),
+            ('elliptic_curve_list', b'\x00\x1d\x00\x17\x00\x18\x0a\x0a'),
         ])
         extension_elliptic_curves_bytes = b''.join(extension_elliptic_curves_dict.values())
 
@@ -155,6 +163,7 @@ class TestExtensionEllipticCurves(unittest.TestCase):
                 TlsNamedCurve.X25519,
                 TlsNamedCurve.SECP256R1,
                 TlsNamedCurve.SECP384R1,
+                TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A),
             ]
         )
         self.assertEqual(extension_elliptic_curves.compose(), extension_elliptic_curves_bytes)
@@ -164,9 +173,9 @@ class TestExtensionSupportedVersions(unittest.TestCase):
     def test_parse(self):
         extension_supported_versions_dict = collections.OrderedDict([
             ('extension_type', b'\x00\x2b'),
-            ('extension_length', b'\x00\x07'),
-            ('supported_version_list_length', b'\x06'),
-            ('supported_version_list', b'\x03\x02\x03\x03\x7f\x18'),
+            ('extension_length', b'\x00\x09'),
+            ('supported_version_list_length', b'\x08'),
+            ('supported_version_list', b'\x03\x02\x03\x03\x7f\x18\x0a\x0a'),
         ])
         extension_supported_versions_bytes = b''.join(extension_supported_versions_dict.values())
         extension_supported_versions = TlsExtensionSupportedVersions.parse_exact_size(
@@ -178,6 +187,7 @@ class TestExtensionSupportedVersions(unittest.TestCase):
                 TlsProtocolVersionFinal(TlsVersion.TLS1_1),
                 TlsProtocolVersionFinal(TlsVersion.TLS1_2),
                 TlsProtocolVersionDraft(24),
+                TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A),
             ]
         )
         self.assertEqual(extension_supported_versions.compose(), extension_supported_versions_bytes)
@@ -187,9 +197,9 @@ class TestExtensionSignatureAlgorithms(unittest.TestCase):
     def test_parse(self):
         extension_signature_algorithms_dict = collections.OrderedDict([
             ('extension_type', b'\x00\x0d'),
-            ('extension_length', b'\x00\x0a'),
-            ('signature_algorithm_list_length', b'\x00\x08'),
-            ('signature_algorithm_list', b'\x01\x00\x02\x01\x03\x02\x04\x03'),
+            ('extension_length', b'\x00\x0c'),
+            ('signature_algorithm_list_length', b'\x00\x0a'),
+            ('signature_algorithm_list', b'\x01\x00\x02\x01\x03\x02\x04\x03\x0a\x0a'),
         ])
         extension_signature_algorithms_bytes = b''.join(extension_signature_algorithms_dict.values())
         extension_signature_algorithms = TlsExtensionSignatureAlgorithms.parse_exact_size(
@@ -202,6 +212,7 @@ class TestExtensionSignatureAlgorithms(unittest.TestCase):
                 TlsSignatureAndHashAlgorithm.RSA_SHA1,
                 TlsSignatureAndHashAlgorithm.DSA_SHA224,
                 TlsSignatureAndHashAlgorithm.ECDSA_SHA256,
+                TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A),
             ]
         )
         self.assertEqual(extension_signature_algorithms.compose(), extension_signature_algorithms_bytes)

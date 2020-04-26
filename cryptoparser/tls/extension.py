@@ -4,60 +4,193 @@ import abc
 import enum
 import collections
 
+from cryptoparser.common.base import Serializable
+from cryptoparser.common.base import OneByteEnumComposer, OneByteEnumParsable
 from cryptoparser.common.base import Vector, VectorParsable, VectorParsableDerived
 from cryptoparser.common.base import VectorParamNumeric, VectorParamParsable
 from cryptoparser.common.algorithm import Authentication, MAC, NamedGroup
 from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
+from cryptoparser.tls.grease import TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsProtocolVersionBase
 
 
 TlsNamedCurveParams = collections.namedtuple('TlsNamedCurveParams', ['code', 'named_group', ])
+TlsExtensionTypeParams = collections.namedtuple('TlsExtensionTypeParams', ['code', ])
+TlsECPointFormatParams = collections.namedtuple('TlsECPointFormatParams', ['code', ])
 
 
-class TlsExtensionType(enum.IntEnum):
-    SERVER_NAME = 0x0000                             # [RFC6066]
-    MAX_FRAGMENT_LENGTH = 0x0001                     # [RFC6066]
-    CLIENT_CERTIFICATE_URL = 0x0002                  # [RFC6066]
-    TRUSTED_CA_KEYS = 0x0003                         # [RFC6066]
-    TRUNCATED_HMAC = 0x0004                          # [RFC6066]
-    STATUS_REQUEST = 0x0005                          # [RFC6066]
-    USER_MAPPING = 0x0006                            # [RFC4681]
-    CLIENT_AUTHZ = 0x0007                            # [RFC5878]
-    SERVER_AUTHZ = 0x0008                            # [RFC5878]
-    CERT_TYPE = 0x0009                               # [RFC6091]
-    SUPPORTED_GROUPS = 0x000a                        # [RFC-IETF-TLS-RFC]
-    EC_POINT_FORMATS = 0x000b                        # [RFC-IETF-TLS-RFC]
-    SRP = 0x000c                                     # [RFC5054]
-    SIGNATURE_ALGORITHMS = 0x000d                    # [RFC5246]
-    USE_SRTP = 0x000e                                # [RFC5764]
-    HEARTBEAT = 0x000f                               # [RFC6520]
-    APPLICATION_LAYER_PROTOCOL_NEGOTIATION = 0x0010  # [RFC7301]
-    STATUS_REQUEST_V = 0x0011                        # [RFC6961]
-    SIGNED_CERTIFICATE_TIMESTAMP = 0x0012            # [RFC6962]
-    CLIENT_CERTIFICATE_TYPE = 0x0013                 # [RFC7250]
-    SERVER_CERTIFICATE_TYPE = 0x0014                 # [RFC7250]
-    PADDING = 0x0015                                 # [RFC7685]
-    ENCRYPT_THEN_MAC = 0x0016                        # [RFC7366]
-    EXTENDED_MASTER_SECRET = 0x0017                  # [RFC7627]
-    TOKEN_BINDING = 0x0018                           # [DRAFT-IETF-TOKBIND-NEGOTIATION]
-    CACHED_INFO = 0x0019                             # [RFC7924]
-    RECORD_SIZE_LIMIT = 0x001c                       # [RFC8849]
-    PWD_PROTECT = 0x001d                             # [RFC-HARKINS-TLS-DRAGONFLY-03]
-    PWD_CLEAR = 0x001e                               # [RFC-HARKINS-TLS-DRAGONFLY-03]
-    PASSWORD_SALT = 0x001f                           # [RFC-HARKINS-TLS-DRAGONFLY-03]
-    SESSION_TICKET = 0x0023                          # [RFC4507]
-    KEY_SHARE_RESERVED = 0x0028                      # [DRAFT-IETF-TLS-TLS13-20]
-    PRE_SHARED_KEY = 0x0029                          # [DRAFT-IETF-TLS-TLS13-20]
-    EARLY_DATA = 0x002a                              # [DRAFT-IETF-TLS-TLS13-20]
-    SUPPORTED_VERSIONS = 0x002b                      # [DRAFT-IETF-TLS-TLS13-20]
-    COOKIE = 0x002c                                  # [DRAFT-IETF-TLS-TLS13-20]
-    PSK_KEY_EXCHANGE_MODES = 0x002d                  # [DRAFT-IETF-TLS-TLS13-20]
-    CERTIFICATE_AUTHORITIES = 0x002f                 # [DRAFT-IETF-TLS-TLS13-20]
-    OID_FILTERS = 0x0030                             # [DRAFT-IETF-TLS-TLS13-20]
-    POST_HANDSHAKE_AUTH = 0x0030                     # [DRAFT-IETF-TLS-TLS13-20]
-    RENEGOTIATION_INFO = 0Xff01                      # [RFC5746]
+class TlsExtensionTypeFactory(TwoByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsExtensionType
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+class TlsExtensionType(Serializable, TwoByteEnumComposer, enum.Enum):
+    SERVER_NAME = TlsExtensionTypeParams(                             # [RFC6066]
+        code=0x0000
+    )
+    MAX_FRAGMENT_LENGTH = TlsExtensionTypeParams(                     # [RFC6066]
+        code=0x0001
+    )
+    CLIENT_CERTIFICATE_URL = TlsExtensionTypeParams(                  # [RFC6066]
+        code=0x0002
+    )
+    TRUSTED_CA_KEYS = TlsExtensionTypeParams(                         # [RFC6066]
+        code=0x0003
+    )
+    TRUNCATED_HMAC = TlsExtensionTypeParams(                          # [RFC6066]
+        code=0x0004
+    )
+    STATUS_REQUEST = TlsExtensionTypeParams(                          # [RFC6066]
+        code=0x0005
+    )
+    USER_MAPPING = TlsExtensionTypeParams(                            # [RFC4681]
+        code=0x0006
+    )
+    CLIENT_AUTHZ = TlsExtensionTypeParams(                            # [RFC5878]
+        code=0x0007
+    )
+    SERVER_AUTHZ = TlsExtensionTypeParams(                            # [RFC5878]
+        code=0x0008
+    )
+    CERT_TYPE = TlsExtensionTypeParams(                               # [RFC6091]
+        code=0x0009
+    )
+    SUPPORTED_GROUPS = TlsExtensionTypeParams(                        # [RFC-IETF-TLS-RFC]
+        code=0x000a
+    )
+    EC_POINT_FORMATS = TlsExtensionTypeParams(                        # [RFC-IETF-TLS-RFC]
+        code=0x000b
+    )
+    SRP = TlsExtensionTypeParams(                                     # [RFC5054]
+        code=0x000c
+    )
+    SIGNATURE_ALGORITHMS = TlsExtensionTypeParams(                    # [RFC5246]
+        code=0x000d
+    )
+    USE_SRTP = TlsExtensionTypeParams(                                # [RFC5764]
+        code=0x000e
+    )
+    HEARTBEAT = TlsExtensionTypeParams(                               # [RFC6520]
+        code=0x000f
+    )
+    APPLICATION_LAYER_PROTOCOL_NEGOTIATION = TlsExtensionTypeParams(  # [RFC7301]
+        code=0x0010
+    )
+    STATUS_REQUEST_V2 = TlsExtensionTypeParams(                       # [RFC6961]
+        code=0x0011
+    )
+    SIGNED_CERTIFICATE_TIMESTAMP = TlsExtensionTypeParams(            # [RFC6962]
+        code=0x0012
+    )
+    CLIENT_CERTIFICATE_TYPE = TlsExtensionTypeParams(                 # [RFC7250]
+        code=0x0013
+    )
+    SERVER_CERTIFICATE_TYPE = TlsExtensionTypeParams(                 # [RFC7250]
+        code=0x0014
+    )
+    PADDING = TlsExtensionTypeParams(                                 # [RFC7685]
+        code=0x0015
+    )
+    ENCRYPT_THEN_MAC = TlsExtensionTypeParams(                        # [RFC7366]
+        code=0x0016
+    )
+    EXTENDED_MASTER_SECRET = TlsExtensionTypeParams(                  # [RFC7627]
+        code=0x0017
+    )
+    TOKEN_BINDING = TlsExtensionTypeParams(                           # [DRAFT-IETF-TOKBIND-NEGOTIATION]
+        code=0x0018
+    )
+    CACHED_INFO = TlsExtensionTypeParams(                             # [RFC7924]
+        code=0x0019
+    )
+    COMPRESS_CERTIFICATE = TlsExtensionTypeParams(                    # [RFC-ietf-tls-certificate-compression-09]
+        code=0x001b
+    )
+    RECORD_SIZE_LIMIT = TlsExtensionTypeParams(                       # [RFC8849]
+        code=0x001c
+    )
+    PWD_PROTECT = TlsExtensionTypeParams(                             # [RFC-HARKINS-TLS-DRAGONFLY-03]
+        code=0x001d
+    )
+    PWD_CLEAR = TlsExtensionTypeParams(                               # [RFC-HARKINS-TLS-DRAGONFLY-03]
+        code=0x001e
+    )
+    PASSWORD_SALT = TlsExtensionTypeParams(                           # [RFC-HARKINS-TLS-DRAGONFLY-03]
+        code=0x001f
+    )
+    TICKET_PINNING = TlsExtensionTypeParams(                          # [RFC8672]
+        code=0x0020
+    )
+    TLS_CERT_WITH_EXTERN_PSK = TlsExtensionTypeParams(                # [RFC-IETF-TLS-TLS13-CERT-WITH-EXTERN-PSK-07]
+        code=0x0021
+    )
+    SESSION_TICKET = TlsExtensionTypeParams(                          # [RFC4507]
+        code=0x0023
+    )
+    KEY_SHARE_RESERVED = TlsExtensionTypeParams(                      # [DRAFT-IETF-TLS-TLS13-20]
+        code=0x0028
+    )
+    PRE_SHARED_KEY = TlsExtensionTypeParams(                          # [DRAFT-IETF-TLS-TLS13-20]
+        code=0x0029
+    )
+    EARLY_DATA = TlsExtensionTypeParams(                              # [DRAFT-IETF-TLS-TLS13-20]
+        code=0x002a
+    )
+    SUPPORTED_VERSIONS = TlsExtensionTypeParams(                      # [DRAFT-IETF-TLS-TLS13-20]
+        code=0x002b
+    )
+    COOKIE = TlsExtensionTypeParams(                                  # [DRAFT-IETF-TLS-TLS13-20]
+        code=0x002c
+    )
+    PSK_KEY_EXCHANGE_MODES = TlsExtensionTypeParams(                  # [DRAFT-IETF-TLS-TLS13-20]
+        code=0x002d
+    )
+    CERTIFICATE_AUTHORITIES = TlsExtensionTypeParams(                 # [DRAFT-IETF-TLS-TLS13-20]
+        code=0x002f
+    )
+    OID_FILTERS = TlsExtensionTypeParams(                             # [DRAFT-IETF-TLS-TLS13-20]
+        code=0x0030
+    )
+    POST_HANDSHAKE_AUTH = TlsExtensionTypeParams(                     # [DRAFT-IETF-TLS-TLS13-20]
+        code=0x0031
+    )
+    SIGNATURE_ALGORITHMS_CERT = TlsExtensionTypeParams(               # [DRAFT-IETF-TLS-TLS13-23]
+        code=0x0032
+    )
+    KEY_SHARE = TlsExtensionTypeParams(                               # [DRAFT-IETF-TLS-TLS13-23]
+        code=0x0033
+    )
+    TRANSPARENCY_INFO = TlsExtensionTypeParams(                       # [DRAFT-IETF-TRANS-RFC6962-BIS]
+        code=0x0034
+    )
+    CONNECTION_ID = TlsExtensionTypeParams(                           # [DRAFT-IETF-TLS-DTLS-CONNECTION-ID]
+        code=0x0035
+    )
+    EXTERNAL_ID_HASH = TlsExtensionTypeParams(                        # [RFC-IETF-MMUSIC-SDP-UKS-07]
+        code=0x0037
+    )
+    EXTERNAL_SESSION_ID = TlsExtensionTypeParams(                     # [RFC-IETF-MMUSIC-SDP-UKS-07]
+        code=0x0038
+    )
+    NEXT_PROTOCOL_NEGOTIATION = TlsExtensionTypeParams(               # [DRAFT-AGL-TLS-NEXTPROTONEG-04]
+        code=0x3374
+    )
+    CHANNEL_ID = TlsExtensionTypeParams(                              # [DRAFT-BALFANZ-TLS-OBC-01]
+        code=0x7550
+    )
+    RENEGOTIATION_INFO = TlsExtensionTypeParams(                      # [DRAFT-AGL-TLS-NEXTPROTONEG-03]
+        code=0xff01
+    )
+    RECORD_HEADER = TlsExtensionTypeParams(                           # [DRAFT-FOSSATI-TLS-EXT-HEADER]
+        code=0xff03
+    )
 
 
 class TlsExtensions(VectorParsableDerived):
@@ -84,10 +217,19 @@ class TlsExtensionBase(ParsableBase):
         raise NotImplementedError()
 
     @classmethod
-    def _parse_header(cls, parsable):
+    @abc.abstractmethod
+    def _parse_type(cls, parser, name):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def _compose_type(self, composer):
+        raise NotImplementedError()
+
+    @classmethod
+    def _check_header(cls, parsable):
         parser = ParserBinary(parsable)
 
-        parser.parse_numeric('extension_type', 2, TlsExtensionType)
+        cls._parse_type(parser, 'extension_type')
         parser.parse_numeric('extension_length', 2)
 
         if parser.unparsed_length < parser['extension_length']:
@@ -98,7 +240,7 @@ class TlsExtensionBase(ParsableBase):
     def _compose_header(self, payload_length):
         header_composer = ComposerBinary()
 
-        header_composer.compose_numeric(self.extension_type, 2)
+        self._compose_type(header_composer)
         header_composer.compose_numeric(payload_length, 2)
 
         return header_composer.composed_bytes
@@ -110,13 +252,23 @@ class TlsExtensionUnparsed(TlsExtensionBase):
 
         self._extension_data = extension_data
 
+    def __eq__(self, other):
+        return self.extension_type == other.extension_type and self._extension_data == other._extension_data
+
+    @classmethod
+    def _parse_type(cls, parser, name):
+        parser.parse_parsable(name, TlsInvalidTypeTwoByte)
+
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionUnparsed, cls)._parse_header(parsable)
+        parser = super(TlsExtensionUnparsed, cls)._check_header(parsable)
 
         parser.parse_bytes('extension_data', parser['extension_length'])
 
         return TlsExtensionUnparsed(parser['extension_type'], parser['extension_data']), parser.parsed_length
+
+    def _compose_type(self, composer):
+        composer.compose_parsable(self.extension_type)
 
     def compose(self):
         payload_composer = ComposerBinary()
@@ -132,13 +284,20 @@ class TlsExtensionParsed(TlsExtensionBase):
         super(TlsExtensionParsed, self).__init__(self.get_extension_type())
 
     @classmethod
+    def _parse_type(cls, parser, name):
+        parser.parse_parsable(name, TlsExtensionTypeFactory)
+
+    def _compose_type(self, composer):
+        composer.compose_parsable(self.extension_type)
+
+    @classmethod
     @abc.abstractmethod
     def get_extension_type(cls):
         raise NotImplementedError()
 
     @classmethod
     def _parse_header(cls, parsable):
-        parser = super(TlsExtensionParsed, cls)._parse_header(parsable)
+        parser = super(TlsExtensionParsed, cls)._check_header(parsable)
 
         if parser['extension_type'] != cls.get_extension_type():
             raise InvalidValue(parser['extension_type'], TlsExtensionParsed, 'extension type')
@@ -201,20 +360,30 @@ class TlsExtensionServerName(TlsExtensionParsed):
         return header_bytes + composer.composed_bytes
 
 
-class TlsECPointFormat(enum.IntEnum):
-    UNCOMPRESSED = 0x0
-    ANSIX962_COMPRESSED_PRIME = 0x1
-    ANSIX962_COMPRESSED_CHAR2 = 0x2
+class TlsECPointFormatFactory(OneByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsECPointFormat
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
 
 
-class TlsECPointFormatVector(Vector):
+class TlsECPointFormat(Serializable, OneByteEnumComposer, enum.Enum):
+    UNCOMPRESSED = TlsECPointFormatParams(code=0x0)
+    ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x1)
+    ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x2)
+
+
+class TlsECPointFormatVector(VectorParsable):
     @classmethod
     def get_param(cls):
-        return VectorParamNumeric(
-            item_size=1,
+        return VectorParamParsable(
+            item_class=TlsECPointFormatFactory,
+            fallback_class=TlsInvalidTypeOneByte,
             min_byte_num=1,
             max_byte_num=2 ** 8 - 1,
-            numeric_class=TlsECPointFormat
         )
 
 
@@ -415,7 +584,7 @@ class TlsEllipticCurveVector(VectorParsable):
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsNamedCurveFactory,
-            fallback_class=None,
+            fallback_class=TlsInvalidTypeTwoByte,
             min_byte_num=1, max_byte_num=2 ** 16 - 1
         )
 
@@ -453,7 +622,7 @@ class TlsSupportedVersionVector(VectorParsableDerived):
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsProtocolVersionBase,
-            fallback_class=None,
+            fallback_class=TlsInvalidTypeTwoByte,
             min_byte_num=2, max_byte_num=2 ** 8 - 2
         )
 
@@ -653,7 +822,7 @@ class TlsSignatureAndHashAlgorithmVector(VectorParsable):
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsSignatureAndHashAlgorithmFactory,
-            fallback_class=None,
+            fallback_class=TlsInvalidTypeTwoByte,
             min_byte_num=2, max_byte_num=2 ** 16 - 2
         )
 

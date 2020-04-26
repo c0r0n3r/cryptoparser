@@ -205,7 +205,8 @@ class VectorParsable(VectorBase):
             parser.parse_parsable_array(
                 'items',
                 items_size=parser['item_byte_num'],
-                item_class=vector_param.item_class
+                item_class=vector_param.item_class,
+                fallback_class=vector_param.fallback_class
             )
         except NotEnoughData as e:
             raise NotEnoughData(e.bytes_needed)
@@ -306,6 +307,17 @@ class NByteEnumParsable(ParsableBase):
         raise NotImplementedError()
 
 
+class OneByteEnumParsable(NByteEnumParsable):
+    @classmethod
+    def get_byte_num(cls):
+        return 1
+
+    @classmethod
+    @abc.abstractmethod
+    def get_enum_class(cls):
+        raise NotImplementedError()
+
+
 class TwoByteEnumParsable(NByteEnumParsable):
     @classmethod
     def get_byte_num(cls):
@@ -343,6 +355,12 @@ class NByteEnumComposer(object):
     @abc.abstractmethod
     def get_byte_num(cls):
         raise NotImplementedError()
+
+
+class OneByteEnumComposer(NByteEnumComposer):
+    @classmethod
+    def get_byte_num(cls):
+        return 1
 
 
 class TwoByteEnumComposer(NByteEnumComposer):
