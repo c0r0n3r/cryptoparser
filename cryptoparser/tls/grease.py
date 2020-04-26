@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import abc
-import collections
 import enum
+import attr
 
 from cryptoparser.common.base import ParsableBase
 from cryptoparser.common.parse import ParserBinary, ComposerBinary
@@ -13,22 +13,26 @@ class TlsInvalidType(enum.IntEnum):
     UNKNOWN = 1
 
 
-TlsInvalidTypeParams = collections.namedtuple('TlsInvalidTypeParams', ['code', 'value_type', ])
+@attr.s
+class TlsInvalidTypeParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+    value_type = attr.ib(validator=attr.validators.in_(TlsInvalidType))
 
 
+@attr.s
 class TlsInvalidTypeBase(ParsableBase):
-    def __init__(self, code):
-        if isinstance(code, self.get_grease_enum()):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+    value = attr.ib(init=False, validator=attr.validators.instance_of(TlsInvalidTypeParams))
+
+    def __attrs_post_init__(self):
+        if isinstance(self.code, self.get_grease_enum()):
             value_type = TlsInvalidType.GREASE
-            code = code.value
-        elif code in set(self.get_grease_enum()):
+            self.code = self.code.value
+        elif self.code in set(self.get_grease_enum()):
             value_type = TlsInvalidType.GREASE
         else:
             value_type = TlsInvalidType.UNKNOWN
-        self.value = TlsInvalidTypeParams(code, value_type)
-
-    def __eq__(self, other):
-        return self.value.code == other.value.code
+        self.value = TlsInvalidTypeParams(self.code, value_type)
 
     @classmethod
     @abc.abstractmethod

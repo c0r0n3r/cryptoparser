@@ -42,11 +42,11 @@ class TestTlsRecord(unittest.TestCase):
 
     def test_error(self):
         with self.assertRaises(NotEnoughData) as context_manager:
-            record = TlsRecord.parse_exact_size(b'')
+            TlsRecord.parse_exact_size(b'')
         self.assertEqual(context_manager.exception.bytes_needed, TlsRecord.HEADER_SIZE)
 
         with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid TlsContentType'):
-            record = TlsRecord.parse_exact_size(
+            TlsRecord.parse_exact_size(
                 b'\xff' +      # type = INVALID
                 b'\x03\x03' +  # version = TLS 1.2
                 b'\x00\x00' +  # length = 0
@@ -54,7 +54,7 @@ class TestTlsRecord(unittest.TestCase):
             )
 
         with self.assertRaises(NotEnoughData) as context_manager:
-            record = TlsRecord.parse_exact_size(
+            TlsRecord.parse_exact_size(
                 b'\x15' +      # type = alert
                 b'\x03\x03' +  # version = TLS 1.2
                 b'\x00\x01' +  # length = 1 (alert message is 2 bytes!)
@@ -62,19 +62,15 @@ class TestTlsRecord(unittest.TestCase):
             )
         self.assertEqual(context_manager.exception.bytes_needed, 1)
 
-        record = TlsRecord.parse_exact_size(
+        TlsRecord.parse_exact_size(
             b'\x15' +      # type = alert
             b'\x03\x03' +  # version = TLS 1.2
             b'\x00\x02' +  # length = 2
             b'\x02\x28'
         )
-        with self.assertRaises(InvalidValue):
-            record.protocol_version = 'invalid version'
-        with self.assertRaises(InvalidValue):
-            record.messages = ['invalid message', ]
 
         with self.assertRaises(NotEnoughData) as context_manager:
-            record = TlsRecord.parse_exact_size(
+            TlsRecord.parse_exact_size(
                 b'\x16' +      # type = handshake
                 b'\x03\x03' +  # version = TLS 1.2
                 b'\x00\x02' +  # length = 2 (handshake message is at least 4 bytes!)
@@ -83,7 +79,7 @@ class TestTlsRecord(unittest.TestCase):
         self.assertEqual(context_manager.exception.bytes_needed, 2)
 
         with self.assertRaises(NotEnoughData) as context_manager:
-            record = TlsRecord.parse_exact_size(
+            TlsRecord.parse_exact_size(
                 b'\x16' +          # type = handshake
                 b'\x03\x01' +      # version = TLS 1.0
                 b'\x00\x06' +      # length = 6
@@ -95,7 +91,7 @@ class TestTlsRecord(unittest.TestCase):
         self.assertEqual(context_manager.exception.bytes_needed, 1)
 
         with self.assertRaises(InvalidValue) as context_manager:
-            record = TlsRecord.parse_exact_size(
+            TlsRecord.parse_exact_size(
                 b'\x16' +          # type = handshake
                 b'\x03\x01' +      # version = TLS 1.0
                 b'\x00\x06' +      # length = 10
@@ -106,7 +102,7 @@ class TestTlsRecord(unittest.TestCase):
             )
 
         with self.assertRaises(InvalidValue) as context_manager:
-            record = TlsRecord.parse_exact_size(
+            TlsRecord.parse_exact_size(
                 b'\x15' +          # type = alert
                 b'\x03\x01' +      # version = TLS 1.0
                 b'\x00\x02' +      # length = 6
@@ -116,7 +112,7 @@ class TestTlsRecord(unittest.TestCase):
             )
 
         with self.assertRaises(InvalidValue) as context_manager:
-            record = TlsRecord.parse_exact_size(
+            TlsRecord.parse_exact_size(
                 b'\x18' +      # type = heartbeat
                 b'\x03\x03' +  # version = TLS 1.2
                 b'\x00\x01' +  # length = 1
@@ -184,11 +180,6 @@ class TestSslRecord(unittest.TestCase):
                 b'\x00\xff' +  # error_type = INVALID
                 b''
             )
-
-        with self.assertRaises(InvalidValue):
-            self.test_record.protocol_version = 'invalid version'
-        with self.assertRaises(InvalidValue):
-            self.test_record.message = 'invalid message'
 
         with self.assertRaises(NotEnoughData) as context_manager:
             SslRecord.parse_exact_size(

@@ -2,6 +2,7 @@
 
 import abc
 import struct
+import attr
 
 import six
 
@@ -41,18 +42,18 @@ class ParsableBase(object):
         raise NotImplementedError()
 
 
+@attr.s
 class ParserBinary(object):
+    _parsable = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+    _parsed_length = attr.ib(init=False, default=0)
+    _parsed_values = attr.ib(init=False, default=dict())
+
     _INT_FORMATER_BY_SIZE = {
         1: '!B',
         2: '!H',
         3: '!I',
         4: '!I',
     }
-
-    def __init__(self, parsable):
-        self._parsable = parsable
-        self._parsed_length = 0
-        self._parsed_values = dict()
 
     def __getitem__(self, key):
         return self._parsed_values[key]
@@ -161,16 +162,16 @@ class ParserBinary(object):
         self._parsed_length += value_length
 
 
+@attr.s
 class ComposerBinary(object):
+    _composed = attr.ib(init=False, default=bytes())
+
     _INT_FORMATER_BY_SIZE = {
         1: '!B',
         2: '!H',
         3: '!I',
         4: '!I',
     }
-
-    def __init__(self):
-        self._composed = bytearray()
 
     def _compose_numeric_array(self, values, item_size):
         composed_bytes = bytearray()

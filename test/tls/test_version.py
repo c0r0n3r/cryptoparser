@@ -114,12 +114,6 @@ class TestTlsProtocolVersion(unittest.TestCase):
             ]))
         )
 
-    def test_repr(self):
-        self.assertEqual(repr(TlsProtocolVersionFinal(TlsVersion.SSL3)), 'ssl3')
-        self.assertEqual(repr(TlsProtocolVersionFinal(TlsVersion.TLS1_0)), 'tls1')
-        self.assertEqual(repr(TlsProtocolVersionFinal(TlsVersion.TLS1_2)), 'tls1_2')
-        self.assertEqual(repr(TlsProtocolVersionDraft(24)), 'tls1_3_draft23')
-
     def test_as_json(self):
         self.assertEqual(TlsProtocolVersionFinal(TlsVersion.SSL3).as_json(), '\"ssl3\"')
         self.assertEqual(TlsProtocolVersionFinal(TlsVersion.TLS1_0).as_json(), '\"tls1\"')
@@ -172,8 +166,8 @@ class TestSslProtocolVersion(unittest.TestCase):
             ]))
         )
 
-    def test_repr(self):
-        self.assertEqual(repr(SslProtocolVersion()), 'ssl2')
+    def test_as_json(self):
+        self.assertEqual(SslProtocolVersion().as_json(), '\"ssl2\"')
 
     def test_str(self):
         self.assertEqual(str(SslProtocolVersion()), 'SSL 2.0')

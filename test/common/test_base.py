@@ -32,26 +32,34 @@ class VectorNumericTest(Vector):
 class VectorOneByteParsableTest(VectorParsable):
     @classmethod
     def get_param(cls):
-        return VectorParamParsable(OneByteParsable, min_byte_num=0, max_byte_num=0xff, fallback_class=None)
+        return VectorParamParsable(item_class=OneByteParsable, min_byte_num=0, max_byte_num=0xff, fallback_class=None)
 
 
 class VectorTwoByteParsableTest(VectorParsable):
     @classmethod
     def get_param(cls):
-        return VectorParamParsable(TwoByteParsable, min_byte_num=0, max_byte_num=0xffff, fallback_class=None)
+        return VectorParamParsable(item_class=TwoByteParsable, min_byte_num=0, max_byte_num=0xffff, fallback_class=None)
 
 
 class VectorConsditionalParsableTest(VectorParsableDerived):
     @classmethod
     def get_param(cls):
-        return VectorParamParsable(ConditionalParsable, min_byte_num=0, max_byte_num=0xff, fallback_class=None)
+        return VectorParamParsable(
+            item_class=ConditionalParsable,
+            min_byte_num=0,
+            max_byte_num=0xff,
+            fallback_class=None
+        )
 
 
 class VectorFallbackParsableTest(VectorParsableDerived):
     @classmethod
     def get_param(cls):
         return VectorParamParsable(
-            OneByteOddParsable, min_byte_num=0, max_byte_num=0xff, fallback_class=TwoByteEvenParsable
+            item_class=OneByteOddParsable,
+            min_byte_num=0,
+            max_byte_num=0xff,
+            fallback_class=TwoByteEvenParsable
         )
 
 
@@ -107,25 +115,21 @@ class TestVectorNumeric(unittest.TestCase):
         self.assertEqual(vector[0], 1)
         self.assertEqual(len(vector), 1)
         self.assertEqual(str(vector), '[1]')
-        self.assertEqual(repr(vector), '<VectorNumericTest [1]>')
 
         vector.insert(0, 0)
         self.assertEqual(vector[0], 0)
         self.assertEqual(len(vector), 2)
         self.assertEqual(str(vector), '[0, 1]')
-        self.assertEqual(repr(vector), '<VectorNumericTest [0, 1]>')
 
         del vector[0]
         self.assertEqual(vector[0], 1)
         self.assertEqual(len(vector), 1)
         self.assertEqual(str(vector), '[1]')
-        self.assertEqual(repr(vector), '<VectorNumericTest [1]>')
 
         vector[0] = 0
         self.assertEqual(vector[0], 0)
         self.assertEqual(len(vector), 1)
         self.assertEqual(str(vector), '[0]')
-        self.assertEqual(repr(vector), '<VectorNumericTest [0]>')
 
 
 class TestVectorParsable(unittest.TestCase):
@@ -193,28 +197,24 @@ class TestVectorParsable(unittest.TestCase):
         self.assertNotEqual(vector[0], TwoByteParsable(1))
         self.assertEqual(len(vector), 1)
         self.assertEqual(str(vector), '[0x01]')
-        self.assertEqual(repr(vector), '<VectorOneByteParsableTest [0x01]>')
 
         vector.insert(0, TwoByteParsable(0))
         self.assertEqual(vector[0], TwoByteParsable(0))
         self.assertNotEqual(vector[0], OneByteParsable(0))
         self.assertEqual(len(vector), 2)
         self.assertEqual(str(vector), '[0x0000, 0x01]')
-        self.assertEqual(repr(vector), '<VectorOneByteParsableTest [0x0000, 0x01]>')
 
         del vector[0]
         self.assertEqual(vector[0], OneByteParsable(1))
         self.assertNotEqual(vector[0], TwoByteParsable(1))
         self.assertEqual(len(vector), 1)
         self.assertEqual(str(vector), '[0x01]')
-        self.assertEqual(repr(vector), '<VectorOneByteParsableTest [0x01]>')
 
         vector[0] = TwoByteParsable(0)
         self.assertEqual(vector[0], TwoByteParsable(0))
         self.assertNotEqual(vector[0], OneByteParsable(0))
         self.assertEqual(len(vector), 1)
         self.assertEqual(str(vector), '[0x0000]')
-        self.assertEqual(repr(vector), '<VectorOneByteParsableTest [0x0000]>')
 
 
 class TestVectorDerived(unittest.TestCase):
