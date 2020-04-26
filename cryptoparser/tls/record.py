@@ -56,7 +56,8 @@ class TlsRecord(ParsableBase):
 
     def compose(self):
         body_composer = ComposerBinary()
-        body_composer.compose_parsable(self.messages[0])
+        for message in self.messages:
+            body_composer.compose_parsable(message)
 
         header_composer = ComposerBinary()
         content_type = self.messages[0].get_content_type()
