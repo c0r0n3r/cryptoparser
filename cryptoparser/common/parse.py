@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import enum
 import struct
 import attr
 
@@ -42,18 +43,27 @@ class ParsableBase(object):
         raise NotImplementedError()
 
 
+_SIZE_TO_FORMAT = {
+    1: 'B',
+    2: 'H',
+    3: 'I',
+    4: 'I',
+}
+
+
+class ByteOrder(enum.Enum):
+    NATIVE = '='
+    LITTLE_ENDIAN = '<'
+    BIG_ENDIAN = '>'
+    NETWORK = '!'
+
+
 @attr.s
 class ParserBinary(object):
     _parsable = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+    byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
     _parsed_length = attr.ib(init=False, default=0)
     _parsed_values = attr.ib(init=False, default=dict())
-
-    _INT_FORMATER_BY_SIZE = {
-        1: '!B',
-        2: '!H',
-        3: '!I',
-        4: '!I',
-    }
 
     def __getitem__(self, key):
         return self._parsed_values[key]
@@ -70,7 +80,7 @@ class ParserBinary(object):
         if self._parsed_length + (item_num * item_size) > len(self._parsable):
             raise NotEnoughData(bytes_needed=(item_num * item_size) - self.unparsed_length)
 
-        if item_size in self._INT_FORMATER_BY_SIZE:
+        if item_size in _SIZE_TO_FORMAT:
             value = list()
             for item_offset in range(self._parsed_length, self._parsed_length + (item_num * item_size), item_size):
                 item_bytes = self._parsable[item_offset:item_offset + item_size]
@@ -78,7 +88,7 @@ class ParserBinary(object):
                     item_bytes = b'\x00' + item_bytes
 
                 item = struct.unpack(
-                    self._INT_FORMATER_BY_SIZE[item_size],
+                    self.byte_order.value + _SIZE_TO_FORMAT[item_size],
                     item_bytes
                 )[0]
                 try:
@@ -97,6 +107,14 @@ class ParserBinary(object):
 
     def parse_numeric_array(self, name, item_num, item_size, numeric_class=int):
         self._parse_numeric_array(name, item_num, item_size, numeric_class)
+
+    def parse_numeric_flags(self, name, size, flags_class):
+        self._parse_numeric_array(name, 1, size, int)
+        self._parsed_values[name] = [
+            flags_class(flag & self._parsed_values[name][0])
+            for flag in flags_class
+            if flag & self._parsed_values[name][0]
+        ]
 
     def parse_bytes(self, name, size):
         if self.unparsed_length < size:
@@ -165,13 +183,7 @@ class ParserBinary(object):
 @attr.s
 class ComposerBinary(object):
     _composed = attr.ib(init=False, default=bytes())
-
-    _INT_FORMATER_BY_SIZE = {
-        1: '!B',
-        2: '!H',
-        3: '!I',
-        4: '!I',
-    }
+    byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
     def _compose_numeric_array(self, values, item_size):
         composed_bytes = bytearray()
@@ -179,7 +191,7 @@ class ComposerBinary(object):
         for value in values:
             try:
                 composed_bytes += struct.pack(
-                    self._INT_FORMATER_BY_SIZE[item_size],
+                    self.byte_order.value + _SIZE_TO_FORMAT[item_size],
                     value
                 )
 
@@ -196,6 +208,12 @@ class ComposerBinary(object):
 
     def compose_numeric_array(self, values, item_size):
         self._compose_numeric_array(values, item_size)
+
+    def compose_numeric_flags(self, values, item_size):
+        flag = 0
+        for value in values:
+            flag |= value
+        self._compose_numeric_array([flag, ], item_size)
 
     def compose_parsable(self, value):
         self._composed += value.compose()

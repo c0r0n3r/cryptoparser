@@ -3,10 +3,10 @@
 import unittest
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
-from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
+from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary, ByteOrder
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
 
-from .classes import OneByteParsable, TwoByteParsable, ConditionalParsable, OneByteOddParsable
+from .classes import OneByteParsable, TwoByteParsable, ConditionalParsable, OneByteOddParsable, FlagEnum
 
 
 class TestParsable(unittest.TestCase):
@@ -68,6 +68,10 @@ class TestParserBinary(unittest.TestCase):
         with self.assertRaises(InvalidValue):
             parser.parse_numeric('two_byte_numeric', 2, OneByteParsable)
 
+        parser = ParserBinary(b'\x10')
+        with self.assertRaises(InvalidValue):
+            parser.parse_numeric('flags', 1, FlagEnum)
+
     def test_parse_numeric(self):
         parser = ParserBinary(b'\x01\x02')
         parser.parse_numeric('first_byte', 1)
@@ -86,6 +90,28 @@ class TestParserBinary(unittest.TestCase):
         parser = ParserBinary(b'\x01\x02\x03\x04')
         parser.parse_numeric('first_four_bytes', 4)
         self.assertEqual(parser['first_four_bytes'], 0x01020304)
+
+    def test_parse_byte_order(self):
+        parser = ParserBinary(b'\x01\x02\x03\x04', byte_order=ByteOrder.BIG_ENDIAN)
+        parser.parse_numeric('number', 4)
+        self.assertEqual(parser['number'], 0x01020304)
+
+        parser = ParserBinary(b'\x01\x02\x03\x04', byte_order=ByteOrder.LITTLE_ENDIAN)
+        parser.parse_numeric('number', 4)
+        self.assertEqual(parser['number'], 0x04030201)
+
+        parser = ParserBinary(b'\x01\x02\x03\x04', byte_order=ByteOrder.NETWORK)
+        parser.parse_numeric('number', 4)
+        self.assertEqual(parser['number'], 0x01020304)
+
+    def test_parse_numeric_flags(self):
+        parser = ParserBinary(b'\x01')
+        parser.parse_numeric_flags('flags', 1, FlagEnum)
+        self.assertEqual(parser['flags'], [FlagEnum.ONE, ])
+
+        parser = ParserBinary(b'\x03')
+        parser.parse_numeric_flags('flags', 1, FlagEnum)
+        self.assertEqual(parser['flags'], [FlagEnum.ONE, FlagEnum.TWO])
 
     def test_parse_numeric_array(self):
         parser = ParserBinary(b'\x01\x02')
@@ -230,6 +256,19 @@ class TestComposerBinary(unittest.TestCase):
         composer.compose_numeric(0x01020304, 4)
         self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
 
+    def test_compose_byte_order(self):
+        composer = ComposerBinary(byte_order=ByteOrder.BIG_ENDIAN)
+        composer.compose_numeric(0x01020304, 4)
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
+
+        composer = ComposerBinary(byte_order=ByteOrder.LITTLE_ENDIAN)
+        composer.compose_numeric(0x01020304, 4)
+        self.assertEqual(composer.composed_bytes, b'\x04\x03\x02\x01')
+
+        composer = ComposerBinary(byte_order=ByteOrder.NETWORK)
+        composer.compose_numeric(0x01020304, 4)
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
+
     def test_compose_numeric_array(self):
         composer = ComposerBinary()
         composer.compose_numeric_array(values=[1, 2, 3, 4], item_size=1)
@@ -246,6 +285,15 @@ class TestComposerBinary(unittest.TestCase):
         composer = ComposerBinary()
         composer.compose_numeric_array(values=[1, 2, 3, 4], item_size=4)
         self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04')
+
+    def test_compose_numeric_flags(self):
+        composer = ComposerBinary()
+        composer.compose_numeric_flags([FlagEnum.ONE, ], 1)
+        self.assertEqual(composer.composed_bytes, b'\x01')
+
+        composer = ComposerBinary()
+        composer.compose_numeric_flags([FlagEnum.ONE, FlagEnum.TWO, ], 1)
+        self.assertEqual(composer.composed_bytes, b'\x03')
 
     def test_compose_bytes(self):
         composer = ComposerBinary()
