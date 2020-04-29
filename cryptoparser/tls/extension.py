@@ -332,7 +332,7 @@ class TlsServerName(Vector):
 
 @attr.s
 class TlsExtensionServerName(TlsExtensionParsed):
-    host_name = attr.ib(validator=attr.validators.instance_of(six.text_type))
+    host_name = attr.ib(validator=attr.validators.instance_of(six.string_types))
     name_type = attr.ib(validator=attr.validators.in_(TlsServerNameType), default=TlsServerNameType.HOST_NAME)
 
     @classmethod
