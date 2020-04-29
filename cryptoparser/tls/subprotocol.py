@@ -166,14 +166,14 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
         return composer.composed_bytes
 
     @level.validator
-    def _validator_level(self, attribute, value):
+    def _validator_level(self, attribute, value):  # pylint: disable=unused-argument
         try:
             self.level = TlsAlertLevel(value)
         except ValueError:
             raise InvalidValue(value, TlsAlertLevel, 'level')
 
     @description.validator
-    def _validator_description(self, attribute, value):
+    def _validator_description(self, attribute, value):  # pylint: disable=unused-argument
         try:
             self.description = TlsAlertDescription(value)
         except ValueError:

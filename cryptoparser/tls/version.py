@@ -113,12 +113,12 @@ class TlsProtocolVersionFinal(TlsProtocolVersionBase):
         return 'TLS 1.{}'.format(self.minor - 1)
 
     @major.validator
-    def major_validator(self, attribute, value):
+    def major_validator(self, attribute, value):  # pylint: disable=unused-argument
         if value != self._MAJOR:
             raise InvalidValue(value, TlsProtocolVersionFinal, 'major')
 
     @minor.validator
-    def minor_validator(self, attribute, value):  # pylint: disable=no-self-use
+    def minor_validator(self, attribute, value):  # pylint: disable=no-self-use,unused-argument
         try:
             TlsVersion(value)
         except ValueError as e:
@@ -147,12 +147,12 @@ class TlsProtocolVersionDraft(TlsProtocolVersionBase):
         return 'TLS 1.3 Draft {}'.format(self.minor - 1)
 
     @major.validator
-    def major_validator(self, attribute, value):
+    def major_validator(self, attribute, value):  # pylint: disable=unused-argument
         if value != self._MAJOR:
             raise InvalidValue(value, TlsProtocolVersionFinal, 'major')
 
     @minor.validator
-    def minor_validator(self, attribute, value):
+    def minor_validator(self, attribute, value):  # pylint: disable=unused-argument
         if value > self.MAX_DRAFT_NUMBER:
             raise InvalidValue(value, TlsProtocolVersionDraft, 'draft number')
         if value < 0x00:

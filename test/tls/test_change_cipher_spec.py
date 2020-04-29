@@ -14,11 +14,11 @@ class TestRecord(unittest.TestCase):
     def test_error(self):
         with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid TlsChangeCipherSpecType'):
             # pylint: disable=expression-not-assigned
-            TlsChangeCipherSpecMessage.parse_exact_size(b'\xff'),
+            TlsChangeCipherSpecMessage.parse_exact_size(b'\xff')
 
         with self.assertRaises(NotEnoughData) as context_manager:
             # pylint: disable=expression-not-assigned
-            TlsChangeCipherSpecMessage.parse_exact_size(b''),
+            TlsChangeCipherSpecMessage.parse_exact_size(b'')
         self.assertEqual(context_manager.exception.bytes_needed, 1)
 
     def test_parse(self):

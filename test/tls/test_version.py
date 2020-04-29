@@ -136,7 +136,7 @@ class TestSslProtocolVersion(unittest.TestCase):
             )
         with self.assertRaises(NotEnoughData) as context_manager:
             # pylint: disable=expression-not-assigned
-            SslProtocolVersion.parse_exact_size(b'\xff'),
+            SslProtocolVersion.parse_exact_size(b'\xff')
         self.assertGreaterEqual(context_manager.exception.bytes_needed, 1)
 
     def test_parse(self):

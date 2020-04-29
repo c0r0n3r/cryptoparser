@@ -13,15 +13,15 @@ class TestAlert(unittest.TestCase):
     def test_error(self):
         with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid TlsAlertLevel'):
             # pylint: disable=expression-not-assigned
-            TlsAlertMessage.parse_exact_size(b'\xff\x00'),
+            TlsAlertMessage.parse_exact_size(b'\xff\x00')
 
         with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid TlsAlertDescription'):
             # pylint: disable=expression-not-assigned
-            TlsAlertMessage.parse_exact_size(b'\x01\xff'),
+            TlsAlertMessage.parse_exact_size(b'\x01\xff')
 
         with self.assertRaises(NotEnoughData) as context_manager:
             # pylint: disable=expression-not-assigned
-            TlsAlertMessage.parse_exact_size(b'\xff'),
+            TlsAlertMessage.parse_exact_size(b'\xff')
         self.assertGreaterEqual(context_manager.exception.bytes_needed, 1)
 
     def test_parse(self):
