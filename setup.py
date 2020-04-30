@@ -30,7 +30,7 @@ def test_discover():
 
 setup(
     name='cryptoparser',
-    version='0.2.0',
+    version='0.3.0',
     description='Fast and flexible security protocol parser and generator',
     long_description=long_description,
     author='Szilárd Pfeiffer',
