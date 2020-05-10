@@ -659,6 +659,61 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
+    TLS_RSA_EXPORT1024_WITH_RC4_56_MD5 = CipherSuiteParams(
+        code=0x0060,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.RC4_56,
+        block_cipher_mode=None,
+        mac=MAC.MD5,
+        authenticated_encryption=False,
+    )
+    TLS_RSA_EXPORT1024_WITH_RC2_CBC_56_MD5 = CipherSuiteParams(
+        code=0x0061,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.RC2_56,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
+        authenticated_encryption=False,
+    )
+    TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA = CipherSuiteParams(
+        code=0x0062,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.DES,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+
+    )
+    TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA = CipherSuiteParams(
+        code=0x0063,
+        key_exchange=KeyExchange.DHE,
+        authentication=Authentication.DSS,
+        bulk_cipher=BlockCipher.DES,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
+    TLS_RSA_EXPORT1024_WITH_RC4_56_SHA = CipherSuiteParams(
+        code=0x0064,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.RC4_56,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
+    TLS_DHE_DSS_EXPORT1024_WITH_RC4_56_SHA = CipherSuiteParams(
+        code=0x0065,
+        key_exchange=KeyExchange.DHE,
+        authentication=Authentication.DSS,
+        bulk_cipher=BlockCipher.RC4_56,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
     TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x0067,
         key_exchange=KeyExchange.DHE,
