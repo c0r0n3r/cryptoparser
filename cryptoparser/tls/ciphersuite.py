@@ -2370,21 +2370,21 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA384,
         authenticated_encryption=True,
     )
-    TLS_ECDHE_PSK_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
+    TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc070,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_128,
-        block_cipher_mode=BlockCipherMode.GCM,
+        block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA256,
         authenticated_encryption=True,
     )
-    TLS_ECDHE_PSK_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
+    TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc071,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_256,
-        block_cipher_mode=BlockCipherMode.GCM,
+        block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA384,
         authenticated_encryption=True,
     )
