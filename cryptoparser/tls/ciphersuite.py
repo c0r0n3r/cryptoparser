@@ -1596,7 +1596,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01a,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.SRP,
@@ -1605,7 +1605,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01b,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.RSA,
@@ -1614,7 +1614,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_DSS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01c,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.DSS,
@@ -1623,7 +1623,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_WITH_AES_128_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01d,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.SRP,
@@ -1632,7 +1632,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01e,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.RSA,
@@ -1641,7 +1641,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_DSS_WITH_AES_128_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01f,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.DSS,
@@ -1650,7 +1650,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_WITH_AES_256_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc020,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.SRP,
@@ -1659,7 +1659,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc021,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.RSA,
@@ -1668,7 +1668,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_DSS_WITH_AES_256_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc022,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.DSS,
