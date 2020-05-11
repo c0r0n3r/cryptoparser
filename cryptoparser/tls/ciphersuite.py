@@ -3081,6 +3081,150 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA256,
         authenticated_encryption=True,
     )
+    TLS_RSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe410,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.ESTREAM_SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_RSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe411,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_ECDHE_RSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe412,
+        key_exchange=KeyExchange.ECDHE,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.ESTREAM_SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_ECDHE_RSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe413,
+        key_exchange=KeyExchange.ECDHE,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_ECDHE_ECDSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe414,
+        key_exchange=KeyExchange.ECDHE,
+        authentication=Authentication.ECDSA,
+        bulk_cipher=BlockCipher.ESTREAM_SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_ECDHE_ECDSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe415,
+        key_exchange=KeyExchange.ECDHE,
+        authentication=Authentication.ECDSA,
+        bulk_cipher=BlockCipher.SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe416,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.ESTREAM_SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe417,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_ECDHE_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe418,
+        key_exchange=KeyExchange.ECDHE,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.ESTREAM_SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_ECDHE_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe419,
+        key_exchange=KeyExchange.ECDHE,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_RSA_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe41a,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.ESTREAM_SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_RSA_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe41b,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_DHE_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe41c,
+        key_exchange=KeyExchange.DHE,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.ESTREAM_SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_DHE_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe41d,
+        key_exchange=KeyExchange.DHE,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_DHE_RSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe41e,
+        key_exchange=KeyExchange.DHE,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.ESTREAM_SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
+    TLS_DHE_RSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
+        code=0xe41f,
+        key_exchange=KeyExchange.DHE,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.SALSA20,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=True,
+    )
     SSL_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0xfefe,
         key_exchange=KeyExchange.RSA,

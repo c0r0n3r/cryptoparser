@@ -172,6 +172,11 @@ class BlockCipher(enum.Enum):
         key_size=40,
         block_size=64,
     )
+    ESTREAM_SALSA20 = BlockCipherParams(
+        name='eSTREAM Salsa20',
+        key_size=256,
+        block_size=None,
+    )
     IDEA = BlockCipherParams(
         name='IDEA',
         key_size=64,
@@ -210,6 +215,11 @@ class BlockCipher(enum.Enum):
     RC4_128 = BlockCipherParams(
         name='RC4_128',
         key_size=128,
+        block_size=None,
+    )
+    SALSA20 = BlockCipherParams(
+        name='Salsa20',
+        key_size=256,
         block_size=None,
     )
     SEED = BlockCipherParams(
