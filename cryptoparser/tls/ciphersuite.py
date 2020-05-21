@@ -3346,7 +3346,7 @@ class SslCipherKindFactory(ThreeByteEnumParsable):
 
 
 class SslCipherKind(Serializable, ThreeByteEnumComposer, enum.Enum):
-    RC4_128_WITH_MD5 = CipherSuiteParams(
+    SSL_CK_RC4_128_WITH_MD5 = CipherSuiteParams(
         code=0x010080,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
@@ -3355,7 +3355,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer, enum.Enum):
         mac=MAC.MD5,
         authenticated_encryption=False,
     )
-    RC4_128_EXPORT40_WITH_MD5 = CipherSuiteParams(
+    SSL_CK_RC4_128_EXPORT40_WITH_MD5 = CipherSuiteParams(
         code=0x020080,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
@@ -3364,7 +3364,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer, enum.Enum):
         mac=MAC.MD5,
         authenticated_encryption=False,
     )
-    RC2_128_CBC_WITH_MD5 = CipherSuiteParams(
+    SSL_CK_RC2_128_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x030080,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
@@ -3373,7 +3373,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer, enum.Enum):
         mac=MAC.MD5,
         authenticated_encryption=False,
     )
-    RC2_128_CBC_EXPORT40_WITH_MD5 = CipherSuiteParams(
+    SSL_CK_RC2_128_CBC_EXPORT40_WITH_MD5 = CipherSuiteParams(
         code=0x040080,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
@@ -3382,7 +3382,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer, enum.Enum):
         mac=MAC.MD5,
         authenticated_encryption=False,
     )
-    IDEA_128_CBC_WITH_MD5 = CipherSuiteParams(
+    SSL_CK_IDEA_128_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x050080,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
@@ -3391,7 +3391,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer, enum.Enum):
         mac=MAC.MD5,
         authenticated_encryption=False,
     )
-    DES_64_CBC_WITH_MD5 = CipherSuiteParams(
+    SSL_CK_DES_64_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x060040,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
@@ -3400,7 +3400,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer, enum.Enum):
         mac=MAC.MD5,
         authenticated_encryption=False,
     )
-    DES_192_EDE3_CBC_WITH_MD5 = CipherSuiteParams(
+    SSL_CK_DES_192_EDE3_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x0700C0,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
