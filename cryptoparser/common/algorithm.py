@@ -212,6 +212,11 @@ class BlockCipher(enum.Enum):
         key_size=56,
         block_size=None,
     )
+    RC4_64 = BlockCipherParams(
+        name='RC4_64',
+        key_size=64,
+        block_size=None,
+    )
     RC4_128 = BlockCipherParams(
         name='RC4_128',
         key_size=128,
@@ -250,6 +255,9 @@ class BlockCipherMode(enum.Enum):
     )
     CCM_8 = BlockCipherModeParams(
         name='CCM_8',
+    )
+    CFB = BlockCipherModeParams(
+        name='CFB',
     )
     GCM = BlockCipherModeParams(
         name='GCM',
