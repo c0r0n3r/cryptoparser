@@ -2892,7 +2892,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=None,
         authenticated_encryption=True,
     )
-    TLS_DHE_PSK_WITH_AES_128_CCM_8 = CipherSuiteParams(
+    TLS_PSK_DHE_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0aa,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
@@ -2901,7 +2901,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=None,
         authenticated_encryption=True,
     )
-    TLS_DHE_PSK_WITH_AES_256_CCM_8 = CipherSuiteParams(
+    TLS_PSK_DHE_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0ab,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
