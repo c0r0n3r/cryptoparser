@@ -786,6 +786,15 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
+    TLS_DHE_DSS_WITH_RC4_128_SHA = CipherSuiteParams(
+        code=0x0066,
+        key_exchange=KeyExchange.DHE,
+        authentication=Authentication.DSS,
+        bulk_cipher=BlockCipher.RC4_128,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
     TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x0067,
         key_exchange=KeyExchange.DHE,
