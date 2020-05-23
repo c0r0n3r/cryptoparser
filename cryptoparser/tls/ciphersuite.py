@@ -290,6 +290,24 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
+    TLS_FORTEZZA_KEA_WITH_NULL_SHA = CipherSuiteParams(
+        code=0x001c,
+        key_exchange=KeyExchange.FORTEZZA_KEA,
+        authentication=Authentication.FORTEZZA,
+        bulk_cipher=None,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
+    TLS_FORTEZZA_KEA_WITH_FORTEZZA_CBC_SHA = CipherSuiteParams(
+        code=0x001d,
+        key_exchange=KeyExchange.FORTEZZA_KEA,
+        authentication=Authentication.FORTEZZA,
+        bulk_cipher=BlockCipher.FORTEZZA,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
     TLS_KRB5_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x001e,
         key_exchange=KeyExchange.KRB5,
