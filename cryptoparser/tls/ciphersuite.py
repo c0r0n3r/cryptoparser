@@ -659,6 +659,60 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
+    OLD_TLS_ECDH_ECDSA_WITH_NULL_SHA = CipherSuiteParams(
+        code=0x0047,
+        key_exchange=KeyExchange.ECDH,
+        authentication=Authentication.ECDSA,
+        bulk_cipher=None,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
+    OLD_TLS_ECDH_ECDSA_WITH_RC4_128_SHA = CipherSuiteParams(
+        code=0x0048,
+        key_exchange=KeyExchange.ECDH,
+        authentication=Authentication.ECDSA,
+        bulk_cipher=BlockCipher.RC4_128,
+        block_cipher_mode=None,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
+    TLS_ECDH_ECDSA_WITH_DES_CBC_SHA = CipherSuiteParams(
+        code=0x0049,
+        key_exchange=KeyExchange.ECDH,
+        authentication=Authentication.ECDSA,
+        bulk_cipher=BlockCipher.DES,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
+    OLD_TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+        code=0x004a,
+        key_exchange=KeyExchange.ECDH,
+        authentication=Authentication.ECDSA,
+        bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
+    OLD_TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
+        code=0x004b,
+        key_exchange=KeyExchange.ECDH,
+        authentication=Authentication.ECDSA,
+        bulk_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
+    OLD_TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
+        code=0x004c,
+        key_exchange=KeyExchange.ECDH,
+        authentication=Authentication.ECDSA,
+        bulk_cipher=BlockCipher.AES_256,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
     TLS_RSA_EXPORT1024_WITH_RC4_56_MD5 = CipherSuiteParams(
         code=0x0060,
         key_exchange=KeyExchange.RSA,
