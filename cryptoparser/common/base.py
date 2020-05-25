@@ -402,6 +402,9 @@ class VectorString(VectorBase):
 
         header_parser.parse_numeric('item_byte_num', vector_param.item_num_size)
 
+        if header_parser['item_byte_num'] == 0:
+            return cls([]), header_parser.parsed_length
+
         body_parser = ParserText(
             parsable[vector_param.item_num_size:header_parser['item_byte_num'] + vector_param.item_num_size]
         )

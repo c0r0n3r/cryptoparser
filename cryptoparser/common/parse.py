@@ -60,7 +60,7 @@ class ByteOrder(enum.Enum):
 
 @attr.s
 class ParserBase(collections_abc.Mapping):
-    _parsable = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+    _parsable = attr.ib(converter=bytes, validator=attr.validators.instance_of((bytes, bytearray)))
     _parsed_length = attr.ib(init=False, default=0)
     _parsed_values = attr.ib(init=False, default=None)
 
@@ -123,7 +123,7 @@ class ParserBase(collections_abc.Mapping):
         except ValueError as e:
             six.raise_from(InvalidValue(value, type(self), name), e)
 
-        self._parsed_length += parsable_length
+        return value, parsable_length
 
 
 class ParserText(ParserBase):
@@ -135,17 +135,17 @@ class ParserText(ParserBase):
             self,
             name,
             count_offset,
-            separator,
+            separators,
             min_count,
             max_count
     ):
         count = 0
         actual_offset = count_offset
-        while actual_offset < len(self._parsable) and self._parsable[actual_offset:].startswith(separator):
-            actual_offset += len(separator)
+        while actual_offset < len(self._parsable) and self._parsable[actual_offset:actual_offset + 1] in separators:
+            actual_offset += 1
             count += 1
 
-            if count > max_count:
+            if max_count is not None and count > max_count:
                 raise InvalidValue(self._parsable[count_offset:], type(self), name)
 
         if count < min_count:
@@ -214,23 +214,16 @@ class ParserText(ParserBase):
         self._parsed_length += parsed_length
 
     def parse_string_by_length(self, name, min_length=1, max_length=None, item_class=str):
-        self._parse_string_by_length(name, min_length, max_length, self._encoding, item_class)
+        value, parsed_length = self._parse_string_by_length(name, min_length, max_length, self._encoding, item_class)
+        self._parsed_values[name] = value
+        self._parsed_length += parsed_length
 
-    def _parse_string_until_separator(  # pylint: disable=too-many-arguments
+    def _apply_item_class(
             self,
             name,
             item_offset,
-            separator,
-            item_class,
-            may_end=False
-    ):
-        item_end = self._parsable.find(separator, item_offset)
-        if item_end < 0:
-            if may_end:
-                item_end = len(self._parsable)
-            else:
-                raise InvalidValue(self._parsable[item_offset:], type(self), name)
-
+            item_end,
+            item_class):
         try:
             if issubclass(item_class, ParsableBase):
                 item = item_class.parse_exact_size(self._parsable[item_offset:item_end])
@@ -242,6 +235,27 @@ class ParserText(ParserBase):
             six.raise_from(InvalidValue(self._parsable[item_offset:], type(self), name), e)
         except ValueError as e:
             six.raise_from(InvalidValue(self._parsable[item_offset:], type(self), name), e)
+
+        return item
+
+    def _parse_string_until_separator(  # pylint: disable=too-many-arguments
+            self,
+            name,
+            item_offset,
+            separators,
+            item_class,
+            may_end=False
+    ):
+        for item_end in range(item_offset, len(self._parsable)):
+            if self._parsable[item_end] in separators:
+                break
+        else:
+            if not may_end:
+                raise InvalidValue(self._parsable[item_offset:], type(self), name)
+
+            item_end = len(self._parsable)
+
+        item = self._apply_item_class(name, item_offset, item_end, item_class)
 
         return item, item_end - item_offset
 
@@ -263,29 +277,69 @@ class ParserText(ParserBase):
         self._parsed_values[name] = parsed_value
         self._parsed_length += parsed_length
 
-    def _parse_string_array(self, name, separator, item_num=None, item_class=str):
+    def _parse_string_array(
+            self,
+            name,
+            separator,
+            max_item_num=None,
+            item_class=str,
+            separator_spaces='',
+            skip_empty=False
+    ):  # pylint: disable=too-many-arguments
         value = []
         item_offset = self._parsed_length
-        separator = bytearray(separator, self._encoding)
+        separator = separator.encode(self._encoding)
+        separator_spaces = separator_spaces.encode(self._encoding)
+        max_separator_count = None if skip_empty else 1
 
-        while item_offset < len(self._parsable):
+        if separator_spaces:
+            item_offset += self._check_separators('separator', item_offset, separator_spaces, 0, None)
+
+        while True:
             parsed_value, parsed_length = self._parse_string_until_separator(
-                name, item_offset, separator, item_class, True
+                name, item_offset, separator + separator_spaces, str, True
             )
+            if parsed_length:
+                parsed_value = self._apply_item_class(name, item_offset, item_offset + parsed_length, item_class)
+                value.append(parsed_value)
+                item_offset += parsed_length
+            elif not skip_empty:
+                raise InvalidValue(self._parsable[item_offset:], type(self), name)
 
-            value.append(parsed_value)
-            item_offset += parsed_length
-
-            if item_offset == len(self._parsable) or (item_num is not None and len(value) == item_num):
+            if item_offset == len(self._parsable):
                 break
 
-            item_offset += self._check_separators(name, item_offset, separator, 1, 1)
+            if separator_spaces:
+                item_offset += self._check_separators('separator', item_offset, separator_spaces, 0, None)
+            item_offset += self._check_separators(name, item_offset, separator, 1, max_separator_count)
+            if separator_spaces:
+                item_offset += self._check_separators('separator', item_offset, separator_spaces, 0, None)
+
+            if item_offset == len(self._parsable):
+                break
+            if max_item_num is not None and len(value) == max_item_num:
+                break
 
         self._parsed_values[name] = value
         self._parsed_length = item_offset
 
-    def parse_string_array(self, name, separator, item_class=str):
-        self._parse_string_array(name, separator, item_class=item_class)
+    def parse_string_array(
+            self,
+            name,
+            separator,
+            item_class=str,
+            separator_spaces='',
+            skip_empty=False,
+            max_item_num=None,
+    ):  # pylint: disable=too-many-arguments
+        self._parse_string_array(
+            name,
+            separator,
+            max_item_num=max_item_num,
+            item_class=item_class,
+            separator_spaces=separator_spaces,
+            skip_empty=skip_empty
+        )
 
 
 @attr.s
@@ -365,9 +419,10 @@ class ParserBinary(ParserBase):
         self._parsed_length += parsed_length
 
         try:
-            self._parse_string_by_length(name, value, value, encoding, str)
+            value, parsed_length = self._parse_string_by_length(name, value, value, encoding, str)
+            self._parsed_length += parsed_length
+            self._parsed_values[name] = value
         except InvalidValue as e:
-            self._parsed_length -= parsed_length
             raise e
 
     def _parse_parsable_derived_array(self, name, items_size, item_classes, fallback_class=None):
@@ -438,7 +493,10 @@ class ComposerBase(object):
 
         for value in values:
             try:
-                composed_str += value.encode(encoding)
+                if isinstance(value, ParsableBase):
+                    composed_str += value.compose()
+                else:
+                    composed_str += value.encode(encoding)
             except UnicodeError as e:
                 six.raise_from(InvalidValue(value, type(self)), e)
 

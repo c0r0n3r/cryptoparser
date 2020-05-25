@@ -151,6 +151,15 @@ class SerializableEnumVariantParsable(VariantParsable):
         ])
 
 
+class AlwaysTestStringComposer(ParsableBase):
+    @classmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    def compose(self):
+        return b'test'
+
+
 @attr.s
 class SerializableEnumValue(Serializable):
     code = attr.ib(validator=attr.validators.instance_of(int))

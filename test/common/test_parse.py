@@ -8,6 +8,7 @@ from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
 
 from .classes import (
     AlwaysInvalidTypeVariantParsable,
+    AlwaysTestStringComposer,
     ConditionalParsable,
     FlagEnum,
     OneByteOddParsable,
@@ -308,6 +309,16 @@ class TestParserText(TestParsableBase):
         parser.parse_separator(';')
         self.assertEqual(parser.unparsed_length, 0)
 
+        parser = ParserText(b';;test;;')
+        parser.parse_separator(';', max_length=None)
+        self.assertEqual(parser.unparsed_length, 6)
+
+        parser.parse_string_by_length('test', 4, 4)
+        self.assertEqual(parser.unparsed_length, 2)
+
+        parser.parse_separator(';', max_length=None)
+        self.assertEqual(parser.unparsed_length, 0)
+
         parser = ParserText(b';;')
         with self.assertRaises(InvalidValue) as context_manager:
             parser.parse_separator(';', max_length=1)
@@ -443,11 +454,103 @@ class TestParserText(TestParsableBase):
             parser.parse_string_by_length('alphabet')
         self.assertEqual(context_manager.exception.value, self._ALPHA_BETA_GAMMA_HASHMARK_BYTES)
 
-    def test_parse_string_array(self):
+
+class TestParserTextStringArray(TestParsableBase):
+    def test_empty(self):
+        parser = ParserText(b'')
+        parser.parse_string_array('array', ',', skip_empty=True)
+        self.assertEqual(parser['array'], [])
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_array('array', ',', skip_empty=False)
+        self.assertEqual(context_manager.exception.value, b'')
+        self.assertEqual(parser.unparsed_length, 0)
+
+    def test_separator_only(self):
+        parser = ParserText(b',,,')
+        parser.parse_string_array('array', ',', skip_empty=True)
+        self.assertEqual(parser['array'], [])
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b',,,')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_array('array', ',', skip_empty=False)
+        self.assertEqual(context_manager.exception.value, b',,,')
+        self.assertEqual(parser.unparsed_length, 3)
+
+    def test_space_only(self):
+        parser = ParserText(b'  ')
+        parser.parse_string_array('array', ',', separator_spaces=' ', skip_empty=True)
+        self.assertEqual(parser['array'], [])
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'   ')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_array('array', ',', separator_spaces=' ')
+        self.assertEqual(context_manager.exception.value, b'')
+        self.assertEqual(parser.unparsed_length, 3)
+
+    def test_separator_and_spaces(self):
+        parser = ParserText(b'  ,  ,,  ,,,')
+        parser.parse_string_array('array', ',', separator_spaces=' ', skip_empty=True)
+        self.assertEqual(parser['array'], [])
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'  ,  ,,  ,,,')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_array('array', ',', separator_spaces=' ')
+        self.assertEqual(context_manager.exception.value, b',  ,,  ,,,')
+        self.assertEqual(parser.unparsed_length, 12)
+
+    def test_one_character_separator(self):
         parser = ParserText(b'a,b')
         parser.parse_string_array('array', ',')
         self.assertEqual(parser['array'], ['a', 'b'])
         self.assertEqual(parser.unparsed_length, 0)
+
+    def test_separator_spaces(self):
+        parser = ParserText(b' a; \tb\t;\t c')
+        parser.parse_string_array('array', ';', separator_spaces=' \t')
+        self.assertEqual(parser['array'], ['a', 'b', 'c'])
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b' a; \tb')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_array('array', ';', separator_spaces='\t')
+        self.assertEqual(context_manager.exception.value, b'b')
+        self.assertEqual(parser.unparsed_length, 6)
+
+        parser = ParserText(b' a ')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_array('array', ';', separator_spaces=' ')
+        self.assertEqual(context_manager.exception.value, b'')
+        self.assertEqual(parser.unparsed_length, 3)
+
+    def test_starts_with_separator(self):
+        parser = ParserText(b'; a; b; c')
+        parser.parse_string_array('array', ';', separator_spaces=' ', skip_empty=True)
+        self.assertEqual(parser['array'], ['a', 'b', 'c'])
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'; a; b; c')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_array('array', ';', separator_spaces=' ')
+        self.assertEqual(context_manager.exception.value, b'; a; b; c')
+        self.assertEqual(parser.unparsed_length, 9)
+
+    def test_ends_with_separator(self):
+        parser = ParserText(b'a; b; c; ')
+        parser.parse_string_array('array', ';', separator_spaces=' ', skip_empty=True)
+        self.assertEqual(parser['array'], ['a', 'b', 'c'])
+        self.assertEqual(parser.unparsed_length, 0)
+
+    def test_ends_with_separat(self):
+        parser = ParserText(b'a; b; c')
+        parser.parse_string_array('array', ';', separator_spaces=' ', max_item_num=2)
+        self.assertEqual(parser['array'], ['a', 'b'])
+        self.assertEqual(parser.unparsed_length, 1)
 
 
 class TestComposerBinary(TestParsableBase):
@@ -669,6 +772,14 @@ class TestComposerText(TestParsableBase):
         composer.compose_string_array(list(self._ALPHA_BETA_GAMMA), '')
         self.assertEqual(composer.composed, self._ALPHA_BETA_GAMMA.encode('utf-8'))
         self.assertEqual(composer.composed_length, len(self._ALPHA_BETA_GAMMA) * 2)
+
+        composer = ComposerText()
+
+        composer.compose_string_array(
+            [AlwaysTestStringComposer(), AlwaysTestStringComposer(), AlwaysTestStringComposer()], '#'
+        )
+        self.assertEqual(composer.composed, b'test#test#test')
+        self.assertEqual(composer.composed_length, len(AlwaysTestStringComposer().compose()) * 3 + 2)
 
     def test_compose_separator(self):
         composer = ComposerText()
