@@ -195,6 +195,24 @@ class ParserText(ParserBase):
         separator = bytearray(separator, self._encoding)
         self._parse_numeric_array(name, item_num, separator, numeric_class)
 
+    def parse_string(self, name, value):
+        min_length = len(value)
+        max_length = min_length
+        try:
+            actual_value, parsed_length = self._parse_string_by_length(
+                name, min_length, max_length, self._encoding, str
+            )
+        except NotEnoughData as e:
+            six.raise_from(
+                InvalidValue(self._parsable[self._parsed_length:min_length - e.bytes_needed], type(self), name), e
+            )
+
+        if value != actual_value:
+            raise InvalidValue(self._parsable[self._parsed_length:self._parsed_length + max_length], type(self), name)
+
+        self._parsed_values[name] = value
+        self._parsed_length += parsed_length
+
     def parse_string_by_length(self, name, min_length=1, max_length=None, item_class=str):
         self._parse_string_by_length(name, min_length, max_length, self._encoding, item_class)
 

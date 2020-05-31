@@ -397,6 +397,21 @@ class TestParserText(TestParsableBase):
         self.assertEqual(parser['string'], 'a')
         self.assertEqual(parser.unparsed_length, 2)
 
+    def test_parse_string(self):
+        parser = ParserText(b'abc')
+        parser.parse_string('string', 'abc')
+        self.assertEqual(parser['string'], 'abc')
+
+        parser = ParserText(b'abcd')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string('string', 'bcd')
+        self.assertEqual(context_manager.exception.value, b'abc')
+
+        parser = ParserText(b'abc')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string('string', 'abcd')
+        self.assertEqual(context_manager.exception.value, b'abc')
+
     def test_parse_string_by_length(self):
         parser = ParserText(b'abc')
         parser.parse_string_by_length('string', 1, None)
