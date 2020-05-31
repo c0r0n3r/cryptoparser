@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import datetime
 import unittest
 
 try:
@@ -559,6 +560,22 @@ class TestParserTextStringArray(TestParsableBase):
         parser.parse_string_array('array', ';', separator_spaces=' ', max_item_num=2)
         self.assertEqual(parser['array'], ['a', 'b'])
         self.assertEqual(parser.unparsed_length, 1)
+
+    def test_parse_time_delta(self):
+        parser = ParserText(b'86400')
+        parser.parse_time_delta('timedelta')
+        self.assertEqual(parser['timedelta'], datetime.timedelta(1))
+        self.assertEqual(parser.unparsed_length, 0)
+
+        timedelta_value = str(int(datetime.timedelta.max.total_seconds())).encode('ascii')
+        parser = ParserText(timedelta_value)
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_time_delta('timedelta')
+        self.assertEqual(
+            context_manager.exception.value,
+            int(datetime.timedelta.max.total_seconds())
+        )
+        self.assertEqual(parser.unparsed_length, len(timedelta_value))
 
 
 class TestComposerBinary(TestParsableBase):
