@@ -9,6 +9,9 @@ import attr
 import six
 from six.moves import collections_abc
 
+import dateutil
+import dateutil.parser
+
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 import cryptoparser.common.utils
 
@@ -387,6 +390,16 @@ class ParserText(ParserBase):
             skip_empty=skip_empty
         )
 
+    def parse_date_time(self, name):
+        try:
+            value = self._parsable[self._parsed_length:]
+            date_time = dateutil.parser.parse(value.decode(self._encoding))
+        except ValueError as e:
+            six.raise_from(InvalidValue(value, type(self), 'value'), e)
+
+        self._parsed_values[name] = date_time
+        self._parsed_length = len(self._parsable)
+
     def parse_time_delta(self, name):
         value, parsed_length = self._parse_numeric_array(name, 1, None, int)
 
@@ -614,6 +627,12 @@ class ComposerText(ComposerBase):
 
     def compose_separator(self, value):
         self.compose_string(value)
+
+    def compose_date_time(self, value, fmt):
+        self.compose_string(value.strftime(fmt))
+
+    def compose_time_delta(self, value):
+        self.compose_numeric(int(value.total_seconds()))
 
 
 @attr.s

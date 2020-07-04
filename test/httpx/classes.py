@@ -8,7 +8,7 @@ import attr
 from cryptoparser.common.base import StringEnumParsable
 
 from cryptoparser.httpx.parse import (
-    HttpHeaderFieldValueMultiple,
+    HttpHeaderFieldsSemicolonSeparated,
     HttpHeaderFieldValueStringEnum,
     HttpHeaderFieldValueStringEnumParams,
     HttpHeaderFieldValueComponentNumber,
@@ -16,6 +16,7 @@ from cryptoparser.httpx.parse import (
     HttpHeaderFieldValueComponentString,
     HttpHeaderFieldValueComponentQuotedString,
     HttpHeaderFieldValueComponentTimeDelta,
+    HttpHeaderFieldValueTimeDelta,
 )
 
 
@@ -54,6 +55,12 @@ class TestCasesBasesHttpHeader:
         def test_parse_lower_case(self):
             parsed_header = self._header_full.parse_exact_size(self._header_full_lower_case_bytes)
             self.assertEqual(parsed_header, self._header_full)
+
+
+class HttpHeaderFieldValueTimeDeltaTest(HttpHeaderFieldValueTimeDelta):
+    @classmethod
+    def get_name(cls):
+        return 'testTimeDelta'
 
 
 class HttpHeaderFieldValueEnumTest(StringEnumParsable, enum.Enum):
@@ -104,7 +111,7 @@ class HttpHeaderFieldValueComponentTimeDeltaTest(HttpHeaderFieldValueComponentTi
 
 
 @attr.s
-class HttpHeaderFieldValueMultipleTest(HttpHeaderFieldValueMultiple):
+class HttpHeaderFieldValueMultipleTest(HttpHeaderFieldsSemicolonSeparated):
     time_delta = attr.ib(
         converter=HttpHeaderFieldValueComponentTimeDeltaTest.convert,
         validator=attr.validators.instance_of(HttpHeaderFieldValueComponentTimeDeltaTest)

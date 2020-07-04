@@ -82,6 +82,17 @@ Hypertext Transfer Protocol (HTTP)
 Headers
 """""""
 
+#. supports detailed parsing of generic headers (\
+   `Content-Type <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type>`_, \
+   `Server <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server>`_)
+#. supports detailed parsing of caching headers (\
+   `Age <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Age>`_, \
+   `Cache-Control <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control>`_, \
+   `Date <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Date>`_, \
+   `ETag <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag>`_, \
+   `Expires <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expires>`_, \
+   `Last-Modified <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified>`_, \
+   `Pragma <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Pragma>`_)
 #. supports detailed parsing of security headers (\
    `Expect-CT <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expect-CT>`_, \
    `Expect-Staple <https://scotthelme.co.uk/designing-a-new-security-header-expect-staple>`_, \

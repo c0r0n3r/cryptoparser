@@ -73,8 +73,22 @@ class HttpHeaderFieldValueBase(ParsableBase):
 
 
 @attr.s
-class HttpHeaderFieldValueSingle(HttpHeaderFieldValueBase, Serializable):
+class HttpHeaderFieldValueSingleBase(HttpHeaderFieldValueBase, Serializable):
     value = attr.ib()
+
+    @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_value_type(cls):
+        raise NotImplementedError()
 
     @value.validator
     def _value_validate(self, _, value):
@@ -82,6 +96,21 @@ class HttpHeaderFieldValueSingle(HttpHeaderFieldValueBase, Serializable):
         if not isinstance(value, value_type):
             raise InvalidValue(value, value_type, 'value')
 
+    def _value_to_str(self):
+        return self.compose().decode('ascii')
+
+    def _as_markdown(self, level):
+        return self._markdown_result(self._value_to_str(), level)
+
+
+class HttpHeaderFieldValueSingleSimpleBase(HttpHeaderFieldValueSingleBase):
+    @classmethod
+    @abc.abstractmethod
+    def _value_from_str(cls, value):
+        raise NotImplementedError()
+
+
+class HttpHeaderFieldValueSingle(HttpHeaderFieldValueSingleSimpleBase):
     @classmethod
     def _parse(cls, parsable):
         parser = ParserText(parsable)
@@ -103,37 +132,10 @@ class HttpHeaderFieldValueSingle(HttpHeaderFieldValueBase, Serializable):
     def _get_value_type(cls):
         raise NotImplementedError()
 
-    @classmethod
-    @abc.abstractmethod
-    def _value_from_str(cls, value):
-        raise NotImplementedError()
-
-    def _value_to_str(self):
-        return self.compose().decode('ascii')
-
-    def _as_markdown(self, level):
-        return self._markdown_result(self._value_to_str(), level)
-
 
 @attr.s
 class HttpHeaderFieldValueStringEnumParams(object):
     code = attr.ib(validator=attr.validators.instance_of(six.string_types))
-
-
-class HttpHeaderFieldValueStringEnum(HttpHeaderFieldValueSingle):
-    @classmethod
-    @abc.abstractmethod
-    def _get_value_type(cls):
-        raise NotImplementedError()
-
-    @classmethod
-    def _value_from_str(cls, value):
-        try:
-            parsed_value = cls._get_value_type().parse_exact_size(value.encode('ascii'))
-        except InvalidValue as e:
-            six.raise_from(InvalidValue(value, cls, 'value'), e)
-
-        return parsed_value
 
 
 class HttpHeaderFieldValueString(HttpHeaderFieldValueSingle):
@@ -146,25 +148,111 @@ class HttpHeaderFieldValueString(HttpHeaderFieldValueSingle):
         return str(value)
 
 
+class HttpHeaderFieldValueSingleComplexBase(HttpHeaderFieldValueSingleBase):
+    @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+class HttpHeaderFieldValueStringEnum(HttpHeaderFieldValueSingleComplexBase):
+    @classmethod
+    @abc.abstractmethod
+    def _get_value_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        try:
+            value = cls._get_value_type().parse_exact_size(parsable)
+        except InvalidValue as e:
+            six.raise_from(InvalidValue(parsable.decode('ascii'), cls, 'value'), e)
+
+        return cls(value), len(parsable)
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_string(self.value.value.code)
+
+        return composer.composed
+
+
+class HttpHeaderFieldValueDateTime(HttpHeaderFieldValueSingleComplexBase):
+    @classmethod
+    def _get_value_type(cls):
+        return datetime.datetime
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_date_time('value')
+
+        return cls(parser['value']), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_date_time(self.value, '%a, %d %b %Y %H:%M:%S GMT')
+
+        return composer.composed
+
+
+class HttpHeaderFieldValueTimeDelta(HttpHeaderFieldValueSingleComplexBase):
+    @classmethod
+    def _get_value_type(cls):
+        return datetime.timedelta
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_time_delta('value')
+
+        return cls(parser['value']), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_time_delta(self.value)
+
+        return composer.composed
+
+
 @attr.s
 class HttpHeaderFieldValueList(HttpHeaderFieldValueBase):
     components = attr.ib(validator=attr.validators.instance_of(OrderedDict), default=OrderedDict([]))
+
+    @classmethod
+    @abc.abstractmethod
+    def get_separator(cls):
+        raise NotImplementedError()
 
     @classmethod
     def _parse(cls, parsable):
         parser = ParserText(parsable)
 
         parser.parse_string_array(
-            'components', ';', item_class=HttpHeaderFieldValueComponent, separator_spaces=' \t', skip_empty=True
+            'components',
+            cls.get_separator(),
+            item_class=HttpHeaderFieldValueComponent,
+            separator_spaces=' \t',
+            skip_empty=True
         )
 
-        return HttpHeaderFieldValueList(
+        return cls(
             OrderedDict([(component.name, component.value) for component in parser['components']])
         ), parser.parsed_length
 
     def compose(self):
         composer = ComposerText()
 
+        separator = self.get_separator() + ' '
         for item_number, (name, value) in enumerate(self.components.items()):
             composer.compose_string(name)
             if value is not None:
@@ -172,12 +260,29 @@ class HttpHeaderFieldValueList(HttpHeaderFieldValueBase):
                 composer.compose_string(value)
 
             if item_number + 1 < len(self.components):
-                composer.compose_separator('; ')
+                composer.compose_separator(separator)
 
         return composer.composed
 
 
+class HttpHeaderFieldValueListCommaSeparated(HttpHeaderFieldValueList):
+    @classmethod
+    def get_separator(cls):
+        return ','
+
+
+class HttpHeaderFieldValueListSemicolonSeparated(HttpHeaderFieldValueList):
+    @classmethod
+    def get_separator(cls):
+        return ';'
+
+
 class HttpHeaderFieldValueMultiple(HttpHeaderFieldValueBase):
+    @classmethod
+    @abc.abstractmethod
+    def _get_header_value_list_class(cls):
+        raise NotImplementedError()
+
     @classmethod
     def _from_field_values(cls, components):
         attr_fields_dict = attr.fields_dict(cls)
@@ -218,7 +323,7 @@ class HttpHeaderFieldValueMultiple(HttpHeaderFieldValueBase):
 
     @classmethod
     def _parse(cls, parsable):
-        header_field_value = HttpHeaderFieldValueList.parse_exact_size(parsable)
+        header_field_value = cls._get_header_value_list_class().parse_exact_size(parsable)
         return cls._from_field_values(header_field_value.components), len(parsable)
 
     def compose(self):
@@ -244,9 +349,22 @@ class HttpHeaderFieldValueMultiple(HttpHeaderFieldValueBase):
 
             components.append(getattr(self, name))
 
-        composer.compose_string_array(components, '; ')
+        separator = self._get_header_value_list_class().get_separator() + ' '
+        composer.compose_string_array(components, separator)
 
         return composer.composed
+
+
+class HttpHeaderFieldsCommaSeparated(HttpHeaderFieldValueMultiple):
+    @classmethod
+    def _get_header_value_list_class(cls):
+        return HttpHeaderFieldValueListCommaSeparated
+
+
+class HttpHeaderFieldsSemicolonSeparated(HttpHeaderFieldValueMultiple):
+    @classmethod
+    def _get_header_value_list_class(cls):
+        return HttpHeaderFieldValueListSemicolonSeparated
 
 
 @attr.s
@@ -289,6 +407,10 @@ class HttpHeaderFieldValueComponentOption(HttpHeaderFieldValueComponentBase):
     @abc.abstractmethod
     def get_canonical_name(cls):
         raise NotImplementedError()
+
+    @classmethod
+    def _check_name(cls, name):
+        cls._check_name_insensitive(name)
 
     @classmethod
     def _parse(cls, parsable):
