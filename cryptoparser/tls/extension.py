@@ -407,7 +407,10 @@ class TlsECPointFormatVector(VectorParsable):
 
 @attr.s
 class TlsExtensionECPointFormats(TlsExtensionParsed):
-    point_formats = attr.ib(validator=attr.validators.instance_of(TlsECPointFormatVector))
+    point_formats = attr.ib(
+        converter=TlsECPointFormatVector,
+        validator=attr.validators.instance_of(TlsECPointFormatVector)
+    )
 
     @classmethod
     def get_extension_type(cls):
@@ -635,7 +638,10 @@ class TlsEllipticCurveVector(VectorParsable):
 
 @attr.s
 class TlsExtensionEllipticCurves(TlsExtensionParsed):
-    elliptic_curves = attr.ib(validator=attr.validators.instance_of(TlsEllipticCurveVector))
+    elliptic_curves = attr.ib(
+        converter=TlsEllipticCurveVector,
+        validator=attr.validators.instance_of(TlsEllipticCurveVector)
+    )
 
     @classmethod
     def get_extension_type(cls):
@@ -935,7 +941,10 @@ class TlsSignatureAndHashAlgorithmVector(VectorParsable):
 
 @attr.s
 class TlsExtensionSignatureAlgorithms(TlsExtensionParsed):
-    hash_and_signature_algorithms = attr.ib(validator=attr.validators.instance_of(TlsSignatureAndHashAlgorithmVector))
+    hash_and_signature_algorithms = attr.ib(
+        converter=TlsSignatureAndHashAlgorithmVector,
+        validator=attr.validators.instance_of(TlsSignatureAndHashAlgorithmVector)
+    )
 
     @classmethod
     def get_extension_type(cls):

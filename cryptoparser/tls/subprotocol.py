@@ -421,7 +421,10 @@ class TlsSessionIdVector(Vector):
 
 @attr.s  # pylint: disable=too-many-instance-attributes
 class TlsHandshakeClientHello(TlsHandshakeHello):
-    cipher_suites = attr.ib(converter=TlsCipherSuiteVector)
+    cipher_suites = attr.ib(
+        converter=TlsCipherSuiteVector,
+        validator=attr.validators.instance_of(TlsCipherSuiteVector)
+    )
     protocol_version = attr.ib(
         default=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
         validator=attr.validators.instance_of((TlsProtocolVersionBase, SslProtocolVersion)),
@@ -438,7 +441,11 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
         default=TlsCompressionMethodVector([TlsCompressionMethod.NULL, ]),
         validator=attr.validators.instance_of(TlsCompressionMethodVector),
     )
-    extensions = attr.ib(default=TlsExtensions(()), validator=attr.validators.instance_of(TlsExtensions))
+    extensions = attr.ib(
+        default=TlsExtensions(()),
+        converter=TlsExtensions,
+        validator=attr.validators.instance_of(TlsExtensions)
+    )
     fallback_scsv = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     empty_renegotiation_info_scsv = attr.ib(default=True, validator=attr.validators.instance_of(bool))
 
@@ -559,7 +566,11 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
         validator=attr.validators.in_(TlsCompressionMethod),
     )
     cipher_suite = attr.ib(default=None, validator=attr.validators.in_(TlsCipherSuite))
-    extensions = attr.ib(default=None, validator=attr.validators.instance_of(TlsExtensions))
+    extensions = attr.ib(
+        default=TlsExtensions([]),
+        converter=TlsExtensions,
+        validator=attr.validators.instance_of(TlsExtensions)
+    )
 
     @classmethod
     def get_handshake_type(cls):
