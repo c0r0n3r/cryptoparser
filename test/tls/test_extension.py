@@ -4,8 +4,8 @@ import collections
 import unittest
 
 from cryptoparser.common.exception import NotEnoughData, InvalidType
+from cryptoparser.tls.algorithm import TlsSignatureAndHashAlgorithm, TlsECPointFormat, TlsNamedCurve
 from cryptoparser.tls.extension import (
-    TlsECPointFormat,
     TlsExtensionECPointFormats,
     TlsExtensionEllipticCurves,
     TlsExtensionKeyShare,
@@ -18,8 +18,6 @@ from cryptoparser.tls.extension import (
     TlsExtensionUnparsed,
     TlsExtensionParsed,
     TlsExtensionType,
-    TlsNamedCurve,
-    TlsSignatureAndHashAlgorithm,
 )
 from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
