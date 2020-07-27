@@ -209,6 +209,11 @@ class BlockCipher(enum.Enum):
         key_size=40,
         block_size=64,
     )
+    RC2 = BlockCipherParams(
+        name='RC2',
+        key_size=64,
+        block_size=64,
+    )
     RC2_56 = BlockCipherParams(
         name='RC2_56',
         key_size=56,
