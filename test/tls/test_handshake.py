@@ -492,8 +492,8 @@ class TestSslHandshakeClientHello(unittest.TestCase):
 
         self.client_hello = SslHandshakeClientHello(
             cipher_kinds=[
-                SslCipherKind.RC4_128_WITH_MD5,
-                SslCipherKind.DES_192_EDE3_CBC_WITH_MD5
+                SslCipherKind.SSL_CK_RC4_128_WITH_MD5,
+                SslCipherKind.SSL_CK_DES_192_EDE3_CBC_WITH_MD5
             ],
             session_id=b'\x00\x01\x02\x03\x04\x05\x06\x07',
             challenge=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
@@ -535,8 +535,8 @@ class TestSslHandshakeServerHello(unittest.TestCase):
         self.server_hello = SslHandshakeServerHello(
             certificate=b'certificate',
             cipher_kinds=[
-                SslCipherKind.RC4_128_WITH_MD5,
-                SslCipherKind.DES_192_EDE3_CBC_WITH_MD5
+                SslCipherKind.SSL_CK_RC4_128_WITH_MD5,
+                SslCipherKind.SSL_CK_DES_192_EDE3_CBC_WITH_MD5
             ],
             connection_id=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
             session_id_hit=False
