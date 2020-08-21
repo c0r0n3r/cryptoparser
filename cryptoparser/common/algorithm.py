@@ -66,6 +66,10 @@ class KeyExchange(enum.Enum):
         name='ECDHE',
         forward_secret=True
     )
+    FORTEZZA_KEA = KeyExchangeParams(
+        name='FORTEZZA_KEA',
+        forward_secret=False
+    )
     KRB5 = KeyExchangeParams(
         name='KRB5',
         forward_secret=False
@@ -95,6 +99,10 @@ class Authentication(enum.Enum):
     )
     ECDSA = AuthenticationParams(
         name='ECDSA',
+        anonymous=False,
+    )
+    FORTEZZA = AuthenticationParams(
+        name='FORTEZZA',
         anonymous=False,
     )
     KRB5 = AuthenticationParams(
@@ -180,6 +188,11 @@ class BlockCipher(enum.Enum):
         name='eSTREAM Salsa20',
         key_size=256,
         block_size=None,
+    )
+    FORTEZZA = BlockCipherParams(
+        name='FORTEZZA',
+        key_size=96,
+        block_size=64,
     )
     IDEA = BlockCipherParams(
         name='IDEA',
