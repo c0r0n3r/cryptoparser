@@ -3315,7 +3315,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=True,
     )
-    SSL_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
+    TLS_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0xfefe,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
@@ -3324,8 +3324,26 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+    TLS_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xfeff,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
+    OLD_TLS_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
+        code=0xffe0,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.DES,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.SHA1,
+        authenticated_encryption=False,
+    )
+    OLD_TLS_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+        code=0xffe1,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
