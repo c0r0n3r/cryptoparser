@@ -1425,6 +1425,42 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA256,
         authenticated_encryption=False,
     )
+    TLS_CECPQ1_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
+        code=0x16b7,
+        key_exchange=KeyExchange.CECPQ1,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.CHACHA20,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
+        authenticated_encryption=True,
+    )
+    TLS_CECPQ1_ECDSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
+        code=0x16b8,
+        key_exchange=KeyExchange.CECPQ1,
+        authentication=Authentication.ECDSA,
+        bulk_cipher=BlockCipher.CHACHA20,
+        block_cipher_mode=None,
+        mac=MAC.POLY1305,
+        authenticated_encryption=True,
+    )
+    TLS_CECPQ1_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
+        code=0x16b9,
+        key_exchange=KeyExchange.CECPQ1,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.AES_256,
+        block_cipher_mode=BlockCipherMode.GCM,
+        mac=MAC.SHA384,
+        authenticated_encryption=True,
+    )
+    TLS_CECPQ1_ECDSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
+        code=0x16ba,
+        key_exchange=KeyExchange.CECPQ1,
+        authentication=Authentication.ECDSA,
+        bulk_cipher=BlockCipher.AES_256,
+        block_cipher_mode=BlockCipherMode.GCM,
+        mac=MAC.SHA384,
+        authenticated_encryption=True,
+    )
     TLS_ECDH_ECDSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc001,
         key_exchange=KeyExchange.ECDH,

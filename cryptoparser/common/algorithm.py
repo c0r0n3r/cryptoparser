@@ -46,6 +46,10 @@ class KeyExchange(enum.Enum):
         name='ADH',
         forward_secret=False
     )
+    CECPQ1 = KeyExchangeParams(
+        name='CECPQ1',
+        forward_secret=False
+    )
     DH = KeyExchangeParams(  # pylint: disable=invalid-name
         name='DH',
         forward_secret=False
