@@ -3,6 +3,7 @@
 import abc
 import enum
 import attr
+import six
 
 from cryptoparser.common.base import Serializable
 from cryptoparser.common.exception import TooMuchData, InvalidValue
@@ -129,7 +130,7 @@ class SerializableSimpleTypes(Serializable):
         self.int_value = 1
         self.float_value = 1.0
         self.bool_value = False
-        self.str_value = 'string'
+        self.str_value = six.u('string')
         self.none_value = None
 
 

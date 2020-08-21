@@ -42,7 +42,7 @@ def _default(
         result = _get_dict_result(obj)
     elif isinstance(obj, (list, tuple)):
         result = [_default(None, item) for item in obj]
-    elif isinstance(obj, (str, bool, int, float)) or obj is None:
+    elif isinstance(obj, six.string_types + six.integer_types + (float, bool, )) or obj is None:
         result = obj
     else:
         result = repr(obj)
