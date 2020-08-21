@@ -3396,6 +3396,42 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
+    TLS_RSA_WITH_RC2_CBC_MD5 = CipherSuiteParams(
+        code=0xff80,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.RC2,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
+        authenticated_encryption=False,
+    )
+    TLS_RSA_WITH_IDEA_CBC_MD5 = CipherSuiteParams(
+        code=0xff81,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.IDEA,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
+        authenticated_encryption=False,
+    )
+    TLS_RSA_WITH_DES_CBC_MD5 = CipherSuiteParams(
+        code=0xff82,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.DES,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
+        authenticated_encryption=False,
+    )
+    TLS_RSA_WITH_3DES_EDE_CBC_MD5 = CipherSuiteParams(
+        code=0xff83,
+        key_exchange=KeyExchange.RSA,
+        authentication=Authentication.RSA,
+        bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
+        block_cipher_mode=BlockCipherMode.CBC,
+        mac=MAC.MD5,
+        authenticated_encryption=False,
+    )
     OLD_TLS_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0xffe0,
         key_exchange=KeyExchange.RSA,
