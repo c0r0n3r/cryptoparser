@@ -7,6 +7,8 @@ import enum
 import random
 import attr
 
+import six
+
 from cryptoparser.common.base import Opaque, Vector, VectorParamNumeric, VectorParamParsable, VectorParsable
 from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
@@ -169,15 +171,15 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
     def _validator_level(self, attribute, value):  # pylint: disable=unused-argument
         try:
             self.level = TlsAlertLevel(value)
-        except ValueError:
-            raise InvalidValue(value, TlsAlertLevel, 'level')
+        except ValueError as e:
+            six.raise_from(InvalidValue(value, TlsAlertLevel, 'level'), e)
 
     @description.validator
     def _validator_description(self, attribute, value):  # pylint: disable=unused-argument
         try:
             self.description = TlsAlertDescription(value)
-        except ValueError:
-            raise InvalidValue(value, TlsAlertDescription)
+        except ValueError as e:
+            six.raise_from(InvalidValue(value, TlsAlertDescription), e)
 
 
 TlsSubprotocolMessageBase.register(TlsAlertMessage)
@@ -283,7 +285,7 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
         try:
             parser.parse_bytes('payload', parser['handshake_length'])
         except NotEnoughData as e:
-            raise NotEnoughData(e.bytes_needed)
+            six.raise_from(NotEnoughData(e.bytes_needed), e)
 
         return parser
 

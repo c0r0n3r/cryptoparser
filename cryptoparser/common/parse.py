@@ -93,8 +93,8 @@ class ParserBinary(object):
                 )[0]
                 try:
                     value.append(item_numeric_class(item))
-                except ValueError:
-                    raise InvalidValue(item, item_numeric_class)
+                except ValueError as e:
+                    six.raise_from(InvalidValue(item, item_numeric_class), e)
         else:
             raise NotImplementedError()
 
@@ -162,7 +162,7 @@ class ParserBinary(object):
         try:
             return self._parse_parsable_array(name, items_size, [item_class, ], fallback_class)
         except ValueError as e:
-            raise InvalidValue(e.args[0], item_class, name)
+            six.raise_from(InvalidValue(e.args[0], item_class, name), e)
 
     def parse_parsable_derived_array(self, name, items_size, item_base_class, fallback_class=None):
         item_classes = cryptoparser.common.utils.get_leaf_classes(item_base_class)
@@ -171,7 +171,7 @@ class ParserBinary(object):
         except NotEnoughData as e:
             raise e
         except ValueError as e:
-            raise InvalidValue(e.args[0], item_base_class)
+            six.raise_from(InvalidValue(e.args[0], item_base_class), e)
 
     def parse_variant(self, name, variant):
         parsed_object, value_length = variant.parse(self._parsable[self._parsed_length:])
@@ -198,8 +198,8 @@ class ComposerBinary(object):
                 if item_size == 3:
                     del composed_bytes[-4]
 
-            except struct.error:
-                raise InvalidValue(value, int)
+            except struct.error as e:
+                six.raise_from(InvalidValue(value, int), e)
 
         self._composed += composed_bytes
 

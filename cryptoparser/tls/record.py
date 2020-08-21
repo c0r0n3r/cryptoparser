@@ -2,6 +2,8 @@
 
 import attr
 
+import six
+
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
@@ -31,7 +33,7 @@ class TlsRecord(ParsableBase):
         try:
             parser.parse_numeric('content_type', 1, TlsContentType)
         except InvalidValue as e:
-            raise InvalidValue(e.value, TlsContentType)
+            six.raise_from(InvalidValue(e.value, TlsContentType), e)
         parser.parse_parsable('protocol_version', TlsProtocolVersionBase)
         parser.parse_numeric('record_length', 2)
 
@@ -97,7 +99,7 @@ class SslRecord(ParsableBase):
         try:
             parser.parse_numeric('message_type', 1, SslMessageType)
         except InvalidValue as e:
-            raise InvalidValue(e.value, SslMessageType)
+            six.raise_from(InvalidValue(e.value, SslMessageType), e)
 
         parser.parse_variant('message', SslSubprotocolMessageParser(parser['message_type']))
         parser.parse_bytes('padding', padding_length)

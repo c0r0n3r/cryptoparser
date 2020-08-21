@@ -14,6 +14,8 @@ from collections import OrderedDict
 
 import attr
 
+import six
+
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 
@@ -202,15 +204,12 @@ class VectorParsable(VectorBase):
         parser = ParserBinary(parsable)
 
         parser.parse_numeric('item_byte_num', vector_param.item_num_size)
-        try:
-            parser.parse_parsable_array(
-                'items',
-                items_size=parser['item_byte_num'],
-                item_class=vector_param.item_class,
-                fallback_class=vector_param.fallback_class
-            )
-        except NotEnoughData as e:
-            raise NotEnoughData(e.bytes_needed)
+        parser.parse_parsable_array(
+            'items',
+            items_size=parser['item_byte_num'],
+            item_class=vector_param.item_class,
+            fallback_class=vector_param.fallback_class
+        )
 
         return cls(parser['items']), parser.parsed_length
 
@@ -265,8 +264,8 @@ class Opaque(Vector):
 
         try:
             vector, parsed_length = super(Opaque, cls)._parse(composer.composed_bytes + parsable)
-        except NotEnoughData:
-            raise NotEnoughData(cls.get_byte_num())
+        except NotEnoughData as e:
+            six.raise_from(NotEnoughData(cls.get_byte_num()), e)
 
         return cls(vector), parsed_length - vector_param.item_num_size
 

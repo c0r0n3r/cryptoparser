@@ -122,7 +122,7 @@ class TlsProtocolVersionFinal(TlsProtocolVersionBase):
         try:
             TlsVersion(value)
         except ValueError as e:
-            raise InvalidValue(e.args[0], TlsProtocolVersionFinal)
+            six.raise_from(InvalidValue(e.args[0], TlsProtocolVersionFinal), e)
 
 
 @attr.s(init=False, eq=False, order=False)
