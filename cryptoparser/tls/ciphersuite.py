@@ -1596,7 +1596,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01a,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.SRP,
@@ -1605,7 +1605,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01b,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.RSA,
@@ -1614,7 +1614,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_DSS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01c,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.DSS,
@@ -1623,7 +1623,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_WITH_AES_128_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01d,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.SRP,
@@ -1632,7 +1632,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01e,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.RSA,
@@ -1641,7 +1641,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_DSS_WITH_AES_128_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01f,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.DSS,
@@ -1650,7 +1650,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_WITH_AES_256_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc020,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.SRP,
@@ -1659,7 +1659,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc021,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.RSA,
@@ -1668,7 +1668,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_SRP_DSS_WITH_AES_256_CBC_SHA = CipherSuiteParams(
+    TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc022,
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.DSS,
@@ -2370,21 +2370,21 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA384,
         authenticated_encryption=True,
     )
-    TLS_ECDHE_PSK_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
+    TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc070,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_128,
-        block_cipher_mode=BlockCipherMode.GCM,
+        block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA256,
         authenticated_encryption=True,
     )
-    TLS_ECDHE_PSK_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
+    TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc071,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_256,
-        block_cipher_mode=BlockCipherMode.GCM,
+        block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA384,
         authenticated_encryption=True,
     )
@@ -2892,7 +2892,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=None,
         authenticated_encryption=True,
     )
-    TLS_DHE_PSK_WITH_AES_128_CCM_8 = CipherSuiteParams(
+    TLS_PSK_DHE_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0aa,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
@@ -2901,7 +2901,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=None,
         authenticated_encryption=True,
     )
-    TLS_DHE_PSK_WITH_AES_256_CCM_8 = CipherSuiteParams(
+    TLS_PSK_DHE_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0ab,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
@@ -3035,6 +3035,42 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+    )
+    TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
+        code=0xd001,
+        key_exchange=KeyExchange.ECDHE,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.GCM,
+        mac=MAC.SHA256,
+        authenticated_encryption=False,
+    )
+    TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
+        code=0xd002,
+        key_exchange=KeyExchange.ECDHE,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.AES_256,
+        block_cipher_mode=BlockCipherMode.GCM,
+        mac=MAC.SHA384,
+        authenticated_encryption=False,
+    )
+    TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 = CipherSuiteParams(
+        code=0xd003,
+        key_exchange=KeyExchange.ECDHE,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.CCM_8,
+        mac=MAC.SHA256,
+        authenticated_encryption=False,
+    )
+    TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256 = CipherSuiteParams(
+        code=0xd005,
+        key_exchange=KeyExchange.ECDHE,
+        authentication=Authentication.PSK,
+        bulk_cipher=BlockCipher.AES_128,
+        block_cipher_mode=BlockCipherMode.CCM,
+        mac=MAC.SHA256,
+        authenticated_encryption=False,
     )
     TLS_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x1301,
