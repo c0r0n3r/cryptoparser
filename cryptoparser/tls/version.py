@@ -72,6 +72,9 @@ class TlsProtocolVersionBase(Serializable, ParsableBase):
     def _asdict(self):
         return self.identifier
 
+    def _as_markdown(self, level):
+        return self._markdown_result(str(self), level)
+
     @property
     @abc.abstractmethod
     def identifier(self):
