@@ -858,6 +858,42 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=MAC.SHA256,
         authenticated_encryption=False,
     )
+    TLS_GOSTR341094_WITH_28147_CNT_IMIT = CipherSuiteParams(
+        code=0x0080,
+        key_exchange=KeyExchange.GOST_R3410_94,
+        authentication=Authentication.GOST_R3410_94,
+        bulk_cipher=BlockCipher.GOST2814789,
+        block_cipher_mode=None,
+        mac=MAC.IMIT_GOST28147,
+        authenticated_encryption=False,
+    )
+    TLS_GOSTR341001_WITH_28147_CNT_IMIT = CipherSuiteParams(
+        code=0x0081,
+        key_exchange=KeyExchange.GOST_R3410_01,
+        authentication=Authentication.GOST_R3410_94,
+        bulk_cipher=BlockCipher.GOST2814789,
+        block_cipher_mode=None,
+        mac=MAC.IMIT_GOST28147,
+        authenticated_encryption=False,
+    )
+    TLS_GOSTR341094_WITH_NULL_GOSTR3411 = CipherSuiteParams(
+        code=0x0082,
+        key_exchange=KeyExchange.GOST_R3410_94,
+        authentication=Authentication.GOST_R3410_94,
+        bulk_cipher=None,
+        block_cipher_mode=None,
+        mac=MAC.GOST_R3411_94,
+        authenticated_encryption=False,
+    )
+    TLS_GOSTR341001_WITH_NULL_GOSTR3411 = CipherSuiteParams(
+        code=0x0083,
+        key_exchange=KeyExchange.GOST_R3410_01,
+        authentication=Authentication.GOST_R3410_94,
+        bulk_cipher=None,
+        block_cipher_mode=None,
+        mac=MAC.GOST_R3411_94,
+        authenticated_encryption=False,
+    )
     TLS_RSA_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0084,
         key_exchange=KeyExchange.RSA,
@@ -3063,6 +3099,69 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         mac=None,
         authenticated_encryption=True,
     )
+    TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC = CipherSuiteParams(
+        code=0xc100,
+        key_exchange=KeyExchange.GOST_R3411_12_256,
+        authentication=Authentication.GOST_R3410_12_256,
+        bulk_cipher=BlockCipher.GOST_R3412_15_128,
+        block_cipher_mode=BlockCipherMode.CTR,
+        mac=MAC.GOST_R3413_15,
+        authenticated_encryption=False,
+    )
+    TLS_GOSTR341112_256_WITH_MAGMA_CTR_OMAC = CipherSuiteParams(
+        code=0xc101,
+        key_exchange=KeyExchange.GOST_R3411_12_256,
+        authentication=Authentication.GOST_R3410_12_256,
+        bulk_cipher=BlockCipher.GOST_R3412_15_64,
+        block_cipher_mode=BlockCipherMode.CTR,
+        mac=MAC.GOST_R3413_15,
+        authenticated_encryption=False,
+    )
+    TLS_GOSTR341112_256_WITH_28147_CNT_IMIT = CipherSuiteParams(
+        code=0xc102,
+        key_exchange=KeyExchange.GOST_R3411_12_256,
+        authentication=Authentication.GOST_R3410_12_256,
+        bulk_cipher=BlockCipher.GOST2814789,
+        block_cipher_mode=BlockCipherMode.CNT,
+        mac=MAC.IMIT_GOST28147,
+        authenticated_encryption=False,
+    )
+    TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L = CipherSuiteParams(
+        code=0xc103,
+        key_exchange=KeyExchange.GOST_R3411_12_256,
+        authentication=Authentication.GOST_R3410_12_256,
+        bulk_cipher=BlockCipher.GOST_R3412_15_128,
+        block_cipher_mode=BlockCipherMode.MGM,
+        mac=None,
+        authenticated_encryption=True,
+    )
+    TLS_GOSTR341112_256_WITH_MAGMA_MGM_L = CipherSuiteParams(
+        code=0xc104,
+        key_exchange=KeyExchange.GOST_R3411_12_256,
+        authentication=Authentication.GOST_R3410_12_256,
+        bulk_cipher=BlockCipher.GOST_R3412_15_64,
+        block_cipher_mode=BlockCipherMode.MGM,
+        mac=None,
+        authenticated_encryption=True,
+    )
+    TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S = CipherSuiteParams(
+        code=0xc105,
+        key_exchange=KeyExchange.GOST_R3411_12_256,
+        authentication=Authentication.GOST_R3410_12_256,
+        bulk_cipher=BlockCipher.GOST_R3412_15_128,
+        block_cipher_mode=BlockCipherMode.MGM,
+        mac=None,
+        authenticated_encryption=True,
+    )
+    TLS_GOSTR341112_256_WITH_MAGMA_MGM_S = CipherSuiteParams(
+        code=0xc106,
+        key_exchange=KeyExchange.GOST_R3411_12_256,
+        authentication=Authentication.GOST_R3410_12_256,
+        bulk_cipher=BlockCipher.GOST_R3412_15_64,
+        block_cipher_mode=BlockCipherMode.MGM,
+        mac=None,
+        authenticated_encryption=True,
+    )
     OLD_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcc13,
         key_exchange=KeyExchange.ECDHE,
@@ -3430,6 +3529,24 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer, enum.Enum):
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
+        authenticated_encryption=False,
+    )
+    OLD_TLS_GOSTR341112_256_WITH_28147_CNT_IMIT = CipherSuiteParams(
+        code=0xff85,
+        key_exchange=KeyExchange.GOST_R3411_12_256,
+        authentication=Authentication.GOST_R3410_94,
+        bulk_cipher=BlockCipher.GOST2814789,
+        block_cipher_mode=None,
+        mac=MAC.IMIT_GOST28147,
+        authenticated_encryption=False,
+    )
+    TLS_GOSTR341112_256_WITH_NULL_GOSTR3411 = CipherSuiteParams(
+        code=0xff87,
+        key_exchange=KeyExchange.GOST_R3411_12_256,
+        authentication=Authentication.GOST_R3410_94,
+        bulk_cipher=None,
+        block_cipher_mode=None,
+        mac=MAC.GOST_R3411_94,
         authenticated_encryption=False,
     )
     OLD_TLS_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(

@@ -533,6 +533,34 @@ class TlsNamedCurve(TwoByteEnumComposer, enum.Enum):
         code=0x0019,
         named_group=NamedGroup.SECP521R1,
     )
+    GC256A = TlsNamedCurveParams(
+        code=0x0022,
+        named_group=NamedGroup.GC256A,
+    )
+    GC256B = TlsNamedCurveParams(
+        code=0x0023,
+        named_group=NamedGroup.GC256B,
+    )
+    GC256C = TlsNamedCurveParams(
+        code=0x0024,
+        named_group=NamedGroup.GC256C,
+    )
+    GC256D = TlsNamedCurveParams(
+        code=0x0025,
+        named_group=NamedGroup.GC256D,
+    )
+    GC512A = TlsNamedCurveParams(
+        code=0x0026,
+        named_group=NamedGroup.GC512A,
+    )
+    GC512B = TlsNamedCurveParams(
+        code=0x0027,
+        named_group=NamedGroup.GC512B,
+    )
+    GC512C = TlsNamedCurveParams(
+        code=0x0028,
+        named_group=NamedGroup.GC512C,
+    )
 
     BRAINPOOLP256R1 = TlsNamedCurveParams(
         code=0x001a,
@@ -815,6 +843,31 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
         code=0x0603,
         signature_algorithm=Authentication.ECDSA,
         hash_algorithm=MAC.SHA512
+    )
+    GOST_R3410_01 = HashAndSignatureAlgorithmParam(
+        code=0x00ed,
+        signature_algorithm=Authentication.GOST_R3410_01,
+        hash_algorithm=MAC.GOST_R3411_94,
+    )
+    OLD_GOST_R3410_12_256 = HashAndSignatureAlgorithmParam(
+        code=0x00ee,
+        signature_algorithm=Authentication.GOST_R3410_12_256,
+        hash_algorithm=MAC.GOST_R3411_12_256,
+    )
+    OLD_GOST_R3410_12_512 = HashAndSignatureAlgorithmParam(
+        code=0x00ef,
+        signature_algorithm=Authentication.GOST_R3410_12_512,
+        hash_algorithm=MAC.GOST_R3411_12_512,
+    )
+    GOST_R3410_12_256 = HashAndSignatureAlgorithmParam(
+        code=0x4008,
+        signature_algorithm=Authentication.GOST_R3410_12_256,
+        hash_algorithm=MAC.GOST_R3411_12_256,
+    )
+    GOST_R3410_12_512 = HashAndSignatureAlgorithmParam(
+        code=0x4108,
+        signature_algorithm=Authentication.GOST_R3410_12_512,
+        hash_algorithm=MAC.GOST_R3411_12_512,
     )
 
 

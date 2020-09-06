@@ -31,7 +31,7 @@ class BlockCipherModeParams(object):
 @attr.s(frozen=True)
 class MACParams(object):
     name = attr.ib(validator=attr.validators.instance_of(str))
-    digest_size = attr.ib(validator=attr.validators.instance_of(int))
+    digest_size = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
 
 
 @attr.s(frozen=True)
@@ -70,6 +70,18 @@ class KeyExchange(enum.Enum):
         name='FORTEZZA_KEA',
         forward_secret=False
     )
+    GOST_R3410_94 = KeyExchangeParams(
+        name='GOST_R3410_94',
+        forward_secret=True
+    )
+    GOST_R3410_01 = KeyExchangeParams(
+        name='GOST_R3410_01',
+        forward_secret=True
+    )
+    GOST_R3411_12_256 = KeyExchangeParams(
+        name='GOST_R3411_12',
+        forward_secret=True
+    )
     KRB5 = KeyExchangeParams(
         name='KRB5',
         forward_secret=False
@@ -103,6 +115,22 @@ class Authentication(enum.Enum):
     )
     FORTEZZA = AuthenticationParams(
         name='FORTEZZA',
+        anonymous=False,
+    )
+    GOST_R3410_01 = AuthenticationParams(
+        name='GOST_R3410_01',
+        anonymous=False,
+    )
+    GOST_R3410_12_256 = AuthenticationParams(
+        name='GOST_R3410_12_256',
+        anonymous=False,
+    )
+    GOST_R3410_12_512 = AuthenticationParams(
+        name='GOST_R3410_12_512',
+        anonymous=False,
+    )
+    GOST_R3410_94 = AuthenticationParams(
+        name='GOST_R3410_94',
         anonymous=False,
     )
     KRB5 = AuthenticationParams(
@@ -194,6 +222,21 @@ class BlockCipher(enum.Enum):
         key_size=96,
         block_size=64,
     )
+    GOST2814789 = BlockCipherParams(
+        name='GOST2814789',
+        key_size=64,
+        block_size=256,
+    )
+    GOST_R3412_15_128 = BlockCipherParams(  # "Kuznyechik"
+        name='GOST_R3412_15_128',
+        key_size=256,
+        block_size=128,
+    )
+    GOST_R3412_15_64 = BlockCipherParams(  # "Magma"
+        name='GOST_R3412_15_64',
+        key_size=256,
+        block_size=64,
+    )
     IDEA = BlockCipherParams(
         name='IDEA',
         key_size=64,
@@ -281,12 +324,41 @@ class BlockCipherMode(enum.Enum):
     CFB = BlockCipherModeParams(
         name='CFB',
     )
+    CNT = BlockCipherModeParams(
+        name='CNT',
+    )
+    CTR = BlockCipherModeParams(
+        name='CTR',
+    )
     GCM = BlockCipherModeParams(
         name='GCM',
+    )
+    MGM = BlockCipherModeParams(
+        name='MGM',
     )
 
 
 class MAC(enum.Enum):
+    IMIT_GOST28147 = MACParams(
+        name='IMIT_GOST28147',
+        digest_size=256
+    )
+    GOST_R3411_94 = MACParams(
+        name='GOST_R3411_94',
+        digest_size=256
+    )
+    GOST_R3411_12_256 = MACParams(  # Streebog
+        name='GOST_R3411_12_256',
+        digest_size=256
+    )
+    GOST_R3411_12_512 = MACParams(  # Streebog
+        name='GOST_R3411_12_512',
+        digest_size=512
+    )
+    GOST_R3413_15 = MACParams(
+        name='GOST_R3413_15',
+        digest_size=None
+    )
     MD5 = MACParams(
         name='MD5',
         digest_size=64
@@ -331,6 +403,41 @@ class NamedGroupType(enum.IntEnum):
 
 
 class NamedGroup(enum.Enum):
+    GC256A = NamedGroupParams(
+        name='tc26-gost-3410-2012-256-paramSetA',
+        size=256,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    GC256B = NamedGroupParams(
+        name='GostR3410-2001-CryptoPro-A-ParamSet',
+        size=256,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    GC256C = NamedGroupParams(
+        name='GostR3410-2001-CryptoPro-B-ParamSet',
+        size=256,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    GC256D = NamedGroupParams(
+        name='GostR3410-2001-CryptoPro-C-ParamSet',
+        size=256,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    GC512A = NamedGroupParams(
+        name='tc26-gost-3410-12-512-paramSetA',
+        size=512,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    GC512B = NamedGroupParams(
+        name='tc26-gost-3410-12-512-paramSetB',
+        size=512,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    GC512C = NamedGroupParams(
+        name='tc26-gost-3410-2012-512-paramSetC',
+        size=512,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
     SECT163K1 = NamedGroupParams(
         name='sect163k1',
         size=163,
