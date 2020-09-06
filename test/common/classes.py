@@ -127,6 +127,7 @@ class TestObject(object):
 
 class SerializableSimpleTypes(Serializable):
     def __init__(self):
+        self.UPPER = six.u('upper')  # pylint: disable=invalid-name
         self.int_value = 1
         self.float_value = 1.0
         self.bool_value = False
@@ -141,7 +142,7 @@ class SerializableIterables(Serializable):
         self.tuple_value = tuple(['value', ])
 
 
-class SerializableEnum(Serializable, enum.Enum):
+class SerializableParamEnum(enum.Enum):
     first = SerializableEnumValue(
         code=0x0001,
     )
@@ -150,9 +151,15 @@ class SerializableEnum(Serializable, enum.Enum):
     )
 
 
-class SerializableStringEnum(Serializable, enum.Enum):
+class SerializableStringEnum(enum.Enum):
     first = '1'
     second = '2'
+
+
+class SerializableEnums(Serializable):
+    def __init__(self):
+        self.param_enum = SerializableParamEnum.first
+        self.string_enum = SerializableStringEnum.second
 
 
 class SerializableHidden(Serializable):
@@ -161,17 +168,36 @@ class SerializableHidden(Serializable):
         self.visible_value = 'value'
 
 
+class SerializableSingle(Serializable):
+    def _asdict(self):
+        return 'single'
+
+
 class SerializableUnhandled(Serializable):
     def __init__(self):
-        self.bytes_value = 1 + 2j
+        self.complex_number = 1 + 2j
+
+
+@attr.s
+class SerializableHumanReadable(Serializable):
+    value = attr.ib(default='value', metadata={'human_readable_name': 'Human Readable Name'})
 
 
 class SerializableRecursive(Serializable):
     def __init__(self):
-        self.json_serializable_value = SerializableHidden()
-        self.json_serializable_in_list = list([SerializableHidden(), ])
-        self.json_serializable_in_tuple = tuple([SerializableHidden(), ])
-        self.json_serializable_in_dict = dict({'key': SerializableHidden()})
+        self.json_serializable_hidden = SerializableHidden()
+        self.json_serializable_single = SerializableSingle()
+        self.json_serializable_in_list = list([SerializableHidden(), SerializableSingle()])
+        self.json_serializable_in_tuple = tuple([SerializableHidden(), SerializableSingle()])
+        self.json_serializable_in_dict = dict({'key1': SerializableHidden(), 'key2': SerializableSingle()})
+
+
+class SerializableEmptyValues(Serializable):
+    def __init__(self):
+        self.value = None
+        self.list = list()
+        self.tuple = tuple()
+        self.dict = dict()
 
 
 class FlagEnum(enum.IntEnum):

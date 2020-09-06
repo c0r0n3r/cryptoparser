@@ -120,6 +120,12 @@ class TestTlsProtocolVersion(unittest.TestCase):
         self.assertEqual(TlsProtocolVersionFinal(TlsVersion.TLS1_2).as_json(), '\"tls1_2\"')
         self.assertEqual(TlsProtocolVersionDraft(24).as_json(), '\"tls1_3_draft23\"')
 
+    def test_as_markdown(self):
+        self.assertEqual(TlsProtocolVersionFinal(TlsVersion.SSL3).as_markdown(), 'SSL 3.0')
+        self.assertEqual(TlsProtocolVersionFinal(TlsVersion.TLS1_0).as_markdown(), 'TLS 1.0')
+        self.assertEqual(TlsProtocolVersionFinal(TlsVersion.TLS1_2).as_markdown(), 'TLS 1.2')
+        self.assertEqual(TlsProtocolVersionDraft(24).as_markdown(), 'TLS 1.3 Draft 23')
+
     def test_str(self):
         self.assertEqual(str(TlsProtocolVersionFinal(TlsVersion.SSL3)), 'SSL 3.0')
         self.assertEqual(str(TlsProtocolVersionFinal(TlsVersion.TLS1_0)), 'TLS 1.0')

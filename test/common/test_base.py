@@ -10,11 +10,23 @@ from cryptoparser.common.base import VectorParsableDerived, Opaque
 
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 
-from .classes import OneByteParsable, TwoByteParsable, OneByteOddParsable, TwoByteEvenParsable
-from .classes import ConditionalParsable
-from .classes import TestObject
-from .classes import SerializableSimpleTypes, SerializableIterables, SerializableEnum
-from .classes import SerializableHidden, SerializableUnhandled, SerializableRecursive
+from .classes import (
+    ConditionalParsable,
+    OneByteOddParsable,
+    OneByteParsable,
+    SerializableEmptyValues,
+    SerializableEnums,
+    SerializableHidden,
+    SerializableHumanReadable,
+    SerializableIterables,
+    SerializableRecursive,
+    SerializableSimpleTypes,
+    SerializableSingle,
+    SerializableUnhandled,
+    TestObject,
+    TwoByteEvenParsable,
+    TwoByteParsable,
+)
 
 
 class VectorNumericTestErrors(Vector):
@@ -276,18 +288,29 @@ class TestEnum(unittest.TestCase):
 
 
 class TestSerializable(unittest.TestCase):
-    def test_simple_types(self):
+    def test_json(self):
         self.assertEqual(
             json.dumps(SerializableSimpleTypes()),
-            '{"bool_value": false, "float_value": 1.0, "int_value": 1, "none_value": null, "str_value": "string"}'
+            '{' +
+            '"UPPER": "upper", ' +
+            '"bool_value": false, ' +
+            '"float_value": 1.0, ' +
+            '"int_value": 1, ' +
+            '"none_value": null, ' +
+            '"str_value": "string"' +
+            '}'
         )
         self.assertEqual(
             json.dumps(SerializableIterables()),
             '{"dict_value": {"value": 1}, "list_value": ["value"], "tuple_value": ["value"]}'
         )
         self.assertEqual(
-            json.dumps(SerializableEnum.first),
-            '{"first": {"code": 1}}'
+            json.dumps(SerializableEnums()),
+            '{"param_enum": {"first": {"code": 1}}, "string_enum": {"second": "2"}}'
+        )
+        self.assertEqual(
+            json.dumps(SerializableSingle()),
+            '"single"'
         )
         self.assertEqual(
             json.dumps(SerializableHidden()),
@@ -295,15 +318,93 @@ class TestSerializable(unittest.TestCase):
         )
         self.assertEqual(
             json.dumps(SerializableUnhandled()),
-            '{"bytes_value": "(1+2j)"}'
+            '{"complex_number": "(1+2j)"}'
         )
         self.assertEqual(
             json.dumps(SerializableRecursive()),
             '{' +
-            '"json_serializable_in_dict": {"key": {"visible_value": "value"}}, ' +
-            '"json_serializable_in_list": [{"visible_value": "value"}], ' +
-            '"json_serializable_in_tuple": [{"visible_value": "value"}], ' +
-            '"json_serializable_value": {"visible_value": "value"}' +
+            '"json_serializable_hidden": {"visible_value": "value"}, ' +
+            '"json_serializable_in_dict": {"key1": {"visible_value": "value"}, "key2": "single"}, ' +
+            '"json_serializable_in_list": [{"visible_value": "value"}, "single"], ' +
+            '"json_serializable_in_tuple": [{"visible_value": "value"}, "single"], ' +
+            '"json_serializable_single": "single"' +
             '}'
         )
         self.assertEqual(json.dumps(TestObject()), '{}')
+
+    def test_markdown(self):
+        self.assertEqual(
+            SerializableSimpleTypes().as_markdown(),
+            '\n'.join([
+                '* UPPER: upper',
+                '* Bool Value: no',
+                '* Float Value: 1.0',
+                '* Int Value: 1',
+                '* None Value: n/a',
+                '* Str Value: string',
+                ''
+            ])
+        )
+        self.assertEqual(
+            SerializableIterables().as_markdown(),
+            '\n'.join([
+                '* Dict Value:',
+                '    * Value: 1',
+                '* List Value:',
+                '     1. value',
+                '* Tuple Value:',
+                '     1. value',
+                ''
+            ])
+        )
+        self.assertEqual(
+            SerializableEnums().as_markdown(),
+            '\n'.join([
+                '* Param Enum: first',
+                '* String Enum: second',
+                ''
+            ])
+        )
+        self.assertEqual(
+            SerializableHidden().as_markdown(),
+            '* Visible Value: value\n'
+        )
+        self.assertEqual(
+            SerializableUnhandled().as_markdown(),
+            '* Complex Number: (1+2j)\n'
+        )
+        self.assertEqual(
+            SerializableHumanReadable().as_markdown(),
+            '* Human Readable Name: value\n'
+        )
+        self.assertEqual(
+            SerializableEmptyValues().as_markdown(),
+            '\n'.join([
+                '* Dict: -',
+                '* List: -',
+                '* Tuple: -',
+                '* Value: n/a',
+                '',
+            ])
+        )
+        self.assertEqual(
+            SerializableRecursive().as_markdown(),
+            '\n'.join([
+                '* Json Serializable Hidden:',
+                '    * Visible Value: value',
+                '* Json Serializable In Dict:',
+                '    * Key1:',
+                '        * Visible Value: value',
+                '    * Key2: single',
+                '* Json Serializable In List:',
+                '     1.',
+                '        * Visible Value: value',
+                '     2. single',
+                '* Json Serializable In Tuple:',
+                '     1.',
+                '        * Visible Value: value',
+                '     2. single',
+                '* Json Serializable Single: single',
+                '',
+            ])
+        )

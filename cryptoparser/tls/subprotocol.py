@@ -442,7 +442,7 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
     )
     extensions = attr.ib(default=TlsExtensions(()), validator=attr.validators.instance_of(TlsExtensions))
     fallback_scsv = attr.ib(default=False, validator=attr.validators.instance_of(bool))
-    empty_renegotiation_info_scsv = attr.ib(default=False, validator=attr.validators.instance_of(bool))
+    empty_renegotiation_info_scsv = attr.ib(default=True, validator=attr.validators.instance_of(bool))
 
     @classmethod
     def get_handshake_type(cls):

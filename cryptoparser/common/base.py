@@ -20,33 +20,11 @@ from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 
 
-def _get_dict_result(dict_value):
-    return OrderedDict([
-        (name, _default(None, dict_value[name]))
-        for name in sorted(dict_value.keys())
-        if not name.startswith('_')
-    ])
-
-
 def _default(
         self,  # pylint: disable=unused-argument
         obj
 ):
-    if isinstance(obj, enum.Enum):
-        result = {obj.name: attr.asdict(obj.value)}
-    elif hasattr(obj, '_asdict'):
-        result = obj._asdict()
-    elif hasattr(obj, '__dict__'):
-        result = _get_dict_result(obj.__dict__)
-    elif isinstance(obj, dict):
-        result = _get_dict_result(obj)
-    elif isinstance(obj, (list, tuple)):
-        result = [_default(None, item) for item in obj]
-    elif isinstance(obj, six.string_types + six.integer_types + (float, bool, )) or obj is None:
-        result = obj
-    else:
-        result = repr(obj)
-
+    result = Serializable._json_traverse(obj, Serializable._json_result)  # pylint: disable=protected-access
     return result
 
 
@@ -55,11 +33,147 @@ json.JSONEncoder.default = _default
 
 
 class Serializable(object):  # pylint: disable=too-few-public-methods
+    @staticmethod
+    def _get_ordered_dict(dict_value):
+        result = OrderedDict([
+            (name, dict_value[name])
+            for name in sorted(dict_value.keys())
+            if not name.startswith('_')
+        ])
+
+        return result
+
+    @staticmethod
+    def _json_result(obj):
+        if isinstance(obj, enum.Enum):
+            result = {obj.name: obj.value}
+        elif isinstance(obj, six.string_types + six.integer_types + (float, bool, )) or obj is None:
+            result = obj
+        else:
+            result = repr(obj)
+
+        return result
+
+    @staticmethod
+    def _json_traverse(obj, result_func):
+        if isinstance(obj, enum.Enum):
+            result = result_func(obj)
+        elif isinstance(obj, dict):
+            result = OrderedDict([
+                (name, Serializable._json_traverse(value, result_func))
+                for name, value in Serializable._get_ordered_dict(obj).items()
+            ])
+        elif hasattr(obj, '_asdict'):
+            result = Serializable._json_traverse(obj._asdict(), result_func)
+        elif hasattr(obj, '__dict__'):
+            result = Serializable._json_traverse(obj.__dict__, result_func)
+        elif isinstance(obj, (list, tuple)):
+            result = [Serializable._json_traverse(item, result_func) for item in obj]
+        else:
+            result = result_func(obj)
+
+        return result
+
+    @staticmethod
+    def _markdown_indent_from_level(level):
+        return 4 * level * ' '
+
+    @classmethod
+    def _markdown_human_readable_names(cls, obj, dict_value):
+        name_dict = {}
+        fields_dict = attr.fields_dict(type(obj)) if attr.has(type(obj)) else {}
+        for name in dict_value:
+            if name in fields_dict and 'human_readable_name' in fields_dict[name].metadata:
+                human_readable_name = fields_dict[name].metadata['human_readable_name']
+            elif name.isupper():
+                human_readable_name = name
+            else:
+                human_readable_name = ' '.join(name.split('_')).title()
+            name_dict[name] = human_readable_name
+
+        return name_dict
+
+    def _markdown_result_dict(self, obj, level=0):
+        indent = Serializable._markdown_indent_from_level(level)
+
+        if isinstance(obj, dict):
+            dict_value = Serializable._get_ordered_dict(obj)
+        elif hasattr(obj, '_asdict'):
+            dict_value = obj._asdict()
+        if not isinstance(dict_value, dict):
+            return False, dict_value
+
+        result = ''
+        name_dict = self._markdown_human_readable_names(obj, dict_value)
+        for name, value in dict_value.items():
+            result += '{indent}* {name}'.format(indent=indent, name=name_dict[name])
+            multiline, markdnow_result = self._markdown_result_simple(value, level)
+            if multiline:
+                result += ':\n{result}'.format(result=markdnow_result)
+            else:
+                result += ': {result}\n'.format(result=markdnow_result)
+
+        if not result:
+            return False, '-'
+
+        return True, result
+
+    @staticmethod
+    def _markdown_is_directly_printable(obj):
+        return isinstance(obj, six.string_types + six.integer_types + (float, ))
+
+    def _markdown_result_simple(self, value, level):
+        if isinstance(value, Serializable):
+            return value._as_markdown(level + 1)  # pylint: disable=protected-access
+
+        return self._markdown_result(value, level + 1)
+
+    def _markdown_result(self, obj, level=0):
+        if obj is None:
+            result = False, 'n/a'
+        elif isinstance(obj, bool):
+            result = False, 'yes' if obj else 'no'
+        elif Serializable._markdown_is_directly_printable(obj):
+            result = False, str(obj)
+        elif isinstance(obj, enum.Enum):
+            result = False, obj.name
+        elif hasattr(obj, '__dict__') or isinstance(obj, dict):
+            return self._markdown_result_dict(obj, level)
+        elif isinstance(obj, (list, tuple)):
+            if obj:
+                indent = Serializable._markdown_indent_from_level(level)
+
+                result = ''
+                for index, item in enumerate(obj):
+                    multiline, markdnow_result = self._markdown_result_simple(item, level)
+                    result += '{indent} {index}.{separator}{value}{newline}'.format(
+                        indent=indent,
+                        index=index + 1,
+                        separator='\n' if multiline else ' ',
+                        value=markdnow_result,
+                        newline='' if multiline else '\n',
+                    )
+                result = True, result
+            else:
+                return False, '-'
+        else:
+            result = False, repr(obj)
+
+        return result
+
     def _asdict(self):
-        return _get_dict_result(self.__dict__)
+        result = Serializable._get_ordered_dict(self.__dict__)
+        return result
 
     def as_json(self):
-        return json.dumps(self._asdict())
+        return json.dumps(self)
+
+    def _as_markdown(self, level):
+        return self._markdown_result(self, level)
+
+    def as_markdown(self):
+        _, result = self._as_markdown(0)
+        return result
 
 
 @attr.s
