@@ -226,8 +226,8 @@ class VariantParsable(ParsableBase):
     def _parse(cls, parsable):
         for variant_parser in cls._get_variant_types():
             try:
-                parsed_object, unparsed_bytes = variant_parser.parse_immutable(parsable)
-                return parsed_object, len(parsable) - len(unparsed_bytes)
+                parsed_object, parsed_length = variant_parser.parse_immutable(parsable)
+                return parsed_object, parsed_length
             except InvalidType:
                 pass
 

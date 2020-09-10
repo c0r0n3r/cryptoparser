@@ -50,15 +50,16 @@ class TestParsable(unittest.TestCase):
         self.assertEqual(context_manager.exception.value, 0)
 
     def test_parse(self):
-        _, unparsed_bytes = OneByteParsable.parse_immutable(b'\x01\x02')
-        self.assertEqual(unparsed_bytes, b'\x02')
+        _, parsed_length = OneByteParsable.parse_immutable(b'\x01\x02')
+        self.assertEqual(parsed_length, 1)
 
         parsable = bytearray([0x01, 0x02])
         OneByteParsable.parse_mutable(parsable)
         self.assertEqual(parsable, b'\x02')
 
-        parsed_value, unparsed_bytes = SerializableEnumFactory.parse_immutable(b'\x00\x01')
+        parsed_value, parsed_length = SerializableEnumFactory.parse_immutable(b'\x00\x01')
         self.assertEqual(parsed_value, SerializableEnum.first)
+        self.assertEqual(parsed_length, 2)
 
     def test_repr(self):
         self.assertEqual(repr(SerializableEnum.first), 'SerializableEnum.first')

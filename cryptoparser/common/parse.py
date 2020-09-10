@@ -22,8 +22,7 @@ class ParsableBase(object):
     @classmethod
     def parse_immutable(cls, parsable):
         parsed_object, parsed_length = cls._parse(parsable)
-        unparsed_bytes = parsable[parsed_length:]
-        return parsed_object, unparsed_bytes
+        return parsed_object, parsed_length
 
     @classmethod
     def parse_exact_size(cls, parsable):
@@ -128,10 +127,10 @@ class ParserBinary(object):
         self._parsed_length += size
 
     def parse_parsable(self, name, parsable_class):
-        parsed_object, unparsed_bytes = parsable_class.parse_immutable(
+        parsed_object, parsed_length = parsable_class.parse_immutable(
             self._parsable[self._parsed_length:]
         )
-        self._parsed_length += len(self._parsable) - self._parsed_length - len(unparsed_bytes)
+        self._parsed_length += parsed_length
         self._parsed_values[name] = parsed_object
 
     def _parse_parsable_array(self, name, items_size, item_classes, fallback_class=None):
@@ -144,16 +143,17 @@ class ParserBinary(object):
         while unparsed_bytes:
             for item_class in item_classes:
                 try:
-                    item, unparsed_bytes = item_class.parse_immutable(unparsed_bytes)
+                    item, parsed_length = item_class.parse_immutable(unparsed_bytes)
                     break
                 except InvalidValue:
                     pass
             else:
                 if fallback_class is not None:
-                    item, unparsed_bytes = fallback_class.parse_immutable(unparsed_bytes)
+                    item, parsed_length = fallback_class.parse_immutable(unparsed_bytes)
                 else:
                     raise ValueError(unparsed_bytes)
 
+            unparsed_bytes = unparsed_bytes[parsed_length:]
             items.append(item)
 
         self._parsed_values[name] = items

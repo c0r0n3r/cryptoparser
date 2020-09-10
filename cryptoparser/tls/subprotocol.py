@@ -65,8 +65,8 @@ class SubprotocolParser(object):
         subprotocol_parsers = self._get_subprotocol_parsers()
 
         if self._subprotocol_type in subprotocol_parsers:
-            parsed_object, unparsed_bytes = subprotocol_parsers[self._subprotocol_type].parse_immutable(parsable)
-            return parsed_object, len(parsable) - len(unparsed_bytes)
+            parsed_object, parsed_length = subprotocol_parsers[self._subprotocol_type].parse_immutable(parsable)
+            return parsed_object, parsed_length
 
         raise InvalidValue(self._subprotocol_type, TlsSubprotocolMessageBase)
 
