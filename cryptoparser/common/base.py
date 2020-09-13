@@ -516,7 +516,7 @@ class Opaque(VectorBase):
         parser = ParserBinary(parsable)
 
         parser.parse_numeric('item_byte_num', cls.get_param().item_num_size)
-        parser.parse_bytes('items', parser['item_byte_num'])
+        parser.parse_raw('items', parser['item_byte_num'])
 
         items = parser['items']
         return cls([ord(items[i:i + 1]) for i in range(len(items))]), parser.parsed_length

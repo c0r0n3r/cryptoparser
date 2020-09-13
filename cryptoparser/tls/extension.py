@@ -280,7 +280,7 @@ class TlsExtensionUnparsed(TlsExtensionBase):
     def _parse(cls, parsable):
         parser = super(TlsExtensionUnparsed, cls)._check_header(parsable)
 
-        parser.parse_bytes('extension_data', parser['extension_length'])
+        parser.parse_raw('extension_data', parser['extension_length'])
 
         return TlsExtensionUnparsed(parser['extension_type'], parser['extension_data']), parser.parsed_length
 
@@ -289,7 +289,7 @@ class TlsExtensionUnparsed(TlsExtensionBase):
 
     def compose(self):
         payload_composer = ComposerBinary()
-        payload_composer.compose_bytes(self.extension_data)
+        payload_composer.compose_raw(self.extension_data)
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
@@ -370,8 +370,7 @@ class TlsExtensionServerName(TlsExtensionParsed):
             composer.compose_numeric(3 + len(idna_encoded_host_name), 2)
             composer.compose_numeric(self.name_type, 1)
 
-            composer.compose_numeric(len(idna_encoded_host_name), 2)
-            composer.compose_bytes(idna_encoded_host_name)
+            composer.compose_bytes(idna_encoded_host_name, 2)
 
         header_bytes = self._compose_header(composer.composed_length)
 

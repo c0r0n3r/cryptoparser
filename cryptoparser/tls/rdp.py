@@ -31,7 +31,7 @@ class TPKT(ParsableBase):
         if len(parsable) < parser['packet_length']:
             raise NotEnoughData(parser['packet_length'] - len(parsable))
 
-        parser.parse_bytes('message', parser['packet_length'] - 4)
+        parser.parse_raw('message', parser['packet_length'] - 4)
 
         return TPKT(parser['version'], parser['message']), parser.parsed_length
 
@@ -40,7 +40,7 @@ class TPKT(ParsableBase):
         composer.compose_numeric(self.version, 1)
         composer.compose_numeric(0, 1)  # reserved
         composer.compose_numeric(len(self.message) + 4, 2)
-        composer.compose_bytes(self.message)
+        composer.compose_raw(self.message)
 
         return composer.composed_bytes
 
@@ -91,7 +91,7 @@ class COTPConnectionBase(ParsableBase):
         parser.parse_numeric('dst_ref', 2)
         parser.parse_numeric('class_option', 1)
 
-        parser.parse_bytes('user_data', parser['length_indicator'] - parser.parsed_length + 1)
+        parser.parse_raw('user_data', parser['length_indicator'] - parser.parsed_length + 1)
 
         return COTPConnectionRequest(
             src_ref=parser['src_ref'],
@@ -107,7 +107,7 @@ class COTPConnectionBase(ParsableBase):
         body_composer.compose_numeric(self.src_ref, 2)
         body_composer.compose_numeric(self.dst_ref, 2)
         body_composer.compose_numeric(self.class_option, 1)
-        body_composer.compose_bytes(self.user_data)
+        body_composer.compose_raw(self.user_data)
 
         body = body_composer.composed_bytes
 

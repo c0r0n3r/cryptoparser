@@ -2,6 +2,11 @@
 
 import unittest
 
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 from cryptoparser.common.parse import ParserBinary, ParserText, ParsableBase, ComposerBinary, ComposerText, ByteOrder
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
@@ -117,6 +122,11 @@ class TestParserBinary(TestParsableBase):
             parser.parse_bytes('four_byte_array', 4)
         self.assertEqual(context_manager.exception.bytes_needed, 1)
 
+        parser = ParserBinary(b'\x01\xff')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_bytes('one_byte_array', 1, converter=mock.Mock(name='mock', side_effect=ValueError))
+        self.assertEqual(context_manager.exception.value, 1)
+
         parser = ParserBinary(b'\x00\x00\x00\x00\x00')
         with self.assertRaises(NotImplementedError):
             parser.parse_numeric('five_byte_numeric', 5)
@@ -197,7 +207,7 @@ class TestParserBinary(TestParsableBase):
 
     def test_parse_byte_array(self):
         parser = ParserBinary(b'\x01\x02')
-        parser.parse_bytes('two_byte_array', size=2)
+        parser.parse_raw('two_byte_array', size=2)
         self.assertEqual(parser['two_byte_array'], b'\x01\x02')
 
     def test_parse_string(self):
@@ -641,10 +651,10 @@ class TestComposerBinary(TestParsableBase):
         composer.compose_numeric_flags([FlagEnum.ONE, FlagEnum.TWO, ], 1)
         self.assertEqual(composer.composed_bytes, b'\x03')
 
-    def test_compose_bytes(self):
+    def test_compose_raw(self):
         composer = ComposerBinary()
 
-        composer.compose_bytes(b'\x01\x02\x03\x04')
+        composer.compose_raw(b'\x01\x02\x03\x04')
 
         self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
 
@@ -716,6 +726,10 @@ class TestComposerBinary(TestParsableBase):
         composer = ComposerBinary()
         composer.compose_parsable(SerializableEnum.second)
         self.assertEqual(b'\x00\x02', composer.composed_bytes)
+
+        composer = ComposerBinary()
+        composer.compose_parsable(SerializableEnum.first, item_size=1)
+        self.assertEqual(b'\x02\x00\x01', composer.composed_bytes)
 
     def test_compose_variant_parsable(self):
         composer = ComposerBinary()

@@ -438,11 +438,28 @@ class ParserBinary(ParserBase):
 
         return self._parsable[self._parsed_length: self._parsed_length + size]
 
-    def parse_bytes(self, name, size):
+    def parse_bytes(self, name, size, converter=bytearray):
+        value, parsed_length = self._parse_numeric_array(name, 1, size, int)
+        value = value[0]
+
+        self._parsed_length += parsed_length
+        try:
+            parsed_bytes = self._parse_bytes(value)
+        except NotEnoughData:
+            self._parsed_length -= parsed_length
+            raise
+
+        try:
+            self._parsed_values[name] = converter(parsed_bytes)
+        except ValueError as e:
+            six.raise_from(InvalidValue(value, converter, name), e)
+        self._parsed_length += len(parsed_bytes)
+
+    def parse_raw(self, name, size):
         parsed_bytes = self._parse_bytes(size)
 
         self._parsed_values[name] = parsed_bytes
-        self._parsed_length += len(parsed_bytes)
+        self._parsed_length += size
 
     def parse_string(self, name, item_size, encoding):
         value, parsed_length = self._parse_numeric_array(name, 1, item_size, int)
@@ -614,13 +631,21 @@ class ComposerBinary(ComposerBase):
             flag |= value
         self._compose_numeric_array([flag, ], item_size)
 
-    def compose_parsable(self, value):
-        self._composed += value.compose()
+    def compose_parsable(self, value, item_size=None):
+        composed = value.compose()
+        if item_size is not None:
+            self.compose_numeric(len(composed), item_size)
+        self._composed += composed
 
     def compose_parsable_array(self, values):
         self._composed += bytearray().join(map(lambda item: item.compose(), values))
 
-    def compose_bytes(self, value):
+    def compose_bytes(self, value, item_size, converter=bytearray):
+        value_bytes = converter(value)
+        self._compose_numeric_array([len(value_bytes), ], item_size)
+        self.compose_raw(value_bytes)
+
+    def compose_raw(self, value):
         self._composed += value
 
     def compose_string(self, value, encoding, item_size):
@@ -629,8 +654,7 @@ class ComposerBinary(ComposerBase):
         except UnicodeError as e:
             six.raise_from(InvalidValue(value, type(self)), e)
 
-        self.compose_numeric(len(value), item_size)
-        self.compose_bytes(value)
+        self.compose_bytes(value, item_size)
 
     @property
     def composed_bytes(self):
