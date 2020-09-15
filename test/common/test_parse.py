@@ -4,13 +4,12 @@ import datetime
 import unittest
 
 import six
+import dateutil.tz
 
 try:
     from unittest import mock
 except ImportError:
     import mock
-
-import dateutil.tz
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 from cryptoparser.common.parse import ParserBinary, ParserText, ParsableBase, ComposerBinary, ComposerText, ByteOrder
@@ -307,6 +306,19 @@ class TestParserBinary(TestParsableBase):
             AlwaysInvalidTypeVariantParsable.parse_exact_size(b'\x00\x01').value,
             AlwaysInvalidTypeVariantParsable(SerializableEnum.FIRST).variant.value
         )
+
+    def test_parse_timestamp(self):
+        parser = ParserBinary(b'\x00\x00\x00\x00\x00\x00\x00\x00')
+        parser.parse_timestamp('timestamp')
+        self.assertEqual(parser['timestamp'], datetime.datetime.utcfromtimestamp(0))
+
+        parser = ParserBinary(b'\xff\xff\xff\xff\xff\xff\xff\xff')
+        parser.parse_timestamp('timestamp')
+        self.assertEqual(parser['timestamp'], None)
+
+        parser = ParserBinary(b'\x00\x00\x00\x00\xff\xff\xff\xff')
+        parser.parse_timestamp('timestamp')
+        self.assertEqual(parser['timestamp'], datetime.datetime.utcfromtimestamp(0xffffffff))
 
 
 class TestParserText(TestParsableBase):
@@ -770,6 +782,19 @@ class TestComposerBinary(TestParsableBase):
         composer = ComposerBinary()
         composer.compose_parsable(SerializableEnumVariantParsable(SerializableEnum.FIRST))
         self.assertEqual(b'\x00\x01', composer.composed_bytes)
+
+    def test_compose_timestamp(self):
+        composer = ComposerBinary()
+        composer.compose_timestamp(datetime.datetime.fromtimestamp(0, dateutil.tz.UTC))
+        self.assertEqual(b'\x00\x00\x00\x00\x00\x00\x00\x00', composer.composed_bytes)
+
+        composer = ComposerBinary()
+        composer.compose_timestamp(datetime.datetime.fromtimestamp(0xffffffff, dateutil.tz.UTC))
+        self.assertEqual(b'\x00\x00\x00\x00\xff\xff\xff\xff', composer.composed_bytes)
+
+        composer = ComposerBinary()
+        composer.compose_timestamp(None)
+        self.assertEqual(b'\xff\xff\xff\xff\xff\xff\xff\xff', composer.composed_bytes)
 
 
 class TestComposerText(TestParsableBase):
