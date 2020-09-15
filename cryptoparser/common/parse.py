@@ -113,7 +113,7 @@ class ParserBase(collections_abc.Mapping):
             item_min_length,
             item_max_length,
             encoding,
-            item_class
+            converter
     ):  # pylint: disable=too-many-arguments
         if item_min_length > self.unparsed_length:
             raise NotEnoughData(item_min_length - self.unparsed_length)
@@ -126,13 +126,13 @@ class ParserBase(collections_abc.Mapping):
         value = self._parsable[self._parsed_length:self._parsed_length + parsable_length]
         try:
             value = value.decode(encoding)
-            if item_class != str:
-                value = item_class(value)
+            if converter != str:
+                value = converter(value)
             self._parsed_values[name] = value
         except UnicodeError as e:
-            six.raise_from(InvalidValue(value, type(self), name), e)
+            six.raise_from(InvalidValue(value, converter, name), e)
         except ValueError as e:
-            six.raise_from(InvalidValue(value, type(self), name), e)
+            six.raise_from(InvalidValue(value, converter, name), e)
 
         return value, parsable_length
 
@@ -170,7 +170,7 @@ class ParserText(ParserBase):
             'separator', self._parsed_length, separator, min_length, max_length
         )
 
-    def _parse_numeric_array(self, name, item_num, separator, item_numeric_class):
+    def _parse_numeric_array(self, name, item_num, separator, converter):
         value = list()
         last_item_offset = self._parsed_length
         item_offset = self._parsed_length
@@ -182,7 +182,7 @@ class ParserText(ParserBase):
                 raise InvalidValue(self._parsable[self._parsed_length:], type(self), name)
 
             if item_offset != last_item_offset:
-                value.append(item_numeric_class(self._parsable[last_item_offset:item_offset]))
+                value.append(converter(self._parsable[last_item_offset:item_offset]))
 
             if item_offset == len(self._parsable) or (item_num is not None and len(value) == item_num):
                 break
@@ -198,13 +198,13 @@ class ParserText(ParserBase):
         self._parsed_length = item_offset
         self._parsed_values[name] = value
 
-    def parse_numeric(self, name, numeric_class=int):
-        self._parse_numeric_array(name, 1, None, numeric_class)
+    def parse_numeric(self, name, converter=int):
+        self._parse_numeric_array(name, 1, None, converter)
         self._parsed_values[name] = self._parsed_values[name][0]
 
-    def parse_numeric_array(self, name, item_num, separator, numeric_class=int):
+    def parse_numeric_array(self, name, item_num, separator, converter=int):
         separator = bytearray(separator, self._encoding)
-        self._parse_numeric_array(name, item_num, separator, numeric_class)
+        self._parse_numeric_array(name, item_num, separator, converter)
 
     def parse_string(self, name, value):
         min_length = len(value)
