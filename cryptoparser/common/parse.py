@@ -466,14 +466,14 @@ class ParserBinary(ParserBase):
 
         return value, item_num * item_size
 
-    def parse_numeric(self, name, size, numeric_class=int):
-        value, parsed_length = self._parse_numeric_array(name, 1, size, numeric_class)
+    def parse_numeric(self, name, size, converter=int):
+        value, parsed_length = self._parse_numeric_array(name, 1, size, converter)
 
         self._parsed_length += parsed_length
         self._parsed_values[name] = value[0]
 
-    def parse_numeric_array(self, name, item_num, item_size, numeric_class=int):
-        value, parsed_length = self._parse_numeric_array(name, item_num, item_size, numeric_class)
+    def parse_numeric_array(self, name, item_num, item_size, converter=int):
+        value, parsed_length = self._parse_numeric_array(name, item_num, item_size, converter)
 
         self._parsed_length += parsed_length
         self._parsed_values[name] = value
@@ -518,13 +518,13 @@ class ParserBinary(ParserBase):
         self._parsed_values[name] = parsed_bytes
         self._parsed_length += size
 
-    def parse_string(self, name, item_size, encoding):
+    def parse_string(self, name, item_size, encoding, converter=str):
         value, parsed_length = self._parse_numeric_array(name, 1, item_size, int)
         value = value[0]
         self._parsed_length += parsed_length
 
         try:
-            value, parsed_length = self._parse_string_by_length(name, value, value, encoding, str)
+            value, parsed_length = self._parse_string_by_length(name, value, value, encoding, converter)
             self._parsed_length += parsed_length
             self._parsed_values[name] = value
         except InvalidValue as e:
