@@ -1,6 +1,47 @@
 Changelog
 =========
 
+.. _v0-3-1:
+
+0.3.1 - 2020-09-15
+------------------
+
+Features
+^^^^^^^^
+
+* Generic
+
+  * `Markdown <https://en.wikipedia.org/wiki/Markdown>`_ serializable format (#19)
+
+Improvements
+^^^^^^^^^^^^
+
+* TLS (``tls``)
+
+  * Cipher Suites (``ciphers``)
+
+    * add missing ``ECDHE_PSK`` cipher suites (#7)
+    * add `GOST <https://en.wikipedia.org/wiki/GOST>`_ cipher suites
+    * add missing draft ECC cipher suites (#9)
+    * add missing `FIPS <https://en.wikipedia.org/wiki/FIPS_140-2>`_ cipher suites (#11)
+    * add `CECPQ1 <https://en.wikipedia.org/wiki/CECPQ1>`_ cipher suites (#12)
+    * add missing `Fortezza <https://en.wikipedia.org/wiki/Fortezza>`_ cipher suites (#13)
+    * add missing ``DHE`` cipher suites (#14)
+    * add missing SSLv3 cipher suites (#15)
+
+Notable fixes
+^^^^^^^^^^^^^
+
+* Generic
+
+  * fix unicode string representation in JSON output (#18)
+
+* TLS (``tls``)
+
+  * Cipher Suites (``ciphers``)
+
+    * fix some cipher suite names and parameters (#7, #10)
+
 .. _v0-3-0:
 
 0.3.0 - 2020-04-30
