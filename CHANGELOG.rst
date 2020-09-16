@@ -9,14 +9,18 @@ Changelog
 Features
 ^^^^^^^^
 
-* protocol item classes for RDP support (#4)
-* `JA3 fingerprint <https://engineering.salesforce.com/tls-fingerprinting-with-ja3-and-ja3s-247362855967>`_ calculation
-  for TLS client hello (#2)
+* TLS (``tls``)
+
+  * protocol item classes for RDP support (#4)
+  * `JA3 fingerprint <https://engineering.salesforce.com/tls-fingerprinting-with-ja3-and-ja3s-247362855967>`_ calculation
+    for TLS client hello (#2)
 
 Bugs
 ^^^^
 
-* compose all the messages in case of a TLS record (#1)
+* TLS (``tls``)
+
+  * compose all the messages in case of a TLS record (#1)
 
 Refactor
 ^^^^^^^^
@@ -28,12 +32,11 @@ Refactor
 0.2.0 - 2019-12-02
 ------------------
 
-Bugs
-^^^^
+Notable fixes
+^^^^^^^^^^^^^
 
 * clarify TLS related parameter names
 * several packaging fixes
-* some minor fixes
 
 .. _v0-1-0:
 
