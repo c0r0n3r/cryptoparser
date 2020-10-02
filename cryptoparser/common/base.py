@@ -166,7 +166,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             else:
                 return False, '-'
         else:
-            result = False, repr(obj)
+            result = False, str(obj)
 
         return result
 
