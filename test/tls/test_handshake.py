@@ -12,7 +12,8 @@ from cryptoparser.common.exception import InvalidValue, InvalidType, NotEnoughDa
 from cryptoparser.tls.algorithm import TlsSignatureAndHashAlgorithm, TlsNamedCurve, TlsECPointFormat
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, TlsCipherSuiteExtension, SslCipherKind
 from cryptoparser.tls.extension import (
-    TlsExtensionSupportedVersions,
+    TlsExtensionSupportedVersionsClient,
+    TlsExtensionSupportedVersionsServer,
     TlsExtensionUnparsed,
     TlsExtensionEllipticCurves,
     TlsExtensionECPointFormats,
@@ -36,7 +37,9 @@ from cryptoparser.tls.subprotocol import (
     TlsCompressionMethodVector,
     TlsContentType,
     TlsDistinguishedName,
-    TlsExtensions,
+    TlsExtensionType,
+    TlsExtensionsClient,
+    TlsExtensionsServer,
     TlsHandshakeCertificate,
     TlsHandshakeCertificateRequest,
     TlsHandshakeClientHello,
@@ -226,7 +229,7 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             ),
             TlsSessionIdVector(()),
             TlsCompressionMethodVector([TlsCompressionMethod.NULL, ]),
-            TlsExtensions(()),
+            TlsExtensionsClient(()),
             fallback_scsv=True,
             empty_renegotiation_info_scsv=True,
         )
@@ -269,16 +272,20 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
         self.assertTrue(client_hello_minimal.empty_renegotiation_info_scsv)
 
         client_hello_extension = TlsHandshakeClientHello.parse_exact_size(self.client_hello_extension_bytes)
+        self.assertEqual(len(client_hello_extension.extensions), 2)
         self.assertEqual(
-            client_hello_extension.extensions,
-            TlsExtensions([
-                TlsExtensionSupportedVersions(TlsSupportedVersionVector([
-                    TlsProtocolVersionFinal(TlsVersion.TLS1_1),
-                    TlsProtocolVersionFinal(TlsVersion.TLS1_2),
-                    ])),
-                TlsExtensionUnparsed(TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A), b'')
-            ])
+            client_hello_extension.extensions.get_item_by_type(TlsExtensionType.SUPPORTED_VERSIONS),
+            TlsExtensionSupportedVersionsClient(TlsSupportedVersionVector([
+                TlsProtocolVersionFinal(TlsVersion.TLS1_1),
+                TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+            ]))
         )
+        self.assertEqual(
+            client_hello_extension.extensions[1],
+            TlsExtensionUnparsed(TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A), b'')
+        )
+        with self.assertRaises(KeyError):
+            client_hello_extension.extensions.get_item_by_type(TlsGreaseTwoByte.GREASE_0A0A)
 
     def test_compose(self):
         self.assertEqual(
@@ -343,7 +350,27 @@ class TestTlsHandshakeServerHello(unittest.TestCase):
             TlsSessionIdVector(()),
             TlsCompressionMethod.NULL,
             TlsCipherSuite.TLS_RSA_WITH_NULL_MD5,
-            TlsExtensions(())
+            TlsExtensionsServer(())
+        )
+
+        self.server_hello_minimal_bytes = b''.join(self.server_hello_minimal_dict.values())
+        self.server_hello_minimal_extensions_dict = collections.OrderedDict([
+            ('extensions_length', b'\x00\x0a'),
+            ('extension_type', b'\x00\x2b'),  # SUPPORTED_VERSIONS
+            ('extension_length', b'\x00\x05'),
+            ('selected_version', b'\x03\x03'),  # TLS1_2
+            ('extension_grease', b'\x0a\x0a'),
+            ('extension_grease_length', b'\x00\x00'),
+        ])
+        self.server_hello_minimal_extensions_bytes = b''.join(self.server_hello_minimal_extensions_dict.values())
+        self.server_hello_extension_bytes = bytearray(
+            self.server_hello_minimal_bytes +
+            self.server_hello_minimal_extensions_bytes +
+            b''
+        )
+        self.server_hello_extension_bytes[3] += (
+            len(self.server_hello_extension_bytes) -
+            len(self.server_hello_minimal_bytes)
         )
 
     def test_parse(self):
@@ -372,6 +399,19 @@ class TestTlsHandshakeServerHello(unittest.TestCase):
             server_hello_minimal.extensions,
             self.server_hello_minimal.extensions
         )
+
+        server_hello_extension = TlsHandshakeServerHello.parse_exact_size(self.server_hello_extension_bytes)
+        self.assertEqual(len(server_hello_extension.extensions), 2)
+        self.assertEqual(
+            server_hello_extension.extensions.get_item_by_type(TlsExtensionType.SUPPORTED_VERSIONS),
+            TlsExtensionSupportedVersionsServer(TlsProtocolVersionFinal(TlsVersion.TLS1_2))
+        )
+        self.assertEqual(
+            server_hello_extension.extensions[1],
+            TlsExtensionUnparsed(TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A), b'')
+        )
+        with self.assertRaises(KeyError):
+            server_hello_extension.extensions.get_item_by_type(TlsGreaseTwoByte.GREASE_0A0A)
 
     def test_compose(self):
         self.assertEqual(
@@ -413,7 +453,7 @@ class TestTlsHandshakeHelloRetryRequest(unittest.TestCase):
             ),
             TlsSessionIdVector(()),
             TlsCompressionMethod.NULL,
-            TlsExtensions(())
+            TlsExtensionsClient(())
         )
 
     def test_parse(self):
