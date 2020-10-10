@@ -363,7 +363,7 @@ class TestEnumString(unittest.TestCase):
 class TestSerializable(unittest.TestCase):
     def test_json(self):
         self.assertEqual(
-            json.dumps(SerializableSimpleTypes()),
+            SerializableSimpleTypes().as_json(),
             '{' +
             '"UPPER": "upper", ' +
             '"bool_value": false, ' +
@@ -374,27 +374,27 @@ class TestSerializable(unittest.TestCase):
             '}'
         )
         self.assertEqual(
-            json.dumps(SerializableIterables()),
+            SerializableIterables().as_json(),
             '{"dict_value": {"value": 1}, "list_value": ["value"], "tuple_value": ["value"]}'
         )
         self.assertEqual(
-            json.dumps(SerializableEnums()),
+            SerializableEnums().as_json(),
             '{"param_enum": {"first": {"code": 1}}, "string_enum": {"second": "2"}}'
         )
         self.assertEqual(
-            json.dumps(SerializableSingle()),
+            SerializableSingle().as_json(),
             '"single"'
         )
         self.assertEqual(
-            json.dumps(SerializableHidden()),
+            SerializableHidden().as_json(),
             '{"visible_value": "value"}'
         )
         self.assertEqual(
-            json.dumps(SerializableUnhandled()),
+            SerializableUnhandled().as_json(),
             '{"complex_number": "(1+2j)"}'
         )
         self.assertEqual(
-            json.dumps(SerializableRecursive()),
+            SerializableRecursive().as_json(),
             '{' +
             '"json_serializable_hidden": {"visible_value": "value"}, ' +
             '"json_serializable_in_dict": {"key1": {"visible_value": "value"}, "key2": "single"}, ' +

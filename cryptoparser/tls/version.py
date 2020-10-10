@@ -3,6 +3,8 @@
 import abc
 import enum
 import functools
+import json
+
 import attr
 
 import six
@@ -69,8 +71,8 @@ class TlsProtocolVersionBase(Serializable, ParsableBase):
 
         return isinstance(self, TlsProtocolVersionDraft) == (other.minor == TlsVersion.TLS1_3)
 
-    def _asdict(self):
-        return self.identifier
+    def as_json(self):
+        return json.dumps(self.identifier)
 
     def _as_markdown(self, level):
         return self._markdown_result(str(self), level)
@@ -174,12 +176,12 @@ class SslProtocolVersion(Serializable, ParsableBase):
     def __lt__(self, other):
         return isinstance(other, TlsProtocolVersionBase)
 
+    def as_json(self):
+        return json.dumps(self.identifier)
+
     @property
     def identifier(self):
         return 'ssl2'
-
-    def _asdict(self):
-        return self.identifier
 
     def __str__(self):
         return 'SSL 2.0'

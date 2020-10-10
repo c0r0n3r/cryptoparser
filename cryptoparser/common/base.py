@@ -110,7 +110,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
 
         return name_dict
 
-    def _markdown_result_dict(self, obj, level=0):
+    @classmethod
+    def _markdown_result_complex(cls, obj, level=0):
         indent = Serializable._markdown_indent_from_level(level)
 
         if hasattr(obj, '_asdict'):
@@ -119,10 +120,10 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             dict_value = Serializable._get_ordered_dict(obj)
 
         result = ''
-        name_dict = self._markdown_human_readable_names(obj, dict_value)
+        name_dict = cls._markdown_human_readable_names(obj, dict_value)
         for name, value in dict_value.items():
             result += '{indent}* {name}'.format(indent=indent, name=name_dict[name])
-            multiline, markdnow_result = self._markdown_result_simple(value, level)
+            multiline, markdnow_result = cls._markdown_result(value, level + 1)
             if multiline:
                 result += ':\n{result}'.format(result=markdnow_result)
             else:
@@ -133,47 +134,49 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
 
         return True, result
 
+    @classmethod
+    def _markdown_result_list(cls, obj, level=0):
+        if not obj:
+            return False, '-'
+
+        indent = Serializable._markdown_indent_from_level(level)
+
+        result = ''
+        for index, item in enumerate(obj):
+            multiline, markdnow_result = cls._markdown_result(item, level + 1)
+            result += '{indent}{index}.{separator}{value}{newline}'.format(
+                indent=indent,
+                index=index + 1,
+                separator='\n' if multiline else ' ',
+                value=markdnow_result,
+                newline='' if multiline else '\n',
+            )
+
+        return True, result
+
     @staticmethod
     def _markdown_is_directly_printable(obj):
         return isinstance(obj, six.string_types + six.integer_types + (float, ))
 
-    def _markdown_result_simple(self, value, level):
-        if isinstance(value, Serializable):
-            return value._as_markdown(level + 1)  # pylint: disable=protected-access
-
-        return self._markdown_result(value, level + 1)
-
-    def _markdown_result(self, obj, level=0):
+    @classmethod
+    def _markdown_result(cls, obj, level=0):
         if obj is None:
             result = False, 'n/a'
         elif isinstance(obj, bool):
             result = False, 'yes' if obj else 'no'
         elif Serializable._markdown_is_directly_printable(obj):
             result = False, str(obj)
+        elif isinstance(obj, Serializable):
+            result = obj._as_markdown(level)  # pylint: disable=protected-access
         elif isinstance(obj, enum.Enum):
             if isinstance(obj.value, Serializable):
-                return self._markdown_result_simple(obj.value, level)
+                return obj.value._as_markdown(level)  # pylint: disable=protected-access
 
             return False, obj.name
         elif hasattr(obj, '__dict__') or isinstance(obj, dict):
-            return self._markdown_result_dict(obj, level)
+            result = cls._markdown_result_complex(obj, level)
         elif isinstance(obj, (list, tuple)):
-            if obj:
-                indent = Serializable._markdown_indent_from_level(level)
-
-                result = ''
-                for index, item in enumerate(obj):
-                    multiline, markdnow_result = self._markdown_result_simple(item, level)
-                    result += '{indent}{index}.{separator}{value}{newline}'.format(
-                        indent=indent,
-                        index=index + 1,
-                        separator='\n' if multiline else ' ',
-                        value=markdnow_result,
-                        newline='' if multiline else '\n',
-                    )
-                result = True, result
-            else:
-                return False, '-'
+            result = cls._markdown_result_list(obj, level)
         else:
             result = False, str(obj)
 
@@ -187,7 +190,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         return json.dumps(self)
 
     def _as_markdown(self, level):
-        return self._markdown_result(self, level)
+        return self._markdown_result_complex(self, level)
 
     def as_markdown(self):
         _, result = self._as_markdown(0)

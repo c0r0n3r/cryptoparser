@@ -10,7 +10,6 @@ from cryptoparser.common.algorithm import Authentication, Hash, NamedGroup
 from cryptoparser.common.base import (
     OneByteEnumComposer,
     OneByteEnumParsable,
-    Serializable,
     TwoByteEnumComposer,
     TwoByteEnumParsable,
     VariantParsable,
@@ -52,7 +51,7 @@ class TlsExtensionTypeFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-class TlsExtensionType(Serializable, TwoByteEnumComposer, enum.Enum):
+class TlsExtensionType(TwoByteEnumComposer, enum.Enum):
     SERVER_NAME = TlsExtensionTypeParams(                             # [RFC6066]
         code=0x0000
     )
@@ -387,7 +386,7 @@ class TlsECPointFormatFactory(OneByteEnumParsable):
         raise NotImplementedError()
 
 
-class TlsECPointFormat(Serializable, OneByteEnumComposer, enum.Enum):
+class TlsECPointFormat(OneByteEnumComposer, enum.Enum):
     UNCOMPRESSED = TlsECPointFormatParams(code=0x00)
     ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x01)
     ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x02)

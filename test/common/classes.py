@@ -3,6 +3,7 @@
 import abc
 import collections
 import enum
+import json
 import attr
 import six
 
@@ -163,11 +164,11 @@ class AlwaysTestStringComposer(ParsableBase):
 class SerializableEnumValue(Serializable):
     code = attr.ib(validator=attr.validators.instance_of(int))
 
+    def as_json(self):
+        return json.dumps({'code': self.code})
+
     def _as_markdown(self, level):
         return False, self.code
-
-    def _asdict(self):
-        return {'code': self.code}
 
 
 class TestObject(object):
@@ -201,7 +202,7 @@ class SerializableEnumFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-class SerializableEnum(Serializable, TwoByteEnumComposer):
+class SerializableEnum(TwoByteEnumComposer):
     first = SerializableEnumValue(
         code=0x0001,
     )
@@ -246,10 +247,10 @@ class SerializableHumanReadable(Serializable):
 class SerializableRecursive(Serializable):
     def __init__(self):
         self.json_serializable_hidden = SerializableHidden()
-        self.json_serializable_single = SerializableSingle()
-        self.json_serializable_in_list = list([SerializableHidden(), SerializableSingle()])
-        self.json_serializable_in_tuple = tuple([SerializableHidden(), SerializableSingle()])
-        self.json_serializable_in_dict = dict({'key1': SerializableHidden(), 'key2': SerializableSingle()})
+        self.json_serializable_single = 'single'
+        self.json_serializable_in_list = list([SerializableHidden(), 'single'])
+        self.json_serializable_in_tuple = tuple([SerializableHidden(), 'single'])
+        self.json_serializable_in_dict = dict({'key1': SerializableHidden(), 'key2': 'single'})
 
 
 class SerializableEmptyValues(Serializable):
