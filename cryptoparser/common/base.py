@@ -41,6 +41,17 @@ json.JSONEncoder.default = _default
 class Serializable(object):  # pylint: disable=too-few-public-methods
     @staticmethod
     def _get_ordered_dict(dict_value):
+        if attr.has(type(dict_value)):
+            return OrderedDict([
+                (name, getattr(dict_value, name))
+                for name, field in attr.fields_dict(type(dict_value)).items()
+            ])
+
+        if isinstance(dict_value, dict):
+            pass
+        elif hasattr(dict_value, '__dict__'):
+            dict_value = dict_value.__dict__
+
         result = OrderedDict([
             (name, dict_value[name])
             for name in sorted(dict_value.keys())
@@ -102,12 +113,10 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
     def _markdown_result_dict(self, obj, level=0):
         indent = Serializable._markdown_indent_from_level(level)
 
-        if isinstance(obj, dict):
-            dict_value = Serializable._get_ordered_dict(obj)
-        elif hasattr(obj, '_asdict'):
+        if hasattr(obj, '_asdict'):
             dict_value = obj._asdict()
-        if not isinstance(dict_value, dict):
-            return False, dict_value
+        else:
+            dict_value = Serializable._get_ordered_dict(obj)
 
         result = ''
         name_dict = self._markdown_human_readable_names(obj, dict_value)
@@ -171,7 +180,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         return result
 
     def _asdict(self):
-        result = Serializable._get_ordered_dict(self.__dict__)
+        result = Serializable._get_ordered_dict(self)
         return result
 
     def as_json(self):

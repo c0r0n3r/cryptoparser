@@ -239,7 +239,8 @@ class SerializableUnhandled(Serializable):
 
 @attr.s
 class SerializableHumanReadable(Serializable):
-    value = attr.ib(default='value', metadata={'human_readable_name': 'Human Readable Name'})
+    attr_2 = attr.ib(default='value 2', metadata={'human_readable_name': 'Human Readable Name 2'})
+    attr_1 = attr.ib(default='value 1', metadata={'human_readable_name': 'Human Readable Name 1'})
 
 
 class SerializableRecursive(Serializable):

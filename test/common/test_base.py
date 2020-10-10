@@ -452,7 +452,8 @@ class TestSerializable(unittest.TestCase):
         )
         self.assertEqual(
             SerializableHumanReadable().as_markdown(),
-            '* Human Readable Name: value\n'
+            '* Human Readable Name 2: value 2\n'
+            '* Human Readable Name 1: value 1\n'
         )
         self.assertEqual(
             SerializableEmptyValues().as_markdown(),
