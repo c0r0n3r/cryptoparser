@@ -428,9 +428,9 @@ class TestSerializable(unittest.TestCase):
                 '* Dict Value:',
                 '    * Value: 1',
                 '* List Value:',
-                '     1. value',
+                '    1. value',
                 '* Tuple Value:',
-                '     1. value',
+                '    1. value',
                 ''
             ])
         )
@@ -474,13 +474,13 @@ class TestSerializable(unittest.TestCase):
                 '        * Visible Value: value',
                 '    * Key2: single',
                 '* Json Serializable In List:',
-                '     1.',
+                '    1.',
                 '        * Visible Value: value',
-                '     2. single',
+                '    2. single',
                 '* Json Serializable In Tuple:',
-                '     1.',
+                '    1.',
                 '        * Visible Value: value',
-                '     2. single',
+                '    2. single',
                 '* Json Serializable Single: single',
                 '',
             ])

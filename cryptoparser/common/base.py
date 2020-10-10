@@ -155,7 +155,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
                 result = ''
                 for index, item in enumerate(obj):
                     multiline, markdnow_result = self._markdown_result_simple(item, level)
-                    result += '{indent} {index}.{separator}{value}{newline}'.format(
+                    result += '{indent}{index}.{separator}{value}{newline}'.format(
                         indent=indent,
                         index=index + 1,
                         separator='\n' if multiline else ' ',
