@@ -220,6 +220,7 @@ class TestParserBinary(unittest.TestCase):
             list(map(int, parser['array']))
         )
         self.assertEqual(parser.unparsed_length, 0)
+        self.assertEqual(parser.unparsed, b'')
 
         parser = ParserBinary(b'\x00\x01')
         with self.assertRaises(InvalidValue):
@@ -242,6 +243,7 @@ class TestParserBinary(unittest.TestCase):
             list(map(int, parser['array']))
         )
         self.assertEqual(parser.unparsed_length, 0)
+        self.assertEqual(parser.unparsed, b'')
 
     def test_parse_variant_parsable(self):
         AlwaysInvalidTypeVariantParsable.register_variant_parser(SerializableEnumFactory, SerializableEnumFactory)

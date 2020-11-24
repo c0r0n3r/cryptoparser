@@ -73,6 +73,10 @@ class ParserBinary(object):
         return self._parsed_length
 
     @property
+    def unparsed(self):
+        return self._parsable[self._parsed_length:]
+
+    @property
     def unparsed_length(self):
         return len(self._parsable) - self._parsed_length
 
