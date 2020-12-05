@@ -7,7 +7,12 @@ import six
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 
 from cryptoparser.tls.record import TlsRecord, SslRecord
-from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsContentType
+from cryptoparser.tls.subprotocol import (
+    TlsContentType,
+    TlsHandshakeServerHelloDone,
+    TlsHandshakeServerKeyExchange,
+    TlsSubprotocolMessageBase,
+)
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
 from cryptoparser.tls.subprotocol import TlsAlertMessage, TlsAlertLevel, TlsAlertDescription
@@ -135,6 +140,21 @@ class TestTlsRecord(unittest.TestCase):
             record.messages[0],
             self.test_message
         )
+
+    def test_parse_multiple_messages(self):
+        record = TlsRecord(
+            messages=[TlsHandshakeServerHelloDone(), TlsHandshakeServerKeyExchange(b'')],
+            protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0)
+        )
+        record_bytes = record.compose()
+
+        parsed_record = TlsRecord.parse_exact_size(record_bytes)
+        self.assertEqual(record, parsed_record)
+
+        remaining_bytes = b'\x00\x01'
+        record_bytes += remaining_bytes
+        parsed_record = TlsRecord.parse_mutable(record_bytes)
+        self.assertEqual(record_bytes, remaining_bytes)
 
     def test_compose(self):
         self.assertEqual(
