@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import abc
 import calendar
@@ -11,6 +12,7 @@ import attr
 import six
 
 from cryptoparser.common.base import (
+    Opaque,
     OpaqueParam,
     VariantParsable,
     Vector,
@@ -21,7 +23,11 @@ from cryptoparser.common.base import (
 from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
-from cryptoparser.tls.extension import TlsExtensions, TlsExtensionType
+from cryptoparser.tls.extension import (
+    TlsExtensionType,
+    TlsExtensions,
+    TlsSignatureAndHashAlgorithmVector,
+)
 from cryptoparser.tls.grease import TlsInvalidType, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import (
     SslProtocolVersion,
@@ -700,6 +706,102 @@ class TlsHandshakeServerKeyExchange(TlsHandshakeMessage):
         return self._compose_header(len(self.param_bytes)) + bytes(self.param_bytes)
 
 
+class TlsClientCertificateType(enum.IntEnum):
+    RSA_SIGN = 0x01
+    DSS_SIGN = 0x02
+    RSA_FIXED_DH = 0x03
+    DSS_FIXED_DH = 0x04
+    ECDSA_SIGN = 0x40
+    RSA_FIXED_ECDH = 0x41
+    ECDSA_FIXED_ECDH = 0x42
+    GOST_SIGN256 = 0x43
+    GOST_SIGN512 = 0x44
+
+
+class TlsClientCertificateTypeVector(Vector):
+    @classmethod
+    def get_param(cls):
+        return VectorParamNumeric(
+            item_size=1,
+            min_byte_num=1,
+            max_byte_num=2 ** 8 - 1,
+            numeric_class=TlsClientCertificateType
+        )
+
+
+class TlsDistinguishedName(Opaque):
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(min_byte_num=1, max_byte_num=2 ** 16 - 1)
+
+
+class TlsDistinguishedNameVector(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsDistinguishedName,
+            fallback_class=None,
+            min_byte_num=0, max_byte_num=2 ** 16 - 1
+        )
+
+
+@attr.s
+class TlsHandshakeCertificateRequest(TlsHandshakeMessage):
+    certificate_types = attr.ib(converter=TlsClientCertificateTypeVector)
+    certificate_authorities = attr.ib(converter=TlsDistinguishedNameVector)
+    supported_signature_algorithms = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        if self.supported_signature_algorithms is not None:
+            self.supported_signature_algorithms = TlsSignatureAndHashAlgorithmVector(
+                self.supported_signature_algorithms
+            )
+
+        attr.validate(self)
+
+    @classmethod
+    def get_handshake_type(cls):
+        return TlsHandshakeType.CERTIFICATE_REQUEST
+
+    @classmethod
+    def _parse(cls, parsable):
+        handshake_header_parser = cls._parse_handshake_header(parsable)
+
+        parser = ParserBinary(handshake_header_parser['payload'])
+
+        parser.parse_parsable('certificate_types', TlsClientCertificateTypeVector)
+
+        parser_remaining = ParserBinary(parser.unparsed)
+        parser_remaining.parse_numeric('vector_length', 2)
+        if parser_remaining['vector_length'] + 2 == parser.unparsed_length:
+            supported_signature_algorithms = None
+        else:
+            parser.parse_parsable('supported_signature_algorithms', TlsSignatureAndHashAlgorithmVector)
+            supported_signature_algorithms = parser['supported_signature_algorithms']
+
+        parser.parse_parsable('certificate_authorities', TlsDistinguishedNameVector)
+
+        msg = TlsHandshakeCertificateRequest(
+            certificate_types=parser['certificate_types'],
+            certificate_authorities=parser['certificate_authorities'],
+            supported_signature_algorithms=supported_signature_algorithms,
+        )
+
+        return msg, handshake_header_parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.certificate_types)
+        if self.supported_signature_algorithms is not None:
+            payload_composer.compose_parsable(self.supported_signature_algorithms)
+        payload_composer.compose_parsable(self.certificate_authorities)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
 class SslMessageBase(ParsableBase):
     @classmethod
     def get_message_type(cls):
@@ -878,6 +980,7 @@ class TlsHandshakeMessageVariant(VariantParsable):
         (TlsHandshakeType.SERVER_HELLO, [TlsHandshakeServerHello, ]),
         (TlsHandshakeType.CERTIFICATE, [TlsHandshakeCertificate, ]),
         (TlsHandshakeType.SERVER_KEY_EXCHANGE, [TlsHandshakeServerKeyExchange, ]),
+        (TlsHandshakeType.CERTIFICATE_REQUEST, [TlsHandshakeCertificateRequest, ]),
         (TlsHandshakeType.SERVER_HELLO_DONE, [TlsHandshakeServerHelloDone, ]),
     ])
 

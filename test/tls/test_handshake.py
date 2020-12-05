@@ -19,6 +19,7 @@ from cryptoparser.tls.extension import (
     TlsECPointFormat,
     TlsECPointFormatVector,
     TlsEllipticCurveVector,
+    TlsSignatureAndHashAlgorithm,
     TlsSupportedVersionVector,
 )
 from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
@@ -29,12 +30,15 @@ from cryptoparser.tls.subprotocol import (
     TlsAlertMessage,
     TlsCertificate,
     TlsCertificates,
+    TlsClientCertificateType,
     TlsCipherSuiteVector,
     TlsCompressionMethod,
     TlsCompressionMethodVector,
     TlsContentType,
+    TlsDistinguishedName,
     TlsExtensions,
     TlsHandshakeCertificate,
+    TlsHandshakeCertificateRequest,
     TlsHandshakeClientHello,
     TlsHandshakeHelloRandom,
     TlsHandshakeHelloRandomBytes,
@@ -407,6 +411,122 @@ class TestTlsHandshakeCertificate(unittest.TestCase):
         self.assertEqual(
             self.certificate_minimal.compose(),
             self.certificate_minimal_bytes
+        )
+
+
+class TestTlsHandshakeCertificateRequestTls10(unittest.TestCase):
+    def setUp(self):
+        self.certificate_request_dict = collections.OrderedDict([
+            ('handshake_type', b'\x0d'),                  # CERTIFICATE_REQUEST
+            ('length', b'\x00\x00\x19'),
+            ('certificate_types_length', b'\x04'),
+            ('certificate_types', b'\x01\02\x03\x04'),
+            ('certificate_authorities_length', b'\x00\x12'),
+            ('certificate_authority_length', b'\x00\x10'),
+            ('certificate_authority', b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'),
+        ])
+        self.certificate_request_bytes = b''.join(self.certificate_request_dict.values())
+
+        self.certificate_request = TlsHandshakeCertificateRequest(
+            certificate_types=[
+                TlsClientCertificateType.RSA_SIGN,
+                TlsClientCertificateType.DSS_SIGN,
+                TlsClientCertificateType.RSA_FIXED_DH,
+                TlsClientCertificateType.DSS_FIXED_DH,
+            ],
+            certificate_authorities=[
+                TlsDistinguishedName(b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'),
+            ]
+        )
+
+    def test_parse(self):
+        certificate_request = TlsHandshakeCertificateRequest.parse_exact_size(self.certificate_request_bytes)
+
+        self.assertEqual(
+            list(certificate_request.certificate_types),
+            [
+                TlsClientCertificateType.RSA_SIGN,
+                TlsClientCertificateType.DSS_SIGN,
+                TlsClientCertificateType.RSA_FIXED_DH,
+                TlsClientCertificateType.DSS_FIXED_DH,
+            ]
+        )
+        self.assertEqual(
+            list(certificate_request.certificate_authorities),
+            [TlsDistinguishedName(b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'), ]
+        )
+        self.assertEqual(certificate_request.supported_signature_algorithms, None)
+
+    def test_compose(self):
+        self.assertEqual(
+            self.certificate_request.compose(),
+            self.certificate_request_bytes
+        )
+
+
+class TestTlsHandshakeCertificateRequestTls12(unittest.TestCase):
+    def setUp(self):
+        self.certificate_request_dict = collections.OrderedDict([
+            ('handshake_type', b'\x0d'),                  # CERTIFICATE_REQUEST
+            ('length', b'\x00\x00\x23'),
+            ('certificate_types_length', b'\x04'),
+            ('certificate_types', b'\x01\02\x03\x04'),
+            ('signature_algorithm_list_length', b'\x00\x08'),
+            ('signature_algorithm_list', b'\x01\x00\x02\x01\x03\x02\x04\x03'),
+            ('certificate_authorities_length', b'\x00\x12'),
+            ('certificate_authority_length', b'\x00\x10'),
+            ('certificate_authority', b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'),
+        ])
+        self.certificate_request_bytes = b''.join(self.certificate_request_dict.values())
+
+        self.certificate_request = TlsHandshakeCertificateRequest(
+            certificate_types=[
+                TlsClientCertificateType.RSA_SIGN,
+                TlsClientCertificateType.DSS_SIGN,
+                TlsClientCertificateType.RSA_FIXED_DH,
+                TlsClientCertificateType.DSS_FIXED_DH,
+            ],
+            supported_signature_algorithms=[
+                TlsSignatureAndHashAlgorithm.ANONYMOUS_MD5,
+                TlsSignatureAndHashAlgorithm.RSA_SHA1,
+                TlsSignatureAndHashAlgorithm.DSA_SHA224,
+                TlsSignatureAndHashAlgorithm.ECDSA_SHA256,
+            ],
+            certificate_authorities=[
+                TlsDistinguishedName(b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'),
+            ]
+        )
+
+    def test_parse(self):
+        certificate_request = TlsHandshakeCertificateRequest.parse_exact_size(self.certificate_request_bytes)
+
+        self.assertEqual(
+            list(certificate_request.certificate_types),
+            [
+                TlsClientCertificateType.RSA_SIGN,
+                TlsClientCertificateType.DSS_SIGN,
+                TlsClientCertificateType.RSA_FIXED_DH,
+                TlsClientCertificateType.DSS_FIXED_DH,
+            ]
+        )
+        self.assertEqual(
+            list(certificate_request.supported_signature_algorithms),
+            [
+                TlsSignatureAndHashAlgorithm.ANONYMOUS_MD5,
+                TlsSignatureAndHashAlgorithm.RSA_SHA1,
+                TlsSignatureAndHashAlgorithm.DSA_SHA224,
+                TlsSignatureAndHashAlgorithm.ECDSA_SHA256,
+            ]
+        )
+        self.assertEqual(
+            list(certificate_request.certificate_authorities),
+            [TlsDistinguishedName(b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'), ]
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            self.certificate_request.compose(),
+            self.certificate_request_bytes
         )
 
 
