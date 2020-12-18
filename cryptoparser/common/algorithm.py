@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import enum
 import attr
@@ -150,6 +151,11 @@ class Authentication(AlgortihmOIDBase, enum.Enum):
     FORTEZZA = AuthenticationParams(
         name='FORTEZZA',
         oid=None,
+        anonymous=False,
+    )
+    GOST2814789 = AuthenticationParams(
+        name='GOST_R3410_89',
+        oid='1.2.643.2.2.21',
         anonymous=False,
     )
     GOST_R3410_01 = AuthenticationParams(
@@ -431,6 +437,38 @@ class MAC(enum.Enum):
         name='SHA2_512',
         digest_size=512
     )
+    SHA2_512_224 = MACParams(
+        name='SHA2_512_224',
+        digest_size=224
+    )
+    SHA2_512_256 = MACParams(
+        name='SHA2_512_256',
+        digest_size=256
+    )
+    SHA3_224 = MACParams(
+        name='SHA3_224',
+        digest_size=224
+    )
+    SHA3_256 = MACParams(
+        name='SHA3_256',
+        digest_size=256
+    )
+    SHA3_384 = MACParams(
+        name='SHA3_384',
+        digest_size=384
+    )
+    SHA3_512 = MACParams(
+        name='SHA3_512',
+        digest_size=512
+    )
+    SHAKE_128 = MACParams(
+        name='SHAKE_128',
+        digest_size=128
+    )
+    SHAKE_256 = MACParams(
+        name='SHAKE_256',
+        digest_size=256
+    )
     ED25519PH = MACParams(
         name='Ed25519ph',
         digest_size=255
@@ -447,6 +485,126 @@ class NamedGroupType(enum.IntEnum):
 
 
 class NamedGroup(AlgortihmOIDBase, enum.Enum):
+    C2PNB163V1 = NamedGroupParams(
+        name='c2pnb163v1',
+        oid='1.2.840.10045.3.0.1',
+        size=163,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2PNB163V2 = NamedGroupParams(
+        name='c2pnb163v2',
+        oid='1.2.840.10045.3.0.2',
+        size=163,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2PNB163V3 = NamedGroupParams(
+        name='c2pnb163v3',
+        oid='1.2.840.10045.3.0.3',
+        size=163,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2PNB176W1 = NamedGroupParams(
+        name='c2pnb176w1',
+        oid='1.2.840.10045.3.0.4',
+        size=176,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2TNB191V1 = NamedGroupParams(
+        name='c2tnb191v1',
+        oid='1.2.840.10045.3.0.5',
+        size=191,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2TNB191V2 = NamedGroupParams(
+        name='c2tnb191v2',
+        oid='1.2.840.10045.3.0.6',
+        size=191,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2TNB191V3 = NamedGroupParams(
+        name='c2tnb191v3',
+        oid='1.2.840.10045.3.0.7',
+        size=191,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2ONB191V4 = NamedGroupParams(
+        name='c2onb191v4',
+        oid='1.2.840.10045.3.0.8',
+        size=191,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2ONB191V5 = NamedGroupParams(
+        name='c2onb191v5',
+        oid='1.2.840.10045.3.0.9',
+        size=191,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2PNB208W1 = NamedGroupParams(
+        name='c2pnb208w1',
+        oid='1.2.840.10045.3.0.10',
+        size=208,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2TNB239V1 = NamedGroupParams(
+        name='c2tnb239v1',
+        oid='1.2.840.10045.3.0.11',
+        size=239,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2TNB239V2 = NamedGroupParams(
+        name='c2tnb239v2',
+        oid='1.2.840.10045.3.0.12',
+        size=239,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2TNB239V3 = NamedGroupParams(
+        name='c2tnb239v3',
+        oid='1.2.840.10045.3.0.13',
+        size=239,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2ONB239V4 = NamedGroupParams(
+        name='c2onb239v4',
+        oid='1.2.840.10045.3.0.14',
+        size=239,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2ONB239V5 = NamedGroupParams(
+        name='c2onb239v5',
+        oid='1.2.840.10045.3.0.15',
+        size=239,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2PNB272W1 = NamedGroupParams(
+        name='c2pnb272w1',
+        oid='1.2.840.10045.3.0.16',
+        size=272,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2PNB304W1 = NamedGroupParams(
+        name='c2pnb304w1',
+        oid='1.2.840.10045.3.0.17',
+        size=304,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2TNB359V1 = NamedGroupParams(
+        name='c2tnb359v1',
+        oid='1.2.840.10045.3.0.18',
+        size=359,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2PNB368W1 = NamedGroupParams(
+        name='c2pnb368w1',
+        oid='1.2.840.10045.3.0.19',
+        size=368,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    C2TNB431R1 = NamedGroupParams(
+        name='c2tnb431r1',
+        oid='1.2.840.10045.3.0.20',
+        size=431,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
     GC256A = NamedGroupParams(
         name='tc26-gost-3410-2012-256-paramSetA',
         oid='1.2.643.7.1.2.1.1.1',
@@ -487,6 +645,72 @@ class NamedGroup(AlgortihmOIDBase, enum.Enum):
         name='tc26-gost-3410-2012-512-paramSetC',
         oid='1.2.643.7.1.2.1.2.3',
         size=512,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    PRIME239V1 = NamedGroupParams(
+        name='prime239v1',
+        oid='1.2.840.10045.3.1.4',
+        size=239,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    PRIME239V2 = NamedGroupParams(
+        name='prime239v2',
+        oid='1.2.840.10045.3.1.5',
+        size=239,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    PRIME239V3 = NamedGroupParams(
+        name='prime239v3',
+        oid='1.2.840.10045.3.1.6',
+        size=239,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    SECP112R1 = NamedGroupParams(
+        name='secp112r1',
+        oid='1.3.132.0.6',
+        size=112,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    SECP112R2 = NamedGroupParams(
+        name='secp112r2',
+        oid='1.3.132.0.7',
+        size=112,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    SECP128R1 = NamedGroupParams(
+        name='secp128r1',
+        oid='1.3.132.0.28',
+        size=128,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    SECP128R2 = NamedGroupParams(
+        name='secp128r2',
+        oid='1.3.132.0.29',
+        size=128,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    SECT113R1 = NamedGroupParams(
+        name='sect113r1',
+        oid='1.3.132.0.4',
+        size=113,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    SECT113R2 = NamedGroupParams(
+        name='sect113r2',
+        oid='1.3.132.0.5',
+        size=113,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    SECT131R1 = NamedGroupParams(
+        name='sect131r1',
+        oid='1.3.132.0.22',
+        size=131,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    SECT131R2 = NamedGroupParams(
+        name='sect131r2',
+        oid='1.3.132.0.23',
+        size=131,
         group_type=NamedGroupType.ELLIPTIC_CURVE,
     )
     SECT163K1 = NamedGroupParams(
@@ -600,6 +824,18 @@ class NamedGroup(AlgortihmOIDBase, enum.Enum):
     SECP192R1 = NamedGroupParams(
         name='secp192r1',
         oid='1.2.840.10045.3.1.1',
+        size=192,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    PRIME192V2 = NamedGroupParams(
+        name='prime192v2',
+        oid='1.2.840.10045.3.1.2',
+        size=192,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
+    PRIME192V3 = NamedGroupParams(
+        name='prime192v3',
+        oid='1.2.840.10045.3.1.3',
         size=192,
         group_type=NamedGroupType.ELLIPTIC_CURVE,
     )
