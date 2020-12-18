@@ -63,11 +63,6 @@ class BlockCipherModeParams(AlgortihmParams):
 
 
 @attr.s(frozen=True)
-class MACParams(AlgortihmParams):
-    digest_size = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
-
-
-@attr.s(frozen=True)
 class NamedGroupParams(AlgortihmOIDOptionalParams):
     size = attr.ib(validator=attr.validators.instance_of(int))
     group_type = attr.ib()
@@ -388,94 +383,238 @@ class BlockCipherMode(enum.Enum):
     )
 
 
-class MAC(enum.Enum):
-    IMIT_GOST28147 = MACParams(
-        name='IMIT_GOST28147',
-        digest_size=256
-    )
-    GOST_R3411_94 = MACParams(
+@attr.s(frozen=True)
+class HashParams(AlgortihmOIDParams):
+    digest_size = attr.ib(attr.validators.instance_of(int))
+
+
+class Hash(AlgortihmOIDBase, enum.Enum):
+    GOST_R3411_94 = HashParams(
         name='GOST_R3411_94',
+        oid='1.2.643.2.2.9',
         digest_size=256
     )
-    GOST_R3411_12_256 = MACParams(  # Streebog
+    GOST_R3411_12_256 = HashParams(  # Streebog
         name='GOST_R3411_12_256',
+        oid='1.0.10118.3.0.56',
         digest_size=256
     )
-    GOST_R3411_12_512 = MACParams(  # Streebog
+    GOST_R3411_12_512 = HashParams(  # Streebog
         name='GOST_R3411_12_512',
+        oid='1.0.10118.3.0.56',
         digest_size=512
     )
-    GOST_R3413_15 = MACParams(
-        name='GOST_R3413_15',
+    MD2 = HashParams(
+        name='MD2',
+        oid='1.2.840.113549.2.2',
+        digest_size=128
+    )
+    MD4 = HashParams(
+        name='MD4',
+        oid='1.2.840.113549.2.4',
+        digest_size=128
+    )
+    MD5 = HashParams(
+        name='MD5',
+        oid='1.2.840.113549.2.5',
+        digest_size=64
+    )
+    SHA1 = HashParams(
+        name='SHA1',
+        oid='1.3.14.3.2.18',
+        digest_size=160
+    )
+    SHA2_224 = HashParams(
+        name='SHA2_224',
+        oid='2.16.840.1.101.3.4.2.4',
+        digest_size=224
+    )
+    SHA2_256 = HashParams(
+        name='SHA2_256',
+        oid='2.16.840.1.101.3.4.2.1',
+        digest_size=256
+    )
+    SHA2_384 = HashParams(
+        name='SHA2_384',
+        oid='2.16.840.1.101.3.4.2.2',
+        digest_size=384
+    )
+    SHA2_512 = HashParams(
+        name='SHA2_512',
+        oid='2.16.840.1.101.3.4.2.3',
+        digest_size=512
+    )
+    SHA2_512_224 = HashParams(
+        name='SHA2_512_224',
+        oid='2.16.840.1.101.3.4.2.5',
+        digest_size=224
+    )
+    SHA2_512_256 = HashParams(
+        name='SHA2_512_256',
+        oid='2.16.840.1.101.3.4.2.6',
+        digest_size=256
+    )
+    SHA3_224 = HashParams(
+        name='SHA3_224',
+        oid='2.16.840.1.101.3.4.2.7',
+        digest_size=224
+    )
+    SHA3_256 = HashParams(
+        name='SHA3_256',
+        oid='2.16.840.1.101.3.4.2.8',
+        digest_size=256
+    )
+    SHA3_384 = HashParams(
+        name='SHA3_384',
+        oid='2.16.840.1.101.3.4.2.9',
+        digest_size=384
+    )
+    SHA3_512 = HashParams(
+        name='SHA3_512',
+        oid='2.16.840.1.101.3.4.2.10',
+        digest_size=512
+    )
+    SHAKE_128 = HashParams(
+        name='SHAKE_128',
+        oid='2.16.840.1.101.3.4.2.11',
+        digest_size=128
+    )
+    SHAKE_256 = HashParams(
+        name='SHAKE_256',
+        oid='2.16.840.1.101.3.4.2.12',
+        digest_size=256
+    )
+    ED25519PH = HashParams(
+        name='Ed25519ph',
+        oid='1.3.101.114',
+        digest_size=255
+    )
+    ED448PH = HashParams(
+        name='Ed448ph',
+        oid='1.3.101.115',
+        digest_size=448
+    )
+
+
+@attr.s(frozen=True)
+class MACParamsBase(AlgortihmOIDOptionalParams):
+    pass
+
+
+@attr.s(frozen=True)
+class MACParams(MACParamsBase):
+    digest_size = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
+
+
+@attr.s(frozen=True)
+class HMACParams(MACParamsBase):
+    hash_algo = attr.ib(attr.validators.in_(Hash))
+
+    @property
+    def digest_size(self):
+        return self.hash_algo.value.digest_size
+
+
+class MAC(AlgortihmOIDBase, enum.Enum):
+    IMIT_GOST28147 = MACParams(
+        name='IMIT_GOST28147',
+        oid='1.2.643.2.2.22',
         digest_size=None
     )
-    MD5 = MACParams(
+    GOST_R3411_94 = HMACParams(
+        name='GOST_R3411_94',
+        oid='1.2.643.2.2.10',
+        hash_algo=Hash.GOST_R3411_94
+    )
+    GOST_R3411_12_256 = HMACParams(  # Streebog
+        name='GOST_R3411_12_256',
+        oid='1.2.643.7.1.1.4.1',
+        hash_algo=Hash.GOST_R3411_12_256
+    )
+    GOST_R3411_12_512 = HMACParams(  # Streebog
+        name='GOST_R3411_12_512',
+        oid='1.2.643.7.1.1.4.2',
+        hash_algo=Hash.GOST_R3411_12_512
+    )
+    GOST_R3413_15 = MACParams(  # Kuznyechik
+        name='GOST_R3413_15',
+        oid='1.2.643.7.1.1.5.2.2',
+        digest_size=None
+    )
+    MD5 = HMACParams(
         name='MD5',
-        digest_size=64
+        oid='1.2.840.113549.2.6',
+        hash_algo=Hash.MD5
     )
     POLY1305 = MACParams(
         name='POLY1305',
+        oid=None,
         digest_size=128
     )
-    SHA1 = MACParams(
+    SHA1 = HMACParams(
         name='SHA1',
-        digest_size=160
+        oid='1.2.840.113549.2.7',
+        hash_algo=Hash.SHA1
     )
-    SHA2_224 = MACParams(
+    SHA2_224 = HMACParams(
         name='SHA2_224',
-        digest_size=224
+        oid='1.2.840.113549.2.8',
+        hash_algo=Hash.SHA2_224
     )
-    SHA2_256 = MACParams(
+    SHA2_256 = HMACParams(
         name='SHA2_256',
-        digest_size=256
+        oid='1.2.840.113549.2.9',
+        hash_algo=Hash.SHA2_256
     )
-    SHA2_384 = MACParams(
+    SHA2_384 = HMACParams(
         name='SHA2_384',
-        digest_size=384
+        oid='1.2.840.113549.2.10',
+        hash_algo=Hash.SHA2_384
     )
-    SHA2_512 = MACParams(
+    SHA2_512 = HMACParams(
         name='SHA2_512',
-        digest_size=512
+        oid='1.2.840.113549.2.11',
+        hash_algo=Hash.SHA2_512
     )
-    SHA2_512_224 = MACParams(
+    SHA2_512_224 = HMACParams(
         name='SHA2_512_224',
-        digest_size=224
+        oid='1.2.840.113549.2.12',
+        hash_algo=Hash.SHA2_512_224
     )
-    SHA2_512_256 = MACParams(
+    SHA2_512_256 = HMACParams(
         name='SHA2_512_256',
-        digest_size=256
+        oid='1.2.840.113549.2.13',
+        hash_algo=Hash.SHA2_512_256
     )
-    SHA3_224 = MACParams(
+    SHA3_224 = HMACParams(
         name='SHA3_224',
-        digest_size=224
+        oid='2.16.840.1.101.3.4.2.13',
+        hash_algo=Hash.SHA3_224
     )
-    SHA3_256 = MACParams(
+    SHA3_256 = HMACParams(
         name='SHA3_256',
-        digest_size=256
+        oid='2.16.840.1.101.3.4.2.14',
+        hash_algo=Hash.SHA3_256
     )
-    SHA3_384 = MACParams(
+    SHA3_384 = HMACParams(
         name='SHA3_384',
-        digest_size=384
+        oid='2.16.840.1.101.3.4.2.15',
+        hash_algo=Hash.SHA3_384
     )
-    SHA3_512 = MACParams(
+    SHA3_512 = HMACParams(
         name='SHA3_512',
-        digest_size=512
+        oid='2.16.840.1.101.3.4.2.16',
+        hash_algo=Hash.SHA3_512
     )
-    SHAKE_128 = MACParams(
-        name='SHAKE_128',
-        digest_size=128
-    )
-    SHAKE_256 = MACParams(
-        name='SHAKE_256',
-        digest_size=256
-    )
-    ED25519PH = MACParams(
+    ED25519PH = HMACParams(
         name='Ed25519ph',
-        digest_size=255
+        oid='1.3.101.114',
+        hash_algo=Hash.ED25519PH
     )
-    ED448PH = MACParams(
+    ED448PH = HMACParams(
         name='Ed448ph',
-        digest_size=448
+        oid='1.3.101.115',
+        hash_algo=Hash.ED448PH
     )
 
 

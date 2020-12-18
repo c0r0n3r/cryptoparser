@@ -4,7 +4,7 @@ import unittest
 
 import six
 
-from cryptoparser.common.algorithm import Authentication
+from cryptoparser.common.algorithm import Authentication, MAC
 from cryptoparser.common.exception import InvalidValue
 
 
@@ -22,3 +22,9 @@ class TestAlgortihmOIDBase(unittest.TestCase):
             Authentication.from_oid(Authentication.RSA.value.oid),
             Authentication.RSA
         )
+
+
+class TestMAC(unittest.TestCase):
+    def test_digest_size(self):
+        self.assertEqual(MAC.SHA2_256.value.digest_size, 256)
+        self.assertEqual(MAC.POLY1305.value.digest_size, 128)
