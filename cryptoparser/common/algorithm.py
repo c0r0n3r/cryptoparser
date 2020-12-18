@@ -821,8 +821,8 @@ class NamedGroup(AlgortihmOIDBase, enum.Enum):
         size=192,
         group_type=NamedGroupType.ELLIPTIC_CURVE,
     )
-    SECP192R1 = NamedGroupParams(
-        name='secp192r1',
+    PRIME192V1 = NamedGroupParams(
+        name='prime192v1',
         oid='1.2.840.10045.3.1.1',
         size=192,
         group_type=NamedGroupType.ELLIPTIC_CURVE,
@@ -857,8 +857,8 @@ class NamedGroup(AlgortihmOIDBase, enum.Enum):
         size=256,
         group_type=NamedGroupType.ELLIPTIC_CURVE,
     )
-    SECP256R1 = NamedGroupParams(
-        name='secp256r1',
+    PRIME256V1 = NamedGroupParams(
+        name='prime256v1',
         oid='1.2.840.10045.3.1.7',
         size=256,
         group_type=NamedGroupType.ELLIPTIC_CURVE,

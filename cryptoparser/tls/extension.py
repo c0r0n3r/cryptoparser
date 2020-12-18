@@ -516,7 +516,7 @@ class TlsNamedCurve(TwoByteEnumComposer):
     )
     SECP192R1 = TlsNamedCurveParams(
         code=0x0013,
-        named_group=NamedGroup.SECP192R1,
+        named_group=NamedGroup.PRIME192V1,
     )
     SECP224K1 = TlsNamedCurveParams(
         code=0x0014,
@@ -532,7 +532,7 @@ class TlsNamedCurve(TwoByteEnumComposer):
     )
     SECP256R1 = TlsNamedCurveParams(
         code=0x0017,
-        named_group=NamedGroup.SECP256R1,
+        named_group=NamedGroup.PRIME256V1,
     )
     SECP384R1 = TlsNamedCurveParams(
         code=0x0018,
