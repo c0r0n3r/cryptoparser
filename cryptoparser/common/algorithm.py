@@ -375,6 +375,9 @@ class BlockCipherMode(enum.Enum):
     CTR = BlockCipherModeParams(
         name='CTR',
     )
+    EAX = BlockCipherModeParams(
+        name='EAX',
+    )
     GCM = BlockCipherModeParams(
         name='GCM',
     )
@@ -536,8 +539,13 @@ class MAC(AlgortihmOIDBase, enum.Enum):
         oid='1.2.643.7.1.1.4.2',
         hash_algo=Hash.GOST_R3411_12_512
     )
-    GOST_R3413_15 = MACParams(  # Kuznyechik
-        name='GOST_R3413_15',
+    GOST_R3412_15_KUZNYECHIK_CTR_OMAC = MACParams(  # Kuznyechik
+        name='GOST_R3412_15_KUZNYECHIK_CTR_OMAC',
+        oid='1.2.643.7.1.1.5.1.2',
+        digest_size=None
+    )
+    GOST_R3412_15_MAGMA_CTR_OMAC = MACParams(  # Kuznyechik
+        name='GOST_R3412_15_MAGMA_CTR_OMAC',
         oid='1.2.643.7.1.1.5.2.2',
         digest_size=None
     )
