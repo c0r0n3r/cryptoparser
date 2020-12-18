@@ -30,6 +30,9 @@ class AlgortihmOIDBase(object):
 class AlgortihmParams(Serializable):
     name = attr.ib(validator=attr.validators.instance_of(str))
 
+    def _as_markdown(self, level):
+        return self._markdown_result(self.name, level)
+
 
 @attr.s(frozen=True)
 class AlgortihmOIDOptionalParams(AlgortihmParams):
@@ -1149,4 +1152,159 @@ class NamedGroup(AlgortihmOIDBase, enum.Enum):
         oid=None,
         size=8192,
         group_type=NamedGroupType.DH_PARAM,
+    )
+
+
+@attr.s(frozen=True)
+class SignatureParams(AlgortihmOIDParams):
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    oid = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
+    key_type = attr.ib(validator=attr.validators.in_(Authentication))
+    hash_algorithm = attr.ib(validator=attr.validators.in_(Hash))
+
+
+class Signature(AlgortihmOIDBase, enum.Enum):
+    RSA_WITH_MD2 = SignatureParams(
+        name='md2WithRSAEncryption',
+        oid='1.2.840.113549.1.1.2',
+        key_type=Authentication.RSA,
+        hash_algorithm=Hash.MD2
+    )
+    RSA_WITH_MD4 = SignatureParams(
+        name='md4WithRSAEncryption',
+        oid='1.2.840.113549.1.1.3',
+        key_type=Authentication.RSA,
+        hash_algorithm=Hash.MD4
+    )
+    RSA_WITH_MD5 = SignatureParams(
+        name='md5WithRSAEncryption',
+        oid='1.2.840.113549.1.1.4',
+        key_type=Authentication.RSA,
+        hash_algorithm=Hash.MD5
+    )
+    RSA_WITH_SHA1 = SignatureParams(
+        name='sha1-with-rsa-signature',
+        oid='1.2.840.113549.1.1.5',
+        key_type=Authentication.RSA,
+        hash_algorithm=Hash.SHA1
+    )
+    RSA_WITH_SHA2_224 = SignatureParams(
+        name='sha224WithRSAEncryption',
+        oid='1.2.840.113549.1.1.14',
+        key_type=Authentication.RSA,
+        hash_algorithm=Hash.SHA2_224
+    )
+    RSA_WITH_SHA2_256 = SignatureParams(
+        name='sha256WithRSAEncryption',
+        oid='1.2.840.113549.1.1.11',
+        key_type=Authentication.RSA,
+        hash_algorithm=Hash.SHA2_256
+    )
+    RSA_WITH_SHA2_384 = SignatureParams(
+        name='sha384WithRSAEncryption',
+        oid='1.2.840.113549.1.1.12',
+        key_type=Authentication.RSA,
+        hash_algorithm=Hash.SHA2_384
+    )
+    RSA_WITH_SHA2_512 = SignatureParams(
+        name='sha512WithRSAEncryption',
+        oid='1.2.840.113549.1.1.13',
+        key_type=Authentication.RSA,
+        hash_algorithm=Hash.SHA2_512
+    )
+    DSA_WITH_SHA1 = SignatureParams(
+        name='dsa_sha1',
+        oid='1.2.840.10040.4.3',
+        key_type=Authentication.DSS,
+        hash_algorithm=Hash.SHA1
+    )
+    DSA_WITH_SHA2_224 = SignatureParams(
+        name='dsa_sha224',
+        oid='2.16.840.1.101.3.4.3.1',
+        key_type=Authentication.DSS,
+        hash_algorithm=Hash.SHA2_224
+    )
+    DSA_WITH_SHA2_256 = SignatureParams(
+        name='dsa_sha256',
+        oid='2.16.840.1.101.3.4.3.2',
+        key_type=Authentication.DSS,
+        hash_algorithm=Hash.SHA2_256
+    )
+    ECDSA_WITH_SHA1 = SignatureParams(
+        name='ecdsa_sha1',
+        oid='1.2.840.10045.4.1',
+        key_type=Authentication.ECDSA,
+        hash_algorithm=Hash.SHA1
+    )
+    ECDSA_WITH_SHA2_224 = SignatureParams(
+        name='ecdsa_sha224',
+        oid='1.2.840.10045.4.3.1',
+        key_type=Authentication.ECDSA,
+        hash_algorithm=Hash.SHA2_224
+    )
+    ECDSA_WITH_SHA2_256 = SignatureParams(
+        name='ecdsa_sha256',
+        oid='1.2.840.10045.4.3.2',
+        key_type=Authentication.ECDSA,
+        hash_algorithm=Hash.SHA2_256
+    )
+    ECDSA_WITH_SHA2_384 = SignatureParams(
+        name='ecdsa_sha384',
+        oid='1.2.840.10045.4.3.3',
+        key_type=Authentication.ECDSA,
+        hash_algorithm=Hash.SHA2_384
+    )
+    ECDSA_WITH_SHA2_512 = SignatureParams(
+        name='ecdsa_sha512',
+        oid='1.2.840.10045.4.3.4',
+        key_type=Authentication.ECDSA,
+        hash_algorithm=Hash.SHA2_512
+    )
+    ECDSA_WITH_SHA3_224 = SignatureParams(
+        name='ecdsa_sha224',
+        oid='2.16.840.1.101.3.4.3.9',
+        key_type=Authentication.ECDSA,
+        hash_algorithm=Hash.SHA3_224
+    )
+    ECDSA_WITH_SHA3_256 = SignatureParams(
+        name='ecdsa_sha256',
+        oid='2.16.840.1.101.3.4.3.10',
+        key_type=Authentication.ECDSA,
+        hash_algorithm=Hash.SHA3_256
+    )
+    ECDSA_WITH_SHA3_384 = SignatureParams(
+        name='ecdsa_sha384',
+        oid='2.16.840.1.101.3.4.3.11',
+        key_type=Authentication.ECDSA,
+        hash_algorithm=Hash.SHA3_384
+    )
+    ECDSA_WITH_SHA3_512 = SignatureParams(
+        name='ecdsa_sha512',
+        oid='2.16.840.1.101.3.4.3.12',
+        key_type=Authentication.ECDSA,
+        hash_algorithm=Hash.SHA3_512
+    )
+    GOST_R3410_01 = SignatureParams(
+        name='gost_r3410_01',
+        oid='1.2.643.2.2.3',
+        key_type=Authentication.GOST_R3410_01,
+        hash_algorithm=Hash.GOST_R3411_94,
+    )
+    GOST_R3410_12_256_R3410 = SignatureParams(
+        name='id-tc26-signwithdigest-gost3410-12-94',
+        oid='1.2.643.7.1.1.3.1',
+        key_type=Authentication.GOST_R3410_12_256,
+        hash_algorithm=Hash.GOST_R3411_12_256,
+    )
+    GOST_R3411_12_256_R3410 = SignatureParams(
+        name='id-tc26-signwithdigest-gost3410-12-256',
+        oid='1.2.643.7.1.1.3.2',
+        key_type=Authentication.GOST_R3410_12_256,
+        hash_algorithm=Hash.GOST_R3411_12_256,
+    )
+    GOST_R3410_12_512 = SignatureParams(
+        name='id-tc26-signwithdigest-gost3410-12-512',
+        oid='1.2.643.7.1.1.3.3',
+        key_type=Authentication.GOST_R3410_12_512,
+        hash_algorithm=Hash.GOST_R3411_12_512,
     )

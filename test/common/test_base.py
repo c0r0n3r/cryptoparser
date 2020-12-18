@@ -374,7 +374,7 @@ class TestSerializable(unittest.TestCase):
         self.assertEqual(
             SerializableEnums().as_markdown(),
             '\n'.join([
-                '* Param Enum: first',
+                '* Param Enum: 1',
                 '* String Enum: second',
                 ''
             ])
