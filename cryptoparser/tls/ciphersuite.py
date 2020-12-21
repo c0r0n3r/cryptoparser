@@ -3259,7 +3259,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer):
         bulk_cipher=BlockCipher.AES_128,
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
-        authenticated_encryption=False,
+        authenticated_encryption=True,
     )
     TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xd002,
@@ -3268,7 +3268,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer):
         bulk_cipher=BlockCipher.AES_256,
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
-        authenticated_encryption=False,
+        authenticated_encryption=True,
     )
     TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 = CipherSuiteParams(
         code=0xd003,
