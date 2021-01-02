@@ -25,6 +25,7 @@ class TestHttpHeaderFieldValueCacheControlResponse(
         TestCasesBasesHttpHeader.MinimalHeader,
         TestCasesBasesHttpHeader.FullHeader,
         TestCasesBasesHttpHeader.CaseInsensitiveHeader):
+
     _header_minimal = HttpHeaderFieldValueCacheControlResponse()
     _header_minimal_bytes = b''
 

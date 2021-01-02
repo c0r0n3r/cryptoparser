@@ -4,15 +4,25 @@ import json
 import unittest
 
 from cryptoparser.common.exception import InvalidValue, NotEnoughData, TooMuchData
-from cryptoparser.common.base import Vector, VectorString, VectorParamNumeric, VectorParamString
-from cryptoparser.common.base import VectorParsable, VectorParamParsable
-from cryptoparser.common.base import VectorParsableDerived, Opaque, OpaqueParam
+from cryptoparser.common.base import (
+    Opaque,
+    OpaqueParam,
+    Vector,
+    VectorParamNumeric,
+    VectorParamParsable,
+    VectorParamString,
+    VectorParsable,
+    VectorParsableDerived,
+    VectorString,
+)
 
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 
 from .classes import (
+    AlwaysTestStringComposer,
     ConditionalParsable,
     EnumStringValue,
+    ListParsableTest,
     OneByteOddParsable,
     OneByteParsable,
     SerializableAttributeOrder,
@@ -509,4 +519,47 @@ class TestSerializable(unittest.TestCase):
                 '* Json Serializable Single: single',
                 '',
             ])
+        )
+
+
+class TestListParsable(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(NotEnoughData) as context_manager:
+            ListParsableTest.parse_exact_size(b'')
+        self.assertEqual(context_manager.exception.bytes_needed, 2)
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            ListParsableTest.parse_exact_size(b'test')
+        self.assertEqual(context_manager.exception.value, b'test')
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            ListParsableTest.parse_exact_size(b'nottest\r\n\r\n')
+        self.assertEqual(context_manager.exception.value, b'nottest\r\n\r\n')
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            ListParsableTest.parse_exact_size(b'test\r\n\r\ntest\r\n\r\n')
+        self.assertEqual(context_manager.exception.value, b'test\r\n\r\ntest\r\n\r\n')
+
+    def test_parse(self):
+        list_parsable = ListParsableTest.parse_exact_size(b'\r\n')
+        self.assertEqual(list_parsable, ListParsableTest([]))
+
+        list_parsable = ListParsableTest.parse_exact_size(b'test\r\n\r\n')
+        self.assertEqual(list_parsable, ListParsableTest([AlwaysTestStringComposer(), ]))
+
+        list_parsable = ListParsableTest.parse_exact_size(b'test\r\ntest\r\n\r\n')
+        self.assertEqual(list_parsable, ListParsableTest([AlwaysTestStringComposer(), AlwaysTestStringComposer()]))
+
+    def test_compose(self):
+        self.assertEqual(
+            ListParsableTest([]).compose(),
+            b'\r\n'
+        )
+        self.assertEqual(
+            ListParsableTest([AlwaysTestStringComposer(), ]).compose(),
+            b'test\r\n\r\n'
+        )
+        self.assertEqual(
+            ListParsableTest([AlwaysTestStringComposer(), AlwaysTestStringComposer(), ]).compose(),
+            b'test\r\ntest\r\n\r\n'
         )

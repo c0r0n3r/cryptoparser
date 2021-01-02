@@ -58,6 +58,19 @@ class ParsableBase(ParsableBaseNoABC):
         raise NotImplementedError()
 
 
+class ParserCRLF(ParsableBase):
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_string('crlf', '\r\n')
+
+        return ParserCRLF(), 2
+
+    def compose(self):
+        return b'\r\n'
+
+
 _SIZE_TO_FORMAT = {
     1: 'B',
     2: 'H',
@@ -154,6 +167,8 @@ class ParserText(ParserBase):
             min_count,
             max_count
     ):
+        separators = separators.encode(self._encoding)
+
         count = 0
         actual_offset = count_offset
         while actual_offset < len(self._parsable) and self._parsable[actual_offset:actual_offset + 1] in separators:
@@ -169,7 +184,6 @@ class ParserText(ParserBase):
         return actual_offset - count_offset
 
     def parse_separator(self, separator, min_length=1, max_length=1):
-        separator = bytearray(separator, self._encoding)
         self._parsed_length += self._check_separators(
             'separator', self._parsed_length, separator, min_length, max_length
         )
@@ -207,8 +221,8 @@ class ParserText(ParserBase):
         self._parsed_length += parsed_length
 
     def parse_numeric_array(self, name, item_num, separator, converter=int):
-        separator = bytearray(separator, self._encoding)
         value, parsed_length = self._parse_numeric_array(name, item_num, separator, converter)
+
         self._parsed_values[name] = value
         self._parsed_length += parsed_length
 
@@ -271,23 +285,31 @@ class ParserText(ParserBase):
             item_class,
             fallback_class,
             may_end=False,
-            separator_spaces=b''
+            separator_spaces=''
     ):
-        for item_end in range(item_offset, len(self._parsable)):
-            if self._parsable[item_end] in separators:
+        item_end = None
+        byte_separators = [separator.encode(self._encoding) for separator in separators]
+
+        for separator_end in range(item_offset, len(self._parsable) + 1):
+            for separator in byte_separators:
+                if self._parsable[item_offset:separator_end].endswith(separator):
+                    item_end = separator_end - len(separator)
+                    break
+            if item_end is not None:
                 break
         else:
             if not may_end:
-                raise InvalidValue(self._parsable[item_offset:], type(self), name)
+                raise InvalidValue(self._parsable[item_offset:], type(item_class), name)
 
             item_end = len(self._parsable)
 
         separator_space_count = 0
+        byte_separator_spaces = separator_spaces.encode(self._encoding)
         while (item_end > item_offset and
                 self._parsable[
                     item_end - separator_space_count - 1:
                     item_end - separator_space_count
-                ] in separator_spaces):
+                ] in byte_separator_spaces):
             separator_space_count += 1
 
         item = self._apply_item_class(
@@ -296,19 +318,17 @@ class ParserText(ParserBase):
 
         return item, item_end - item_offset - separator_space_count
 
-    def parse_string_until_separator(self, name, separator, item_class=str, fallback_class=None):
-        separator = bytearray(separator, self._encoding)
+    def parse_string_until_separator(self, name, separators, item_class=str, fallback_class=None):
         parsed_value, parsed_length = self._parse_string_until_separator(
-            name, self._parsed_length, separator, item_class, fallback_class, False
+            name, self._parsed_length, separators, item_class, fallback_class, False
         )
 
         self._parsed_values[name] = parsed_value
         self._parsed_length += parsed_length
 
-    def parse_string_until_separator_or_end(self, name, separator, item_class=str, fallback_class=None):
-        separator = bytearray(separator, self._encoding)
+    def parse_string_until_separator_or_end(self, name, separators, item_class=str, fallback_class=None):
         parsed_value, parsed_length = self._parse_string_until_separator(
-            name, self._parsed_length, separator, item_class, fallback_class, True
+            name, self._parsed_length, separators, item_class, fallback_class, True
         )
 
         self._parsed_values[name] = parsed_value
@@ -326,8 +346,6 @@ class ParserText(ParserBase):
     ):  # pylint: disable=too-many-arguments
         value = []
         item_offset = self._parsed_length
-        separator = separator.encode(self._encoding)
-        separator_spaces = separator_spaces.encode(self._encoding)
         max_separator_count = None if skip_empty else 1
 
         if separator_spaces:
@@ -512,7 +530,7 @@ class ParserBinary(ParserBase):
         except InvalidValue as e:
             raise e
 
-    def _parse_parsable_derived_array(self, name, items_size, item_classes, fallback_class=None):
+    def _parse_parsable_derived_array(self, items_size, item_classes, fallback_class=None):
         if items_size > self.unparsed_length:
             raise NotEnoughData(bytes_needed=items_size - self.unparsed_length)
 
@@ -535,25 +553,61 @@ class ParserBinary(ParserBase):
             unparsed_bytes = unparsed_bytes[parsed_length:]
             items.append(item)
 
-        self._parsed_values[name] = items
-        self._parsed_length += items_size
+        return items, items_size
 
     def parse_parsable_array(self, name, items_size, item_class, fallback_class=None):
         try:
-            self._parse_parsable_derived_array(name, items_size, [item_class, ], fallback_class)
+            items, items_size = self._parse_parsable_derived_array(items_size, [item_class, ], fallback_class)
         except NotEnoughData as e:
             raise e
         except ValueError as e:
             six.raise_from(InvalidValue(e.args[0], item_class, name), e)
 
+        self._parsed_values[name] = items
+        self._parsed_length += items_size
+
     def parse_parsable_derived_array(self, name, items_size, item_base_class, fallback_class=None):
         item_classes = cryptoparser.common.utils.get_leaf_classes(item_base_class)
         try:
-            self._parse_parsable_derived_array(name, items_size, item_classes, fallback_class)
+            items, items_size = self._parse_parsable_derived_array(items_size, item_classes, fallback_class)
         except NotEnoughData as e:
             raise e
         except ValueError as e:
             six.raise_from(InvalidValue(e.args[0], item_base_class, name), e)
+
+        self._parsed_values[name] = items
+        self._parsed_length += items_size
+
+    def _remove_trailing_separator(self, items, name):
+        if not isinstance(items[-1], ParserCRLF):
+            raise InvalidValue(self.unparsed, type(self), name)
+        del items[-1]
+
+    def parse_parsable_list(self, name, item_class, fallback_class=None, separator_class=ParserCRLF):
+        try:
+            items, items_size = self._parse_parsable_derived_array(
+                self.unparsed_length, [separator_class, item_class], fallback_class
+            )
+        except ValueError as e:
+            six.raise_from(InvalidValue(e.args[0], item_class, name), e)
+
+        if not items:
+            raise NotEnoughData(2)
+        self._remove_trailing_separator(items, name)
+
+        real_items = []
+        while items:
+            if len(items) % 2 == 0:
+                self._remove_trailing_separator(items, name)
+            else:
+                if isinstance(items[-1], separator_class):
+                    raise InvalidValue(self.unparsed, type(self), name)
+
+                real_items.insert(0, items[-1])
+                del items[-1]
+
+        self._parsed_values[name] = real_items
+        self._parsed_length += items_size
 
     def parse_variant(self, name, variant):
         parsed_object, value_length = variant.parse(self._parsable[self._parsed_length:])
@@ -682,8 +736,8 @@ class ComposerBinary(ComposerBase):
             self.compose_numeric(len(composed), item_size)
         self._composed += composed
 
-    def compose_parsable_array(self, values):
-        self._composed += bytearray().join(map(lambda item: item.compose(), values))
+    def compose_parsable_array(self, values, separator=bytearray()):
+        self._composed += separator.join(map(lambda item: item.compose(), values))
 
     def compose_bytes(self, value, item_size, converter=bytearray):
         value_bytes = converter(value)
