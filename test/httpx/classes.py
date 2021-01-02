@@ -5,7 +5,7 @@ import unittest
 
 import attr
 
-from cryptoparser.common.base import StringEnumParsable
+from cryptoparser.common.base import StringEnumCaseInsensitiveParsable
 
 from cryptoparser.httpx.parse import (
     HttpHeaderFieldsSemicolonSeparated,
@@ -24,6 +24,7 @@ class TestCasesBasesHttpHeader:
     class MinimalHeader(unittest.TestCase):
         _header_minimal = None
         _header_minimal_bytes = None
+        _header_minimal_markdown = None
 
         def test_parse_minimal(self):
             parsed_header = self._header_minimal.parse_exact_size(self._header_minimal_bytes)
@@ -31,6 +32,9 @@ class TestCasesBasesHttpHeader:
 
         def test_compose_minimal(self):
             self.assertEqual(self._header_minimal.compose(), self._header_minimal_bytes)
+
+        def test_markdown(self):
+            self.assertEqual(self._header_minimal.as_markdown(), self._header_minimal_markdown)
 
     class FullHeaderBase(unittest.TestCase):
         _header_full = None
@@ -63,7 +67,7 @@ class HttpHeaderFieldValueTimeDeltaTest(HttpHeaderFieldValueTimeDelta):
         return 'testTimeDelta'
 
 
-class HttpHeaderFieldValueEnumTest(StringEnumParsable, enum.Enum):
+class HttpHeaderFieldValueEnumTest(StringEnumCaseInsensitiveParsable, enum.Enum):
     FIRST = HttpHeaderFieldValueStringEnumParams(code='first')
     SECOND = HttpHeaderFieldValueStringEnumParams(code='second')
 

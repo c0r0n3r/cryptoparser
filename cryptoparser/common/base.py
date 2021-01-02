@@ -326,7 +326,7 @@ class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-me
 
 
 @attr.s
-class ArrayBase(ParsableBase, MutableSequence):
+class ArrayBase(ParsableBase, MutableSequence, Serializable):
     _items = attr.ib()
     _items_size = attr.ib(init=False, default=0)
     param = attr.ib(init=False, default=None)
@@ -390,6 +390,9 @@ class ArrayBase(ParsableBase, MutableSequence):
 
     def append(self, value):
         self.insert(len(self._items), value)
+
+    def _as_markdown(self, level):
+        return self._markdown_result(self._items, level)
 
 
 class Vector(ArrayBase):
@@ -671,7 +674,7 @@ class StringEnumParsableBase(ParsableBaseNoABC):
             six.raise_from(InvalidValue(parsable, cls), e)
 
         for enum_item in enum_items:
-            if cls._code_eq(enum_item.value.code, code):
+            if cls._code_eq(enum_item.value.code, code[:len(enum_item.value.code)]):
                 return enum_item, len(enum_item.value.code)
 
         raise InvalidValue(parsable, cls, 'code')

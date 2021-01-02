@@ -8,6 +8,7 @@ Features
 
   * Headers (``headers``)
 
+    * supports header wire format parsing
     * add parsers for generic headers (\
       `Content-Type <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type>`_, \
       `Server <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server>`_)

@@ -323,7 +323,13 @@ class FlagEnum(enum.IntEnum):
     EIGHT = 8
 
 
-StringEnumParams = attr.make_class('StringEnumParams', ['code', ])
+@attr.s
+class StringEnumParams(object):
+    code = attr.ib()
+
+    def _check_code(self, code):
+        if code != self.code:
+            raise InvalidType()
 
 
 class StringEnum(StringEnumParsable, enum.Enum):
