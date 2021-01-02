@@ -167,9 +167,6 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
             six.raise_from(InvalidValue(value, TlsAlertDescription), e)
 
 
-TlsSubprotocolMessageBase.register(TlsAlertMessage)
-
-
 class TlsChangeCipherSpecType(enum.IntEnum):
     CHANGE_CIPHER_SPEC = 0x01
 

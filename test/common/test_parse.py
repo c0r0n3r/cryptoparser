@@ -17,7 +17,6 @@ from .classes import (
     SerializableEnumFactory,
     SerializableEnumVariantParsable,
     StringEnum,
-    StringEnumFactory,
     TwoByteParsable,
 )
 
@@ -363,7 +362,7 @@ class TestParserText(TestParsableBase):
         self.assertEqual(parser.unparsed_length, 1)
 
         parser = ParserText(b'three#one')
-        parser.parse_string_until_separator('number', '#', StringEnumFactory)
+        parser.parse_string_until_separator('number', '#', StringEnum)
         self.assertEqual(parser['number'], StringEnum.THREE)
         self.assertEqual(parser.unparsed_length, 4)
 

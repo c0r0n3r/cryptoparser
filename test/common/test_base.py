@@ -25,7 +25,6 @@ from .classes import (
     SerializableSingle,
     SerializableUnhandled,
     StringEnum,
-    StringEnumFactory,
     TestObject,
     TwoByteEvenParsable,
     TwoByteParsable,
@@ -51,7 +50,7 @@ class VectorStringTest(VectorString):
             min_byte_num=0,
             max_byte_num=16,
             separator=';',
-            item_class=StringEnumFactory,
+            item_class=StringEnum,
             fallback_class=str
         )
 
@@ -347,15 +346,15 @@ class TestEnum(unittest.TestCase):
 class TestEnumString(unittest.TestCase):
     def test_error(self):
         with self.assertRaises(InvalidValue) as context_manager:
-            StringEnumFactory.parse_exact_size(b'four')
+            StringEnum.parse_exact_size(b'four')
         self.assertEqual(context_manager.exception.value, b'four')
 
         with self.assertRaises(InvalidValue) as context_manager:
-            StringEnumFactory.parse_exact_size(b'\xffthree')
+            StringEnum.parse_exact_size(b'\xffthree')
         self.assertEqual(context_manager.exception.value, b'\xffthree')
 
     def test_parse(self):
-        self.assertEqual(StringEnumFactory.parse_exact_size(b'one'), StringEnum.ONE)
+        self.assertEqual(StringEnum.parse_exact_size(b'one'), StringEnum.ONE)
 
     def test_compose(self):
         self.assertEqual(StringEnum.ONE.compose(), b'one')

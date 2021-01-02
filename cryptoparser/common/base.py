@@ -15,7 +15,14 @@ from collections import OrderedDict
 import attr
 import six
 
-from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ParserText, ComposerText
+from cryptoparser.common.parse import (
+    ComposerBinary,
+    ComposerText,
+    ParsableBase,
+    ParsableBaseNoABC,
+    ParserBinary,
+    ParserText,
+)
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue, InvalidType
 
 
@@ -281,7 +288,12 @@ class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-meth
     fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)), default=None)
 
     def get_item_size(self, item):
-        return len(item.value.code)
+        if isinstance(item, (ParsableBase, StringEnumParsable)):
+            return len(item.compose())
+        if isinstance(item, six.string_types):
+            return len(item)
+
+        raise NotImplementedError(type(item))
 
 
 @attr.s
@@ -618,12 +630,12 @@ class ThreeByteEnumComposer(NByteEnumComposer):
         return 3
 
 
-class StringEnumParsable(ParsableBase, Serializable):
+class StringEnumParsable(ParsableBaseNoABC):
     @classmethod
     def _parse(cls, parsable):
         enum_items = [
             enum_item
-            for enum_item in cls.get_enum_class()
+            for enum_item in cls  # pylint: disable=not-an-iterable
             if len(enum_item.value.code) <= len(parsable)
         ]
         enum_items.sort(key=lambda color: len(color.value.code), reverse=True)
@@ -639,15 +651,35 @@ class StringEnumParsable(ParsableBase, Serializable):
 
         raise InvalidValue(parsable, cls, 'code')
 
+    def compose(self):
+        return self._asdict().encode('ascii')
+
     def _asdict(self):
         return getattr(self, 'value').code
 
+
+@six.add_metaclass(abc.ABCMeta)
+class ProtocolVersionBase(Serializable, ParsableBase):
     @classmethod
     @abc.abstractmethod
-    def get_enum_class(cls):
+    def _parse(cls, parsable):
         raise NotImplementedError()
 
-
-class StringEnumComposer(object):
+    @abc.abstractmethod
     def compose(self):
-        return getattr(self, 'value').code.encode('ascii')
+        raise NotImplementedError()
+
+    @property
+    @abc.abstractmethod
+    def identifier(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def __str__(self):
+        raise NotImplementedError()
+
+    def as_json(self):
+        return json.dumps(self.identifier)
+
+    def _as_markdown(self, level):
+        return self._markdown_result(str(self), level)

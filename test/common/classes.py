@@ -11,7 +11,6 @@ from cryptoparser.common.base import (
     ParserBinary,
     ComposerBinary,
     Serializable,
-    StringEnumComposer,
     StringEnumParsable,
     TwoByteEnumComposer,
     TwoByteEnumParsable,
@@ -270,7 +269,7 @@ class FlagEnum(enum.IntEnum):
 StringEnumParams = attr.make_class('StringEnumParams', ['code', ])
 
 
-class StringEnum(StringEnumComposer, enum.Enum):
+class StringEnum(StringEnumParsable, enum.Enum):
     ONE = StringEnumParams(
         code='one',
     )
@@ -280,15 +279,6 @@ class StringEnum(StringEnumComposer, enum.Enum):
     THREE = StringEnumParams(
         code='three',
     )
-
-
-class StringEnumFactory(StringEnumParsable):
-    @classmethod
-    def get_enum_class(cls):
-        return StringEnum
-
-    def compose(self):
-        raise NotImplementedError()
 
 
 class EnumStringValue(enum.Enum):

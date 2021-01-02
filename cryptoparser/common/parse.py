@@ -12,8 +12,7 @@ from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidVal
 import cryptoparser.common.utils
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ParsableBase(object):
+class ParsableBaseNoABC(object):
     @classmethod
     def parse_mutable(cls, parsable):
         parsed_object, parsed_length = cls._parse(parsable)
@@ -33,6 +32,18 @@ class ParsableBase(object):
 
         return parsed_object
 
+    @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+@six.add_metaclass(abc.ABCMeta)
+class ParsableBase(ParsableBaseNoABC):
     @classmethod
     @abc.abstractmethod
     def _parse(cls, parsable):
@@ -228,7 +239,7 @@ class ParserText(ParserBase):
             fallback_class,
             may_end):
         try:
-            if issubclass(item_class, ParsableBase):
+            if issubclass(item_class, ParsableBaseNoABC):
                 item = item_class.parse_exact_size(self._parsable[item_offset:item_end])
             elif issubclass(item_class, str):
                 item = self._parsable[item_offset:item_end].decode(self._encoding)
@@ -513,7 +524,7 @@ class ComposerBase(object):
 
         for value in values:
             try:
-                if isinstance(value, ParsableBase):
+                if isinstance(value, ParsableBaseNoABC):
                     composed_str += value.compose()
                 else:
                     composed_str += value.encode(encoding)
