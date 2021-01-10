@@ -47,7 +47,7 @@ class TlsRecord(ParsableBase):
             raise NotEnoughData(parser['record_length'] - parser.unparsed_length)
 
         messages = []
-        while parser.parsed_length < len(parsable):
+        while parser.parsed_length < cls.HEADER_SIZE + parser['record_length']:
             parser.parse_variant('message', TlsSubprotocolMessageParser(parser['content_type']))
             messages.append(parser['message'])
 

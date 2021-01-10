@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import collections
 import enum
 import six
 import attr
 
-from cryptoparser.common.base import Serializable
-from cryptoparser.common.base import OneByteEnumComposer, OneByteEnumParsable
-from cryptoparser.common.base import Vector, VectorParsable, VectorParsableDerived
-from cryptoparser.common.base import VectorParamNumeric, VectorParamParsable
 from cryptoparser.common.algorithm import Authentication, MAC, NamedGroup
-from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptoparser.common.base import (
+    OneByteEnumComposer,
+    OneByteEnumParsable,
+    Serializable,
+    TwoByteEnumComposer,
+    TwoByteEnumParsable,
+    VariantParsable,
+    Vector,
+    VectorParamNumeric,
+    VectorParamParsable,
+    VectorParsable,
+    VectorParsableDerived,
+)
+from cryptoparser.common.exception import NotEnoughData, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.tls.grease import TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsProtocolVersionBase
@@ -205,11 +214,11 @@ class TlsExtensionType(Serializable, TwoByteEnumComposer, enum.Enum):
     )
 
 
-class TlsExtensions(VectorParsableDerived):
+class TlsExtensions(VectorParsable):
     @classmethod
     def get_param(cls):
         return VectorParamParsable(
-            item_class=TlsExtensionParsed,
+            item_class=TlsExtensionVariant,
             fallback_class=TlsExtensionUnparsed,
             min_byte_num=0, max_byte_num=2 ** 16 - 1
         )
@@ -311,7 +320,7 @@ class TlsExtensionParsed(TlsExtensionBase):
         parser = super(TlsExtensionParsed, cls)._check_header(parsable)
 
         if parser['extension_type'] != cls.get_extension_type():
-            raise InvalidValue(parser['extension_type'], TlsExtensionParsed, 'extension type')
+            raise InvalidType()
 
         return parser
 
@@ -380,9 +389,9 @@ class TlsECPointFormatFactory(OneByteEnumParsable):
 
 
 class TlsECPointFormat(Serializable, OneByteEnumComposer, enum.Enum):
-    UNCOMPRESSED = TlsECPointFormatParams(code=0x0)
-    ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x1)
-    ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x2)
+    UNCOMPRESSED = TlsECPointFormatParams(code=0x00)
+    ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x01)
+    ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x02)
 
 
 class TlsECPointFormatVector(VectorParsable):
@@ -432,7 +441,7 @@ class TlsNamedCurveFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-class TlsNamedCurve(TwoByteEnumComposer, enum.Enum):
+class TlsNamedCurve(TwoByteEnumComposer):
     SECT163K1 = TlsNamedCurveParams(
         code=0x0001,
         named_group=NamedGroup.SECT163K1,
@@ -703,7 +712,7 @@ class HashAndSignatureAlgorithmParam(object):
     signature_algorithm = attr.ib(validator=attr.validators.optional(attr.validators.in_(Authentication)))
 
 
-class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
+class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer):
     ANONYMOUS_NONE = HashAndSignatureAlgorithmParam(
         code=0x0000,
         signature_algorithm=Authentication.anon,
@@ -722,22 +731,22 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
     ANONYMOUS_SHA224 = HashAndSignatureAlgorithmParam(
         code=0x0300,
         signature_algorithm=Authentication.anon,
-        hash_algorithm=MAC.SHA224
+        hash_algorithm=MAC.SHA2_224
     )
     ANONYMOUS_SHA256 = HashAndSignatureAlgorithmParam(
         code=0x0400,
         signature_algorithm=Authentication.anon,
-        hash_algorithm=MAC.SHA256
+        hash_algorithm=MAC.SHA2_256
     )
     ANONYMOUS_SHA384 = HashAndSignatureAlgorithmParam(
         code=0x0500,
         signature_algorithm=Authentication.anon,
-        hash_algorithm=MAC.SHA384
+        hash_algorithm=MAC.SHA2_384
     )
     ANONYMOUS_SHA512 = HashAndSignatureAlgorithmParam(
         code=0x0006,
         signature_algorithm=Authentication.anon,
-        hash_algorithm=MAC.SHA512
+        hash_algorithm=MAC.SHA2_512
     )
     RSA_NONE = HashAndSignatureAlgorithmParam(
         code=0x0001,
@@ -757,22 +766,22 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
     RSA_SHA224 = HashAndSignatureAlgorithmParam(
         code=0x0301,
         signature_algorithm=Authentication.RSA,
-        hash_algorithm=MAC.SHA224
+        hash_algorithm=MAC.SHA2_224
     )
     RSA_SHA256 = HashAndSignatureAlgorithmParam(
         code=0x0401,
         signature_algorithm=Authentication.RSA,
-        hash_algorithm=MAC.SHA256
+        hash_algorithm=MAC.SHA2_256
     )
     RSA_SHA384 = HashAndSignatureAlgorithmParam(
         code=0x0501,
         signature_algorithm=Authentication.RSA,
-        hash_algorithm=MAC.SHA384
+        hash_algorithm=MAC.SHA2_384
     )
     RSA_SHA512 = HashAndSignatureAlgorithmParam(
         code=0x0601,
         signature_algorithm=Authentication.RSA,
-        hash_algorithm=MAC.SHA512
+        hash_algorithm=MAC.SHA2_512
     )
     DSA_NONE = HashAndSignatureAlgorithmParam(
         code=0x0002,
@@ -792,22 +801,22 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
     DSA_SHA224 = HashAndSignatureAlgorithmParam(
         code=0x0302,
         signature_algorithm=Authentication.DSS,
-        hash_algorithm=MAC.SHA224
+        hash_algorithm=MAC.SHA2_224
     )
     DSA_SHA256 = HashAndSignatureAlgorithmParam(
         code=0x0402,
         signature_algorithm=Authentication.DSS,
-        hash_algorithm=MAC.SHA256
+        hash_algorithm=MAC.SHA2_256
     )
     DSA_SHA384 = HashAndSignatureAlgorithmParam(
         code=0x0502,
         signature_algorithm=Authentication.DSS,
-        hash_algorithm=MAC.SHA384
+        hash_algorithm=MAC.SHA2_384
     )
     DSA_SHA512 = HashAndSignatureAlgorithmParam(
         code=0x0602,
         signature_algorithm=Authentication.DSS,
-        hash_algorithm=MAC.SHA512
+        hash_algorithm=MAC.SHA2_512
     )
     ECDSA_NONE = HashAndSignatureAlgorithmParam(
         code=0x0003,
@@ -827,22 +836,22 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
     ECDSA_SHA224 = HashAndSignatureAlgorithmParam(
         code=0x0303,
         signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=MAC.SHA224
+        hash_algorithm=MAC.SHA2_224
     )
     ECDSA_SHA256 = HashAndSignatureAlgorithmParam(
         code=0x0403,
         signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=MAC.SHA256
+        hash_algorithm=MAC.SHA2_256
     )
     ECDSA_SHA384 = HashAndSignatureAlgorithmParam(
         code=0x0503,
         signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=MAC.SHA384
+        hash_algorithm=MAC.SHA2_384
     )
     ECDSA_SHA512 = HashAndSignatureAlgorithmParam(
         code=0x0603,
         signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=MAC.SHA512
+        hash_algorithm=MAC.SHA2_512
     )
     GOST_R3410_01 = HashAndSignatureAlgorithmParam(
         code=0x00ed,
@@ -868,6 +877,49 @@ class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer, enum.Enum):
         code=0x4108,
         signature_algorithm=Authentication.GOST_R3410_12_512,
         hash_algorithm=MAC.GOST_R3411_12_512,
+    )
+
+    RSA_PSS_RSAE_SHA256 = HashAndSignatureAlgorithmParam(
+        code=0x0804,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_256
+    )
+    RSA_PSS_RSAE_SHA384 = HashAndSignatureAlgorithmParam(
+        code=0x0805,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_384
+    )
+    RSA_PSS_RSAE_SHA512 = HashAndSignatureAlgorithmParam(
+        code=0x0806,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_512
+    )
+
+    ED25519 = HashAndSignatureAlgorithmParam(
+        code=0x0807,
+        signature_algorithm=Authentication.EDDSA,
+        hash_algorithm=MAC.ED25519PH
+    )
+    ED448 = HashAndSignatureAlgorithmParam(
+        code=0x0808,
+        signature_algorithm=Authentication.EDDSA,
+        hash_algorithm=MAC.ED448PH
+    )
+
+    RSA_PSS_PSS_SHA256 = HashAndSignatureAlgorithmParam(
+        code=0x0809,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_256
+    )
+    RSA_PSS_PSS_SHA384 = HashAndSignatureAlgorithmParam(
+        code=0x080a,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_384
+    )
+    RSA_PSS_PSS_SHA512 = HashAndSignatureAlgorithmParam(
+        code=0x080b,
+        signature_algorithm=Authentication.RSA,
+        hash_algorithm=MAC.SHA2_512
     )
 
 
@@ -905,3 +957,27 @@ class TlsExtensionSignatureAlgorithms(TlsExtensionParsed):
         header_bytes = self._compose_header(payload_composer.composed_length)
 
         return header_bytes + payload_composer.composed_bytes
+
+
+class TlsExtensionVariant(VariantParsable):
+    _VARIANTS = collections.OrderedDict(
+        [
+            (TlsExtensionType.SERVER_NAME, (TlsExtensionServerName, )),
+            (TlsExtensionType.SUPPORTED_GROUPS, (TlsExtensionEllipticCurves, )),
+            (TlsExtensionType.EC_POINT_FORMATS, (TlsExtensionECPointFormats, )),
+            (TlsExtensionType.SIGNATURE_ALGORITHMS, (TlsExtensionSignatureAlgorithms, )),
+            (TlsExtensionType.SUPPORTED_VERSIONS, (TlsExtensionSupportedVersions, )),
+        ]
+    )
+
+    @classmethod
+    def _get_variants(cls):
+        variants = collections.OrderedDict(cls._VARIANTS)
+
+        variants.update([
+            (extension_type, (TlsExtensionUnparsed, ))
+            for extension_type in TlsExtensionType
+            if extension_type not in cls._VARIANTS
+        ])
+
+        return variants

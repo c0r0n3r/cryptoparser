@@ -371,20 +371,20 @@ class MAC(enum.Enum):
         name='SHA1',
         digest_size=160
     )
-    SHA224 = MACParams(
-        name='SHA224',
+    SHA2_224 = MACParams(
+        name='SHA2_224',
         digest_size=224
     )
-    SHA256 = MACParams(
-        name='SHA256',
+    SHA2_256 = MACParams(
+        name='SHA2_256',
         digest_size=256
     )
-    SHA384 = MACParams(
-        name='SHA384',
+    SHA2_384 = MACParams(
+        name='SHA2_384',
         digest_size=384
     )
-    SHA512 = MACParams(
-        name='SHA512',
+    SHA2_512 = MACParams(
+        name='SHA2_512',
         digest_size=512
     )
     ED25519PH = MACParams(

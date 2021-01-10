@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import collections
 import enum
 import attr
 import six
 
-from cryptoparser.common.base import Serializable
-from cryptoparser.common.exception import TooMuchData, InvalidValue
+from cryptoparser.common.base import Serializable, TwoByteEnumParsable, TwoByteEnumComposer, VariantParsable
+from cryptoparser.common.exception import TooMuchData, InvalidValue, InvalidType
 from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
 
 
@@ -116,6 +117,31 @@ class AlwaysUnknowTypeParsable(ParsableBase):
         raise TooMuchData()
 
 
+class AlwaysInvalidTypeParsable(ParsableBase):
+    @classmethod
+    def _parse(cls, parsable):
+        raise InvalidType()
+
+    def compose(self):
+        raise TooMuchData()
+
+
+class AlwaysInvalidTypeVariantParsable(VariantParsable):
+    @classmethod
+    def _get_variants(cls):
+        return collections.OrderedDict([
+            (AlwaysInvalidTypeParsable, (AlwaysInvalidTypeParsable, ))
+        ])
+
+
+class SerializableEnumVariantParsable(VariantParsable):
+    @classmethod
+    def _get_variants(cls):
+        return collections.OrderedDict([
+            (SerializableEnum, (SerializableEnum, ))
+        ])
+
+
 @attr.s
 class SerializableEnumValue(object):
     code = attr.ib(validator=attr.validators.instance_of(int))
@@ -142,7 +168,17 @@ class SerializableIterables(Serializable):
         self.tuple_value = tuple(['value', ])
 
 
-class SerializableParamEnum(enum.Enum):
+class SerializableEnumFactory(TwoByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return SerializableEnum
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+class SerializableEnum(Serializable, TwoByteEnumComposer):
     first = SerializableEnumValue(
         code=0x0001,
     )
@@ -158,7 +194,7 @@ class SerializableStringEnum(enum.Enum):
 
 class SerializableEnums(Serializable):
     def __init__(self):
-        self.param_enum = SerializableParamEnum.first
+        self.param_enum = SerializableEnum.first
         self.string_enum = SerializableStringEnum.second
 
 

@@ -26,8 +26,6 @@ class InvalidValue(Exception):
     def __init__(self, value, type_class, class_member=None):
         if isinstance(value, enum.IntEnum):
             message = hex(value.value)
-        elif isinstance(value, enum.Enum):
-            message = hex(value.value.code)
         elif isinstance(value, int):
             message = hex(value)
         else:

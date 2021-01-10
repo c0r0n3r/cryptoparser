@@ -6,7 +6,17 @@ from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidVal
 from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary, ByteOrder
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
 
-from .classes import OneByteParsable, TwoByteParsable, ConditionalParsable, OneByteOddParsable, FlagEnum
+from .classes import (
+    AlwaysInvalidTypeVariantParsable,
+    ConditionalParsable,
+    FlagEnum,
+    OneByteOddParsable,
+    OneByteParsable,
+    SerializableEnum,
+    SerializableEnumFactory,
+    SerializableEnumVariantParsable,
+    TwoByteParsable,
+)
 
 
 class TestParsable(unittest.TestCase):
@@ -31,13 +41,29 @@ class TestParsable(unittest.TestCase):
         with self.assertRaises(InvalidValue):
             parser.parse_parsable('cipher_suite', TlsCipherSuiteFactory)
 
+        with self.assertRaises(InvalidValue) as context_manager:
+            AlwaysInvalidTypeVariantParsable.parse_exact_size(b'\x01\x02\x03\x04')
+        self.assertEqual(context_manager.exception.value, b'\x01\x02\x03\x04')
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            AlwaysInvalidTypeVariantParsable(0)
+        self.assertEqual(context_manager.exception.value, 0)
+
     def test_parse(self):
-        _, unparsed_bytes = OneByteParsable.parse_immutable(b'\x01\x02')
-        self.assertEqual(unparsed_bytes, b'\x02')
+        _, parsed_length = OneByteParsable.parse_immutable(b'\x01\x02')
+        self.assertEqual(parsed_length, 1)
 
         parsable = bytearray([0x01, 0x02])
         OneByteParsable.parse_mutable(parsable)
         self.assertEqual(parsable, b'\x02')
+
+        parsed_value, parsed_length = SerializableEnumFactory.parse_immutable(b'\x00\x01')
+        self.assertEqual(parsed_value, SerializableEnum.first)
+        self.assertEqual(parsed_length, 2)
+
+    def test_repr(self):
+        self.assertEqual(repr(SerializableEnum.first), 'SerializableEnum.first')
+        AlwaysInvalidTypeVariantParsable.register_variant_parser(SerializableEnumFactory, SerializableEnumFactory)
 
 
 class TestParserBinary(unittest.TestCase):
@@ -71,6 +97,14 @@ class TestParserBinary(unittest.TestCase):
         parser = ParserBinary(b'\x10')
         with self.assertRaises(InvalidValue):
             parser.parse_numeric('flags', 1, FlagEnum)
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            AlwaysInvalidTypeVariantParsable.parse_immutable(b'\x00\x00')
+
+        AlwaysInvalidTypeVariantParsable.register_variant_parser(SerializableEnumFactory, SerializableEnumFactory)
+        with self.assertRaises(InvalidValue) as context_manager:
+            AlwaysInvalidTypeVariantParsable.parse_exact_size(b'\x01\x02')
+        self.assertEqual(context_manager.exception.value, 0x0102)
 
     def test_parse_numeric(self):
         parser = ParserBinary(b'\x01\x02')
@@ -169,6 +203,11 @@ class TestParserBinary(unittest.TestCase):
         with self.assertRaises(InvalidValue):
             parser.parse_parsable_array('array', items_size=2, item_class=OneByteOddParsable)
 
+        parser = ParserBinary(b'\x00')
+        with self.assertRaises(NotEnoughData) as context_manager:
+            parser.parse_parsable_array('array', items_size=3, item_class=OneByteOddParsable)
+        self.assertEqual(context_manager.exception.bytes_needed, 2)
+
     def test_parse_parsable_derived_array(self):
         parser = ParserBinary(b'\x01\x02\x00')
         parser.parse_parsable_derived_array(
@@ -182,6 +221,7 @@ class TestParserBinary(unittest.TestCase):
             list(map(int, parser['array']))
         )
         self.assertEqual(parser.unparsed_length, 0)
+        self.assertEqual(parser.unparsed, b'')
 
         parser = ParserBinary(b'\x00\x01')
         with self.assertRaises(InvalidValue):
@@ -204,6 +244,14 @@ class TestParserBinary(unittest.TestCase):
             list(map(int, parser['array']))
         )
         self.assertEqual(parser.unparsed_length, 0)
+        self.assertEqual(parser.unparsed, b'')
+
+    def test_parse_variant_parsable(self):
+        AlwaysInvalidTypeVariantParsable.register_variant_parser(SerializableEnumFactory, SerializableEnumFactory)
+        self.assertEqual(
+            AlwaysInvalidTypeVariantParsable.parse_exact_size(b'\x00\x01').value,
+            AlwaysInvalidTypeVariantParsable(SerializableEnum.first).variant.value
+        )
 
 
 class TestComposerBinary(unittest.TestCase):
@@ -334,3 +382,13 @@ class TestComposerBinary(unittest.TestCase):
             b'\x01\x02\x03',
             composer.composed_bytes
         )
+
+    def test_compose_enum(self):
+        composer = ComposerBinary()
+        composer.compose_parsable(SerializableEnum.second)
+        self.assertEqual(b'\x00\x02', composer.composed_bytes)
+
+    def test_compose_variant_parsable(self):
+        composer = ComposerBinary()
+        composer.compose_parsable(SerializableEnumVariantParsable(SerializableEnum.first))
+        self.assertEqual(b'\x00\x01', composer.composed_bytes)

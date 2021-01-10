@@ -17,7 +17,7 @@ import attr
 import six
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
-from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue, InvalidType
 
 
 def _default(
@@ -177,6 +177,67 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
 
 
 @attr.s
+class VariantParsable(ParsableBase):
+    variant = attr.ib()
+
+    _REGISTERED_VARIANTS = OrderedDict()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_variants(cls):
+        raise NotImplementedError()
+
+    @variant.validator
+    def _validator_variant(self, _, value):
+        for variant_type in self._get_variant_types():
+            if issubclass(variant_type, NByteEnumParsable):
+                variant_type = variant_type.get_enum_class()
+
+            if isinstance(value, variant_type):
+                break
+        else:
+            raise InvalidValue(value, VariantParsable)
+
+    @classmethod
+    def _get_variant_types(cls):
+        variant_types = []
+
+        for variant_type_list in list(cls._get_variants().values()) + list(cls._get_registered_variants().values()):
+            variant_types.extend(variant_type_list)
+
+        return variant_types
+
+    @classmethod
+    def _get_registered_variants(cls):
+        if cls not in cls._REGISTERED_VARIANTS:
+            cls._REGISTERED_VARIANTS[cls] = OrderedDict()
+
+        return cls._REGISTERED_VARIANTS[cls]
+
+    @classmethod
+    def register_variant_parser(cls, variant_tag, parsable_class):
+        registered_variants = cls._get_registered_variants()
+        if variant_tag not in registered_variants:
+            registered_variants[variant_tag] = []
+
+        registered_variants[variant_tag].append(parsable_class)
+
+    @classmethod
+    def _parse(cls, parsable):
+        for variant_parser in cls._get_variant_types():
+            try:
+                parsed_object, parsed_length = variant_parser.parse_immutable(parsable)
+                return parsed_object, parsed_length
+            except InvalidType:
+                pass
+
+        raise InvalidValue(parsable, cls)
+
+    def compose(self):
+        return self.variant.compose()
+
+
+@attr.s
 class VectorParamBase(object):  # pylint: disable=too-few-public-methods
     min_byte_num = attr.ib(validator=attr.validators.instance_of(int))
     max_byte_num = attr.ib(validator=attr.validators.instance_of(int))
@@ -199,6 +260,15 @@ class VectorParamNumeric(VectorParamBase):  # pylint: disable=too-few-public-met
 
     def get_item_size(self, item):
         return self.item_size
+
+
+@attr.s(init=False)
+class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
+    def __init__(self, min_byte_num, max_byte_num):
+        super(OpaqueParam, self).__init__(min_byte_num, max_byte_num, 1)
+
+    def get_item_size(self, item):
+        return 1
 
 
 @attr.s
@@ -369,32 +439,35 @@ class VectorParsableDerived(VectorBase):
         return header_composer.composed_bytes + body_composer.composed_bytes
 
 
-class Opaque(Vector):
+class Opaque(VectorBase):
+    def __init__(self, items):
+        if isinstance(items, (bytes, bytearray)):
+            items = [ord(items[i:i + 1]) for i in range(len(items))]
+
+        super(Opaque, self).__init__(items)
+
     @classmethod
     def _parse(cls, parsable):
-        composer = ComposerBinary()
-        vector_param = cls.get_param()
-        composer.compose_numeric(vector_param.min_byte_num, vector_param.item_num_size)
+        parser = ParserBinary(parsable)
 
-        try:
-            vector, parsed_length = super(Opaque, cls)._parse(composer.composed_bytes + parsable)
-        except NotEnoughData as e:
-            six.raise_from(NotEnoughData(cls.get_byte_num()), e)
+        parser.parse_numeric('item_byte_num', cls.get_param().item_num_size)
+        parser.parse_bytes('items', parser['item_byte_num'])
 
-        return cls(vector), parsed_length - vector_param.item_num_size
+        items = parser['items']
+        return cls([ord(items[i:i + 1]) for i in range(len(items))]), parser.parsed_length
 
     def compose(self):
-        return super(Opaque, self).compose()[self.param.item_num_size:]
+        composer = ComposerBinary()
+
+        composer.compose_numeric(len(self._items), self.get_param().item_num_size)
+        composer.compose_numeric_array(self._items, 1)
+
+        return composer.composed_bytes
 
     @classmethod
     @abc.abstractmethod
-    def get_byte_num(cls):
-        raise NotImplementedError()
-
-    @classmethod
     def get_param(cls):
-        byte_num = cls.get_byte_num()
-        return VectorParamNumeric(item_size=1, min_byte_num=byte_num, max_byte_num=byte_num)
+        raise NotImplementedError()
 
 
 class NByteEnumParsable(ParsableBase):
@@ -404,7 +477,7 @@ class NByteEnumParsable(ParsableBase):
 
         parser.parse_numeric('code', cls.get_byte_num())
 
-        for enum_item in cls.get_enum_class():
+        for enum_item in list(cls.get_enum_class()):
             if enum_item.value.code == parser['code']:
                 return enum_item, cls.get_byte_num()
 
@@ -454,7 +527,10 @@ class ThreeByteEnumParsable(NByteEnumParsable):
         raise NotImplementedError()
 
 
-class NByteEnumComposer(object):
+class NByteEnumComposer(enum.Enum):
+    def __repr__(self):
+        return self.__class__.__name__ + '.' + self.name
+
     def compose(self):
         composer = ComposerBinary()
 
