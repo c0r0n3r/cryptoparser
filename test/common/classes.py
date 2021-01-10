@@ -143,8 +143,11 @@ class SerializableEnumVariantParsable(VariantParsable):
 
 
 @attr.s
-class SerializableEnumValue(object):
+class SerializableEnumValue(Serializable):
     code = attr.ib(validator=attr.validators.instance_of(int))
+
+    def _as_markdown(self, level):
+        return False, self.code
 
 
 class TestObject(object):

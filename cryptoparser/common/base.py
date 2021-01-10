@@ -136,7 +136,10 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         elif Serializable._markdown_is_directly_printable(obj):
             result = False, str(obj)
         elif isinstance(obj, enum.Enum):
-            result = False, obj.name
+            if isinstance(obj.value, Serializable):
+                return self._markdown_result_simple(obj.value, level)
+
+            return False, obj.name
         elif hasattr(obj, '__dict__') or isinstance(obj, dict):
             return self._markdown_result_dict(obj, level)
         elif isinstance(obj, (list, tuple)):

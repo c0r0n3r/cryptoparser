@@ -3104,8 +3104,8 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer):
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_12_256,
         bulk_cipher=BlockCipher.GOST_R3412_15_128,
-        block_cipher_mode=BlockCipherMode.CTR,
-        mac=MAC.GOST_R3413_15,
+        block_cipher_mode=BlockCipherMode.EAX,
+        mac=MAC.GOST_R3412_15_KUZNYECHIK_CTR_OMAC,
         authenticated_encryption=False,
     )
     TLS_GOSTR341112_256_WITH_MAGMA_CTR_OMAC = CipherSuiteParams(
@@ -3113,8 +3113,8 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer):
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_12_256,
         bulk_cipher=BlockCipher.GOST_R3412_15_64,
-        block_cipher_mode=BlockCipherMode.CTR,
-        mac=MAC.GOST_R3413_15,
+        block_cipher_mode=BlockCipherMode.EAX,
+        mac=MAC.GOST_R3412_15_MAGMA_CTR_OMAC,
         authenticated_encryption=False,
     )
     TLS_GOSTR341112_256_WITH_28147_CNT_IMIT = CipherSuiteParams(
@@ -3259,7 +3259,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer):
         bulk_cipher=BlockCipher.AES_128,
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
-        authenticated_encryption=False,
+        authenticated_encryption=True,
     )
     TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xd002,
@@ -3268,7 +3268,7 @@ class TlsCipherSuite(Serializable, TwoByteEnumComposer):
         bulk_cipher=BlockCipher.AES_256,
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
-        authenticated_encryption=False,
+        authenticated_encryption=True,
     )
     TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 = CipherSuiteParams(
         code=0xd003,
