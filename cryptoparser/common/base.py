@@ -42,19 +42,22 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
     @staticmethod
     def _get_ordered_dict(dict_value):
         if attr.has(type(dict_value)):
-            return OrderedDict([
+            dict_value = OrderedDict([
                 (name, getattr(dict_value, name))
                 for name, field in attr.fields_dict(type(dict_value)).items()
             ])
-
-        if isinstance(dict_value, dict):
-            pass
+            keys = dict_value.keys()
+        elif isinstance(dict_value, OrderedDict):
+            keys = dict_value.keys()
+        elif isinstance(dict_value, dict):
+            keys = sorted(dict_value.keys())
         elif hasattr(dict_value, '__dict__'):
             dict_value = dict_value.__dict__
+            keys = sorted(dict_value.keys())
 
         result = OrderedDict([
             (name, dict_value[name])
-            for name in sorted(dict_value.keys())
+            for name in keys
             if not name.startswith('_')
         ])
 
@@ -75,13 +78,13 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
     def _json_traverse(obj, result_func):
         if isinstance(obj, enum.Enum):
             result = result_func(obj)
-        elif isinstance(obj, dict):
+        elif hasattr(obj, '_asdict'):
+            result = Serializable._json_traverse(obj._asdict(), result_func)
+        elif isinstance(obj, dict) or attr.has(type(obj)):
             result = OrderedDict([
                 (name, Serializable._json_traverse(value, result_func))
                 for name, value in Serializable._get_ordered_dict(obj).items()
             ])
-        elif hasattr(obj, '_asdict'):
-            result = Serializable._json_traverse(obj._asdict(), result_func)
         elif hasattr(obj, '__dict__'):
             result = Serializable._json_traverse(obj.__dict__, result_func)
         elif isinstance(obj, (list, tuple)):
@@ -183,8 +186,10 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         return result
 
     def _asdict(self):
-        result = Serializable._get_ordered_dict(self)
-        return result
+        if attr.has(type(self)):
+            return Serializable._get_ordered_dict(self)
+
+        return Serializable._get_ordered_dict(self.__dict__)
 
     def as_json(self):
         return json.dumps(self)

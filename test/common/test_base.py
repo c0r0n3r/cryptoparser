@@ -15,6 +15,7 @@ from .classes import (
     EnumStringValue,
     OneByteOddParsable,
     OneByteParsable,
+    SerializableAttributeOrder,
     SerializableEmptyValues,
     SerializableEnums,
     SerializableHidden,
@@ -396,6 +397,10 @@ class TestSerializable(unittest.TestCase):
         self.assertEqual(
             SerializableRecursive().as_json(),
             '{' +
+            '"json_asdict_object": {"attr_b": "b", "attr_a": "a"}, ' +
+            '"json_attr_as_dict": {"attr_b": "b", "attr_a": "a"}, ' +
+            '"json_attr_object": {"attr_b": "b", "attr_a": "a"}, ' +
+            '"json_object": {"attr_a": "a", "attr_b": "b"}, ' +
             '"json_serializable_hidden": {"visible_value": "value"}, ' +
             '"json_serializable_in_dict": {"key1": {"visible_value": "value"}, "key2": "single"}, ' +
             '"json_serializable_in_list": [{"visible_value": "value"}, "single"], ' +
@@ -456,6 +461,13 @@ class TestSerializable(unittest.TestCase):
             '* Human Readable Name 1: value 1\n'
         )
         self.assertEqual(
+            SerializableAttributeOrder().as_markdown(),
+            '\n'.join([
+                '* Attr B: b',
+                '* Attr A: a'
+            ]) + '\n'
+        )
+        self.assertEqual(
             SerializableEmptyValues().as_markdown(),
             '\n'.join([
                 '* Dict: -',
@@ -468,6 +480,18 @@ class TestSerializable(unittest.TestCase):
         self.assertEqual(
             SerializableRecursive().as_markdown(),
             '\n'.join([
+                '* Json Asdict Object:',
+                '    * Attr B: b',
+                '    * Attr A: a',
+                '* Json Attr As Dict:',
+                '    * Attr B: b',
+                '    * Attr A: a',
+                '* Json Attr Object:',
+                '    * Attr B: b',
+                '    * Attr A: a',
+                '* Json Object:',
+                '    * Attr A: a',
+                '    * Attr B: b',
                 '* Json Serializable Hidden:',
                 '    * Visible Value: value',
                 '* Json Serializable In Dict:',
