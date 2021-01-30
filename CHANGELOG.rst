@@ -1,6 +1,31 @@
 Changelog
 =========
 
+.. _v0-4-0:
+
+0.4.0 - 2021-01-30
+------------------
+
+Features
+^^^^^^^^
+
+* TLS (``tls``)
+
+  * Generic
+
+    * `LDAP <https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol>`_ related messages (#23)
+
+  * Cipher Suites (``ciphers``)
+
+    * `client certificate request <https://tools.ietf.org/html/rfc2246#section-7.4.4>`_ related messages (#24)
+
+Improvements
+^^^^^^^^^^^^
+
+* Generic
+
+  * add `OID <https://en.wikipedia.org/wiki/Object_identifier>`_ to algorithms
+
 .. _v0-3-1:
 
 0.3.1 - 2020-09-15
