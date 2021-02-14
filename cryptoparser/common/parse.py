@@ -218,12 +218,15 @@ class ParserText(ParserBase):
         self._parsed_values[name] = value
         self._parsed_length += parsed_length
 
-    def _apply_item_class(
+    def _apply_item_class(  # pylint: disable=too-many-arguments
             self,
             name,
             item_offset,
             item_end,
-            item_class):
+            separator,
+            item_class,
+            fallback_class,
+            may_end):
         try:
             if issubclass(item_class, ParsableBase):
                 item = item_class.parse_exact_size(self._parsable[item_offset:item_end])
@@ -231,9 +234,14 @@ class ParserText(ParserBase):
                 item = self._parsable[item_offset:item_end].decode(self._encoding)
             else:
                 item = item_class(self._parsable[item_offset:item_end].decode(self._encoding))
-        except UnicodeError as e:
-            six.raise_from(InvalidValue(self._parsable[item_offset:], type(self), name), e)
-        except ValueError as e:
+        except (InvalidValue, ValueError, UnicodeError) as e:
+            if fallback_class is not None:
+                parsed_value, parsed_length = self._parse_string_until_separator(
+                    name, item_offset, separator, fallback_class, None, may_end
+                )
+                item_offset += parsed_length
+                return parsed_value
+
             six.raise_from(InvalidValue(self._parsable[item_offset:], type(self), name), e)
 
         return item
@@ -244,6 +252,7 @@ class ParserText(ParserBase):
             item_offset,
             separators,
             item_class,
+            fallback_class,
             may_end=False
     ):
         for item_end in range(item_offset, len(self._parsable)):
@@ -255,23 +264,23 @@ class ParserText(ParserBase):
 
             item_end = len(self._parsable)
 
-        item = self._apply_item_class(name, item_offset, item_end, item_class)
+        item = self._apply_item_class(name, item_offset, item_end, separators, item_class, fallback_class, may_end)
 
         return item, item_end - item_offset
 
-    def parse_string_until_separator(self, name, separator, item_class=str):
+    def parse_string_until_separator(self, name, separator, item_class=str, fallback_class=None):
         separator = bytearray(separator, self._encoding)
         parsed_value, parsed_length = self._parse_string_until_separator(
-            name, self._parsed_length, separator, item_class, False
+            name, self._parsed_length, separator, item_class, fallback_class, False
         )
 
         self._parsed_values[name] = parsed_value
         self._parsed_length += parsed_length
 
-    def parse_string_until_separator_or_end(self, name, separator, item_class=str):
+    def parse_string_until_separator_or_end(self, name, separator, item_class=str, fallback_class=None):
         separator = bytearray(separator, self._encoding)
         parsed_value, parsed_length = self._parse_string_until_separator(
-            name, self._parsed_length, separator, item_class, True
+            name, self._parsed_length, separator, item_class, fallback_class, True
         )
 
         self._parsed_values[name] = parsed_value
@@ -283,6 +292,7 @@ class ParserText(ParserBase):
             separator,
             max_item_num=None,
             item_class=str,
+            fallback_class=None,
             separator_spaces='',
             skip_empty=False
     ):  # pylint: disable=too-many-arguments
@@ -297,10 +307,18 @@ class ParserText(ParserBase):
 
         while True:
             parsed_value, parsed_length = self._parse_string_until_separator(
-                name, item_offset, separator + separator_spaces, str, True
+                name, item_offset, separator + separator_spaces, str, None, True
             )
             if parsed_length:
-                parsed_value = self._apply_item_class(name, item_offset, item_offset + parsed_length, item_class)
+                parsed_value = self._apply_item_class(
+                    name,
+                    item_offset,
+                    item_offset + parsed_length,
+                    separator + separator_spaces,
+                    item_class,
+                    fallback_class,
+                    True
+                )
                 value.append(parsed_value)
                 item_offset += parsed_length
             elif not skip_empty:
@@ -328,6 +346,7 @@ class ParserText(ParserBase):
             name,
             separator,
             item_class=str,
+            fallback_class=None,
             separator_spaces='',
             skip_empty=False,
             max_item_num=None,
@@ -337,6 +356,7 @@ class ParserText(ParserBase):
             separator,
             max_item_num=max_item_num,
             item_class=item_class,
+            fallback_class=fallback_class,
             separator_spaces=separator_spaces,
             skip_empty=skip_empty
         )

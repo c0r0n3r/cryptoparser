@@ -167,8 +167,12 @@ class TestVectorString(unittest.TestCase):
         self.assertEqual(len(VectorStringTest.parse_exact_size(b'\x00')), 0)
 
         self.assertEqual(
-            [StringEnum.ONE, StringEnum.TWO, ],
-            list(VectorStringTest.parse_exact_size(b'\x09one;two'))
+            [StringEnum.ONE, StringEnum.TWO, StringEnum.THREE, ],
+            list(VectorStringTest.parse_exact_size(b'\x0fone;two;three'))
+        )
+        self.assertEqual(
+            [StringEnum.ONE, StringEnum.TWO, StringEnum.THREE, 'four', ],
+            list(VectorStringTest.parse_exact_size(b'\x14one;two;three;four'))
         )
 
     def test_compose(self):

@@ -410,7 +410,7 @@ class VectorString(VectorBase):
         )
 
         body_parser.parse_string_array(
-            'items', vector_param.separator, vector_param.item_class
+            'items', vector_param.separator, vector_param.item_class, vector_param.fallback_class,
         )
 
         return cls(body_parser['items']), header_parser.parsed_length + body_parser.parsed_length
@@ -628,13 +628,14 @@ class StringEnumParsable(ParsableBase, Serializable):
         ]
         enum_items.sort(key=lambda color: len(color.value.code), reverse=True)
 
+        try:
+            parsable.decode('ascii')
+        except UnicodeDecodeError as e:
+            six.raise_from(InvalidValue(parsable, cls), e)
+
         for enum_item in enum_items:
-            try:
-                value = parsable[:len(enum_item.value.code)].decode('ascii')
-                if enum_item.value.code == value:
-                    return enum_item, len(enum_item.value.code)
-            except UnicodeDecodeError:
-                pass
+            if enum_item.value.code == parsable.decode('ascii'):
+                return enum_item, len(enum_item.value.code)
 
         raise InvalidValue(parsable, cls, 'code')
 
