@@ -13,10 +13,16 @@ except ImportError:  # pragma: no cover
 from collections import OrderedDict
 
 import attr
-
 import six
 
-from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
+from cryptoparser.common.parse import (
+    ComposerBinary,
+    ComposerText,
+    ParsableBase,
+    ParsableBaseNoABC,
+    ParserBinary,
+    ParserText,
+)
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue, InvalidType
 
 
@@ -35,6 +41,17 @@ json.JSONEncoder.default = _default
 class Serializable(object):  # pylint: disable=too-few-public-methods
     @staticmethod
     def _get_ordered_dict(dict_value):
+        if attr.has(type(dict_value)):
+            return OrderedDict([
+                (name, getattr(dict_value, name))
+                for name, field in attr.fields_dict(type(dict_value)).items()
+            ])
+
+        if isinstance(dict_value, dict):
+            pass
+        elif hasattr(dict_value, '__dict__'):
+            dict_value = dict_value.__dict__
+
         result = OrderedDict([
             (name, dict_value[name])
             for name in sorted(dict_value.keys())
@@ -93,21 +110,20 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
 
         return name_dict
 
-    def _markdown_result_dict(self, obj, level=0):
+    @classmethod
+    def _markdown_result_complex(cls, obj, level=0):
         indent = Serializable._markdown_indent_from_level(level)
 
-        if isinstance(obj, dict):
-            dict_value = Serializable._get_ordered_dict(obj)
-        elif hasattr(obj, '_asdict'):
+        if hasattr(obj, '_asdict'):
             dict_value = obj._asdict()
-        if not isinstance(dict_value, dict):
-            return False, dict_value
+        else:
+            dict_value = Serializable._get_ordered_dict(obj)
 
         result = ''
-        name_dict = self._markdown_human_readable_names(obj, dict_value)
+        name_dict = cls._markdown_human_readable_names(obj, dict_value)
         for name, value in dict_value.items():
             result += '{indent}* {name}'.format(indent=indent, name=name_dict[name])
-            multiline, markdnow_result = self._markdown_result_simple(value, level)
+            multiline, markdnow_result = cls._markdown_result(value, level + 1)
             if multiline:
                 result += ':\n{result}'.format(result=markdnow_result)
             else:
@@ -118,61 +134,63 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
 
         return True, result
 
+    @classmethod
+    def _markdown_result_list(cls, obj, level=0):
+        if not obj:
+            return False, '-'
+
+        indent = Serializable._markdown_indent_from_level(level)
+
+        result = ''
+        for index, item in enumerate(obj):
+            multiline, markdnow_result = cls._markdown_result(item, level + 1)
+            result += '{indent}{index}.{separator}{value}{newline}'.format(
+                indent=indent,
+                index=index + 1,
+                separator='\n' if multiline else ' ',
+                value=markdnow_result,
+                newline='' if multiline else '\n',
+            )
+
+        return True, result
+
     @staticmethod
     def _markdown_is_directly_printable(obj):
         return isinstance(obj, six.string_types + six.integer_types + (float, ))
 
-    def _markdown_result_simple(self, value, level):
-        if isinstance(value, Serializable):
-            return value._as_markdown(level + 1)  # pylint: disable=protected-access
-
-        return self._markdown_result(value, level + 1)
-
-    def _markdown_result(self, obj, level=0):
+    @classmethod
+    def _markdown_result(cls, obj, level=0):
         if obj is None:
             result = False, 'n/a'
         elif isinstance(obj, bool):
             result = False, 'yes' if obj else 'no'
         elif Serializable._markdown_is_directly_printable(obj):
             result = False, str(obj)
+        elif isinstance(obj, Serializable):
+            result = obj._as_markdown(level)  # pylint: disable=protected-access
         elif isinstance(obj, enum.Enum):
             if isinstance(obj.value, Serializable):
-                return self._markdown_result_simple(obj.value, level)
+                return obj.value._as_markdown(level)  # pylint: disable=protected-access
 
             return False, obj.name
         elif hasattr(obj, '__dict__') or isinstance(obj, dict):
-            return self._markdown_result_dict(obj, level)
+            result = cls._markdown_result_complex(obj, level)
         elif isinstance(obj, (list, tuple)):
-            if obj:
-                indent = Serializable._markdown_indent_from_level(level)
-
-                result = ''
-                for index, item in enumerate(obj):
-                    multiline, markdnow_result = self._markdown_result_simple(item, level)
-                    result += '{indent} {index}.{separator}{value}{newline}'.format(
-                        indent=indent,
-                        index=index + 1,
-                        separator='\n' if multiline else ' ',
-                        value=markdnow_result,
-                        newline='' if multiline else '\n',
-                    )
-                result = True, result
-            else:
-                return False, '-'
+            result = cls._markdown_result_list(obj, level)
         else:
-            result = False, repr(obj)
+            result = False, str(obj)
 
         return result
 
     def _asdict(self):
-        result = Serializable._get_ordered_dict(self.__dict__)
+        result = Serializable._get_ordered_dict(self)
         return result
 
     def as_json(self):
         return json.dumps(self)
 
     def _as_markdown(self, level):
-        return self._markdown_result(self, level)
+        return self._markdown_result_complex(self, level)
 
     def as_markdown(self):
         _, result = self._as_markdown(0)
@@ -272,6 +290,22 @@ class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
 
     def get_item_size(self, item):
         return 1
+
+
+@attr.s
+class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-methods
+    separator = attr.ib(validator=attr.validators.instance_of(six.string_types), default=',')
+    encoding = attr.ib(validator=attr.validators.instance_of(six.string_types), default='ascii')
+    item_class = attr.ib(validator=attr.validators.instance_of(type), default=str)
+    fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)), default=None)
+
+    def get_item_size(self, item):
+        if isinstance(item, (ParsableBase, StringEnumParsable)):
+            return len(item.compose())
+        if isinstance(item, six.string_types):
+            return len(item)
+
+        raise NotImplementedError(type(item))
 
 
 @attr.s
@@ -378,6 +412,45 @@ class Vector(VectorBase):
         return composer.composed_bytes
 
 
+class VectorString(VectorBase):
+    @classmethod
+    @abc.abstractmethod
+    def get_param(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        vector_param = cls.get_param()
+
+        header_parser = ParserBinary(parsable[:vector_param.item_num_size])
+
+        header_parser.parse_numeric('item_byte_num', vector_param.item_num_size)
+
+        if header_parser['item_byte_num'] == 0:
+            return cls([]), header_parser.parsed_length
+
+        body_parser = ParserText(
+            parsable[vector_param.item_num_size:header_parser['item_byte_num'] + vector_param.item_num_size]
+        )
+
+        body_parser.parse_string_array(
+            'items', vector_param.separator, vector_param.item_class, vector_param.fallback_class,
+        )
+
+        return cls(body_parser['items']), header_parser.parsed_length + body_parser.parsed_length
+
+    def compose(self):
+        vector_param = self.get_param()
+
+        body_composer = ComposerText(vector_param.encoding)
+        body_composer.compose_parsable_array(self._items, vector_param.separator)
+
+        header_composer = ComposerBinary()
+        header_composer.compose_numeric(body_composer.composed_length, self.param.item_num_size)
+
+        return header_composer.composed + body_composer.composed
+
+
 class VectorParsable(VectorBase):
     @classmethod
     @abc.abstractmethod
@@ -442,6 +515,7 @@ class VectorParsableDerived(VectorBase):
         return header_composer.composed_bytes + body_composer.composed_bytes
 
 
+@attr.s(init=False)
 class Opaque(VectorBase):
     def __init__(self, items):
         if isinstance(items, (bytes, bytearray)):
@@ -454,7 +528,7 @@ class Opaque(VectorBase):
         parser = ParserBinary(parsable)
 
         parser.parse_numeric('item_byte_num', cls.get_param().item_num_size)
-        parser.parse_bytes('items', parser['item_byte_num'])
+        parser.parse_raw('items', parser['item_byte_num'])
 
         items = parser['items']
         return cls([ord(items[i:i + 1]) for i in range(len(items))]), parser.parsed_length
@@ -542,7 +616,7 @@ class NByteEnumComposer(enum.Enum):
             self.get_byte_num()
         )
 
-        return composer.composed_bytes
+        return composer.composed
 
     @classmethod
     @abc.abstractmethod
@@ -566,3 +640,58 @@ class ThreeByteEnumComposer(NByteEnumComposer):
     @classmethod
     def get_byte_num(cls):
         return 3
+
+
+class StringEnumParsable(ParsableBaseNoABC):
+    @classmethod
+    def _parse(cls, parsable):
+        enum_items = [
+            enum_item
+            for enum_item in cls  # pylint: disable=not-an-iterable
+            if len(enum_item.value.code) <= len(parsable)
+        ]
+        enum_items.sort(key=lambda color: len(color.value.code), reverse=True)
+
+        try:
+            parsable.decode('ascii')
+        except UnicodeDecodeError as e:
+            six.raise_from(InvalidValue(parsable, cls), e)
+
+        for enum_item in enum_items:
+            if enum_item.value.code == parsable.decode('ascii'):
+                return enum_item, len(enum_item.value.code)
+
+        raise InvalidValue(parsable, cls, 'code')
+
+    def compose(self):
+        return self._asdict().encode('ascii')
+
+    def _asdict(self):
+        return getattr(self, 'value').code
+
+
+@six.add_metaclass(abc.ABCMeta)
+class ProtocolVersionBase(Serializable, ParsableBase):
+    @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+    @property
+    @abc.abstractmethod
+    def identifier(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def __str__(self):
+        raise NotImplementedError()
+
+    def as_json(self):
+        return json.dumps(self.identifier)
+
+    def _as_markdown(self, level):
+        return self._markdown_result(str(self), level)

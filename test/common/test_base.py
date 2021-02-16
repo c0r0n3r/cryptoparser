@@ -3,8 +3,8 @@
 import json
 import unittest
 
-from cryptoparser.common.exception import NotEnoughData, TooMuchData
-from cryptoparser.common.base import Vector, VectorParamNumeric
+from cryptoparser.common.exception import InvalidValue, NotEnoughData, TooMuchData
+from cryptoparser.common.base import Vector, VectorString, VectorParamNumeric, VectorParamString
 from cryptoparser.common.base import VectorParsable, VectorParamParsable
 from cryptoparser.common.base import VectorParsableDerived, Opaque, OpaqueParam
 
@@ -12,6 +12,7 @@ from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 
 from .classes import (
     ConditionalParsable,
+    EnumStringValue,
     OneByteOddParsable,
     OneByteParsable,
     SerializableEmptyValues,
@@ -23,6 +24,7 @@ from .classes import (
     SerializableSimpleTypes,
     SerializableSingle,
     SerializableUnhandled,
+    StringEnum,
     TestObject,
     TwoByteEvenParsable,
     TwoByteParsable,
@@ -39,6 +41,18 @@ class VectorNumericTest(Vector):
     @classmethod
     def get_param(cls):
         return VectorParamNumeric(item_size=2, min_byte_num=0, max_byte_num=0xff)
+
+
+class VectorStringTest(VectorString):
+    @classmethod
+    def get_param(cls):
+        return VectorParamString(
+            min_byte_num=0,
+            max_byte_num=16,
+            separator=';',
+            item_class=StringEnum,
+            fallback_class=str
+        )
 
 
 class VectorOneByteParsableTest(VectorParsable):
@@ -142,6 +156,34 @@ class TestVectorNumeric(unittest.TestCase):
         self.assertEqual(vector[0], 0)
         self.assertEqual(len(vector), 1)
         self.assertEqual(str(vector), '[0]')
+
+
+class TestVectorString(unittest.TestCase):
+    def test_error(self):
+        pass
+
+    def test_parse(self):
+        self.assertEqual(len(VectorStringTest.parse_exact_size(b'\x00')), 0)
+
+        self.assertEqual(
+            [StringEnum.ONE, StringEnum.TWO, StringEnum.THREE, ],
+            list(VectorStringTest.parse_exact_size(b'\x0fone;two;three'))
+        )
+        self.assertEqual(
+            [StringEnum.ONE, StringEnum.TWO, StringEnum.THREE, 'four', ],
+            list(VectorStringTest.parse_exact_size(b'\x14one;two;three;four'))
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            b'\x00',
+            VectorStringTest([]).compose(),
+        )
+
+        self.assertEqual(
+            b'\x07one;two',
+            VectorStringTest([StringEnum.ONE, StringEnum.TWO, ]).compose(),
+        )
 
 
 class TestVectorParsable(unittest.TestCase):
@@ -301,10 +343,27 @@ class TestEnum(unittest.TestCase):
         )
 
 
+class TestEnumString(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            StringEnum.parse_exact_size(b'four')
+        self.assertEqual(context_manager.exception.value, b'four')
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            StringEnum.parse_exact_size(b'\xffthree')
+        self.assertEqual(context_manager.exception.value, b'\xffthree')
+
+    def test_parse(self):
+        self.assertEqual(StringEnum.parse_exact_size(b'one'), StringEnum.ONE)
+
+    def test_compose(self):
+        self.assertEqual(StringEnum.ONE.compose(), b'one')
+
+
 class TestSerializable(unittest.TestCase):
     def test_json(self):
         self.assertEqual(
-            json.dumps(SerializableSimpleTypes()),
+            SerializableSimpleTypes().as_json(),
             '{' +
             '"UPPER": "upper", ' +
             '"bool_value": false, ' +
@@ -315,27 +374,27 @@ class TestSerializable(unittest.TestCase):
             '}'
         )
         self.assertEqual(
-            json.dumps(SerializableIterables()),
+            SerializableIterables().as_json(),
             '{"dict_value": {"value": 1}, "list_value": ["value"], "tuple_value": ["value"]}'
         )
         self.assertEqual(
-            json.dumps(SerializableEnums()),
+            SerializableEnums().as_json(),
             '{"param_enum": {"first": {"code": 1}}, "string_enum": {"second": "2"}}'
         )
         self.assertEqual(
-            json.dumps(SerializableSingle()),
+            SerializableSingle().as_json(),
             '"single"'
         )
         self.assertEqual(
-            json.dumps(SerializableHidden()),
+            SerializableHidden().as_json(),
             '{"visible_value": "value"}'
         )
         self.assertEqual(
-            json.dumps(SerializableUnhandled()),
+            SerializableUnhandled().as_json(),
             '{"complex_number": "(1+2j)"}'
         )
         self.assertEqual(
-            json.dumps(SerializableRecursive()),
+            SerializableRecursive().as_json(),
             '{' +
             '"json_serializable_hidden": {"visible_value": "value"}, ' +
             '"json_serializable_in_dict": {"key1": {"visible_value": "value"}, "key2": "single"}, ' +
@@ -345,6 +404,10 @@ class TestSerializable(unittest.TestCase):
             '}'
         )
         self.assertEqual(json.dumps(TestObject()), '{}')
+        self.assertEqual(
+            json.dumps(EnumStringValue.ONE),
+            '{"ONE": "one"}'
+        )
 
     def test_markdown(self):
         self.assertEqual(
@@ -365,9 +428,9 @@ class TestSerializable(unittest.TestCase):
                 '* Dict Value:',
                 '    * Value: 1',
                 '* List Value:',
-                '     1. value',
+                '    1. value',
                 '* Tuple Value:',
-                '     1. value',
+                '    1. value',
                 ''
             ])
         )
@@ -389,7 +452,8 @@ class TestSerializable(unittest.TestCase):
         )
         self.assertEqual(
             SerializableHumanReadable().as_markdown(),
-            '* Human Readable Name: value\n'
+            '* Human Readable Name 2: value 2\n'
+            '* Human Readable Name 1: value 1\n'
         )
         self.assertEqual(
             SerializableEmptyValues().as_markdown(),
@@ -411,13 +475,13 @@ class TestSerializable(unittest.TestCase):
                 '        * Visible Value: value',
                 '    * Key2: single',
                 '* Json Serializable In List:',
-                '     1.',
+                '    1.',
                 '        * Visible Value: value',
-                '     2. single',
+                '    2. single',
                 '* Json Serializable In Tuple:',
-                '     1.',
+                '    1.',
                 '        * Visible Value: value',
-                '     2. single',
+                '    2. single',
                 '* Json Serializable Single: single',
                 '',
             ])

@@ -10,7 +10,6 @@ from cryptoparser.common.algorithm import Authentication, Hash, NamedGroup
 from cryptoparser.common.base import (
     OneByteEnumComposer,
     OneByteEnumParsable,
-    Serializable,
     TwoByteEnumComposer,
     TwoByteEnumParsable,
     VariantParsable,
@@ -52,7 +51,7 @@ class TlsExtensionTypeFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-class TlsExtensionType(Serializable, TwoByteEnumComposer, enum.Enum):
+class TlsExtensionType(TwoByteEnumComposer, enum.Enum):
     SERVER_NAME = TlsExtensionTypeParams(                             # [RFC6066]
         code=0x0000
     )
@@ -280,7 +279,7 @@ class TlsExtensionUnparsed(TlsExtensionBase):
     def _parse(cls, parsable):
         parser = super(TlsExtensionUnparsed, cls)._check_header(parsable)
 
-        parser.parse_bytes('extension_data', parser['extension_length'])
+        parser.parse_raw('extension_data', parser['extension_length'])
 
         return TlsExtensionUnparsed(parser['extension_type'], parser['extension_data']), parser.parsed_length
 
@@ -289,7 +288,7 @@ class TlsExtensionUnparsed(TlsExtensionBase):
 
     def compose(self):
         payload_composer = ComposerBinary()
-        payload_composer.compose_bytes(self.extension_data)
+        payload_composer.compose_raw(self.extension_data)
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
@@ -370,8 +369,7 @@ class TlsExtensionServerName(TlsExtensionParsed):
             composer.compose_numeric(3 + len(idna_encoded_host_name), 2)
             composer.compose_numeric(self.name_type, 1)
 
-            composer.compose_numeric(len(idna_encoded_host_name), 2)
-            composer.compose_bytes(idna_encoded_host_name)
+            composer.compose_bytes(idna_encoded_host_name, 2)
 
         header_bytes = self._compose_header(composer.composed_length)
 
@@ -388,7 +386,7 @@ class TlsECPointFormatFactory(OneByteEnumParsable):
         raise NotImplementedError()
 
 
-class TlsECPointFormat(Serializable, OneByteEnumComposer, enum.Enum):
+class TlsECPointFormat(OneByteEnumComposer, enum.Enum):
     UNCOMPRESSED = TlsECPointFormatParams(code=0x00)
     ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x01)
     ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x02)

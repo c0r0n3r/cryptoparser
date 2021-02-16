@@ -102,7 +102,7 @@ class SslRecord(ParsableBase):
             six.raise_from(InvalidValue(e.value, SslMessageType), e)
 
         parser.parse_variant('message', SslSubprotocolMessageParser(parser['message_type']))
-        parser.parse_bytes('padding', padding_length)
+        parser.parse_raw('padding', padding_length)
 
         return SslRecord(message=parser['message']), parser.parsed_length
 

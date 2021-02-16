@@ -3,12 +3,21 @@
 import abc
 import collections
 import enum
+import json
 import attr
 import six
 
-from cryptoparser.common.base import Serializable, TwoByteEnumParsable, TwoByteEnumComposer, VariantParsable
+from cryptoparser.common.base import (
+    ParsableBase,
+    ParserBinary,
+    ComposerBinary,
+    Serializable,
+    StringEnumParsable,
+    TwoByteEnumComposer,
+    TwoByteEnumParsable,
+    VariantParsable
+)
 from cryptoparser.common.exception import TooMuchData, InvalidValue, InvalidType
-from cryptoparser.common.parse import ParserBinary, ParsableBase, ComposerBinary
 
 
 class NByteParsable(ParsableBase):
@@ -142,9 +151,21 @@ class SerializableEnumVariantParsable(VariantParsable):
         ])
 
 
+class AlwaysTestStringComposer(ParsableBase):
+    @classmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    def compose(self):
+        return b'test'
+
+
 @attr.s
 class SerializableEnumValue(Serializable):
     code = attr.ib(validator=attr.validators.instance_of(int))
+
+    def as_json(self):
+        return json.dumps({'code': self.code})
 
     def _as_markdown(self, level):
         return False, self.code
@@ -181,7 +202,7 @@ class SerializableEnumFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-class SerializableEnum(Serializable, TwoByteEnumComposer):
+class SerializableEnum(TwoByteEnumComposer):
     first = SerializableEnumValue(
         code=0x0001,
     )
@@ -219,16 +240,17 @@ class SerializableUnhandled(Serializable):
 
 @attr.s
 class SerializableHumanReadable(Serializable):
-    value = attr.ib(default='value', metadata={'human_readable_name': 'Human Readable Name'})
+    attr_2 = attr.ib(default='value 2', metadata={'human_readable_name': 'Human Readable Name 2'})
+    attr_1 = attr.ib(default='value 1', metadata={'human_readable_name': 'Human Readable Name 1'})
 
 
 class SerializableRecursive(Serializable):
     def __init__(self):
         self.json_serializable_hidden = SerializableHidden()
-        self.json_serializable_single = SerializableSingle()
-        self.json_serializable_in_list = list([SerializableHidden(), SerializableSingle()])
-        self.json_serializable_in_tuple = tuple([SerializableHidden(), SerializableSingle()])
-        self.json_serializable_in_dict = dict({'key1': SerializableHidden(), 'key2': SerializableSingle()})
+        self.json_serializable_single = 'single'
+        self.json_serializable_in_list = list([SerializableHidden(), 'single'])
+        self.json_serializable_in_tuple = tuple([SerializableHidden(), 'single'])
+        self.json_serializable_in_dict = dict({'key1': SerializableHidden(), 'key2': 'single'})
 
 
 class SerializableEmptyValues(Serializable):
@@ -244,3 +266,24 @@ class FlagEnum(enum.IntEnum):
     TWO = 2
     FOUR = 4
     EIGHT = 8
+
+
+StringEnumParams = attr.make_class('StringEnumParams', ['code', ])
+
+
+class StringEnum(StringEnumParsable, enum.Enum):
+    ONE = StringEnumParams(
+        code='one',
+    )
+    TWO = StringEnumParams(
+        code='two',
+    )
+    THREE = StringEnumParams(
+        code='three',
+    )
+
+
+class EnumStringValue(enum.Enum):
+    ONE = 'one'
+    TWO = 'two'
+    THREE = 'three'

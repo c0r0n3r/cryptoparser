@@ -167,9 +167,6 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
             six.raise_from(InvalidValue(value, TlsAlertDescription), e)
 
 
-TlsSubprotocolMessageBase.register(TlsAlertMessage)
-
-
 class TlsChangeCipherSpecType(enum.IntEnum):
     CHANGE_CIPHER_SPEC = 0x01
 
@@ -265,10 +262,8 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
             if parser['handshake_type'] != cls.get_handshake_type():
                 raise InvalidType()
 
-        parser.parse_numeric('handshake_length', 3)
-
         try:
-            parser.parse_bytes('payload', parser['handshake_length'])
+            parser.parse_bytes('payload', 3)
         except NotEnoughData as e:
             six.raise_from(NotEnoughData(e.bytes_needed), e)
 
@@ -358,7 +353,7 @@ class TlsHandshakeHello(TlsHandshakeMessage):
 
     @classmethod
     def _parse_extensions(cls, handshake_header_parser, parser):
-        if parser.parsed_length >= handshake_header_parser['handshake_length']:
+        if parser.parsed_length >= len(handshake_header_parser['payload']):
             return None
 
         parser.parse_parsable('extensions', TlsExtensions)
@@ -620,16 +615,14 @@ class TlsCertificate(ParsableBase):
     def _parse(cls, parsable):
         parser = ParserBinary(parsable)
 
-        parser.parse_numeric('certificate_length', 3)
-        parser.parse_bytes('certificate', parser['certificate_length'])
+        parser.parse_bytes('certificate', 3)
 
         return TlsCertificate(bytes(parser['certificate'])), parser.parsed_length
 
     def compose(self):
         composer = ComposerBinary()
 
-        composer.compose_numeric(len(self.certificate), 3)
-        composer.compose_bytes(self.certificate)
+        composer.compose_bytes(self.certificate, 3)
 
         return composer.composed_bytes
 
@@ -682,8 +675,8 @@ class TlsHandshakeServerHelloDone(TlsHandshakeMessage):
     def _parse(cls, parsable):
         handshake_header_parser = cls._parse_handshake_header(parsable)
 
-        if handshake_header_parser['handshake_length'] != 0:
-            raise InvalidValue(handshake_header_parser['handshake_length'], TlsHandshakeServerHelloDone)
+        if handshake_header_parser['payload']:
+            raise InvalidValue(bytes(handshake_header_parser['payload']), TlsHandshakeServerHelloDone, 'payload')
 
         return TlsHandshakeServerHelloDone(), handshake_header_parser.parsed_length
 
@@ -908,8 +901,8 @@ class SslHandshakeClientHello(SslMessageBase):
         parser.parse_numeric('session_id_length', 2)
         parser.parse_numeric('challenge_length', 2)
         parser.parse_parsable_array('cipher_kinds', parser['cipher_kinds_length'], SslCipherKindFactory)
-        parser.parse_bytes('session_id', parser['session_id_length'])
-        parser.parse_bytes('challenge', parser['challenge_length'])
+        parser.parse_raw('session_id', parser['session_id_length'])
+        parser.parse_raw('challenge', parser['challenge_length'])
 
         return SslHandshakeClientHello(
             cipher_kinds=parser['cipher_kinds'],
@@ -927,8 +920,8 @@ class SslHandshakeClientHello(SslMessageBase):
         composer.compose_numeric(len(self.challenge), 2)
 
         composer.compose_parsable_array(self.cipher_kinds)
-        composer.compose_bytes(self.session_id)
-        composer.compose_bytes(self.challenge)
+        composer.compose_raw(self.session_id)
+        composer.compose_raw(self.challenge)
 
         return composer.composed_bytes
 
@@ -958,9 +951,9 @@ class SslHandshakeServerHello(SslMessageBase):
         parser.parse_numeric('certificate_length', 2)
         parser.parse_numeric('cipher_kinds_length', 2)
         parser.parse_numeric('connection_id_length', 2)
-        parser.parse_bytes('certificate', parser['certificate_length'])
+        parser.parse_raw('certificate', parser['certificate_length'])
         parser.parse_parsable_array('cipher_kinds', parser['cipher_kinds_length'], SslCipherKindFactory)
-        parser.parse_bytes('connection_id', parser['connection_id_length'])
+        parser.parse_raw('connection_id', parser['connection_id_length'])
 
         return SslHandshakeServerHello(
             certificate=bytes(parser['certificate']),
@@ -978,9 +971,9 @@ class SslHandshakeServerHello(SslMessageBase):
         composer.compose_numeric(len(self.certificate), 2)
         composer.compose_numeric(len(self.cipher_kinds) * 3, 2)
         composer.compose_numeric(len(self.connection_id), 2)
-        composer.compose_bytes(self.certificate)
+        composer.compose_raw(self.certificate)
         composer.compose_parsable_array(self.cipher_kinds)
-        composer.compose_bytes(self.connection_id)
+        composer.compose_raw(self.connection_id)
 
         return composer.composed_bytes
 
