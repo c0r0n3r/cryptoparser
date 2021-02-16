@@ -1,6 +1,25 @@
 Changelog
 =========
 
+Features
+^^^^^^^^
+
+* Generic
+
+  * add parser for `text-based protocols <https://en.wikipedia.org/wiki/Text-based_protocol>`_ (#21)
+
+* SSH (``ssh``)
+
+  * Versions (``versions``)
+
+    * add `protocol version exchange <https://tools.ietf.org/html/rfc4253#section-4.2>`_ related messages (#21)
+
+* SSH 2.0 (``ssh2``)
+
+  * Cipher Suites (``ciphers``)
+
+    * add `algorithm negotiation <https://tools.ietf.org/html/rfc4253#section-7.1>`_ related messages (#21)
+
 .. _v0-4-0:
 
 0.4.0 - 2021-01-30

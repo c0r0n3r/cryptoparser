@@ -44,6 +44,10 @@ Features
 Protocols
 ^^^^^^^^^
 
+* Secure Shell (SSH)
+
+  * `SSH 2.0 <https://tools.ietf.org/html/rfc4253>`_
+
 * Secure Socket Layer (SSL)
 
   * `SSL 2.0 <https://tools.ietf.org/html/draft-hickman-netscape-ssl-00>`_
