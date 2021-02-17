@@ -13,11 +13,11 @@ Features
 
   * Generic
 
-    * `LDAP <https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol>`_ related messages (#23)
+    * add `LDAP <https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol>`_ related messages (#23)
 
-  * Cipher Suites (``ciphers``)
+  * Client Public Key Request (``pubkeyreq``)
 
-    * `client certificate request <https://tools.ietf.org/html/rfc2246#section-7.4.4>`_ related messages (#24)
+    * add `client public key request <https://tools.ietf.org/html/rfc2246#section-7.4.4>`_ related messages (#24)
 
 Improvements
 ^^^^^^^^^^^^
