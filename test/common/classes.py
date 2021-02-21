@@ -203,23 +203,23 @@ class SerializableEnumFactory(TwoByteEnumParsable):
 
 
 class SerializableEnum(TwoByteEnumComposer):
-    first = SerializableEnumValue(
+    FIRST = SerializableEnumValue(
         code=0x0001,
     )
-    second = SerializableEnumValue(
+    SECOND = SerializableEnumValue(
         code=0x0002,
     )
 
 
 class SerializableStringEnum(enum.Enum):
-    first = '1'
-    second = '2'
+    FIRST = '1'
+    SECOND = '2'
 
 
 class SerializableEnums(Serializable):
     def __init__(self):
-        self.param_enum = SerializableEnum.first
-        self.string_enum = SerializableStringEnum.second
+        self.param_enum = SerializableEnum.FIRST
+        self.string_enum = SerializableStringEnum.SECOND
 
 
 class SerializableHidden(Serializable):

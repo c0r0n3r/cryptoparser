@@ -379,7 +379,7 @@ class TestSerializable(unittest.TestCase):
         )
         self.assertEqual(
             SerializableEnums().as_json(),
-            '{"param_enum": {"first": {"code": 1}}, "string_enum": {"second": "2"}}'
+            '{"param_enum": {"FIRST": {"code": 1}}, "string_enum": {"SECOND": "2"}}'
         )
         self.assertEqual(
             SerializableSingle().as_json(),
@@ -438,7 +438,7 @@ class TestSerializable(unittest.TestCase):
             SerializableEnums().as_markdown(),
             '\n'.join([
                 '* Param Enum: 1',
-                '* String Enum: second',
+                '* String Enum: SECOND',
                 ''
             ])
         )

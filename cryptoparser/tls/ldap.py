@@ -152,7 +152,6 @@ class LDAPMessageParsableBase(ParsableBase):
             message = LDAPMessage.load(bytes(parsable))
             # ensure recursive parsing
             message.native  # pylint: disable=pointless-statement
-            return message
         except ValueError as e:
             match = cls._NOT_ENOUGH_DATA_REGEX.match(e.args[0])
             if match:
@@ -161,6 +160,8 @@ class LDAPMessageParsableBase(ParsableBase):
                 six.raise_from(NotEnoughData(bytes_requested - bytes_available), e)
             else:
                 six.raise_from(InvalidValue(parsable, cls), e)
+
+        return message
 
 
 class LDAPExtendedRequestStartTLS(LDAPMessageParsableBase):

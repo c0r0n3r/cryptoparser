@@ -501,7 +501,7 @@ class ParserBinary(ParserBase):
 
     def parse_parsable_array(self, name, items_size, item_class, fallback_class=None):
         try:
-            return self._parse_parsable_derived_array(name, items_size, [item_class, ], fallback_class)
+            self._parse_parsable_derived_array(name, items_size, [item_class, ], fallback_class)
         except NotEnoughData as e:
             raise e
         except ValueError as e:
@@ -510,7 +510,7 @@ class ParserBinary(ParserBase):
     def parse_parsable_derived_array(self, name, items_size, item_base_class, fallback_class=None):
         item_classes = cryptoparser.common.utils.get_leaf_classes(item_base_class)
         try:
-            return self._parse_parsable_derived_array(name, items_size, item_classes, fallback_class)
+            self._parse_parsable_derived_array(name, items_size, item_classes, fallback_class)
         except NotEnoughData as e:
             raise e
         except ValueError as e:

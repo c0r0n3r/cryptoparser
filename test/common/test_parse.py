@@ -73,11 +73,11 @@ class TestParsable(TestParsableBase):
         self.assertEqual(parsable, b'\x02')
 
         parsed_value, parsed_length = SerializableEnumFactory.parse_immutable(b'\x00\x01')
-        self.assertEqual(parsed_value, SerializableEnum.first)
+        self.assertEqual(parsed_value, SerializableEnum.FIRST)
         self.assertEqual(parsed_length, 2)
 
     def test_repr(self):
-        self.assertEqual(repr(SerializableEnum.first), 'SerializableEnum.first')
+        self.assertEqual(repr(SerializableEnum.FIRST), 'SerializableEnum.FIRST')
         AlwaysInvalidTypeVariantParsable.register_variant_parser(SerializableEnumFactory, SerializableEnumFactory)
 
 
@@ -300,7 +300,7 @@ class TestParserBinary(TestParsableBase):
         AlwaysInvalidTypeVariantParsable.register_variant_parser(SerializableEnumFactory, SerializableEnumFactory)
         self.assertEqual(
             AlwaysInvalidTypeVariantParsable.parse_exact_size(b'\x00\x01').value,
-            AlwaysInvalidTypeVariantParsable(SerializableEnum.first).variant.value
+            AlwaysInvalidTypeVariantParsable(SerializableEnum.FIRST).variant.value
         )
 
 
@@ -724,16 +724,16 @@ class TestComposerBinary(TestParsableBase):
 
     def test_compose_enum(self):
         composer = ComposerBinary()
-        composer.compose_parsable(SerializableEnum.second)
+        composer.compose_parsable(SerializableEnum.SECOND)
         self.assertEqual(b'\x00\x02', composer.composed_bytes)
 
         composer = ComposerBinary()
-        composer.compose_parsable(SerializableEnum.first, item_size=1)
+        composer.compose_parsable(SerializableEnum.FIRST, item_size=1)
         self.assertEqual(b'\x02\x00\x01', composer.composed_bytes)
 
     def test_compose_variant_parsable(self):
         composer = ComposerBinary()
-        composer.compose_parsable(SerializableEnumVariantParsable(SerializableEnum.first))
+        composer.compose_parsable(SerializableEnumVariantParsable(SerializableEnum.FIRST))
         self.assertEqual(b'\x00\x01', composer.composed_bytes)
 
 

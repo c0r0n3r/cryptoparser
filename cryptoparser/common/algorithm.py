@@ -131,7 +131,7 @@ class KeyExchange(enum.Enum):
 
 
 class Authentication(AlgortihmOIDBase, enum.Enum):
-    anon = AuthenticationParams(
+    anon = AuthenticationParams(  # pylint: disable=invalid-name
         name='anon',
         oid=None,
         anonymous=True,

@@ -245,7 +245,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_EXPORT_WITH_RC4_40_MD5 = CipherSuiteParams(
+    TLS_DH_anon_EXPORT_WITH_RC4_40_MD5 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0017,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -254,7 +254,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.MD5,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_RC4_128_MD5 = CipherSuiteParams(
+    TLS_DH_anon_WITH_RC4_128_MD5 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0018,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -263,7 +263,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.MD5,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
+    TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0019,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -272,7 +272,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_DES_CBC_SHA = CipherSuiteParams(
+    TLS_DH_anon_WITH_DES_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x001a,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -281,7 +281,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+    TLS_DH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x001b,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -506,7 +506,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(
+    TLS_DH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0034,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -560,7 +560,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(
+    TLS_DH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x003a,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -668,7 +668,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
+    TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0046,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -840,7 +840,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
+    TLS_DH_anon_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x006c,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -849,7 +849,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
+    TLS_DH_anon_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x006d,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -939,7 +939,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
+    TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0089,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -1101,7 +1101,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_SEED_CBC_SHA = CipherSuiteParams(
+    TLS_DH_anon_WITH_SEED_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x009b,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -1200,7 +1200,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
     )
-    TLS_DH_anon_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
+    TLS_DH_anon_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00a6,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -1209,7 +1209,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
     )
-    TLS_DH_anon_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
+    TLS_DH_anon_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00a7,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -1425,7 +1425,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
+    TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00bf,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -1479,7 +1479,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
+    TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00c5,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -1704,7 +1704,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_ECDH_anon_WITH_NULL_SHA = CipherSuiteParams(
+    TLS_ECDH_anon_WITH_NULL_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc015,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.anon,
@@ -1713,7 +1713,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_ECDH_anon_WITH_RC4_128_SHA = CipherSuiteParams(
+    TLS_ECDH_anon_WITH_RC4_128_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc016,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.anon,
@@ -1722,7 +1722,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
+    TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc017,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.anon,
@@ -1731,7 +1731,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_ECDH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(
+    TLS_ECDH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc018,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.anon,
@@ -1740,7 +1740,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA1,
         authenticated_encryption=False,
     )
-    TLS_ECDH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(
+    TLS_ECDH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc019,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.anon,
@@ -2145,7 +2145,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
+    TLS_DH_anon_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc046,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -2154,7 +2154,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
     )
-    TLS_DH_anon_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
+    TLS_DH_anon_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc047,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -2325,7 +2325,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
     )
-    TLS_DH_anon_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
+    TLS_DH_anon_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc05a,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -2334,7 +2334,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
     )
-    TLS_DH_anon_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
+    TLS_DH_anon_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc05b,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -2703,7 +2703,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
     )
-    TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
+    TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc084,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
@@ -2712,7 +2712,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
     )
-    TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
+    TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc085,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
