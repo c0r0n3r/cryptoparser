@@ -3,7 +3,6 @@
 import abc
 import enum
 import functools
-import json
 
 import attr
 
@@ -170,9 +169,6 @@ class SslProtocolVersion(ProtocolVersionBase):
 
     def __lt__(self, other):
         return isinstance(other, TlsProtocolVersionBase)
-
-    def as_json(self):
-        return json.dumps(self.identifier)
 
     @property
     def identifier(self):

@@ -698,8 +698,8 @@ class ProtocolVersionBase(Serializable, ParsableBase):
     def __str__(self):
         raise NotImplementedError()
 
-    def as_json(self):
-        return json.dumps(self.identifier)
+    def _asdict(self):
+        return self.identifier
 
     def _as_markdown(self, level):
         return self._markdown_result(str(self), level)
