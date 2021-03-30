@@ -159,7 +159,7 @@ class ParserText(ParserBase):
             if max_count is not None and count > max_count:
                 raise InvalidValue(self._parsable[count_offset:], type(self), name)
 
-        if count < min_count:
+        if min_count is not None and count < min_count:
             raise InvalidValue(self._parsable[count_offset:], type(self), name)
 
         return actual_offset - count_offset
@@ -314,7 +314,7 @@ class ParserText(ParserBase):
         max_separator_count = None if skip_empty else 1
 
         if separator_spaces:
-            item_offset += self._check_separators('separator', item_offset, separator_spaces, 0, None)
+            item_offset += self._check_separators('separator', item_offset, separator_spaces, None, None)
 
         while True:
             parsed_value, parsed_length = self._parse_string_until_separator(
@@ -335,14 +335,15 @@ class ParserText(ParserBase):
             elif not skip_empty:
                 raise InvalidValue(self._parsable[item_offset:], type(self), name)
 
+            if separator_spaces:
+                item_offset += self._check_separators('separator', item_offset, separator_spaces, None, None)
+
             if item_offset == len(self._parsable):
                 break
 
-            if separator_spaces:
-                item_offset += self._check_separators('separator', item_offset, separator_spaces, 0, None)
             item_offset += self._check_separators(name, item_offset, separator, 1, max_separator_count)
             if separator_spaces:
-                item_offset += self._check_separators('separator', item_offset, separator_spaces, 0, None)
+                item_offset += self._check_separators('separator', item_offset, separator_spaces, None, None)
 
             if item_offset == len(self._parsable):
                 break

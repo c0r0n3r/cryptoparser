@@ -532,10 +532,9 @@ class TestParserTextStringArray(TestParsableBase):
         self.assertEqual(parser.unparsed_length, 6)
 
         parser = ParserText(b' a ')
-        with self.assertRaises(InvalidValue) as context_manager:
-            parser.parse_string_array('array', ';', separator_spaces=' ')
-        self.assertEqual(context_manager.exception.value, b'')
-        self.assertEqual(parser.unparsed_length, 3)
+        parser.parse_string_array('array', ';', separator_spaces=' ')
+        self.assertEqual(parser['array'], ['a', ])
+        self.assertEqual(parser.unparsed_length, 0)
 
     def test_starts_with_separator(self):
         parser = ParserText(b'; a; b; c')
