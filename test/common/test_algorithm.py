@@ -26,7 +26,7 @@ class TestAlgortihmOIDBase(unittest.TestCase):
 
 class TestAlgortihmParam(unittest.TestCase):
     def test_markdown(self):
-        self.assertEqual(Signature.RSA_WITH_SHA2_224.value.as_markdown(), 'sha224WithRSAEncryption')
+        self.assertEqual(Signature.RSA_WITH_SHA2_224.value.as_markdown(), 'SHA-224 with RSA Encryption')
 
 
 class TestMAC(unittest.TestCase):
