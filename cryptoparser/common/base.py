@@ -45,20 +45,23 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             dict_value = OrderedDict([
                 (name, getattr(dict_value, name))
                 for name, field in attr.fields_dict(type(dict_value)).items()
+                if not name.startswith('_')
             ])
             keys = dict_value.keys()
         elif isinstance(dict_value, OrderedDict):
             keys = dict_value.keys()
         elif isinstance(dict_value, dict):
-            keys = sorted(dict_value.keys())
+            if all(isinstance(key, enum.Enum) for key in dict_value.keys()):
+                keys = sorted(dict_value.keys(), key=lambda key: key.name)
+            else:
+                keys = sorted(dict_value.keys())
         elif hasattr(dict_value, '__dict__'):
             dict_value = dict_value.__dict__
-            keys = sorted(dict_value.keys())
+            keys = sorted(filter(lambda key: not key.startswith('_'), dict_value.keys()))
 
         result = OrderedDict([
-            (name, dict_value[name])
-            for name in keys
-            if not name.startswith('_')
+            (key, dict_value[key])
+            for key in keys
         ])
 
         return result
@@ -82,8 +85,11 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             result = Serializable._json_traverse(obj._asdict(), result_func)
         elif isinstance(obj, dict) or attr.has(type(obj)):
             result = OrderedDict([
-                (name, Serializable._json_traverse(value, result_func))
-                for name, value in Serializable._get_ordered_dict(obj).items()
+                (
+                    key.name if isinstance(key, enum.Enum) else Serializable._json_result(key),
+                    Serializable._json_traverse(value, result_func)
+                )
+                for key, value in Serializable._get_ordered_dict(obj).items()
             ])
         elif hasattr(obj, '__dict__'):
             result = Serializable._json_traverse(obj.__dict__, result_func)
@@ -105,10 +111,10 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         for name in dict_value:
             if name in fields_dict and 'human_readable_name' in fields_dict[name].metadata:
                 human_readable_name = fields_dict[name].metadata['human_readable_name']
-            elif name.isupper():
-                human_readable_name = name
             else:
-                human_readable_name = ' '.join(name.split('_')).title()
+                _, human_readable_name = cls._markdown_result(name)
+                if not human_readable_name.isupper():
+                    human_readable_name = ' '.join(name.split('_')).title()
             name_dict[name] = human_readable_name
 
         return name_dict
@@ -186,10 +192,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         return result
 
     def _asdict(self):
-        if attr.has(type(self)):
-            return Serializable._get_ordered_dict(self)
-
-        return Serializable._get_ordered_dict(self.__dict__)
+        return Serializable._get_ordered_dict(self)
 
     def as_json(self):
         return json.dumps(self)

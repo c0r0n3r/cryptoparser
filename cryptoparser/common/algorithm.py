@@ -73,59 +73,59 @@ class NamedGroupParams(AlgortihmOIDOptionalParams):
 
 class KeyExchange(enum.Enum):
     ADH = KeyExchangeParams(
-        name='ADH',
+        name='Anonymous Diffie–Hellman (ADH)',
         forward_secret=False
     )
     CECPQ1 = KeyExchangeParams(
-        name='CECPQ1',
+        name='Combined Elliptic-Curve and Post-Quantum 1 (CECPQ1)',
         forward_secret=False
     )
     DH = KeyExchangeParams(  # pylint: disable=invalid-name
-        name='DH',
+        name='Diffie–Hellman Ephemeral (DHE)',
         forward_secret=False
     )
     DHE = KeyExchangeParams(
-        name='DHE',
+        name='Diffie–Hellman Ephemeral (DHE)',
         forward_secret=True
     )
     ECDH = KeyExchangeParams(
-        name='ECDH',
+        name='Elliptic-curve Diffie–Hellman (ECDH)',
         forward_secret=False
     )
     ECDHE = KeyExchangeParams(
-        name='ECDHE',
+        name='Elliptic-curve Diffie–Hellman Ephemeral (ECDHE)',
         forward_secret=True
     )
     FORTEZZA_KEA = KeyExchangeParams(
-        name='FORTEZZA_KEA',
+        name='Fortezza Key Exchange Algortihm (KEA)',
         forward_secret=False
     )
     GOST_R3410_94 = KeyExchangeParams(
-        name='GOST_R3410_94',
+        name='GOST R 34.10-94',
         forward_secret=True
     )
     GOST_R3410_01 = KeyExchangeParams(
-        name='GOST_R3410_01',
+        name='GOST R 34.10-2001',
         forward_secret=True
     )
     GOST_R3411_12_256 = KeyExchangeParams(
-        name='GOST_R3411_12',
+        name='GOST R 34.11-2012',
         forward_secret=True
     )
     KRB5 = KeyExchangeParams(
-        name='KRB5',
+        name='Kerberos V5 (KRB5)',
         forward_secret=False
     )
     PSK = KeyExchangeParams(
-        name='PSK',
+        name='Pre-shared Key (PKS)',
         forward_secret=False
     )
     RSA = KeyExchangeParams(
-        name='RSA',
+        name='Rivest–Shamir–Adleman (RSA)',
         forward_secret=False
     )
     SRP = KeyExchangeParams(
-        name='SRP',
+        name='Secure Remote Password (SRP)',
         forward_secret=False
     )
 
@@ -137,67 +137,67 @@ class Authentication(AlgortihmOIDBase, enum.Enum):
         anonymous=True,
     )
     DSS = AuthenticationParams(
-        name='DSS',
+        name='Digital Signature Standard (DSS)',
         oid='1.2.840.10040.4.1',
         anonymous=False,
     )
     ECDSA = AuthenticationParams(
-        name='ECDSA',
+        name='Elliptic Curve Digital Signature Algorithm (ECDSA)',
         oid='1.2.840.10045.2.1',
         anonymous=False,
     )
     FORTEZZA = AuthenticationParams(
-        name='FORTEZZA',
+        name='Fortezza',
         oid=None,
         anonymous=False,
     )
     GOST2814789 = AuthenticationParams(
-        name='GOST_R3410_89',
+        name='GOST 28147-89',
         oid='1.2.643.2.2.21',
         anonymous=False,
     )
     GOST_R3410_01 = AuthenticationParams(
-        name='GOST_R3410_01',
+        name='GOST R 34.10-2001',
         oid='1.2.643.2.2.19',
         anonymous=False,
     )
     GOST_R3410_12_256 = AuthenticationParams(
-        name='GOST_R3410_12_256',
+        name='GOST R 34.10-2012 (256)',
         oid='1.2.643.7.1.1.1.1',
         anonymous=False,
     )
     GOST_R3410_12_512 = AuthenticationParams(
-        name='GOST_R3410_12_512',
+        name='GOST R 34.10-2012 (512)',
         oid='1.2.643.7.1.1.1.2',
         anonymous=False,
     )
     GOST_R3410_94 = AuthenticationParams(
-        name='GOST_R3410_94',
+        name='GOST R 34.10-94',
         oid='1.2.643.2.2.20',
         anonymous=False,
     )
     KRB5 = AuthenticationParams(
-        name='KRB5',
+        name='Kerberos V5 (KRB5)',
         oid=None,
         anonymous=False,
     )
     PSK = AuthenticationParams(
-        name='PSK',
+        name='Pre-shared Key (PKS)',
         oid=None,
         anonymous=False,
     )
     RSA = AuthenticationParams(
-        name='RSA',
+        name='Rivest–Shamir–Adleman (RSA)',
         oid='1.2.840.113549.1.1.1',
         anonymous=False,
     )
     SRP = AuthenticationParams(
-        name='SRP',
+        name='Secure Remote Password (SRP)',
         oid=None,
         anonymous=False,
     )
     EDDSA = AuthenticationParams(
-        name='EdDSA',
+        name='Edwards-curve Digital Signature Algorithm (EdDSA)',
         oid=None,
         anonymous=False,
     )
@@ -210,80 +210,80 @@ class BlockCipher(enum.Enum):
         block_size=None,
     )
     AES_128 = BlockCipherParams(
-        name='AES_128',
+        name='AES-128',
         key_size=128,
         block_size=128,
     )
     AES_192 = BlockCipherParams(
-        name='AES_192',
+        name='AES-192',
         key_size=192,
         block_size=128,
     )
     AES_256 = BlockCipherParams(
-        name='AES_256',
+        name='AES-256',
         key_size=256,
         block_size=128,
     )
     ARIA_128 = BlockCipherParams(
-        name='ARIA_128',
+        name='ARIA-128',
         key_size=128,
         block_size=128,
     )
     ARIA_192 = BlockCipherParams(
-        name='ARIA_192',
+        name='ARIA-192',
         key_size=192,
         block_size=128,
     )
     ARIA_256 = BlockCipherParams(
-        name='ARIA_256',
+        name='ARIA-256',
         key_size=256,
         block_size=128,
     )
     BLOWFISH = BlockCipherParams(
-        name='BLOWFISH',
+        name='Blowfish',
         key_size=32,  # min
         # key_size_max=448,
         block_size=64,
     )
     TWOFISH128 = BlockCipherParams(
-        name='TWOFISH',
+        name='Twofish-128',
         key_size=128,
         block_size=128,
     )
     TWOFISH192 = BlockCipherParams(
-        name='TWOFISH',
+        name='Twofish-192',
         key_size=192,
         block_size=192,
     )
     TWOFISH256 = BlockCipherParams(
-        name='TWOFISH',
+        name='Twofish-256',
         key_size=256,
         block_size=256,
     )
     CAMELLIA_128 = BlockCipherParams(
-        name='CAMELLIA_128',
+        name='Camellia-128',
         key_size=128,
         block_size=128,
     )
     CAMELLIA_256 = BlockCipherParams(
-        name='CAMELLIA_256',
+        name='Camellia-256',
         key_size=256,
         block_size=128,
     )
     CAST_128 = BlockCipherParams(
-        name='CAST_128',
+        name='CAST-128',
         key_size=40,  # min
         # key_size_max=128,
         block_size=64,
     )
     CAST_256 = BlockCipherParams(
-        name='CAST_256',
+        name='CAST-256',
         key_size=128,  # min
         # key_size_max=256,
         block_size=128,
     )
     CHACHA20 = BlockCipherParams(
-        name='CHACHA20',
+        name='ChaCha20',
         key_size=128,  # min
         # key_size_max=256,
         block_size=None,
@@ -299,7 +299,7 @@ class BlockCipher(enum.Enum):
         block_size=64,
     )
     DES40 = BlockCipherParams(
-        name='DES40',
+        name='DES-40',
         key_size=40,
         block_size=64,
     )
@@ -309,22 +309,22 @@ class BlockCipher(enum.Enum):
         block_size=None,
     )
     FORTEZZA = BlockCipherParams(
-        name='FORTEZZA',
+        name='Fortezza',
         key_size=96,
         block_size=64,
     )
     GOST2814789 = BlockCipherParams(
-        name='GOST2814789',
+        name='GOST 28147-89',
         key_size=64,
         block_size=256,
     )
     GOST_R3412_15_128 = BlockCipherParams(  # "Kuznyechik"
-        name='GOST_R3412_15_128',
+        name='GOST R 34.12-2015 "Kuznyechik"',
         key_size=256,
         block_size=128,
     )
     GOST_R3412_15_64 = BlockCipherParams(  # "Magma"
-        name='GOST_R3412_15_64',
+        name='GOST R 34.12-2015 "Magma"',
         key_size=256,
         block_size=64,
     )
@@ -334,12 +334,12 @@ class BlockCipher(enum.Enum):
         block_size=64,
     )
     IDEA_128 = BlockCipherParams(
-        name='IDEA_128',
+        name='IDEA-128',
         key_size=128,
         block_size=64,
     )
     RC2_40 = BlockCipherParams(
-        name='RC2_40',
+        name='RC2-40',
         key_size=40,
         block_size=64,
     )
@@ -349,37 +349,37 @@ class BlockCipher(enum.Enum):
         block_size=64,
     )
     RC2_56 = BlockCipherParams(
-        name='RC2_56',
+        name='RC2-56',
         key_size=56,
         block_size=64,
     )
     RC2_128 = BlockCipherParams(
-        name='RC2_128',
+        name='RC2-128',
         key_size=128,
         block_size=64,
     )
     RC4_40 = BlockCipherParams(
-        name='RC4_40',
+        name='RC4-40',
         key_size=40,
         block_size=None,
     )
     RC4_56 = BlockCipherParams(
-        name='RC4_56',
+        name='RC4-56',
         key_size=56,
         block_size=None,
     )
     RC4_64 = BlockCipherParams(
-        name='RC4_64',
+        name='RC4-64',
         key_size=64,
         block_size=None,
     )
     RC4_128 = BlockCipherParams(
-        name='RC4_128',
+        name='RC4-128',
         key_size=128,
         block_size=None,
     )
     RC4_256 = BlockCipherParams(
-        name='RC4_256',
+        name='RC4-256',
         key_size=256,
         block_size=None,
     )
@@ -394,28 +394,28 @@ class BlockCipher(enum.Enum):
         block_size=128,
     )
     SERPENT_128 = BlockCipherParams(
-        name='SERPENT_128',
+        name='Serpent-128',
         key_size=128,
         block_size=128,
     )
     SERPENT_192 = BlockCipherParams(
-        name='SERPENT_192',
+        name='Serpent-192',
         key_size=192,
         block_size=128,
     )
     SERPENT_256 = BlockCipherParams(
-        name='SERPENT_256',
+        name='Serpent-256',
         key_size=256,
         block_size=128,
     )
     TRIPLE_DES = BlockCipherParams(
-        name='3DES',
+        name='Triple DES (TDEA)',
         key_size=128,  # min
         # key_size_max=192,
         block_size=64,
     )
     TRIPLE_DES_EDE = BlockCipherParams(
-        name='3DES_EDE',
+        name='Triple DES (TDEA) EDE',
         key_size=128,  # min
         # key_size_max=192,
         block_size=64,
@@ -424,37 +424,37 @@ class BlockCipher(enum.Enum):
 
 class BlockCipherMode(enum.Enum):
     CBC = BlockCipherModeParams(
-        name='CBC',
+        name='Cipher Block Chaining (CBC)',
     )
     CCM = BlockCipherModeParams(
-        name='CCM',
+        name='Counter with CBC-MAC (CCM)',
     )
     CCM_8 = BlockCipherModeParams(
-        name='CCM_8',
+        name='Counter with CBC-MAC (CCM-8)',
     )
     CFB = BlockCipherModeParams(
-        name='CFB',
+        name='Cipher Feedback (CFB)',
     )
     CNT = BlockCipherModeParams(
-        name='CNT',
+        name='GOST Counter (CNT)',
     )
     CTR = BlockCipherModeParams(
-        name='CTR',
+        name='Counter (CTR)',
     )
     ECB = BlockCipherModeParams(
-        name='ECB',
+        name='Electronic Codebook (ECB)',
     )
     EAX = BlockCipherModeParams(
-        name='EAX',
+        name='encrypt-then-authenticate-then-translate (EAX)',
     )
     GCM = BlockCipherModeParams(
-        name='GCM',
+        name='Galois/Counter Mode (GCM)',
     )
     MGM = BlockCipherModeParams(
-        name='MGM',
+        name='GOST Magma (MGM)',
     )
     OFB = BlockCipherModeParams(
-        name='OFB',
+        name='Output Feedback (OFB)',
     )
 
 
@@ -465,17 +465,17 @@ class HashParams(AlgortihmOIDOptionalParams):
 
 class Hash(AlgortihmOIDBase, enum.Enum):
     GOST_R3411_94 = HashParams(
-        name='GOST_R3411_94',
+        name='GOST R 34.11-94',
         oid='1.2.643.2.2.9',
         digest_size=256
     )
     GOST_R3411_12_256 = HashParams(  # Streebog
-        name='GOST_R3411_12_256',
+        name='GOST R 34.11-2012 "Streebog" (256)',
         oid='1.0.10118.3.0.56',
         digest_size=256
     )
     GOST_R3411_12_512 = HashParams(  # Streebog
-        name='GOST_R3411_12_512',
+        name='GOST R 34.11-2012 "Streebog" (512)',
         oid='1.0.10118.3.0.56',
         digest_size=512
     )
@@ -510,97 +510,97 @@ class Hash(AlgortihmOIDBase, enum.Enum):
         digest_size=256
     )
     SHA1 = HashParams(
-        name='SHA1',
+        name='SHA-1',
         oid='1.3.14.3.2.18',
         digest_size=160
     )
     SHA2_224 = HashParams(
-        name='SHA2_224',
+        name='SHA-224',
         oid='2.16.840.1.101.3.4.2.4',
         digest_size=224
     )
     SHA2_256 = HashParams(
-        name='SHA2_256',
+        name='SHA-256',
         oid='2.16.840.1.101.3.4.2.1',
         digest_size=256
     )
     SHA2_384 = HashParams(
-        name='SHA2_384',
+        name='SHA-384',
         oid='2.16.840.1.101.3.4.2.2',
         digest_size=384
     )
     SHA2_512 = HashParams(
-        name='SHA2_512',
+        name='SHA-512',
         oid='2.16.840.1.101.3.4.2.3',
         digest_size=512
     )
     SHA2_512_224 = HashParams(
-        name='SHA2_512_224',
+        name='SHA-512/224',
         oid='2.16.840.1.101.3.4.2.5',
         digest_size=224
     )
     SHA2_512_256 = HashParams(
-        name='SHA2_512_256',
+        name='SHA-512/256',
         oid='2.16.840.1.101.3.4.2.6',
         digest_size=256
     )
     SHA3_224 = HashParams(
-        name='SHA3_224',
+        name='SHA-224',
         oid='2.16.840.1.101.3.4.2.7',
         digest_size=224
     )
     SHA3_256 = HashParams(
-        name='SHA3_256',
+        name='SHA-256',
         oid='2.16.840.1.101.3.4.2.8',
         digest_size=256
     )
     SHA3_384 = HashParams(
-        name='SHA3_384',
+        name='SHA-384',
         oid='2.16.840.1.101.3.4.2.9',
         digest_size=384
     )
     SHA3_512 = HashParams(
-        name='SHA3_512',
+        name='SHA-512',
         oid='2.16.840.1.101.3.4.2.10',
         digest_size=512
     )
     SHAKE_128 = HashParams(
-        name='SHAKE_128',
+        name='SHAKE128',
         oid='2.16.840.1.101.3.4.2.11',
         digest_size=128
     )
     SHAKE_256 = HashParams(
-        name='SHAKE_256',
+        name='SHAKE256',
         oid='2.16.840.1.101.3.4.2.12',
         digest_size=256
     )
     TIGER_128 = HashParams(
-        name='TIGER_128',
+        name='Tiger/128',
         oid=None,
         digest_size=128
     )
     TIGER_128_96 = HashParams(
-        name='TIGER_128_96',
+        name='Tiger/128(96)',
         oid=None,
         digest_size=96
     )
     TIGER_160 = HashParams(
-        name='TIGER_160',
+        name='Tiger/160',
         oid=None,
         digest_size=160
     )
     TIGER_160_96 = HashParams(
-        name='TIGER_160_96',
+        name='Tiger/160(96)',
         oid=None,
         digest_size=96
     )
     TIGER_192 = HashParams(
-        name='TIGER_192',
+        name='Tiger/192',
         oid='1.3.6.1.4.1.11591.12.2',
         digest_size=192
     )
     TIGER_192_96 = HashParams(
-        name='TIGER_192_96',
+        name='Tiger/192(96)',
         oid=None,
         digest_size=96
     )
@@ -662,33 +662,33 @@ class MAC(AlgortihmOIDBase, enum.Enum):
         digest_size=128
     )
     IMIT_GOST28147 = MACParams(
-        name='IMIT_GOST28147',
+        name='MAC GOST 28147-89',
         oid='1.2.643.2.2.22',
         digest_size=None
     )
     GOST_R3411_94 = HMACParams(
-        name='GOST_R3411_94',
+        name='HMAC GOST R 34.11-94',
         oid='1.2.643.2.2.10',
         hash_algo=Hash.GOST_R3411_94
     )
     GOST_R3411_12_256 = HMACParams(  # Streebog
-        name='GOST_R3411_12_256',
+        name='HMAC GOST R 34.11-2012 "Streebog" (256)',
         oid='1.2.643.7.1.1.4.1',
         hash_algo=Hash.GOST_R3411_12_256
     )
     GOST_R3411_12_512 = HMACParams(  # Streebog
-        name='GOST_R3411_12_512',
+        name='HMAC GOST R 34.11-2012 "Streebog" (512)',
         oid='1.2.643.7.1.1.4.2',
         hash_algo=Hash.GOST_R3411_12_512
     )
     GOST_R3412_15_KUZNYECHIK_CTR_OMAC = MACParams(  # Kuznyechik
-        name='GOST_R3412_15_KUZNYECHIK_CTR_OMAC',
-        oid='1.2.643.7.1.1.5.1.2',
+        name='CTR OMAC GOST R 34.12-2015 "Kuznyechik"',
+        oid='1.2.643.7.1.1.5.2.2',
         digest_size=None
     )
     GOST_R3412_15_MAGMA_CTR_OMAC = MACParams(  # Kuznyechik
-        name='GOST_R3412_15_MAGMA_CTR_OMAC',
-        oid='1.2.643.7.1.1.5.2.2',
+        name='CTR OMAC GOST R 34.12-2015 "Magma"',
+        oid='1.2.643.7.1.1.5.1.2',
         digest_size=None
     )
     MD5 = HMACParams(
@@ -717,107 +717,107 @@ class MAC(AlgortihmOIDBase, enum.Enum):
         hash_algo=Hash.RIPEMD256,
     )
     SHA1 = HMACParams(
-        name='SHA1',
+        name='SHA-1',
         oid='1.2.840.113549.2.7',
         hash_algo=Hash.SHA1
     )
     SHA2_224 = HMACParams(
-        name='SHA2_224',
+        name='SHA2-224',
         oid='1.2.840.113549.2.8',
         hash_algo=Hash.SHA2_224
     )
     SHA2_256 = HMACParams(
-        name='SHA2_256',
+        name='SHA2-256',
         oid='1.2.840.113549.2.9',
         hash_algo=Hash.SHA2_256
     )
     SHA2_384 = HMACParams(
-        name='SHA2_384',
+        name='SHA2-384',
         oid='1.2.840.113549.2.10',
         hash_algo=Hash.SHA2_384
     )
     SHA2_512 = HMACParams(
-        name='SHA2_512',
+        name='SHA2-512',
         oid='1.2.840.113549.2.11',
         hash_algo=Hash.SHA2_512
     )
     SHA2_512_224 = HMACParams(
-        name='SHA2_512_224',
+        name='SHA-512/224',
         oid='1.2.840.113549.2.12',
         hash_algo=Hash.SHA2_512_224
     )
     SHA2_512_256 = HMACParams(
-        name='SHA2_512_256',
+        name='SHA-512/256',
         oid='1.2.840.113549.2.13',
         hash_algo=Hash.SHA2_512_256
     )
     SHA3_224 = HMACParams(
-        name='SHA3_224',
+        name='SHA3-224',
         oid='2.16.840.1.101.3.4.2.13',
         hash_algo=Hash.SHA3_224
     )
     SHA3_256 = HMACParams(
-        name='SHA3_256',
+        name='SHA3-256',
         oid='2.16.840.1.101.3.4.2.14',
         hash_algo=Hash.SHA3_256
     )
     SHA3_384 = HMACParams(
-        name='SHA3_384',
+        name='SHA3-384',
         oid='2.16.840.1.101.3.4.2.15',
         hash_algo=Hash.SHA3_384
     )
     SHA3_512 = HMACParams(
-        name='SHA3_512',
+        name='SHA3-512',
         oid='2.16.840.1.101.3.4.2.16',
         hash_algo=Hash.SHA3_512
     )
     TIGER_128 = HMACParams(
-        name='TIGER_128',
+        name='Tiger/128',
         oid=None,
         hash_algo=Hash.TIGER_128
     )
     TIGER_128_96 = HMACParams(
-        name='TIGER_128_96',
+        name='Tiger/128(96)',
         oid=None,
         hash_algo=Hash.TIGER_128_96
     )
     TIGER_160 = HMACParams(
-        name='TIGER_160',
+        name='Tiger/160',
         oid=None,
         hash_algo=Hash.TIGER_160
     )
     TIGER_160_96 = HMACParams(
-        name='TIGER_160_96',
+        name='Tiger/160(96)',
         oid=None,
         hash_algo=Hash.TIGER_160_96
     )
     TIGER_192 = HMACParams(
-        name='TIGER_192',
+        name='Tiger/192',
         oid='1.3.6.1.5.5.8.1.3',
         hash_algo=Hash.TIGER_192
     )
     TIGER_192_96 = HMACParams(
-        name='TIGER_192_96',
+        name='Tiger/192(96)',
         oid=None,
         hash_algo=Hash.TIGER_192_96
     )
     UMAC_32 = MACParams(
-        name='UMAC_32',
+        name='UMAC-32',
         oid=None,
         digest_size=32
     )
     UMAC_64 = MACParams(
-        name='UMAC_64',
+        name='UMAC-64',
         oid=None,
         digest_size=64
     )
     UMAC_96 = MACParams(
-        name='UMAC_96',
+        name='UMAC-96',
         oid=None,
         digest_size=96
     )
     UMAC_128 = MACParams(
-        name='UMAC_128',
+        name='UMAC-128',
         oid=None,
         digest_size=128
     )
@@ -1315,13 +1315,13 @@ class NamedGroup(AlgortihmOIDBase, enum.Enum):
         group_type=NamedGroupType.ELLIPTIC_CURVE,
     )
     CURVE25519 = NamedGroupParams(
-        name='curve25519',
+        name='Curve25519',
         oid='1.3.101.110',
         size=256,
         group_type=NamedGroupType.ELLIPTIC_CURVE,
     )
     CURVE448 = NamedGroupParams(
-        name='curve448',
+        name='Curve448',
         oid='1.3.101.111',
         size=448,
         group_type=NamedGroupType.ELLIPTIC_CURVE,
@@ -1369,145 +1369,145 @@ class SignatureParams(AlgortihmOIDParams):
 
 class Signature(AlgortihmOIDBase, enum.Enum):
     RSA_WITH_MD2 = SignatureParams(
-        name='md2WithRSAEncryption',
+        name='MD2 with RSA Encryption',
         oid='1.2.840.113549.1.1.2',
         key_type=Authentication.RSA,
         hash_algorithm=Hash.MD2
     )
     RSA_WITH_MD4 = SignatureParams(
-        name='md4WithRSAEncryption',
+        name='MD4 with RSA Encryption',
         oid='1.2.840.113549.1.1.3',
         key_type=Authentication.RSA,
         hash_algorithm=Hash.MD4
     )
     RSA_WITH_MD5 = SignatureParams(
-        name='md5WithRSAEncryption',
+        name='MD5 with RSA Encryption',
         oid='1.2.840.113549.1.1.4',
         key_type=Authentication.RSA,
         hash_algorithm=Hash.MD5
     )
     RSA_WITH_SHA1 = SignatureParams(
-        name='sha1-with-rsa-signature',
+        name='SHA-1 with RSA Encryption',
         oid='1.2.840.113549.1.1.5',
         key_type=Authentication.RSA,
         hash_algorithm=Hash.SHA1
     )
     RSA_WITH_SHA2_224 = SignatureParams(
-        name='sha224WithRSAEncryption',
+        name='SHA-224 with RSA Encryption',
         oid='1.2.840.113549.1.1.14',
         key_type=Authentication.RSA,
         hash_algorithm=Hash.SHA2_224
     )
     RSA_WITH_SHA2_256 = SignatureParams(
-        name='sha256WithRSAEncryption',
+        name='SHA-256 with RSA Encryption',
         oid='1.2.840.113549.1.1.11',
         key_type=Authentication.RSA,
         hash_algorithm=Hash.SHA2_256
     )
     RSA_WITH_SHA2_384 = SignatureParams(
-        name='sha384WithRSAEncryption',
+        name='SHA-384 with RSA Encryption',
         oid='1.2.840.113549.1.1.12',
         key_type=Authentication.RSA,
         hash_algorithm=Hash.SHA2_384
     )
     RSA_WITH_SHA2_512 = SignatureParams(
-        name='sha512WithRSAEncryption',
+        name='SHA-512 with RSA Encryption',
         oid='1.2.840.113549.1.1.13',
         key_type=Authentication.RSA,
         hash_algorithm=Hash.SHA2_512
     )
     DSA_WITH_SHA1 = SignatureParams(
-        name='dsa_sha1',
+        name='DSA with SHA-1',
         oid='1.2.840.10040.4.3',
         key_type=Authentication.DSS,
         hash_algorithm=Hash.SHA1
     )
     DSA_WITH_SHA2_224 = SignatureParams(
-        name='dsa_sha224',
+        name='DSA with SHA-224',
         oid='2.16.840.1.101.3.4.3.1',
         key_type=Authentication.DSS,
         hash_algorithm=Hash.SHA2_224
     )
     DSA_WITH_SHA2_256 = SignatureParams(
-        name='dsa_sha256',
+        name='DSA with SHA-256',
         oid='2.16.840.1.101.3.4.3.2',
         key_type=Authentication.DSS,
         hash_algorithm=Hash.SHA2_256
     )
     ECDSA_WITH_SHA1 = SignatureParams(
-        name='ecdsa_sha1',
+        name='ECDSA with SHA-1',
         oid='1.2.840.10045.4.1',
         key_type=Authentication.ECDSA,
         hash_algorithm=Hash.SHA1
     )
     ECDSA_WITH_SHA2_224 = SignatureParams(
-        name='ecdsa_sha224',
+        name='ECDSA with SHA-224',
         oid='1.2.840.10045.4.3.1',
         key_type=Authentication.ECDSA,
         hash_algorithm=Hash.SHA2_224
     )
     ECDSA_WITH_SHA2_256 = SignatureParams(
-        name='ecdsa_sha256',
+        name='ECDSA with SHA-256',
         oid='1.2.840.10045.4.3.2',
         key_type=Authentication.ECDSA,
         hash_algorithm=Hash.SHA2_256
     )
     ECDSA_WITH_SHA2_384 = SignatureParams(
-        name='ecdsa_sha384',
+        name='ECDSA with SHA-384',
         oid='1.2.840.10045.4.3.3',
         key_type=Authentication.ECDSA,
         hash_algorithm=Hash.SHA2_384
     )
     ECDSA_WITH_SHA2_512 = SignatureParams(
-        name='ecdsa_sha512',
+        name='ECDSA with SHA-512',
         oid='1.2.840.10045.4.3.4',
         key_type=Authentication.ECDSA,
         hash_algorithm=Hash.SHA2_512
     )
     ECDSA_WITH_SHA3_224 = SignatureParams(
-        name='ecdsa_sha224',
+        name='ECDSA with SHA3-224',
         oid='2.16.840.1.101.3.4.3.9',
         key_type=Authentication.ECDSA,
         hash_algorithm=Hash.SHA3_224
     )
     ECDSA_WITH_SHA3_256 = SignatureParams(
-        name='ecdsa_sha256',
+        name='ECDSA with SHA3-256',
         oid='2.16.840.1.101.3.4.3.10',
         key_type=Authentication.ECDSA,
         hash_algorithm=Hash.SHA3_256
     )
     ECDSA_WITH_SHA3_384 = SignatureParams(
-        name='ecdsa_sha384',
+        name='ECDSA with SHA3-384',
         oid='2.16.840.1.101.3.4.3.11',
         key_type=Authentication.ECDSA,
         hash_algorithm=Hash.SHA3_384
     )
     ECDSA_WITH_SHA3_512 = SignatureParams(
-        name='ecdsa_sha512',
+        name='ECDSA with SHA3-512',
         oid='2.16.840.1.101.3.4.3.12',
         key_type=Authentication.ECDSA,
         hash_algorithm=Hash.SHA3_512
     )
     GOST_R3410_01 = SignatureParams(
-        name='gost_r3410_01',
+        name='GOST R 34.10-2001 with GOST R 34.11-94',
         oid='1.2.643.2.2.3',
         key_type=Authentication.GOST_R3410_01,
         hash_algorithm=Hash.GOST_R3411_94,
     )
-    GOST_R3410_12_256_R3410 = SignatureParams(
-        name='id-tc26-signwithdigest-gost3410-12-94',
+    GOST_R3410_12_94_R3410 = SignatureParams(
+        name='GOST R 34.10-2012 with GOST R 34.11-2012 (94)',
         oid='1.2.643.7.1.1.3.1',
         key_type=Authentication.GOST_R3410_12_256,
         hash_algorithm=Hash.GOST_R3411_12_256,
     )
     GOST_R3411_12_256_R3410 = SignatureParams(
-        name='id-tc26-signwithdigest-gost3410-12-256',
+        name='GOST R 34.10-2012 with GOST R 34.11-2012 (256)',
         oid='1.2.643.7.1.1.3.2',
         key_type=Authentication.GOST_R3410_12_256,
         hash_algorithm=Hash.GOST_R3411_12_256,
     )
-    GOST_R3410_12_512 = SignatureParams(
-        name='id-tc26-signwithdigest-gost3410-12-512',
+    GOST_R3411_12_512_R3410 = SignatureParams(
+        name='GOST R 34.10-2012 with GOST R 34.11-2012 (256)',
         oid='1.2.643.7.1.1.3.3',
         key_type=Authentication.GOST_R3410_12_512,
         hash_algorithm=Hash.GOST_R3411_12_512,
