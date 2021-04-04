@@ -244,8 +244,54 @@ class SerializableHumanReadable(Serializable):
     attr_1 = attr.ib(default='value 1', metadata={'human_readable_name': 'Human Readable Name 1'})
 
 
-class SerializableRecursive(Serializable):
+@attr.s
+class SerializableAttributeOrder(Serializable):
+    attr_b = attr.ib(default='b')
+    attr_a = attr.ib(default='a')
+
+
+class Class(object):
     def __init__(self):
+        self.attr_b = 'b'
+        self.attr_a = 'a'
+
+
+@attr.s
+class ClassAttr(object):
+    attr_b = attr.ib(default='b')
+    attr_a = attr.ib(default='a')
+
+
+class ClassAsDict(object):
+    def __init__(self):
+        self.attr_a = 'a'
+        self.attr_b = 'b'
+
+    def _asdict(self):
+        return collections.OrderedDict([
+            ('attr_b', self.attr_b),
+            ('attr_a', self.attr_a),
+        ])
+
+
+@attr.s
+class ClassAttrAsDict(object):
+    attr_a = attr.ib(default='a')
+    attr_b = attr.ib(default='b')
+
+    def _asdict(self):
+        return collections.OrderedDict([
+            ('attr_b', self.attr_b),
+            ('attr_a', self.attr_a),
+        ])
+
+
+class SerializableRecursive(Serializable):  # pylint: disable=too-many-instance-attributes
+    def __init__(self):
+        self.json_object = Class()
+        self.json_attr_object = ClassAttr()
+        self.json_attr_as_dict = ClassAttrAsDict()
+        self.json_asdict_object = ClassAsDict()
         self.json_serializable_hidden = SerializableHidden()
         self.json_serializable_single = 'single'
         self.json_serializable_in_list = list([SerializableHidden(), 'single'])
