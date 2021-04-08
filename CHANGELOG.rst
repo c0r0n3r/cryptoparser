@@ -1,6 +1,11 @@
 Changelog
 =========
 
+.. _v0-5-0:
+
+0.5.0 - 2021-04-08
+------------------
+
 Features
 ^^^^^^^^
 
@@ -19,6 +24,15 @@ Features
   * Cipher Suites (``ciphers``)
 
     * add `algorithm negotiation <https://tools.ietf.org/html/rfc4253#section-7.1>`_ related messages (#21)
+
+Usability
+^^^^^^^^^
+
+* Generic
+
+  * show attributes in user-friendly order in Markdown output (#30)
+  * use human readable algorithms names in Markdown output (#32)
+  * add human readable descriptions for exceptions (#33)
 
 .. _v0-4-0:
 

@@ -104,6 +104,14 @@ Cipher Suites
 #. supports `GOST <https://en.wikipedia.org/wiki/GOST>`_ (national standards of the Russian Federation and CIS
    countries) cipher suites
 
+Secure Shell (SSH)
+^^^^^^^^^^^^^^^^^^
+
+Cipher Suites
+"""""""""""""
+
+#. identifies as much encryption algorithms as possible (more than 200, compared to 70+ currently supported by OpenSSH)
+
 License
 -------
 
