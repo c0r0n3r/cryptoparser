@@ -124,6 +124,10 @@ class KeyExchange(enum.Enum):
         name='Rivest–Shamir–Adleman (RSA)',
         forward_secret=False
     )
+    SNTRUP_X25519 = KeyExchangeParams(
+        name='Streamlined NTRU Prime coupled with X25519',
+        forward_secret=False
+    )
     SRP = KeyExchangeParams(
         name='Secure Remote Password (SRP)',
         forward_secret=False

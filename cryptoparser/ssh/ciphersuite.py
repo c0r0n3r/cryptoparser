@@ -1130,6 +1130,16 @@ class SshKexAlgorithm(StringEnumParsable, enum.Enum):
         kex=KeyExchange.RSA,
         key_size=2048,
     )
+    SNTRUP4591761X25519_SHA512_TINYSSH_ORG = KexAlgorithmParams(
+        code='sntrup4591761x25519-sha512@tinyssh.org',
+        kex=KeyExchange.SNTRUP_X25519,
+        key_size=10000,
+    )
+    SNTRUP761X25519_SHA512_OPENSSH_COM = KexAlgorithmParams(
+        code='sntrup761x25519-sha512@openssh.com',
+        kex=KeyExchange.SNTRUP_X25519,
+        key_size=9264,
+    )
 
 
 class SshHostKeyAlgorithm(StringEnumParsable, enum.Enum):
@@ -1173,6 +1183,26 @@ class SshHostKeyAlgorithm(StringEnumParsable, enum.Enum):
         key_type=SshHostKeyType.KEY,
         authentication=Authentication.ECDSA,
     )
+    SK_ECDSA_SHA2_NISTP256_OPENSSH_COM = HostKeyAlgorithmParams(
+        code='sk-ecdsa-sha2-nistp256@openssh.com',
+        key_type=SshHostKeyType.KEY,
+        authentication=Authentication.ECDSA,
+    )
+    SK_ECDSA_SHA2_NISTP256_CERT_V01_OPENSSH_COM = HostKeyAlgorithmParams(
+        code='sk-ecdsa-sha2-nistp256-cert-v01@openssh.com',
+        key_type=SshHostKeyType.CERTIFICATE,
+        authentication=Authentication.ECDSA,
+    )
+    SK_SSH_ED25519_OPENSSH_COM = HostKeyAlgorithmParams(
+        code='sk-ssh-ed25519@openssh.com',
+        key_type=SshHostKeyType.KEY,
+        authentication=Authentication.EDDSA,
+    )
+    SK_SSH_ED25519_CERT_V01_OPENSSH_COM = HostKeyAlgorithmParams(
+        code='sk-ssh-ed25519-cert-v01@openssh.com',
+        key_type=SshHostKeyType.CERTIFICATE,
+        authentication=Authentication.EDDSA,
+    )
     SSH_RSA_CERT_V00_OPENSSH_COM = HostKeyAlgorithmParams(
         code='ssh-rsa-cert-v00@openssh.com',
         key_type=SshHostKeyType.CERTIFICATE,
@@ -1180,6 +1210,16 @@ class SshHostKeyAlgorithm(StringEnumParsable, enum.Enum):
     )
     SSH_RSA_CERT_V01_OPENSSH_COM = HostKeyAlgorithmParams(
         code='ssh-rsa-cert-v01@openssh.com',
+        key_type=SshHostKeyType.CERTIFICATE,
+        authentication=Authentication.RSA,
+    )
+    SSH_RSA_SHA2_256_CERT_V01_OPENSSH_COM = HostKeyAlgorithmParams(
+        code='ssh-rsa-sha2-256-cert-v01@openssh.com',
+        key_type=SshHostKeyType.CERTIFICATE,
+        authentication=Authentication.RSA,
+    )
+    SSH_RSA_SHA2_512_CERT_V01_OPENSSH_COM = HostKeyAlgorithmParams(
+        code='ssh-rsa-sha2-512-cert-v01@openssh.com',
         key_type=SshHostKeyType.CERTIFICATE,
         authentication=Authentication.RSA,
     )
