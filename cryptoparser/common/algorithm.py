@@ -81,7 +81,7 @@ class KeyExchange(enum.Enum):
         forward_secret=False
     )
     DH = KeyExchangeParams(  # pylint: disable=invalid-name
-        name='Diffie–Hellman Ephemeral (DHE)',
+        name='static Diffie–Hellman Ephemeral (DH)',
         forward_secret=False
     )
     DHE = KeyExchangeParams(
@@ -89,7 +89,7 @@ class KeyExchange(enum.Enum):
         forward_secret=True
     )
     ECDH = KeyExchangeParams(
-        name='Elliptic-curve Diffie–Hellman (ECDH)',
+        name='static Elliptic-curve Diffie–Hellman (ECDH)',
         forward_secret=False
     )
     ECDHE = KeyExchangeParams(
