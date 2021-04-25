@@ -9,6 +9,12 @@ from cryptoparser.common.algorithm import Authentication, BlockCipher, BlockCiph
 from cryptoparser.common.base import Serializable
 from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.base import ThreeByteEnumParsable, ThreeByteEnumComposer
+from cryptoparser.tls.version import (
+    TlsProtocolVersionBase,
+    TlsProtocolVersionDraft,
+    TlsProtocolVersionFinal,
+    TlsVersion
+)
 
 
 class TlsCipherSuiteExtension(enum.IntEnum):
@@ -26,7 +32,7 @@ class TlsCipherSuiteFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-@attr.s
+@attr.s  # pylint: disable=too-many-instance-attributes
 class CipherSuiteParams(object):
     code = attr.ib(validator=attr.validators.instance_of(int))
     key_exchange = attr.ib(validator=attr.validators.optional(attr.validators.in_(KeyExchange)))
@@ -35,6 +41,14 @@ class CipherSuiteParams(object):
     block_cipher_mode = attr.ib(validator=attr.validators.optional(attr.validators.in_(BlockCipherMode)))
     mac = attr.ib(validator=attr.validators.optional(attr.validators.in_(MAC)))
     authenticated_encryption = attr.ib(validator=attr.validators.instance_of(bool))
+    min_version = attr.ib(init=False, validator=attr.validators.instance_of(TlsProtocolVersionBase))
+
+    def __attrs_post_init__(self):
+        self.min_version = (
+            TlsProtocolVersionDraft(1)
+            if (self.code & 0xff00) == 0x1300
+            else TlsProtocolVersionFinal(TlsVersion.TLS1_0)
+        )
 
 
 class TlsCipherSuite(TwoByteEnumComposer):

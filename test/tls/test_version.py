@@ -41,11 +41,15 @@ class TestTlsProtocolVersion(unittest.TestCase):
             # pylint: disable=expression-not-assigned
             TlsProtocolVersionDraft.parse_exact_size(parsable)
 
-        parsable = b'\x8f\x00'
         expected_error_message = ' is not a valid TlsProtocolVersion'
         with six.assertRaisesRegex(self, InvalidValue, expected_error_message):
             # pylint: disable=expression-not-assigned
             TlsProtocolVersionDraft.parse_exact_size(b'\x8f\x00')
+
+        expected_error_message = ' is not a valid TlsProtocolVersionDraft'
+        with six.assertRaisesRegex(self, InvalidValue, expected_error_message):
+            # pylint: disable=expression-not-assigned
+            TlsProtocolVersionDraft.parse_exact_size(b'\x7f\x1d')
 
         with self.assertRaises(NotEnoughData) as context_manager:
             TlsProtocolVersionDraft.parse_exact_size(b'\xff')
@@ -77,10 +81,22 @@ class TestTlsProtocolVersion(unittest.TestCase):
             TlsProtocolVersionFinal(TlsVersion.TLS1_2),
             TlsProtocolVersionDraft(0)
         )
+        self.assertGreater(
+            TlsProtocolVersionDraft(0),
+            TlsProtocolVersionFinal(TlsVersion.TLS1_2)
+        )
+        self.assertGreater(
+            TlsProtocolVersionFinal(TlsVersion.TLS1_3),
+            TlsProtocolVersionFinal(TlsVersion.TLS1_2)
+        )
 
         self.assertLess(
-            TlsProtocolVersionDraft(255),
+            TlsProtocolVersionDraft(TlsProtocolVersionDraft.MAX_DRAFT_NUMBER),
             TlsProtocolVersionFinal(TlsVersion.TLS1_3)
+        )
+        self.assertGreater(
+            TlsProtocolVersionFinal(TlsVersion.TLS1_3),
+            TlsProtocolVersionDraft(TlsProtocolVersionDraft.MAX_DRAFT_NUMBER)
         )
 
     def test_set(self):
@@ -118,19 +134,19 @@ class TestTlsProtocolVersion(unittest.TestCase):
         self.assertEqual(TlsProtocolVersionFinal(TlsVersion.SSL3).as_json(), '\"ssl3\"')
         self.assertEqual(TlsProtocolVersionFinal(TlsVersion.TLS1_0).as_json(), '\"tls1\"')
         self.assertEqual(TlsProtocolVersionFinal(TlsVersion.TLS1_2).as_json(), '\"tls1_2\"')
-        self.assertEqual(TlsProtocolVersionDraft(24).as_json(), '\"tls1_3_draft23\"')
+        self.assertEqual(TlsProtocolVersionDraft(24).as_json(), '\"tls1_3_draft24\"')
 
     def test_as_markdown(self):
         self.assertEqual(TlsProtocolVersionFinal(TlsVersion.SSL3).as_markdown(), 'SSL 3.0')
         self.assertEqual(TlsProtocolVersionFinal(TlsVersion.TLS1_0).as_markdown(), 'TLS 1.0')
         self.assertEqual(TlsProtocolVersionFinal(TlsVersion.TLS1_2).as_markdown(), 'TLS 1.2')
-        self.assertEqual(TlsProtocolVersionDraft(24).as_markdown(), 'TLS 1.3 Draft 23')
+        self.assertEqual(TlsProtocolVersionDraft(24).as_markdown(), 'TLS 1.3 Draft 24')
 
     def test_str(self):
         self.assertEqual(str(TlsProtocolVersionFinal(TlsVersion.SSL3)), 'SSL 3.0')
         self.assertEqual(str(TlsProtocolVersionFinal(TlsVersion.TLS1_0)), 'TLS 1.0')
         self.assertEqual(str(TlsProtocolVersionFinal(TlsVersion.TLS1_2)), 'TLS 1.2')
-        self.assertEqual(str(TlsProtocolVersionDraft(24)), 'TLS 1.3 Draft 23')
+        self.assertEqual(str(TlsProtocolVersionDraft(24)), 'TLS 1.3 Draft 24')
 
 
 class TestSslProtocolVersion(unittest.TestCase):

@@ -6,10 +6,7 @@ import enum
 import six
 import attr
 
-from cryptoparser.common.algorithm import Authentication, Hash, NamedGroup
 from cryptoparser.common.base import (
-    OneByteEnumComposer,
-    OneByteEnumParsable,
     TwoByteEnumComposer,
     TwoByteEnumParsable,
     VariantParsable,
@@ -21,23 +18,18 @@ from cryptoparser.common.base import (
 )
 from cryptoparser.common.exception import NotEnoughData, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
+from cryptoparser.tls.algorithm import (
+    TlsNamedCurve,
+    TlsNamedCurveFactory,
+    TlsECPointFormatFactory,
+    TlsSignatureAndHashAlgorithmFactory
+)
 from cryptoparser.tls.grease import TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsProtocolVersionBase
 
 
 @attr.s(frozen=True)
-class TlsNamedCurveParams(object):
-    code = attr.ib(validator=attr.validators.instance_of(int))
-    named_group = attr.ib(validator=attr.validators.optional(attr.validators.in_(NamedGroup)))
-
-
-@attr.s(frozen=True)
 class TlsExtensionTypeParams(object):
-    code = attr.ib(validator=attr.validators.instance_of(int))
-
-
-@attr.s(frozen=True)
-class TlsECPointFormatParams(object):
     code = attr.ib(validator=attr.validators.instance_of(int))
 
 
@@ -213,11 +205,40 @@ class TlsExtensionType(TwoByteEnumComposer, enum.Enum):
     )
 
 
-class TlsExtensions(VectorParsable):
+class TlsExtensionsBase(VectorParsable):
+    @classmethod
+    @abc.abstractmethod
+    def get_param(cls):
+        raise NotImplementedError()
+
+    def get_item_by_type(self, extension_type):
+        try:
+            item = next(
+                extension
+                for extension in self
+                if extension.extension_type == extension_type
+            )
+        except StopIteration as e:
+            six.raise_from(KeyError, e)
+
+        return item
+
+
+class TlsExtensionsClient(TlsExtensionsBase):
     @classmethod
     def get_param(cls):
         return VectorParamParsable(
-            item_class=TlsExtensionVariant,
+            item_class=TlsExtensionVariantClient,
+            fallback_class=TlsExtensionUnparsed,
+            min_byte_num=0, max_byte_num=2 ** 16 - 1
+        )
+
+
+class TlsExtensionsServer(TlsExtensionsBase):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsExtensionVariantServer,
             fallback_class=TlsExtensionUnparsed,
             min_byte_num=0, max_byte_num=2 ** 16 - 1
         )
@@ -376,22 +397,6 @@ class TlsExtensionServerName(TlsExtensionParsed):
         return header_bytes + composer.composed_bytes
 
 
-class TlsECPointFormatFactory(OneByteEnumParsable):
-    @classmethod
-    def get_enum_class(cls):
-        return TlsECPointFormat
-
-    @abc.abstractmethod
-    def compose(self):
-        raise NotImplementedError()
-
-
-class TlsECPointFormat(OneByteEnumComposer, enum.Enum):
-    UNCOMPRESSED = TlsECPointFormatParams(code=0x00)
-    ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x01)
-    ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x02)
-
-
 class TlsECPointFormatVector(VectorParsable):
     @classmethod
     def get_param(cls):
@@ -430,198 +435,6 @@ class TlsExtensionECPointFormats(TlsExtensionParsed):
         header_bytes = self._compose_header(payload_composer.composed_length)
 
         return header_bytes + payload_composer.composed_bytes
-
-
-class TlsNamedCurveFactory(TwoByteEnumParsable):
-    @classmethod
-    def get_enum_class(cls):
-        return TlsNamedCurve
-
-    @abc.abstractmethod
-    def compose(self):
-        raise NotImplementedError()
-
-
-class TlsNamedCurve(TwoByteEnumComposer):
-    SECT163K1 = TlsNamedCurveParams(
-        code=0x0001,
-        named_group=NamedGroup.SECT163K1,
-    )
-    SECT163R1 = TlsNamedCurveParams(
-        code=0x0002,
-        named_group=NamedGroup.SECT163R1,
-    )
-    SECT163R2 = TlsNamedCurveParams(
-        code=0x0003,
-        named_group=NamedGroup.SECT163R2,
-    )
-    SECT193R1 = TlsNamedCurveParams(
-        code=0x0004,
-        named_group=NamedGroup.SECT193R1,
-    )
-    SECT193R2 = TlsNamedCurveParams(
-        code=0x0005,
-        named_group=NamedGroup.SECT193R2,
-    )
-    SECT233K1 = TlsNamedCurveParams(
-        code=0x0006,
-        named_group=NamedGroup.SECT233K1,
-    )
-    SECT233R1 = TlsNamedCurveParams(
-        code=0x0007,
-        named_group=NamedGroup.SECT233R1,
-    )
-    SECT239K1 = TlsNamedCurveParams(
-        code=0x0008,
-        named_group=NamedGroup.SECT239K1,
-    )
-    SECT283K1 = TlsNamedCurveParams(
-        code=0x0009,
-        named_group=NamedGroup.SECT283K1,
-    )
-    SECT283R1 = TlsNamedCurveParams(
-        code=0x000a,
-        named_group=NamedGroup.SECT283R1,
-    )
-    SECT409K1 = TlsNamedCurveParams(
-        code=0x000b,
-        named_group=NamedGroup.SECT409K1,
-    )
-    SECT409R1 = TlsNamedCurveParams(
-        code=0x000c,
-        named_group=NamedGroup.SECT409R1,
-    )
-    SECT571K1 = TlsNamedCurveParams(
-        code=0x000d,
-        named_group=NamedGroup.SECT571K1,
-    )
-    SECT571R1 = TlsNamedCurveParams(
-        code=0x000e,
-        named_group=NamedGroup.SECT571R1,
-    )
-    SECP160K1 = TlsNamedCurveParams(
-        code=0x000f,
-        named_group=NamedGroup.SECP160K1,
-    )
-    SECP160R1 = TlsNamedCurveParams(
-        code=0x0010,
-        named_group=NamedGroup.SECP160R1,
-    )
-    SECP160R2 = TlsNamedCurveParams(
-        code=0x0011,
-        named_group=NamedGroup.SECP160R2,
-    )
-    SECP192K1 = TlsNamedCurveParams(
-        code=0x0012,
-        named_group=NamedGroup.SECP192K1,
-    )
-    SECP192R1 = TlsNamedCurveParams(
-        code=0x0013,
-        named_group=NamedGroup.PRIME192V1,
-    )
-    SECP224K1 = TlsNamedCurveParams(
-        code=0x0014,
-        named_group=NamedGroup.SECP224K1,
-    )
-    SECP224R1 = TlsNamedCurveParams(
-        code=0x0015,
-        named_group=NamedGroup.SECP224R1,
-    )
-    SECP256K1 = TlsNamedCurveParams(
-        code=0x0016,
-        named_group=NamedGroup.SECP256K1,
-    )
-    SECP256R1 = TlsNamedCurveParams(
-        code=0x0017,
-        named_group=NamedGroup.PRIME256V1,
-    )
-    SECP384R1 = TlsNamedCurveParams(
-        code=0x0018,
-        named_group=NamedGroup.SECP384R1,
-    )
-    SECP521R1 = TlsNamedCurveParams(
-        code=0x0019,
-        named_group=NamedGroup.SECP521R1,
-    )
-    GC256A = TlsNamedCurveParams(
-        code=0x0022,
-        named_group=NamedGroup.GC256A,
-    )
-    GC256B = TlsNamedCurveParams(
-        code=0x0023,
-        named_group=NamedGroup.GC256B,
-    )
-    GC256C = TlsNamedCurveParams(
-        code=0x0024,
-        named_group=NamedGroup.GC256C,
-    )
-    GC256D = TlsNamedCurveParams(
-        code=0x0025,
-        named_group=NamedGroup.GC256D,
-    )
-    GC512A = TlsNamedCurveParams(
-        code=0x0026,
-        named_group=NamedGroup.GC512A,
-    )
-    GC512B = TlsNamedCurveParams(
-        code=0x0027,
-        named_group=NamedGroup.GC512B,
-    )
-    GC512C = TlsNamedCurveParams(
-        code=0x0028,
-        named_group=NamedGroup.GC512C,
-    )
-
-    BRAINPOOLP256R1 = TlsNamedCurveParams(
-        code=0x001a,
-        named_group=NamedGroup.BRAINPOOLP256R1,
-    )
-    BRAINPOOLP384R1 = TlsNamedCurveParams(
-        code=0x001b,
-        named_group=NamedGroup.BRAINPOOLP384R1,
-    )
-    BRAINPOOLP512R1 = TlsNamedCurveParams(
-        code=0x001c,
-        named_group=NamedGroup.BRAINPOOLP512R1,
-    )
-    X25519 = TlsNamedCurveParams(
-        code=0x001d,
-        named_group=NamedGroup.CURVE25519,
-    )
-    X448 = TlsNamedCurveParams(
-        code=0x001e,
-        named_group=NamedGroup.CURVE448,
-    )
-
-    FFDHE2048 = TlsNamedCurveParams(
-        code=0x0100,
-        named_group=NamedGroup.FFDHE2048,
-    )
-    FFDHE3072 = TlsNamedCurveParams(
-        code=0x0101,
-        named_group=NamedGroup.FFDHE3072,
-    )
-    FFDHE4096 = TlsNamedCurveParams(
-        code=0x0102,
-        named_group=NamedGroup.FFDHE4096,
-    )
-    FFDHE6144 = TlsNamedCurveParams(
-        code=0x0103,
-        named_group=NamedGroup.FFDHE6144,
-    )
-    FFDHE8192 = TlsNamedCurveParams(
-        code=0x0104,
-        named_group=NamedGroup.FFDHE8192,
-    )
-
-    ARBITRARY_EXPLICIT_PRIME_CURVES = TlsNamedCurveParams(
-        code=0xff01,
-        named_group=None,
-    )
-    ARBITRARY_EXPLICIT_CHAR2_CURVES = TlsNamedCurveParams(
-        code=0xff02,
-        named_group=None,
-    )
 
 
 class TlsEllipticCurveVector(VectorParsable):
@@ -674,20 +487,35 @@ class TlsSupportedVersionVector(VectorParsableDerived):
 
 
 @attr.s
-class TlsExtensionSupportedVersions(TlsExtensionParsed):
-    supported_versions = attr.ib(validator=attr.validators.instance_of(TlsSupportedVersionVector))
-
+class TlsExtensionSupportedVersionsBase(TlsExtensionParsed):
     @classmethod
     def get_extension_type(cls):
         return TlsExtensionType.SUPPORTED_VERSIONS
 
     @classmethod
+    @abc.abstractmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionSupportedVersions, cls)._parse_header(parsable)
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+@attr.s
+class TlsExtensionSupportedVersionsClient(TlsExtensionSupportedVersionsBase):
+    supported_versions = attr.ib(
+        converter=TlsSupportedVersionVector,
+        validator=attr.validators.instance_of(TlsSupportedVersionVector)
+    )
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionSupportedVersionsClient, cls)._parse_header(parsable)
 
         parser.parse_parsable('supported_versions', TlsSupportedVersionVector)
 
-        return TlsExtensionSupportedVersions(parser['supported_versions']), parser.parsed_length
+        return TlsExtensionSupportedVersionsClient(parser['supported_versions']), parser.parsed_length
 
     def compose(self):
         payload_composer = ComposerBinary()
@@ -699,232 +527,26 @@ class TlsExtensionSupportedVersions(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
-class TlsSignatureAndHashAlgorithmFactory(TwoByteEnumParsable):
+@attr.s
+class TlsExtensionSupportedVersionsServer(TlsExtensionSupportedVersionsBase):
+    selected_version = attr.ib(validator=attr.validators.instance_of(TlsProtocolVersionBase))
+
     @classmethod
-    def get_enum_class(cls):
-        return TlsSignatureAndHashAlgorithm
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionSupportedVersionsServer, cls)._parse_header(parsable)
 
-    @abc.abstractmethod
+        parser.parse_parsable('selected_version', TlsProtocolVersionBase)
+
+        return TlsExtensionSupportedVersionsServer(parser['selected_version']), parser.parsed_length
+
     def compose(self):
-        raise NotImplementedError()
+        payload_composer = ComposerBinary()
 
+        payload_composer.compose_parsable(self.selected_version)
 
-@attr.s(frozen=True)
-class HashAndSignatureAlgorithmParam(object):
-    code = attr.ib(validator=attr.validators.instance_of(int))
-    hash_algorithm = attr.ib(validator=attr.validators.optional(attr.validators.in_(Hash)))
-    signature_algorithm = attr.ib(validator=attr.validators.optional(attr.validators.in_(Authentication)))
+        header_bytes = self._compose_header(payload_composer.composed_length)
 
-
-class TlsSignatureAndHashAlgorithm(TwoByteEnumComposer):
-    ANONYMOUS_NONE = HashAndSignatureAlgorithmParam(
-        code=0x0000,
-        signature_algorithm=Authentication.anon,
-        hash_algorithm=None,
-    )
-    ANONYMOUS_MD5 = HashAndSignatureAlgorithmParam(
-        code=0x0100,
-        signature_algorithm=Authentication.anon,
-        hash_algorithm=Hash.MD5
-    )
-    ANONYMOUS_SHA1 = HashAndSignatureAlgorithmParam(
-        code=0x0200,
-        signature_algorithm=Authentication.anon,
-        hash_algorithm=Hash.SHA1
-    )
-    ANONYMOUS_SHA224 = HashAndSignatureAlgorithmParam(
-        code=0x0300,
-        signature_algorithm=Authentication.anon,
-        hash_algorithm=Hash.SHA2_224
-    )
-    ANONYMOUS_SHA256 = HashAndSignatureAlgorithmParam(
-        code=0x0400,
-        signature_algorithm=Authentication.anon,
-        hash_algorithm=Hash.SHA2_256
-    )
-    ANONYMOUS_SHA384 = HashAndSignatureAlgorithmParam(
-        code=0x0500,
-        signature_algorithm=Authentication.anon,
-        hash_algorithm=Hash.SHA2_384
-    )
-    ANONYMOUS_SHA512 = HashAndSignatureAlgorithmParam(
-        code=0x0006,
-        signature_algorithm=Authentication.anon,
-        hash_algorithm=Hash.SHA2_512
-    )
-    RSA_NONE = HashAndSignatureAlgorithmParam(
-        code=0x0001,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=None,
-    )
-    RSA_MD5 = HashAndSignatureAlgorithmParam(
-        code=0x0101,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.MD5
-    )
-    RSA_SHA1 = HashAndSignatureAlgorithmParam(
-        code=0x0201,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA1
-    )
-    RSA_SHA224 = HashAndSignatureAlgorithmParam(
-        code=0x0301,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA2_224
-    )
-    RSA_SHA256 = HashAndSignatureAlgorithmParam(
-        code=0x0401,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA2_256
-    )
-    RSA_SHA384 = HashAndSignatureAlgorithmParam(
-        code=0x0501,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA2_384
-    )
-    RSA_SHA512 = HashAndSignatureAlgorithmParam(
-        code=0x0601,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA2_512
-    )
-    DSA_NONE = HashAndSignatureAlgorithmParam(
-        code=0x0002,
-        signature_algorithm=Authentication.DSS,
-        hash_algorithm=None,
-    )
-    DSA_MD5 = HashAndSignatureAlgorithmParam(
-        code=0x0102,
-        signature_algorithm=Authentication.DSS,
-        hash_algorithm=Hash.MD5
-    )
-    DSA_SHA1 = HashAndSignatureAlgorithmParam(
-        code=0x0202,
-        signature_algorithm=Authentication.DSS,
-        hash_algorithm=Hash.SHA1
-    )
-    DSA_SHA224 = HashAndSignatureAlgorithmParam(
-        code=0x0302,
-        signature_algorithm=Authentication.DSS,
-        hash_algorithm=Hash.SHA2_224
-    )
-    DSA_SHA256 = HashAndSignatureAlgorithmParam(
-        code=0x0402,
-        signature_algorithm=Authentication.DSS,
-        hash_algorithm=Hash.SHA2_256
-    )
-    DSA_SHA384 = HashAndSignatureAlgorithmParam(
-        code=0x0502,
-        signature_algorithm=Authentication.DSS,
-        hash_algorithm=Hash.SHA2_384
-    )
-    DSA_SHA512 = HashAndSignatureAlgorithmParam(
-        code=0x0602,
-        signature_algorithm=Authentication.DSS,
-        hash_algorithm=Hash.SHA2_512
-    )
-    ECDSA_NONE = HashAndSignatureAlgorithmParam(
-        code=0x0003,
-        signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=None,
-    )
-    ECDSA_MD5 = HashAndSignatureAlgorithmParam(
-        code=0x0103,
-        signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=Hash.MD5
-    )
-    ECDSA_SHA1 = HashAndSignatureAlgorithmParam(
-        code=0x0203,
-        signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=Hash.SHA1
-    )
-    ECDSA_SHA224 = HashAndSignatureAlgorithmParam(
-        code=0x0303,
-        signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=Hash.SHA2_224
-    )
-    ECDSA_SHA256 = HashAndSignatureAlgorithmParam(
-        code=0x0403,
-        signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=Hash.SHA2_256
-    )
-    ECDSA_SHA384 = HashAndSignatureAlgorithmParam(
-        code=0x0503,
-        signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=Hash.SHA2_384
-    )
-    ECDSA_SHA512 = HashAndSignatureAlgorithmParam(
-        code=0x0603,
-        signature_algorithm=Authentication.ECDSA,
-        hash_algorithm=Hash.SHA2_512
-    )
-    GOST_R3410_01 = HashAndSignatureAlgorithmParam(
-        code=0x00ed,
-        signature_algorithm=Authentication.GOST_R3410_01,
-        hash_algorithm=Hash.GOST_R3411_94,
-    )
-    OLD_GOST_R3410_12_256 = HashAndSignatureAlgorithmParam(
-        code=0x00ee,
-        signature_algorithm=Authentication.GOST_R3410_12_256,
-        hash_algorithm=Hash.GOST_R3411_12_256,
-    )
-    OLD_GOST_R3410_12_512 = HashAndSignatureAlgorithmParam(
-        code=0x00ef,
-        signature_algorithm=Authentication.GOST_R3410_12_512,
-        hash_algorithm=Hash.GOST_R3411_12_512,
-    )
-    GOST_R3410_12_256 = HashAndSignatureAlgorithmParam(
-        code=0x4008,
-        signature_algorithm=Authentication.GOST_R3410_12_256,
-        hash_algorithm=Hash.GOST_R3411_12_256,
-    )
-    GOST_R3410_12_512 = HashAndSignatureAlgorithmParam(
-        code=0x4108,
-        signature_algorithm=Authentication.GOST_R3410_12_512,
-        hash_algorithm=Hash.GOST_R3411_12_512,
-    )
-
-    RSA_PSS_RSAE_SHA256 = HashAndSignatureAlgorithmParam(
-        code=0x0804,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA2_256
-    )
-    RSA_PSS_RSAE_SHA384 = HashAndSignatureAlgorithmParam(
-        code=0x0805,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA2_384
-    )
-    RSA_PSS_RSAE_SHA512 = HashAndSignatureAlgorithmParam(
-        code=0x0806,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA2_512
-    )
-
-    ED25519 = HashAndSignatureAlgorithmParam(
-        code=0x0807,
-        signature_algorithm=Authentication.EDDSA,
-        hash_algorithm=Hash.ED25519PH
-    )
-    ED448 = HashAndSignatureAlgorithmParam(
-        code=0x0808,
-        signature_algorithm=Authentication.EDDSA,
-        hash_algorithm=Hash.ED448PH
-    )
-
-    RSA_PSS_PSS_SHA256 = HashAndSignatureAlgorithmParam(
-        code=0x0809,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA2_256
-    )
-    RSA_PSS_PSS_SHA384 = HashAndSignatureAlgorithmParam(
-        code=0x080a,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA2_384
-    )
-    RSA_PSS_PSS_SHA512 = HashAndSignatureAlgorithmParam(
-        code=0x080b,
-        signature_algorithm=Authentication.RSA,
-        hash_algorithm=Hash.SHA2_512
-    )
+        return header_bytes + payload_composer.composed_bytes
 
 
 class TlsSignatureAndHashAlgorithmVector(VectorParsable):
@@ -938,23 +560,24 @@ class TlsSignatureAndHashAlgorithmVector(VectorParsable):
 
 
 @attr.s
-class TlsExtensionSignatureAlgorithms(TlsExtensionParsed):
+class TlsExtensionSignatureAlgorithmsBase(TlsExtensionParsed):
     hash_and_signature_algorithms = attr.ib(
         converter=TlsSignatureAndHashAlgorithmVector,
         validator=attr.validators.instance_of(TlsSignatureAndHashAlgorithmVector)
     )
 
     @classmethod
+    @abc.abstractmethod
     def get_extension_type(cls):
-        return TlsExtensionType.SIGNATURE_ALGORITHMS
+        raise NotImplementedError()
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionSignatureAlgorithms, cls)._parse_header(parsable)
+        parser = super(TlsExtensionSignatureAlgorithmsBase, cls)._parse_header(parsable)
 
         parser.parse_parsable('hash_and_signature_algorithms', TlsSignatureAndHashAlgorithmVector)
 
-        return TlsExtensionSignatureAlgorithms(parser['hash_and_signature_algorithms']), parser.parsed_length
+        return cls(parser['hash_and_signature_algorithms']), parser.parsed_length
 
     def compose(self):
         payload_composer = ComposerBinary()
@@ -966,25 +589,203 @@ class TlsExtensionSignatureAlgorithms(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
-class TlsExtensionVariant(VariantParsable):
-    _VARIANTS = collections.OrderedDict(
-        [
-            (TlsExtensionType.SERVER_NAME, (TlsExtensionServerName, )),
-            (TlsExtensionType.SUPPORTED_GROUPS, (TlsExtensionEllipticCurves, )),
-            (TlsExtensionType.EC_POINT_FORMATS, (TlsExtensionECPointFormats, )),
-            (TlsExtensionType.SIGNATURE_ALGORITHMS, (TlsExtensionSignatureAlgorithms, )),
-            (TlsExtensionType.SUPPORTED_VERSIONS, (TlsExtensionSupportedVersions, )),
-        ]
-    )
+class TlsExtensionSignatureAlgorithms(TlsExtensionSignatureAlgorithmsBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.SIGNATURE_ALGORITHMS
+
+
+class TlsExtensionSignatureAlgorithmsCert(TlsExtensionSignatureAlgorithmsBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.SIGNATURE_ALGORITHMS_CERT
+
+
+class TlsKeyExchangeVector(Vector):
+    @classmethod
+    def get_param(cls):
+        return VectorParamNumeric(item_size=1, min_byte_num=1, max_byte_num=2 ** 16 - 1)
+
+
+@attr.s
+class TlsKeyShareEntry(ParsableBase):
+    group = attr.ib(validator=attr.validators.instance_of(TlsNamedCurve))
+    key_exchange = attr.ib(converter=TlsKeyExchangeVector)
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_parsable('group', TlsNamedCurveFactory)
+        parser.parse_parsable('key_exchange', TlsKeyExchangeVector)
+
+        return TlsKeyShareEntry(parser['group'], parser['key_exchange']), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_parsable(self.group)
+        composer.compose_parsable(self.key_exchange)
+
+        return composer.composed_bytes
+
+
+class TlsKeyShareEntryVector(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsKeyShareEntry,
+            fallback_class=None,
+            min_byte_num=0, max_byte_num=2 ** 16 - 1
+        )
+
+
+class TlsExtensionKeyShareBase(TlsExtensionParsed):
+    @classmethod
+    @abc.abstractmethod
+    def get_extension_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+@attr.s
+class TlsExtensionKeyShareServer(TlsExtensionKeyShareBase):
+    key_share_entry = attr.ib(validator=attr.validators.instance_of(TlsKeyShareEntry))
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.KEY_SHARE
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionKeyShareServer, cls)._parse_header(parsable)
+
+        parser.parse_parsable('key_share_entry', TlsKeyShareEntry)
+
+        return TlsExtensionKeyShareServer(parser['key_share_entry']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.key_share_entry)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+@attr.s
+class TlsExtensionKeyShareClientHelloRetry(TlsExtensionKeyShareBase):
+    selected_group = attr.ib(converter=TlsNamedCurve)
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.KEY_SHARE
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionKeyShareClientHelloRetry, cls)._parse_header(parsable)
+
+        if parser['extension_length'] != 2:
+            raise InvalidType()
+
+        parser.parse_parsable('selected_group', TlsNamedCurveFactory)
+
+        return cls(parser['selected_group']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.selected_group)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+@attr.s
+class TlsExtensionKeyShareEntriesClientBase(TlsExtensionKeyShareBase):
+    key_share_entries = attr.ib(converter=TlsKeyShareEntryVector)
+
+    @classmethod
+    @abc.abstractmethod
+    def get_extension_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionKeyShareEntriesClientBase, cls)._parse_header(parsable)
+
+        parser.parse_parsable('key_share_entries', TlsKeyShareEntryVector)
+
+        return cls(parser['key_share_entries']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.key_share_entries)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+class TlsExtensionKeyShareClient(TlsExtensionKeyShareEntriesClientBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.KEY_SHARE
+
+
+class TlsExtensionKeyShareReservedClient(TlsExtensionKeyShareEntriesClientBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.KEY_SHARE_RESERVED
+
+
+class TlsExtensionVariantBase(VariantParsable):
+    @classmethod
+    @abc.abstractmethod
+    def _get_parsed_extensions(cls):
+        raise NotImplementedError()
 
     @classmethod
     def _get_variants(cls):
-        variants = collections.OrderedDict(cls._VARIANTS)
+        variants = cls._get_parsed_extensions()
 
         variants.update([
             (extension_type, (TlsExtensionUnparsed, ))
             for extension_type in TlsExtensionType
-            if extension_type not in cls._VARIANTS
+            if extension_type not in variants
         ])
 
         return variants
+
+
+class TlsExtensionVariantClient(TlsExtensionVariantBase):
+    @classmethod
+    def _get_parsed_extensions(cls):
+        return collections.OrderedDict([
+            (TlsExtensionType.SERVER_NAME, [TlsExtensionServerName, ]),
+            (TlsExtensionType.SUPPORTED_GROUPS, [TlsExtensionEllipticCurves, ]),
+            (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
+            (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClient, ]),
+            (TlsExtensionType.SIGNATURE_ALGORITHMS, [TlsExtensionSignatureAlgorithms, ]),
+            (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsClient, ]),
+        ])
+
+
+class TlsExtensionVariantServer(TlsExtensionVariantBase):
+    @classmethod
+    def _get_parsed_extensions(cls):
+        return collections.OrderedDict([
+            (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClientHelloRetry, TlsExtensionKeyShareServer]),
+            (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsServer, ]),
+        ])

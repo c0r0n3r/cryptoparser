@@ -184,7 +184,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             return False, obj.name
         elif hasattr(obj, '__dict__') or isinstance(obj, dict):
             result = cls._markdown_result_complex(obj, level)
-        elif isinstance(obj, (list, tuple)):
+        elif isinstance(obj, (list, tuple, set)):
             result = cls._markdown_result_list(obj, level)
         else:
             result = False, str(obj)
@@ -698,8 +698,8 @@ class ProtocolVersionBase(Serializable, ParsableBase):
     def __str__(self):
         raise NotImplementedError()
 
-    def as_json(self):
-        return json.dumps(self.identifier)
+    def _asdict(self):
+        return self.identifier
 
     def _as_markdown(self, level):
         return self._markdown_result(str(self), level)

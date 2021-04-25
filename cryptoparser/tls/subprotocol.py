@@ -25,7 +25,8 @@ from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.extension import (
     TlsExtensionType,
-    TlsExtensions,
+    TlsExtensionsClient,
+    TlsExtensionsServer,
     TlsSignatureAndHashAlgorithmVector,
 )
 from cryptoparser.tls.grease import TlsInvalidType, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
@@ -220,6 +221,7 @@ class TlsHandshakeType(enum.IntEnum):
     SERVER_HELLO = 0x02
     HELLO_VERIFY_REQUEST = 0x03
     NEW_SESSION_TICKET = 0x04
+    HELLO_RETRY_REQUEST = 0x06
     CERTIFICATE = 0x0b
     SERVER_KEY_EXCHANGE = 0x0c
     CERTIFICATE_REQUEST = 0x0d
@@ -352,11 +354,11 @@ class TlsHandshakeHello(TlsHandshakeMessage):
         return handshake_header_bytes + composer.composed_bytes
 
     @classmethod
-    def _parse_extensions(cls, handshake_header_parser, parser):
+    def _parse_extensions(cls, handshake_header_parser, parser, extensions_class):
         if parser.parsed_length >= len(handshake_header_parser['payload']):
             return None
 
-        parser.parse_parsable('extensions', TlsExtensions)
+        parser.parse_parsable('extensions', extensions_class)
 
         return parser
 
@@ -430,16 +432,18 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
     )
     session_id = attr.ib(
         default=TlsSessionIdVector(()),
+        converter=TlsSessionIdVector,
         validator=attr.validators.instance_of(TlsSessionIdVector),
     )
     compression_methods = attr.ib(
         default=TlsCompressionMethodVector([TlsCompressionMethod.NULL, ]),
+        converter=TlsCompressionMethodVector,
         validator=attr.validators.instance_of(TlsCompressionMethodVector),
     )
     extensions = attr.ib(
-        default=TlsExtensions(()),
-        converter=TlsExtensions,
-        validator=attr.validators.instance_of(TlsExtensions)
+        default=TlsExtensionsClient(()),
+        converter=TlsExtensionsClient,
+        validator=attr.validators.instance_of(TlsExtensionsClient)
     )
     fallback_scsv = attr.ib(default=False, validator=attr.validators.instance_of(bool))
     empty_renegotiation_info_scsv = attr.ib(default=True, validator=attr.validators.instance_of(bool))
@@ -457,7 +461,7 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
         parser.parse_parsable('cipher_suites', TlsCipherSuiteVector)
         parser.parse_parsable('compression_methods', TlsCompressionMethodVector)
 
-        extension_parser = cls._parse_extensions(handshake_header_parser, parser)
+        extension_parser = cls._parse_extensions(handshake_header_parser, parser, TlsExtensionsClient)
 
         cipher_suites = []
         fallback_scsv = False
@@ -476,7 +480,7 @@ class TlsHandshakeClientHello(TlsHandshakeHello):
             parser['random'],
             parser['session_id'],
             parser['compression_methods'],
-            extensions=parser['extensions'] if extension_parser else TlsExtensions([]),
+            extensions=parser['extensions'] if extension_parser else TlsExtensionsClient([]),
             fallback_scsv=fallback_scsv,
             empty_renegotiation_info_scsv=empty_renegotiation_info_scsv,
         ), handshake_header_parser.parsed_length
@@ -554,6 +558,7 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
     )
     session_id = attr.ib(
         default=TlsSessionIdVector((random.randint(0, 255) for i in range(32))),
+        converter=TlsSessionIdVector,
         validator=attr.validators.instance_of(TlsSessionIdVector),
     )
     compression_method = attr.ib(
@@ -562,9 +567,9 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
     )
     cipher_suite = attr.ib(default=None, validator=attr.validators.in_(TlsCipherSuite))
     extensions = attr.ib(
-        default=TlsExtensions([]),
-        converter=TlsExtensions,
-        validator=attr.validators.instance_of(TlsExtensions)
+        default=TlsExtensionsServer([]),
+        converter=TlsExtensionsServer,
+        validator=attr.validators.instance_of(TlsExtensionsServer)
     )
 
     @classmethod
@@ -580,7 +585,7 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
         parser.parse_parsable('cipher_suite', TlsCipherSuiteFactory)
         parser.parse_numeric('compression_method', 1, TlsCompressionMethod)
 
-        extension_parser = cls._parse_extensions(handshake_header_parser, parser)
+        extension_parser = cls._parse_extensions(handshake_header_parser, parser, TlsExtensionsServer)
 
         return TlsHandshakeServerHello(
             protocol_version=parser['protocol_version'],
@@ -588,7 +593,7 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
             session_id=parser['session_id'],
             compression_method=parser['compression_method'],
             cipher_suite=parser['cipher_suite'],
-            extensions=parser['extensions'] if extension_parser else TlsExtensions([]),
+            extensions=parser['extensions'] if extension_parser else TlsExtensionsServer([]),
         ), handshake_header_parser.parsed_length
 
     def compose(self):
@@ -806,6 +811,87 @@ class TlsHandshakeCertificateRequest(TlsHandshakeMessage):
         return header_bytes + payload_composer.composed_bytes
 
 
+TLS_HANDSHAKE_HELLO_RETRY_REQUEST_RANDOM_BYTES = (
+    b'\xcf\x21\xad\x74\xe5\x9a\x61\x11\xbe\x1d\x8c\x02\x1e\x65\xb8\x91' +
+    b'\xc2\xa2\x11\x16\x7a\xbb\x8c\x5e\x07\x9e\x09\xe2\xc8\xa8\x33\x9c' +
+    b''
+)
+
+
+TLS_HANDSHAKE_HELLO_RETRY_REQUEST_RANDOM = TlsHandshakeHelloRandom.parse_exact_size(
+    TLS_HANDSHAKE_HELLO_RETRY_REQUEST_RANDOM_BYTES
+)
+
+
+@attr.s
+class TlsHandshakeHelloRetryRequest(TlsHandshakeHello):
+    cipher_suite = attr.ib(default=None, validator=attr.validators.in_(TlsCipherSuite))
+    protocol_version = attr.ib(
+        default=TlsProtocolVersionFinal(TlsVersion.TLS1_3),
+        validator=attr.validators.instance_of((TlsProtocolVersionBase, SslProtocolVersion)),
+    )
+    random_bytes = attr.ib(
+        default=TLS_HANDSHAKE_HELLO_RETRY_REQUEST_RANDOM,
+        validator=attr.validators.instance_of(TlsHandshakeHelloRandom),
+    )
+    session_id = attr.ib(
+        default=TlsSessionIdVector((random.randint(0, 255) for i in range(32))),
+        converter=TlsSessionIdVector,
+        validator=attr.validators.instance_of(TlsSessionIdVector),
+    )
+    compression_method = attr.ib(
+        default=TlsCompressionMethod.NULL,
+        converter=TlsCompressionMethod,
+        validator=attr.validators.in_(TlsCompressionMethod),
+    )
+    extensions = attr.ib(
+        default=TlsExtensionsServer([]),
+        converter=TlsExtensionsServer,
+        validator=attr.validators.instance_of(TlsExtensionsServer)
+    )
+
+    @classmethod
+    def get_handshake_type(cls):
+        return TlsHandshakeType.HELLO_RETRY_REQUEST
+
+    @classmethod
+    def _parse(cls, parsable):
+        handshake_header_parser = cls._parse_handshake_header(parsable)
+        parser = cls._parse_hello_header(handshake_header_parser['payload'])
+
+        parser.parse_parsable('cipher_suite', TlsCipherSuiteFactory)
+
+        parser.parse_numeric('compression_method', 1)
+        compression_method = parser['compression_method']
+        session_id = parser['session_id']
+
+        extension_parser = cls._parse_extensions(handshake_header_parser, parser, TlsExtensionsServer)
+
+        return TlsHandshakeHelloRetryRequest(
+            protocol_version=parser['protocol_version'],
+            random_bytes=parser['random'],
+            session_id=session_id,
+            compression_method=compression_method,
+            cipher_suite=parser['cipher_suite'],
+            extensions=parser['extensions'] if extension_parser else TlsExtensionsClient([]),
+        ), handshake_header_parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.protocol_version)
+        payload_composer.compose_parsable(self.random_bytes)
+        payload_composer.compose_parsable(self.session_id)
+        payload_composer.compose_parsable(self.cipher_suite)
+        payload_composer.compose_numeric(self.compression_method.value, 1)
+
+        extension_bytes = self._compose_extensions(self.extensions)
+
+        header_bytes = self._compose_header(payload_composer.composed_length + len(extension_bytes))
+
+        return header_bytes + payload_composer.composed_bytes + extension_bytes
+
+
 class SslMessageBase(ParsableBase):
     @classmethod
     def get_message_type(cls):
@@ -986,6 +1072,7 @@ class TlsHandshakeMessageVariant(VariantParsable):
         (TlsHandshakeType.SERVER_KEY_EXCHANGE, [TlsHandshakeServerKeyExchange, ]),
         (TlsHandshakeType.CERTIFICATE_REQUEST, [TlsHandshakeCertificateRequest, ]),
         (TlsHandshakeType.SERVER_HELLO_DONE, [TlsHandshakeServerHelloDone, ]),
+        (TlsHandshakeType.HELLO_RETRY_REQUEST, [TlsHandshakeHelloRetryRequest, ]),
     ])
 
     @classmethod
