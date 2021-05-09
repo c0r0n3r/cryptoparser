@@ -526,11 +526,10 @@ class TestParserTextStringArray(TestParsableBase):
         self.assertEqual(parser['array'], ['a', 'b', 'c'])
         self.assertEqual(parser.unparsed_length, 0)
 
-        parser = ParserText(b' a; \tb')
-        with self.assertRaises(InvalidValue) as context_manager:
-            parser.parse_string_array('array', ';', separator_spaces='\t')
-        self.assertEqual(context_manager.exception.value, b'b')
-        self.assertEqual(parser.unparsed_length, 6)
+        parser = ParserText(b' a \t b ; \tc')
+        parser.parse_string_array('array', ';', separator_spaces='\t')
+        self.assertEqual(parser['array'], [' a \t b ', ' \tc'])
+        self.assertEqual(parser.unparsed_length, 0)
 
         parser = ParserText(b' a ')
         parser.parse_string_array('array', ';', separator_spaces=' ')
