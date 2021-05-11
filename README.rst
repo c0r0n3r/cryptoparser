@@ -58,6 +58,7 @@ Protocols
   * `TLS 1.0 <https://tools.ietf.org/html/rfc2246>`_
   * `TLS 1.1 <https://tools.ietf.org/html/rfc4346>`_
   * `TLS 1.2 <https://tools.ietf.org/html/rfc5246>`_
+  * `TLS 1.3 <https://tools.ietf.org/html/rfc8446>`_
 
 Python implementation
 ^^^^^^^^^^^^^^^^^^^^^
@@ -96,6 +97,11 @@ Generic
 
 #. supports easy `JA3 fingerprint <https://engineering.salesforce.com/tls-fingerprinting-with-ja3-and-ja3s-247362855967>`_
    generation
+
+Protocol Versions
+"""""""""""""""""
+
+#. support not only the final, but also draft versions
 
 Cipher Suites
 """""""""""""

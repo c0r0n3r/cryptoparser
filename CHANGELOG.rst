@@ -1,6 +1,31 @@
 Changelog
 =========
 
+Features
+^^^^^^^^
+
+* TLS (``tls``)
+
+  * Versions (``versions``)
+
+    * add `protocol version 1.3 <https://tools.ietf.org/html/rfc8446>`_ related messages (#20)
+
+  * Cipher Suites (``ciphers``)
+
+    * add `cipher suites <https://tools.ietf.org/html/rfc8446#appendix-B.4>`_ relate to version 1.3 (#20)
+
+  * Diffie-Hellman (``dhparams``)
+
+    * add `supported groups <https://tools.ietf.org/html/rfc8446#section-4.2.7>`_ relate to version 1.3 (#20)
+
+  * Elliptic Curves (``curves``)
+
+    * add `supported groups <https://tools.ietf.org/html/rfc8446#section-4.2.7>`_ relate to version 1.3 (#20)
+
+  * Signature Algorithms (``sigalgos``)
+
+    * add `signature algorithms <https://tools.ietf.org/html/rfc8446#section-4.2.3>`_ relate to version 1.3 (#20)
+
 .. _v0-5-0:
 
 0.5.0 - 2021-04-08
