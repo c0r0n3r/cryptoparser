@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import abc
 import collections
@@ -7,6 +8,8 @@ import six
 import attr
 
 from cryptoparser.common.base import (
+    Opaque,
+    OpaqueParam,
     TwoByteEnumComposer,
     TwoByteEnumParsable,
     VariantParsable,
@@ -748,6 +751,76 @@ class TlsExtensionKeyShareReservedClient(TlsExtensionKeyShareEntriesClientBase):
     @classmethod
     def get_extension_type(cls):
         return TlsExtensionType.KEY_SHARE_RESERVED
+
+
+class TlsCertificateStatusType(enum.IntEnum):
+    OCSP = 1
+
+
+class TlsCertificateStatusRequestExtensions(Opaque):
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(
+            min_byte_num=0,
+            max_byte_num=2 ** 16 - 1,
+        )
+
+
+class TlsCertificateStatusRequestResponderId(Opaque):
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(
+            min_byte_num=1,
+            max_byte_num=2 ** 16 - 1,
+        )
+
+
+class TlsCertificateStatusRequestResponderIdList(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsCertificateStatusRequestResponderId,
+            fallback_class=None,
+            min_byte_num=0, max_byte_num=2 ** 16 - 1
+        )
+
+
+class TlsExtensionCertificateStatusRequest(TlsExtensionParsed):
+    def __init__(self, responder_id_list=(), extensions=()):
+        super(TlsExtensionCertificateStatusRequest, self).__init__()
+
+        self.responder_id_list = TlsCertificateStatusRequestResponderIdList(responder_id_list)
+        self.request_extensions = TlsCertificateStatusRequestExtensions(extensions)
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.STATUS_REQUEST
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionCertificateStatusRequest, cls)._parse_header(parsable)
+        if parser['extension_length'] == 0:
+            return TlsExtensionCertificateStatusRequest(), parser.parsed_length
+
+        parser.parse_numeric('status_type', 1, TlsCertificateStatusType)
+        parser.parse_parsable('responder_id_list', TlsCertificateStatusRequestResponderIdList)
+        parser.parse_parsable('extensions', TlsCertificateStatusRequestExtensions)
+
+        return TlsExtensionCertificateStatusRequest(
+            parser['responder_id_list'],
+            parser['extensions'],
+        ), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_numeric(TlsCertificateStatusType.OCSP, 1)
+        payload_composer.compose_parsable(self.responder_id_list)
+        payload_composer.compose_parsable(self.request_extensions)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
 
 
 class TlsExtensionVariantBase(VariantParsable):
