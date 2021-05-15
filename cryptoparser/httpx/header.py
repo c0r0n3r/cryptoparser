@@ -5,17 +5,145 @@ import enum
 
 import attr
 
-from cryptoparser.common.base import StringEnumParsable
+from cryptoparser.common.base import StringEnumCaseInsensitiveParsable, StringEnumParsable
 
 from .parse import (
-    HttpHeaderFieldValueMultiple,
+    HttpHeaderFieldsCommaSeparated,
+    HttpHeaderFieldsSemicolonSeparated,
     HttpHeaderFieldValueString,
     HttpHeaderFieldValueStringEnum,
     HttpHeaderFieldValueStringEnumParams,
     HttpHeaderFieldValueComponentMaxAge,
     HttpHeaderFieldValueComponentOption,
     HttpHeaderFieldValueComponentReportURI,
+    HttpHeaderFieldValueTimeDelta,
+    HttpHeaderFieldValueDateTime,
 )
+
+
+class HttpHeaderFieldValueETag(HttpHeaderFieldValueString):
+    pass
+
+
+class HttpHeaderFieldValueAge(HttpHeaderFieldValueTimeDelta):
+    pass
+
+
+class HttpHeaderFieldValueDate(HttpHeaderFieldValueDateTime):
+    pass
+
+
+class HttpHeaderFieldValueExpires(HttpHeaderFieldValueDateTime):
+    pass
+
+
+class HttpHeaderFieldValueLastModified(HttpHeaderFieldValueDateTime):
+    pass
+
+
+class HttpHeaderFieldValueCacheControlMaxAge(HttpHeaderFieldValueComponentMaxAge):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'max-age'
+
+
+class HttpHeaderFieldValueCacheControlSMaxAge(HttpHeaderFieldValueComponentMaxAge):
+    @classmethod
+    def get_canonical_name(cls):
+        return 's-maxage'
+
+
+class HttpHeaderFieldValueCacheControlNoCache(HttpHeaderFieldValueComponentOption):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'no-cache'
+
+
+class HttpHeaderFieldValueCacheControlNoStore(HttpHeaderFieldValueComponentOption):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'no-store'
+
+
+class HttpHeaderFieldValueCacheControlMustRevalidate(HttpHeaderFieldValueComponentOption):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'must-revalidate'
+
+
+class HttpHeaderFieldValueCacheControlProxyRevalidate(HttpHeaderFieldValueComponentOption):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'proxy-revalidate'
+
+
+class HttpHeaderFieldValueCacheControlPublic(HttpHeaderFieldValueComponentOption):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'public'
+
+
+class HttpHeaderFieldValueCacheControlPrivate(HttpHeaderFieldValueComponentOption):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'private'
+
+
+class HttpHeaderFieldValueCacheControlNoTransform(HttpHeaderFieldValueComponentOption):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'no-transform'
+
+
+@attr.s
+class HttpHeaderFieldValueCacheControlResponse(  # pylint: disable=too-many-instance-attributes
+        HttpHeaderFieldsCommaSeparated
+):
+    max_age = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueCacheControlMaxAge.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueCacheControlMaxAge)),
+        default=None
+    )
+    s_maxage = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueCacheControlSMaxAge.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueCacheControlSMaxAge)),
+        default=None
+    )
+    must_revalidate = attr.ib(
+        converter=HttpHeaderFieldValueCacheControlMustRevalidate.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueCacheControlMustRevalidate),
+        default=False
+    )
+    proxy_revalidate = attr.ib(
+        converter=HttpHeaderFieldValueCacheControlProxyRevalidate.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueCacheControlProxyRevalidate),
+        default=False
+    )
+    no_cache = attr.ib(
+        converter=HttpHeaderFieldValueCacheControlNoCache.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueCacheControlNoCache),
+        default=False,
+    )
+    no_store = attr.ib(
+        converter=HttpHeaderFieldValueCacheControlNoStore.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueCacheControlNoStore),
+        default=False,
+    )
+    public = attr.ib(
+        converter=HttpHeaderFieldValueCacheControlPublic.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueCacheControlPublic),
+        default=False,
+    )
+    private = attr.ib(
+        converter=HttpHeaderFieldValueCacheControlPrivate.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueCacheControlPrivate),
+        default=False,
+    )
+    no_transform = attr.ib(
+        converter=HttpHeaderFieldValueCacheControlNoTransform.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueCacheControlNoTransform),
+        default=False,
+    )
 
 
 class HttpHeaderFieldValueComponentIncludeSubDomains(HttpHeaderFieldValueComponentOption):
@@ -23,23 +151,15 @@ class HttpHeaderFieldValueComponentIncludeSubDomains(HttpHeaderFieldValueCompone
     def get_canonical_name(cls):
         return 'includeSubDomains'
 
-    @classmethod
-    def _check_name(cls, name):
-        cls._check_name_insensitive(name)
-
 
 class HttpHeaderFieldValueComponentPreload(HttpHeaderFieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'preload'
 
-    @classmethod
-    def _check_name(cls, name):
-        cls._check_name_insensitive(name)
-
 
 @attr.s
-class HttpHeaderFieldValueSTS(HttpHeaderFieldValueMultiple):
+class HttpHeaderFieldValueSTS(HttpHeaderFieldsSemicolonSeparated):
     max_age = attr.ib(
         converter=HttpHeaderFieldValueComponentMaxAge.convert,
         validator=attr.validators.instance_of(HttpHeaderFieldValueComponentMaxAge)
@@ -57,7 +177,7 @@ class HttpHeaderFieldValueSTS(HttpHeaderFieldValueMultiple):
 
 
 @attr.s
-class HttpHeaderFieldValueExpectStaple(HttpHeaderFieldValueMultiple):
+class HttpHeaderFieldValueExpectStaple(HttpHeaderFieldsSemicolonSeparated):
     max_age = attr.ib(
         converter=HttpHeaderFieldValueComponentMaxAge.convert,
         validator=attr.validators.instance_of(HttpHeaderFieldValueComponentMaxAge)
@@ -84,13 +204,9 @@ class HttpHeaderFieldValueExpectCTComponentEnforce(HttpHeaderFieldValueComponent
     def get_canonical_name(cls):
         return 'enforce'
 
-    @classmethod
-    def _check_name(cls, name):
-        cls._check_name_insensitive(name)
-
 
 @attr.s
-class HttpHeaderFieldValueExpectCT(HttpHeaderFieldValueMultiple):
+class HttpHeaderFieldValueExpectCT(HttpHeaderFieldsCommaSeparated):
     max_age = attr.ib(
         converter=HttpHeaderFieldValueComponentMaxAge.convert,
         validator=attr.validators.instance_of(HttpHeaderFieldValueComponentMaxAge)
@@ -121,6 +237,22 @@ class HttpHeaderFieldValueXContentTypeOptions(HttpHeaderFieldValueStringEnum):
     @classmethod
     def _get_value_type(cls):
         return HttpHeaderXContentTypeOptions
+
+
+class HttpHeaderPragma(StringEnumCaseInsensitiveParsable, enum.Enum):
+    NO_CACHE = HttpHeaderFieldValueStringEnumParams(
+        code='no-cache'
+    )
+
+
+class HttpHeaderFieldValuePragma(HttpHeaderFieldValueStringEnum):
+    @classmethod
+    def _get_value_type(cls):
+        return HttpHeaderPragma
+
+
+class HttpHeaderFieldValueServer(HttpHeaderFieldValueString):
+    pass
 
 
 class HttpHeaderXFrameOptions(StringEnumParsable, enum.Enum):

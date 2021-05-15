@@ -650,7 +650,12 @@ class ThreeByteEnumComposer(NByteEnumComposer):
         return 3
 
 
-class StringEnumParsable(ParsableBaseNoABC):
+class StringEnumParsableBase(ParsableBaseNoABC):
+    @classmethod
+    @abc.abstractmethod
+    def _code_eq(cls, item_code, parsed_code):
+        raise NotImplementedError()
+
     @classmethod
     def _parse(cls, parsable):
         enum_items = [
@@ -661,12 +666,12 @@ class StringEnumParsable(ParsableBaseNoABC):
         enum_items.sort(key=lambda color: len(color.value.code), reverse=True)
 
         try:
-            parsable.decode('ascii')
+            code = parsable.decode('ascii')
         except UnicodeDecodeError as e:
             six.raise_from(InvalidValue(parsable, cls), e)
 
         for enum_item in enum_items:
-            if enum_item.value.code == parsable.decode('ascii'):
+            if cls._code_eq(enum_item.value.code, code):
                 return enum_item, len(enum_item.value.code)
 
         raise InvalidValue(parsable, cls, 'code')
@@ -676,6 +681,18 @@ class StringEnumParsable(ParsableBaseNoABC):
 
     def _asdict(self):
         return getattr(self, 'value').code
+
+
+class StringEnumParsable(StringEnumParsableBase):
+    @classmethod
+    def _code_eq(cls, item_code, parsed_code):
+        return item_code == parsed_code
+
+
+class StringEnumCaseInsensitiveParsable(StringEnumParsableBase):
+    @classmethod
+    def _code_eq(cls, item_code, parsed_code):
+        return item_code.lower() == parsed_code.lower()
 
 
 @six.add_metaclass(abc.ABCMeta)

@@ -8,6 +8,8 @@ try:
 except ImportError:
     import mock
 
+import dateutil.tz
+
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 from cryptoparser.common.parse import ParserBinary, ParserText, ParsableBase, ComposerBinary, ComposerText, ByteOrder
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
@@ -526,11 +528,10 @@ class TestParserTextStringArray(TestParsableBase):
         self.assertEqual(parser['array'], ['a', 'b', 'c'])
         self.assertEqual(parser.unparsed_length, 0)
 
-        parser = ParserText(b' a; \tb')
-        with self.assertRaises(InvalidValue) as context_manager:
-            parser.parse_string_array('array', ';', separator_spaces='\t')
-        self.assertEqual(context_manager.exception.value, b'b')
-        self.assertEqual(parser.unparsed_length, 6)
+        parser = ParserText(b' a \t b ; \tc')
+        parser.parse_string_array('array', ';', separator_spaces='\t')
+        self.assertEqual(parser['array'], [' a \t b ', ' \tc'])
+        self.assertEqual(parser.unparsed_length, 0)
 
         parser = ParserText(b' a ')
         parser.parse_string_array('array', ';', separator_spaces=' ')
@@ -560,6 +561,22 @@ class TestParserTextStringArray(TestParsableBase):
         parser.parse_string_array('array', ';', separator_spaces=' ', max_item_num=2)
         self.assertEqual(parser['array'], ['a', 'b'])
         self.assertEqual(parser.unparsed_length, 1)
+
+    def test_parse_date_time(self):
+        parser = ParserText(b'Wed, 21 Oct 2015 07:28:00 GMT')
+        parser.parse_date_time('datetime')
+        self.assertEqual(
+            parser['datetime'],
+            datetime.datetime(2015, 10, 21, 7, 28, tzinfo=dateutil.tz.tzoffset(None, 0))
+        )
+        self.assertEqual(parser.unparsed_length, 0)
+
+        datetime_value = b'not a date'
+        parser = ParserText(datetime_value)
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_date_time('datetime')
+        self.assertEqual(context_manager.exception.value, datetime_value)
+        self.assertEqual(parser.unparsed_length, len(datetime_value))
 
     def test_parse_time_delta(self):
         parser = ParserText(b'86400')
@@ -824,3 +841,13 @@ class TestComposerText(TestParsableBase):
 
         composer.compose_separator(self._ALPHA_BETA_GAMMA)
         self.assertEqual(composer.composed, self._ALPHA_BETA_GAMMA.encode('utf-8'))
+
+    def test_compose_date_time(self):
+        composer = ComposerText()
+        composer.compose_date_time(datetime.datetime(2015, 10, 21, 7, 28), '%a, %d %b %Y %H:%M:%S GMT')
+        self.assertEqual(composer.composed, b'Wed, 21 Oct 2015 07:28:00 GMT')
+
+    def test_compose_time_delta(self):
+        composer = ComposerText()
+        composer.compose_time_delta(datetime.timedelta(1))
+        self.assertEqual(composer.composed, b'86400')

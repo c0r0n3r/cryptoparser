@@ -8,13 +8,15 @@ import datetime
 from collections import OrderedDict
 
 import attr
+import dateutil
 
 from cryptoparser.common.exception import InvalidValue, InvalidType
 
 from cryptoparser.httpx.parse import (
     HttpHeaderFieldValueString,
-    HttpHeaderFieldValueList,
+    HttpHeaderFieldValueListSemicolonSeparated,
     HttpHeaderFieldValueComponent,
+    HttpHeaderFieldValueDateTime,
 )
 
 from .classes import (
@@ -24,8 +26,9 @@ from .classes import (
     HttpHeaderFieldValueComponentNumberTest,
     HttpHeaderFieldValueComponentOptionTest,
     HttpHeaderFieldValueComponentStringTest,
-    HttpHeaderFieldValueComponentQuotedStringTest,
     HttpHeaderFieldValueComponentTimeDeltaTest,
+    HttpHeaderFieldValueComponentQuotedStringTest,
+    HttpHeaderFieldValueTimeDeltaTest,
 )
 
 
@@ -269,81 +272,124 @@ class TestHttpHeaderFieldValueComponentKeyValue(unittest.TestCase):
 class TestHttpHeaderFieldValue(unittest.TestCase):
     def test_error(self):
         self.assertEqual(
-            HttpHeaderFieldValueList.parse_exact_size(b';;;option').components,
+            HttpHeaderFieldValueListSemicolonSeparated.parse_exact_size(b';;;option').components,
             OrderedDict([('option', None)])
         )
         self.assertEqual(
-            HttpHeaderFieldValueList.parse_exact_size(b'option;;;').components,
+            HttpHeaderFieldValueListSemicolonSeparated.parse_exact_size(b'option;;;').components,
             OrderedDict([('option', None)])
         )
 
     def test_parse_mixed_values(self):
         self.assertEqual(
-            HttpHeaderFieldValueList.parse_exact_size(b'').components,
+            HttpHeaderFieldValueListSemicolonSeparated.parse_exact_size(b'').components,
             {}
         )
         self.assertEqual(
-            HttpHeaderFieldValueList.parse_exact_size(b'option').components,
+            HttpHeaderFieldValueListSemicolonSeparated.parse_exact_size(b'option').components,
             {'option': None}
         )
         self.assertEqual(
-            HttpHeaderFieldValueList.parse_exact_size(b'key=value').components,
+            HttpHeaderFieldValueListSemicolonSeparated.parse_exact_size(b'key=value').components,
             {'key': 'value'}
         )
         self.assertEqual(
-            HttpHeaderFieldValueList.parse_exact_size(b'key=value;option').components,
+            HttpHeaderFieldValueListSemicolonSeparated.parse_exact_size(b'key=value;option').components,
             OrderedDict([('key', 'value'), ('option', None)])
         )
         self.assertEqual(
-            HttpHeaderFieldValueList.parse_exact_size(b'option;key=value').components,
+            HttpHeaderFieldValueListSemicolonSeparated.parse_exact_size(b'option;key=value').components,
             OrderedDict([('option', None), ('key', 'value')])
         )
 
     def test_compose_mixed_values(self):
         self.assertEqual(
-            HttpHeaderFieldValueList(OrderedDict([])).compose(),
+            HttpHeaderFieldValueListSemicolonSeparated(OrderedDict([])).compose(),
             b''
         )
         self.assertEqual(
-            HttpHeaderFieldValueList(OrderedDict([('option', None)])).compose(),
+            HttpHeaderFieldValueListSemicolonSeparated(OrderedDict([('option', None)])).compose(),
             b'option'
         )
         self.assertEqual(
-            HttpHeaderFieldValueList(OrderedDict([('key', 'value')])).compose(),
+            HttpHeaderFieldValueListSemicolonSeparated(OrderedDict([('key', 'value')])).compose(),
             b'key=value'
         )
         self.assertEqual(
-            HttpHeaderFieldValueList(OrderedDict([('key1', 'value1'), ('option', None)])).compose(),
+            HttpHeaderFieldValueListSemicolonSeparated(OrderedDict([('key1', 'value1'), ('option', None)])).compose(),
             b'key1=value1; option'
         )
         self.assertEqual(
-            HttpHeaderFieldValueList(OrderedDict([('option', None), ('key1', 'value1')])).compose(),
+            HttpHeaderFieldValueListSemicolonSeparated(OrderedDict([('option', None), ('key1', 'value1')])).compose(),
             b'option; key1=value1'
         )
 
     def test_parse_single_option(self):
-        header_field_value = HttpHeaderFieldValueList.parse_exact_size(b'option')
+        header_field_value = HttpHeaderFieldValueListSemicolonSeparated.parse_exact_size(b'option')
         self.assertEqual(header_field_value.components, OrderedDict([('option', None), ]))
 
     def test_parse_muliple_options(self):
-        header_field_value = HttpHeaderFieldValueList.parse_exact_size(b'option1;option2;option3')
+        header_field_value = HttpHeaderFieldValueListSemicolonSeparated.parse_exact_size(b'option1;option2;option3')
         self.assertEqual(
             header_field_value.components,
             OrderedDict([('option1', None), ('option2', None), ('option3', None), ])
         )
 
-        header_field_value = HttpHeaderFieldValueList.parse_exact_size(b' option1; \toption2;\t \toption3')
+        header_field_value = HttpHeaderFieldValueListSemicolonSeparated.parse_exact_size(
+            b' option1; \toption2;\t \toption3'
+        )
         self.assertEqual(
             header_field_value.components,
             OrderedDict([('option1', None), ('option2', None), ('option3', None), ])
         )
 
     def test_compose_options(self):
-        self.assertEqual(HttpHeaderFieldValueList(OrderedDict([])).compose(), b'')
-        self.assertEqual(HttpHeaderFieldValueList(OrderedDict([('option', None)])).compose(), b'option')
         self.assertEqual(
-            HttpHeaderFieldValueList(
+            HttpHeaderFieldValueListSemicolonSeparated(OrderedDict([])).compose(),
+            b''
+        )
+        self.assertEqual(
+            HttpHeaderFieldValueListSemicolonSeparated(OrderedDict([('option', None)])).compose(),
+            b'option'
+        )
+        self.assertEqual(
+            HttpHeaderFieldValueListSemicolonSeparated(
                 OrderedDict([('option1', None), ('option2', None), ('option3', None), ])
             ).compose(),
             b'option1; option2; option3'
+        )
+
+
+class TestHttpHeaderFieldValueDateTime(unittest.TestCase):
+    def test_parse(self):
+        http_header_field = HttpHeaderFieldValueDateTime.parse_exact_size(b'Wed, 21 Oct 2015 07:28:00 GMT')
+        self.assertEqual(
+            http_header_field.value,
+            datetime.datetime(2015, 10, 21, 7, 28, tzinfo=dateutil.tz.tzoffset(None, 0))
+        )
+
+        http_header_field = HttpHeaderFieldValueDateTime.parse_exact_size(b'Wed, 21 Oct 2015 07:28:00 +01:00')
+        self.assertEqual(
+            http_header_field.value,
+            datetime.datetime(2015, 10, 21, 7, 28, tzinfo=dateutil.tz.tzoffset(None, 3600))
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            HttpHeaderFieldValueDateTime(
+                datetime.datetime(2015, 10, 21, 7, 28, tzinfo=dateutil.tz.tzoffset(None, 0))
+            ).compose(),
+            b'Wed, 21 Oct 2015 07:28:00 GMT'
+        )
+
+
+class TestHttpHeaderFieldValueTimeDelta(unittest.TestCase):
+    def test_parse(self):
+        http_header_field = HttpHeaderFieldValueTimeDeltaTest.parse_exact_size(b'86401')
+        self.assertEqual(http_header_field.value, datetime.timedelta(days=1, seconds=1))
+
+    def test_compose(self):
+        self.assertEqual(
+            HttpHeaderFieldValueTimeDeltaTest(datetime.timedelta(days=1, seconds=1)).compose(),
+            b'86401'
         )

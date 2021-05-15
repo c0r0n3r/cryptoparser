@@ -9,6 +9,9 @@ import attr
 import six
 from six.moves import collections_abc
 
+import dateutil
+import dateutil.parser
+
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 import cryptoparser.common.utils
 
@@ -267,7 +270,8 @@ class ParserText(ParserBase):
             separators,
             item_class,
             fallback_class,
-            may_end=False
+            may_end=False,
+            separator_spaces=b''
     ):
         for item_end in range(item_offset, len(self._parsable)):
             if self._parsable[item_end] in separators:
@@ -278,9 +282,19 @@ class ParserText(ParserBase):
 
             item_end = len(self._parsable)
 
-        item = self._apply_item_class(name, item_offset, item_end, separators, item_class, fallback_class, may_end)
+        separator_space_count = 0
+        while (item_end > item_offset and
+                self._parsable[
+                    item_end - separator_space_count - 1:
+                    item_end - separator_space_count
+                ] in separator_spaces):
+            separator_space_count += 1
 
-        return item, item_end - item_offset
+        item = self._apply_item_class(
+            name, item_offset, item_end - separator_space_count, separators, item_class, fallback_class, may_end
+        )
+
+        return item, item_end - item_offset - separator_space_count
 
     def parse_string_until_separator(self, name, separator, item_class=str, fallback_class=None):
         separator = bytearray(separator, self._encoding)
@@ -321,14 +335,14 @@ class ParserText(ParserBase):
 
         while True:
             parsed_value, parsed_length = self._parse_string_until_separator(
-                name, item_offset, separator + separator_spaces, str, None, True
+                name, item_offset, separator, str, None, True, separator_spaces
             )
             if parsed_length:
                 parsed_value = self._apply_item_class(
                     name,
                     item_offset,
                     item_offset + parsed_length,
-                    separator + separator_spaces,
+                    separator,
                     item_class,
                     fallback_class,
                     True
@@ -375,6 +389,16 @@ class ParserText(ParserBase):
             separator_spaces=separator_spaces,
             skip_empty=skip_empty
         )
+
+    def parse_date_time(self, name):
+        try:
+            value = self._parsable[self._parsed_length:]
+            date_time = dateutil.parser.parse(value.decode(self._encoding))
+        except ValueError as e:
+            six.raise_from(InvalidValue(value, type(self), 'value'), e)
+
+        self._parsed_values[name] = date_time
+        self._parsed_length = len(self._parsable)
 
     def parse_time_delta(self, name):
         value, parsed_length = self._parse_numeric_array(name, 1, None, int)
@@ -603,6 +627,12 @@ class ComposerText(ComposerBase):
 
     def compose_separator(self, value):
         self.compose_string(value)
+
+    def compose_date_time(self, value, fmt):
+        self.compose_string(value.strftime(fmt))
+
+    def compose_time_delta(self, value):
+        self.compose_numeric(int(value.total_seconds()))
 
 
 @attr.s
