@@ -76,6 +76,19 @@ Operating systems
 Protocol Specific Features
 --------------------------
 
+Hypertext Transfer Protocol (HTTP)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Headers
+"""""""
+
+#. supports detailed parsing of security headers (\
+   `Expect-CT <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expect-CT>`_, \
+   `Expect-Staple <https://scotthelme.co.uk/designing-a-new-security-header-expect-staple>`_, \
+   `Strict-Transport-Security <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security>`_, \
+   `X-Content-Type-Options <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options>`_, \
+   `X-Frame-Options <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options>`_)
+
 Transport Layer Security (TLS)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

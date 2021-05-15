@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import datetime
 import enum
 import struct
 
@@ -159,7 +160,7 @@ class ParserText(ParserBase):
             if max_count is not None and count > max_count:
                 raise InvalidValue(self._parsable[count_offset:], type(self), name)
 
-        if count < min_count:
+        if min_count is not None and count < min_count:
             raise InvalidValue(self._parsable[count_offset:], type(self), name)
 
         return actual_offset - count_offset
@@ -195,16 +196,18 @@ class ParserText(ParserBase):
 
             last_item_offset = item_offset
 
-        self._parsed_length = item_offset
-        self._parsed_values[name] = value
+        return value, item_offset - self._parsed_length
 
     def parse_numeric(self, name, converter=int):
-        self._parse_numeric_array(name, 1, None, converter)
-        self._parsed_values[name] = self._parsed_values[name][0]
+        value, parsed_length = self._parse_numeric_array(name, 1, None, converter)
+        self._parsed_values[name] = value[0]
+        self._parsed_length += parsed_length
 
     def parse_numeric_array(self, name, item_num, separator, converter=int):
         separator = bytearray(separator, self._encoding)
-        self._parse_numeric_array(name, item_num, separator, converter)
+        value, parsed_length = self._parse_numeric_array(name, item_num, separator, converter)
+        self._parsed_values[name] = value
+        self._parsed_length += parsed_length
 
     def parse_string(self, name, value):
         min_length = len(value)
@@ -314,7 +317,7 @@ class ParserText(ParserBase):
         max_separator_count = None if skip_empty else 1
 
         if separator_spaces:
-            item_offset += self._check_separators('separator', item_offset, separator_spaces, 0, None)
+            item_offset += self._check_separators('separator', item_offset, separator_spaces, None, None)
 
         while True:
             parsed_value, parsed_length = self._parse_string_until_separator(
@@ -335,14 +338,15 @@ class ParserText(ParserBase):
             elif not skip_empty:
                 raise InvalidValue(self._parsable[item_offset:], type(self), name)
 
+            if separator_spaces:
+                item_offset += self._check_separators('separator', item_offset, separator_spaces, None, None)
+
             if item_offset == len(self._parsable):
                 break
 
-            if separator_spaces:
-                item_offset += self._check_separators('separator', item_offset, separator_spaces, 0, None)
             item_offset += self._check_separators(name, item_offset, separator, 1, max_separator_count)
             if separator_spaces:
-                item_offset += self._check_separators('separator', item_offset, separator_spaces, 0, None)
+                item_offset += self._check_separators('separator', item_offset, separator_spaces, None, None)
 
             if item_offset == len(self._parsable):
                 break
@@ -371,6 +375,17 @@ class ParserText(ParserBase):
             separator_spaces=separator_spaces,
             skip_empty=skip_empty
         )
+
+    def parse_time_delta(self, name):
+        value, parsed_length = self._parse_numeric_array(name, 1, None, int)
+
+        try:
+            time_delta = datetime.timedelta(seconds=value[0])
+        except OverflowError as e:
+            six.raise_from(InvalidValue(value[0], type(self), 'value'), e)
+
+        self._parsed_values[name] = time_delta
+        self._parsed_length += parsed_length
 
 
 @attr.s
