@@ -82,6 +82,7 @@ Hypertext Transfer Protocol (HTTP)
 Headers
 """""""
 
+#. supports header wire format parsing
 #. supports detailed parsing of generic headers (\
    `Content-Type <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type>`_, \
    `Server <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server>`_)

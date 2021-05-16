@@ -326,7 +326,7 @@ class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-me
 
 
 @attr.s
-class VectorBase(ParsableBase, MutableSequence):
+class ArrayBase(ParsableBase, MutableSequence, Serializable):
     _items = attr.ib()
     _items_size = attr.ib(init=False, default=0)
     param = attr.ib(init=False, default=None)
@@ -391,8 +391,11 @@ class VectorBase(ParsableBase, MutableSequence):
     def append(self, value):
         self.insert(len(self._items), value)
 
+    def _as_markdown(self, level):
+        return self._markdown_result(self._items, level)
 
-class Vector(VectorBase):
+
+class Vector(ArrayBase):
     @classmethod
     @abc.abstractmethod
     def get_param(cls):
@@ -420,7 +423,7 @@ class Vector(VectorBase):
         return composer.composed_bytes
 
 
-class VectorString(VectorBase):
+class VectorString(ArrayBase):
     @classmethod
     @abc.abstractmethod
     def get_param(cls):
@@ -459,7 +462,7 @@ class VectorString(VectorBase):
         return header_composer.composed + body_composer.composed
 
 
-class VectorParsable(VectorBase):
+class VectorParsable(ArrayBase):
     @classmethod
     @abc.abstractmethod
     def get_param(cls):
@@ -491,7 +494,7 @@ class VectorParsable(VectorBase):
         return header_composer.composed_bytes + body_composer.composed_bytes
 
 
-class VectorParsableDerived(VectorBase):
+class VectorParsableDerived(ArrayBase):
     @classmethod
     @abc.abstractmethod
     def get_param(cls):
@@ -524,7 +527,7 @@ class VectorParsableDerived(VectorBase):
 
 
 @attr.s(init=False)
-class Opaque(VectorBase):
+class Opaque(ArrayBase):
     def __init__(self, items):
         if isinstance(items, (bytes, bytearray)):
             items = [ord(items[i:i + 1]) for i in range(len(items))]
@@ -671,7 +674,7 @@ class StringEnumParsableBase(ParsableBaseNoABC):
             six.raise_from(InvalidValue(parsable, cls), e)
 
         for enum_item in enum_items:
-            if cls._code_eq(enum_item.value.code, code):
+            if cls._code_eq(enum_item.value.code, code[:len(enum_item.value.code)]):
                 return enum_item, len(enum_item.value.code)
 
         raise InvalidValue(parsable, cls, 'code')
@@ -720,3 +723,49 @@ class ProtocolVersionBase(Serializable, ParsableBase):
 
     def _as_markdown(self, level):
         return self._markdown_result(str(self), level)
+
+
+@attr.s
+class ListParamParsable(object):  # pylint: disable=too-few-public-methods
+    item_class = attr.ib(validator=attr.validators.instance_of(type))
+    fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)))
+    separator_class = attr.ib(attr.validators.instance_of(ParsableBase))
+    min_byte_num = attr.ib(init=False, default=0)
+    max_byte_num = attr.ib(init=False, default=2 ** 16)
+    item_num_size = attr.ib(init=False, default=0)
+
+    def get_item_size(self, item):  # pylint: disable=no-self-use
+        return len(item.compose())
+
+
+class ListParsable(ArrayBase):
+    @classmethod
+    @abc.abstractmethod
+    def get_param(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        list_param = cls.get_param()
+
+        parser = ParserBinary(parsable)
+
+        parser.parse_parsable_list(
+            'items',
+            item_class=list_param.item_class,
+            fallback_class=list_param.fallback_class,
+            separator_class=list_param.separator_class
+        )
+
+        return cls(parser['items']), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        separator = bytearray(self.get_param().separator_class().compose())
+        composer.compose_parsable_array(self._items, separator)
+        composer.compose_raw(separator)
+        if self._items:
+            composer.compose_raw(separator)
+
+        return composer.composed_bytes

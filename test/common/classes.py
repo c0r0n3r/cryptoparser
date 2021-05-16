@@ -8,6 +8,8 @@ import attr
 import six
 
 from cryptoparser.common.base import (
+    ListParamParsable,
+    ListParsable,
     ParsableBase,
     ParserBinary,
     ComposerBinary,
@@ -18,6 +20,7 @@ from cryptoparser.common.base import (
     VariantParsable
 )
 from cryptoparser.common.exception import TooMuchData, InvalidValue, InvalidType
+from cryptoparser.common.parse import ParserCRLF
 
 
 class NByteParsable(ParsableBase):
@@ -152,9 +155,15 @@ class SerializableEnumVariantParsable(VariantParsable):
 
 
 class AlwaysTestStringComposer(ParsableBase):
+    def __eq__(self, other):
+        return isinstance(other, AlwaysTestStringComposer)
+
     @classmethod
     def _parse(cls, parsable):
-        raise NotImplementedError()
+        if parsable[:4] != b'test':
+            raise InvalidValue(parsable, cls)
+
+        return AlwaysTestStringComposer(), 4
 
     def compose(self):
         return b'test'
@@ -314,7 +323,13 @@ class FlagEnum(enum.IntEnum):
     EIGHT = 8
 
 
-StringEnumParams = attr.make_class('StringEnumParams', ['code', ])
+@attr.s
+class StringEnumParams(object):
+    code = attr.ib()
+
+    def _check_code(self, code):
+        if code != self.code:
+            raise InvalidType()
 
 
 class StringEnum(StringEnumParsable, enum.Enum):
@@ -333,3 +348,17 @@ class EnumStringValue(enum.Enum):
     ONE = 'one'
     TWO = 'two'
     THREE = 'three'
+
+
+class ListParamParsableTest(ListParamParsable):
+    pass
+
+
+class ListParsableTest(ListParsable):
+    @classmethod
+    def get_param(cls):
+        return ListParamParsableTest(
+            item_class=AlwaysTestStringComposer,
+            fallback_class=None,
+            separator_class=ParserCRLF,
+        )

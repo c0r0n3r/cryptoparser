@@ -61,7 +61,7 @@ class HttpHeaderFieldValueComponent(ParsableBase):
         return composer.composed
 
 
-class HttpHeaderFieldValueBase(ParsableBase):
+class HttpHeaderFieldValueBase(ParsableBase, Serializable):
     @classmethod
     @abc.abstractmethod
     def _parse(cls, parsable):

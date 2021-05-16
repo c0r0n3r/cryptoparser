@@ -58,6 +58,10 @@ class TestHttpHeaderFieldValueStringEnum(unittest.TestCase):
             HttpHeaderFieldValueStringEnumTest.parse_exact_size(b'first'),
             HttpHeaderFieldValueStringEnumTest(HttpHeaderFieldValueEnumTest.FIRST)
         )
+        self.assertEqual(
+            HttpHeaderFieldValueStringEnumTest.parse_exact_size(b'FIRST'),
+            HttpHeaderFieldValueStringEnumTest(HttpHeaderFieldValueEnumTest.FIRST)
+        )
 
     def test_compose(self):
         self.assertEqual(
