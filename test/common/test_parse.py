@@ -498,6 +498,24 @@ class TestParserText(TestParsableBase):
             parser.parse_numeric_array('number', 2, '.')
         self.assertEqual(context_manager.exception.value, b'1')
 
+    def test_parse_float(self):
+        parser = ParserText(b'1.2#')
+        parser.parse_float('number')
+        self.assertEqual(parser['number'], 1.2)
+
+        parser = ParserText(b'1.#')
+        parser.parse_float('number')
+        self.assertEqual(parser['number'], 1.0)
+
+        parser = ParserText(b'1#')
+        parser.parse_float('number')
+        self.assertEqual(parser['number'], 1.0)
+
+        parser = ParserText(b'NaN')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_float('number')
+        self.assertEqual(context_manager.exception.value, b'NaN')
+
     def test_parse_string_until_separator(self):
         parser = ParserText(b'a#')
         parser.parse_string_until_separator('string', '#')
