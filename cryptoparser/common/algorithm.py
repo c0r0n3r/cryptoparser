@@ -618,6 +618,11 @@ class Hash(AlgortihmOIDBase, enum.Enum):
         oid='1.3.101.115',
         digest_size=448
     )
+    WHIRLPOOL = HashParams(
+        name='Whirlpool',
+        oid='1.0.10118.3.0.55',
+        digest_size=512
+    )
 
 
 @attr.s(frozen=True)
@@ -834,6 +839,11 @@ class MAC(AlgortihmOIDBase, enum.Enum):
         name='Ed448ph',
         oid='1.3.101.115',
         hash_algo=Hash.ED448PH
+    )
+    WHIRLPOOL = HMACParams(
+        name='Whirlpool',
+        oid=None,
+        hash_algo=Hash.WHIRLPOOL
     )
 
 
