@@ -1,8 +1,9 @@
+============
 CryptoParser
 ============
 
 What is it and what is it not?
-------------------------------
+==============================
 
 As the project name CryptoParser implies, it is a cryptographic protocol parser. The main purpose of creating this
 library is the fact, that cryptography protocol analysis differs in many aspect from establishing a connection using a 
@@ -18,7 +19,7 @@ If you are searching for cryptographic protocol implementation, there are severa
 implementations for Python (eg: M2Crypto, pyOpenSSL, Paramiko, ...).
 
 Quick start
------------
+===========
 
 CryptoParser can be installed directly via pip:
 
@@ -27,7 +28,7 @@ CryptoParser can be installed directly via pip:
     pip install cryptoparser
 
 Development environment
------------------------
+=======================
 
 If you want to setup a development environment, you are in need of `pipenv <https://docs.pipenv.org/>`_.
 
@@ -39,10 +40,10 @@ If you want to setup a development environment, you are in need of `pipenv <http
 
 
 Features
---------
+========
 
 Protocols
-^^^^^^^^^
+---------
 
 * Secure Shell (SSH)
 
@@ -61,26 +62,26 @@ Protocols
   * `TLS 1.3 <https://tools.ietf.org/html/rfc8446>`_
 
 Python implementation
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 * CPython (2.7, >=3.3)
 * PyPy (2.7, 3.5)
 
 Operating systems
-^^^^^^^^^^^^^^^^^
+-----------------
 
 * Linux
 * macOS
 * Windows
 
 Protocol Specific Features
---------------------------
+==========================
 
 Hypertext Transfer Protocol (HTTP)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 
 Headers
-"""""""
+^^^^^^^
 
 #. supports header wire format parsing
 #. supports detailed parsing of generic headers (\
@@ -103,14 +104,14 @@ Headers
    `X-Frame-Options <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options>`_)
 
 Transport Layer Security (TLS)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------
 
 Only features that cannot be or difficultly implemented by some of the most popular SSL/TLS implementations (eg:
 `GnuTls <https://www.gnutls.org/>`_, `LibreSSL <https://www.libressl.org/>`_, `OpenSSL <https://www.openssl.org/>`_,
 `wolfSSL <https://www.wolfssl.com/>`_, ...) are listed.
 
 Generic
-"""""""
+^^^^^^^
 
 #. supports `Generate Random Extensions And Sustain Extensibility <https://tools.ietf.org/html/draft-ietf-tls-grease-04>`_
    (GREASE) values for
@@ -125,27 +126,27 @@ Generic
    generation
 
 Protocol Versions
-"""""""""""""""""
+^^^^^^^^^^^^^^^^^
 
 #. support not only the final, but also draft versions
 
 Cipher Suites
-"""""""""""""
+^^^^^^^^^^^^^
 
 #. supports each cipher suites discussed on `ciphersuite.info <https://ciphersuite.info>`_
 #. supports `GOST <https://en.wikipedia.org/wiki/GOST>`_ (national standards of the Russian Federation and CIS
    countries) cipher suites
 
 Secure Shell (SSH)
-^^^^^^^^^^^^^^^^^^
+------------------
 
 Cipher Suites
-"""""""""""""
+^^^^^^^^^^^^^
 
 #. identifies as much encryption algorithms as possible (more than 200, compared to 70+ currently supported by OpenSSH)
 
 License
--------
+=======
 
 The code is available under the terms of Mozilla Public License Version 2.0 (MPL 2.0).
 

@@ -1,8 +1,9 @@
+=========
 Changelog
 =========
 
 Features
-^^^^^^^^
+--------
 
 * HTTP(S) (``http``)
 
@@ -53,10 +54,10 @@ Features
 .. _v0-5-0:
 
 0.5.0 - 2021-04-08
-------------------
+==================
 
 Features
-^^^^^^^^
+--------
 
 * Generic
 
@@ -75,7 +76,7 @@ Features
     * add `algorithm negotiation <https://tools.ietf.org/html/rfc4253#section-7.1>`_ related messages (#21)
 
 Usability
-^^^^^^^^^
+---------
 
 * Generic
 
@@ -86,10 +87,10 @@ Usability
 .. _v0-4-0:
 
 0.4.0 - 2021-01-30
-------------------
+==================
 
 Features
-^^^^^^^^
+--------
 
 * TLS (``tls``)
 
@@ -102,7 +103,7 @@ Features
     * add `client public key request <https://tools.ietf.org/html/rfc2246#section-7.4.4>`_ related messages (#24)
 
 Improvements
-^^^^^^^^^^^^
+------------
 
 * Generic
 
@@ -111,17 +112,17 @@ Improvements
 .. _v0-3-1:
 
 0.3.1 - 2020-09-15
-------------------
+==================
 
 Features
-^^^^^^^^
+--------
 
 * Generic
 
   * `Markdown <https://en.wikipedia.org/wiki/Markdown>`_ serializable format (#19)
 
 Improvements
-^^^^^^^^^^^^
+------------
 
 * TLS (``tls``)
 
@@ -137,7 +138,7 @@ Improvements
     * add missing SSLv3 cipher suites (#15)
 
 Notable fixes
-^^^^^^^^^^^^^
+-------------
 
 * Generic
 
@@ -152,10 +153,10 @@ Notable fixes
 .. _v0-3-0:
 
 0.3.0 - 2020-04-30
-------------------
+==================
 
 Features
-^^^^^^^^
+--------
 
 * TLS (``tls``)
 
@@ -171,17 +172,17 @@ Bugs
   * compose all the messages in case of a TLS record (#1)
 
 Refactor
-^^^^^^^^
+--------
 
 * use attrs to avoid boilerplates (#3)
 
 .. _v0-2-0:
 
 0.2.0 - 2019-12-02
-------------------
+==================
 
 Notable fixes
-^^^^^^^^^^^^^
+-------------
 
 * clarify TLS related parameter names
 * several packaging fixes
@@ -189,10 +190,10 @@ Notable fixes
 .. _v0-1-0:
 
 0.1.0 - 2019-03-20
-------------------
+==================
 
 Features
-^^^^^^^^
+--------
 
 * added TLS record protocol support
 * added TLS ChangeCipherSpec message support
@@ -202,7 +203,7 @@ Features
 * added SSL support
 
 Improvements
-^^^^^^^^^^^^
+------------
 
 * added serialization support for classes
 * added elliptic-curve related descriptive classes
