@@ -12,6 +12,8 @@ import attr
 import six
 
 from cryptoparser.common.base import (
+    OneByteEnumComposer,
+    OneByteEnumParsable,
     Opaque,
     OpaqueParam,
     VariantParsable,
@@ -384,18 +386,33 @@ class TlsCipherSuiteVector(VectorParsable):
         )
 
 
-class TlsCompressionMethod(enum.IntEnum):
-    NULL = 0
+class TlsCompressionMethodFactory(OneByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsCompressionMethod
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
 
 
-class TlsCompressionMethodVector(Vector):
+@attr.s(frozen=True)
+class TlsCompressionMethodParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+
+
+class TlsCompressionMethod(OneByteEnumComposer, enum.Enum):
+    NULL = TlsCompressionMethodParams(code=0x00)
+
+
+class TlsCompressionMethodVector(VectorParsable):
     @classmethod
     def get_param(cls):
-        return VectorParamNumeric(
-            item_size=1,
+        return VectorParamParsable(
+            item_class=TlsCompressionMethodFactory,
+            fallback_class=TlsInvalidTypeOneByte,
             min_byte_num=1,
             max_byte_num=2 ** 8 - 1,
-            numeric_class=TlsCompressionMethod
         )
 
 
@@ -552,6 +569,7 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
     )
     compression_method = attr.ib(
         default=TlsCompressionMethod.NULL,
+        converter=TlsCompressionMethod,
         validator=attr.validators.in_(TlsCompressionMethod),
     )
     cipher_suite = attr.ib(default=None, validator=attr.validators.in_(TlsCipherSuite))
@@ -572,7 +590,7 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
         parser = cls._parse_hello_header(handshake_header_parser['payload'])
 
         parser.parse_parsable('cipher_suite', TlsCipherSuiteFactory)
-        parser.parse_numeric('compression_method', 1, TlsCompressionMethod)
+        parser.parse_parsable('compression_method', TlsCompressionMethodFactory)
 
         extension_parser = cls._parse_extensions(handshake_header_parser, parser, TlsExtensionsServer)
 
@@ -592,7 +610,7 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
         payload_composer.compose_parsable(self.random)
         payload_composer.compose_parsable(self.session_id)
         payload_composer.compose_parsable(self.cipher_suite)
-        payload_composer.compose_numeric(self.compression_method.value, 1)
+        payload_composer.compose_parsable(self.compression_method)
 
         extension_bytes = self._compose_extensions(self.extensions)
 
@@ -886,7 +904,7 @@ class TlsHandshakeHelloRetryRequest(TlsHandshakeHello):
 
         parser.parse_parsable('cipher_suite', TlsCipherSuiteFactory)
 
-        parser.parse_numeric('compression_method', 1)
+        parser.parse_parsable('compression_method', TlsCompressionMethodFactory)
         compression_method = parser['compression_method']
         session_id = parser['session_id']
 
@@ -908,7 +926,7 @@ class TlsHandshakeHelloRetryRequest(TlsHandshakeHello):
         payload_composer.compose_parsable(self.random_bytes)
         payload_composer.compose_parsable(self.session_id)
         payload_composer.compose_parsable(self.cipher_suite)
-        payload_composer.compose_numeric(self.compression_method.value, 1)
+        payload_composer.compose_parsable(self.compression_method)
 
         extension_bytes = self._compose_extensions(self.extensions)
 
