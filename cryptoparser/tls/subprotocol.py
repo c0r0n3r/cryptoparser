@@ -403,6 +403,8 @@ class TlsCompressionMethodParams(object):
 
 class TlsCompressionMethod(OneByteEnumComposer, enum.Enum):
     NULL = TlsCompressionMethodParams(code=0x00)
+    DEFLATE = TlsCompressionMethodParams(code=0x01)
+    LZS = TlsCompressionMethodParams(code=0x40)
 
 
 class TlsCompressionMethodVector(VectorParsable):
