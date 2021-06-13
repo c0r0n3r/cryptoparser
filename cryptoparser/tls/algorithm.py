@@ -536,3 +536,24 @@ class TlsProtocolName(OpaqueEnumComposer):
     XMPP_SERVER = TlsProtocolNameParams(
         code='xmpp-server',
     )
+
+
+class TlsNextProtocolName(OpaqueEnumComposer):
+    HTTP_1_1 = TlsProtocolNameParams(
+        code='http/1.1',
+    )
+    SPDY_1 = TlsProtocolNameParams(
+        code='spdy/1',
+    )
+    SPDY_2 = TlsProtocolNameParams(
+        code='spdy/2',
+    )
+    SPDY_3 = TlsProtocolNameParams(
+        code='spdy/3',
+    )
+    SPDY_3_1 = TlsProtocolNameParams(
+        code='spdy/3.1',
+    )
+    SPDY_4_A_2 = TlsProtocolNameParams(
+        code='spdy/4a2',
+    )

@@ -7,6 +7,7 @@ from cryptoparser.common.exception import NotEnoughData, InvalidType, InvalidVal
 from cryptoparser.tls.algorithm import (
     TlsECPointFormat,
     TlsNamedCurve,
+    TlsNextProtocolName,
     TlsProtocolName,
     TlsSignatureAndHashAlgorithm,
 )
@@ -24,6 +25,8 @@ from cryptoparser.tls.extension import (
     TlsExtensionKeyShareClientHelloRetry,
     TlsExtensionKeyShareServer,
     TlsExtensionKeyShareReservedClient,
+    TlsExtensionNextProtocolNegotiationClient,
+    TlsExtensionNextProtocolNegotiationServer,
     TlsExtensionRenegotiationInfo,
     TlsExtensionServerName,
     TlsExtensionSessionTicket,
@@ -34,6 +37,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionUnparsed,
     TlsExtensionParsed,
     TlsExtensionType,
+    TlsNextProtocolNameList,
     TlsProtocolNameList,
     TlsRenegotiatedConnection,
 )
@@ -499,6 +503,40 @@ class TestExtensionSessionTicket(unittest.TestCase):
         )
         self.assertEqual(extension_session_ticket.session_ticket, b'\x00\x01\x02\x03\x04\x05\x06\x07')
         self.assertEqual(extension_session_ticket.compose(), extension_session_ticket_bytes)
+
+
+class TestExtensionNextProtocolNegotiationClient(unittest.TestCase):
+    def test_parse(self):
+        extension_nex_protocol_names_dict = collections.OrderedDict([
+            ('extension_type', b'\x33\x74'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_nex_protocol_names_bytes = b''.join(extension_nex_protocol_names_dict.values())
+        extension_nex_protocol_names_mac = TlsExtensionNextProtocolNegotiationClient.parse_exact_size(
+            extension_nex_protocol_names_bytes
+        )
+        self.assertEqual(extension_nex_protocol_names_mac.compose(), extension_nex_protocol_names_bytes)
+
+
+class TestExtensionNextProtocolNegotiationServer(unittest.TestCase):
+    def test_parse(self):
+        extension_next_protocol_names_dict = collections.OrderedDict([
+            ('extension_type', b'\x33\x74'),
+            ('extension_length', b'\x00\x10'),
+            ('protocol_name_h2_length', b'\x08'),
+            ('protocol_name_h2', b'http/1.1'),
+            ('protocol_name_h2c_length', b'\x06'),
+            ('protocol_name_h2c', b'spdy/1'),
+        ])
+        extension_next_protocol_names_bytes = b''.join(extension_next_protocol_names_dict.values())
+        extension_next_protocol_names = TlsExtensionNextProtocolNegotiationServer.parse_exact_size(
+            extension_next_protocol_names_bytes
+        )
+        self.assertEqual(
+            extension_next_protocol_names.protocol_names,
+            TlsNextProtocolNameList([TlsNextProtocolName.HTTP_1_1, TlsNextProtocolName.SPDY_1])
+        )
+        self.assertEqual(extension_next_protocol_names.compose(), extension_next_protocol_names_bytes)
 
 
 class TestExtensionApplicationLayerProtocolNegotiation(unittest.TestCase):

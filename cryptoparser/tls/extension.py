@@ -7,7 +7,7 @@ import enum
 import six
 import attr
 
-from cryptoparser.tls.algorithm import TlsProtocolName
+from cryptoparser.tls.algorithm import TlsNextProtocolName, TlsProtocolName
 from cryptoparser.common.base import (
     Opaque,
     OpaqueParam,
@@ -959,6 +959,67 @@ class TlsExtensionApplicationLayerProtocolNegotiation(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
+class TlsExtensionNextProtocolNegotiationClient(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.NEXT_PROTOCOL_NEGOTIATION
+
+
+class TlsNextProtocolNameFactory(OpaqueEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsNextProtocolName
+
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(
+            min_byte_num=1, max_byte_num=2 ** 8 - 1
+        )
+
+
+class TlsNextProtocolNameList(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsNextProtocolNameFactory,
+            fallback_class=None,
+            min_byte_num=1, max_byte_num=2 ** 16 - 1
+        )
+
+
+@attr.s
+class TlsExtensionNextProtocolNegotiationServer(TlsExtensionParsed):
+    protocol_names = attr.ib(
+        converter=TlsNextProtocolNameList,
+        validator=attr.validators.instance_of(TlsNextProtocolNameList),
+    )
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.NEXT_PROTOCOL_NEGOTIATION
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        cls._parse_type(parser, 'extension_type')
+        if parser['extension_type'] != cls.get_extension_type():
+            raise InvalidType()
+
+        parser.parse_parsable('protocol_names', TlsNextProtocolNameList)
+
+        return cls(parser['protocol_names']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+        payload_composer.compose_parsable(self.protocol_names)
+
+        header_composer = ComposerBinary()
+        self._compose_type(header_composer)
+
+        return header_composer.composed_bytes + payload_composer.composed_bytes
+
+
 class TlsExtensionEncryptThenMAC(TlsExtensionUnusedData):
     @classmethod
     def get_extension_type(cls):
@@ -999,6 +1060,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
             (TlsExtensionType.RENEGOTIATION_INFO, [TlsExtensionRenegotiationInfo, ]),
+            (TlsExtensionType.NEXT_PROTOCOL_NEGOTIATION, [TlsExtensionNextProtocolNegotiationClient, ]),
             (TlsExtensionType.SERVER_NAME, [TlsExtensionServerName, ]),
             (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
             (TlsExtensionType.SUPPORTED_GROUPS, [TlsExtensionEllipticCurves, ]),
@@ -1019,6 +1081,7 @@ class TlsExtensionVariantServer(TlsExtensionVariantBase):
             (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
             (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClientHelloRetry, TlsExtensionKeyShareServer]),
+            (TlsExtensionType.NEXT_PROTOCOL_NEGOTIATION, [TlsExtensionNextProtocolNegotiationServer, ]),
             (TlsExtensionType.RENEGOTIATION_INFO, [TlsExtensionRenegotiationInfo, ]),
             (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsServer, ]),
