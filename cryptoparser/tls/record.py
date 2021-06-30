@@ -7,7 +7,7 @@ import six
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
-from cryptoparser.tls.subprotocol import TlsSubprotocolMessageBase, TlsSubprotocolMessageParser, TlsContentType
+from cryptoparser.tls.subprotocol import TlsContentType
 from cryptoparser.tls.subprotocol import SslMessageBase, SslMessageType, SslSubprotocolMessageParser
 
 
@@ -15,12 +15,14 @@ from cryptoparser.tls.subprotocol import SslMessageBase, SslMessageType, SslSubp
 class TlsRecord(ParsableBase):
     HEADER_SIZE = 5
 
-    messages = attr.ib(
-        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(TlsSubprotocolMessageBase))
-    )
+    fragment = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
     protocol_version = attr.ib(
-        default=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+        default=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
         validator=attr.validators.instance_of(TlsProtocolVersionBase),
+    )
+    content_type = attr.ib(
+        default=TlsContentType.HANDSHAKE,
+        validator=attr.validators.instance_of(TlsContentType),
     )
 
     @classmethod
@@ -35,7 +37,7 @@ class TlsRecord(ParsableBase):
         except InvalidValue as e:
             six.raise_from(InvalidValue(e.value, TlsContentType), e)
         parser.parse_parsable('protocol_version', TlsProtocolVersionBase)
-        parser.parse_numeric('record_length', 2)
+        parser.parse_numeric('fragment_length', 2)
 
         return parser
 
@@ -43,35 +45,22 @@ class TlsRecord(ParsableBase):
     def _parse(cls, parsable):
         parser = cls.parse_header(parsable)
 
-        if parser.unparsed_length < parser['record_length']:
-            raise NotEnoughData(parser['record_length'] - parser.unparsed_length)
-
-        messages = []
-        while parser.parsed_length < cls.HEADER_SIZE + parser['record_length']:
-            parser.parse_variant('message', TlsSubprotocolMessageParser(parser['content_type']))
-            messages.append(parser['message'])
+        parser.parse_raw('fragment', parser['fragment_length'])
 
         return TlsRecord(
-            messages=messages,
-            protocol_version=parser['protocol_version']
+            content_type=parser['content_type'],
+            protocol_version=parser['protocol_version'],
+            fragment=parser['fragment'],
         ), parser.parsed_length
 
     def compose(self):
-        body_composer = ComposerBinary()
-        for message in self.messages:
-            body_composer.compose_parsable(message)
+        composer = ComposerBinary()
 
-        header_composer = ComposerBinary()
-        content_type = self.messages[0].get_content_type()
-        header_composer.compose_numeric(content_type, 1)
-        header_composer.compose_parsable(self.protocol_version)
-        header_composer.compose_numeric(body_composer.composed_length, 2)
+        composer.compose_numeric(self.content_type, 1)
+        composer.compose_parsable(self.protocol_version)
+        composer.compose_bytes(self.fragment, 2)
 
-        return header_composer.composed_bytes + body_composer.composed_bytes
-
-    @property
-    def content_type(self):
-        return self.messages[0].get_content_type()
+        return composer.composed_bytes
 
 
 @attr.s

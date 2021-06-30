@@ -2,7 +2,6 @@
 
 import unittest
 
-from cryptoparser.tls.record import TlsContentType
 from cryptoparser.tls.subprotocol import TlsApplicationDataMessage
 
 
@@ -23,6 +22,3 @@ class TestRecord(unittest.TestCase):
             self._APPLICATION_DATA_MESSAGE_BYTES,
             TlsApplicationDataMessage(data=self._APPLICATION_DATA_MESSAGE_BYTES).compose()
         )
-
-    def test_content_type(self):
-        self.assertEqual(TlsApplicationDataMessage.get_content_type(), TlsContentType.APPLICATION_DATA)

@@ -82,7 +82,11 @@ class SubprotocolParser(object):
 class TlsSubprotocolMessageBase(ParsableBase):
     @classmethod
     @abc.abstractmethod
-    def get_content_type(cls):
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def compose(self):
         raise NotImplementedError()
 
 
@@ -131,10 +135,6 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
     description = attr.ib()
 
     @classmethod
-    def get_content_type(cls):
-        return TlsContentType.ALERT
-
-    @classmethod
     def _parse(cls, parsable):
         if len(parsable) < cls._SIZE:
             raise NotEnoughData(cls._SIZE - len(parsable))
@@ -181,10 +181,6 @@ class TlsChangeCipherSpecMessage(TlsSubprotocolMessageBase):
     )
 
     @classmethod
-    def get_content_type(cls):
-        return TlsContentType.CHANGE_CIPHER_SPEC
-
-    @classmethod
     def _parse(cls, parsable):
         parser = ParserBinary(parsable)
 
@@ -203,10 +199,6 @@ class TlsChangeCipherSpecMessage(TlsSubprotocolMessageBase):
 @attr.s
 class TlsApplicationDataMessage(TlsSubprotocolMessageBase):
     data = attr.ib(attr.validators.instance_of(bytearray))
-
-    @classmethod
-    def get_content_type(cls):
-        return TlsContentType.APPLICATION_DATA
 
     @classmethod
     def _parse(cls, parsable):
@@ -240,10 +232,6 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
     """The payload of a handshake record.
     """
     _HEADER_SIZE = 4
-
-    @classmethod
-    def get_content_type(cls):
-        return TlsContentType.HANDSHAKE
 
     @classmethod
     @abc.abstractmethod

@@ -64,6 +64,26 @@ from .classes import TestMessage
 
 
 class TestSubprotocolParser(unittest.TestCase):
+    def test_error(self):
+        subprotocol_parser = TlsSubprotocolMessageParser(TlsContentType.HANDSHAKE)
+        with self.assertRaises(InvalidValue) as context_manager:
+            subprotocol_parser.parse(
+                b'\x18'            # handshake_type: CLIENT_HELLO
+                b'\x00\x00\x03' +  # handshake_length = 3
+                b'\x03\x03' +      # version = TLS 1.2
+                b''
+            )
+        self.assertEqual(context_manager.exception.value, 0x18)
+
+        subprotocol_parser = TlsSubprotocolMessageParser(TlsContentType.HEARTBEAT)
+        with self.assertRaises(InvalidValue) as context_manager:
+            subprotocol_parser.parse(
+                b'\x18' +      # type = heartbeat
+                b'\x03\x03' +  # version = TLS 1.2
+                b'\x00\x01' +  # length = 1
+                b'\x00'
+            )
+
     def test_registered_parser(self):
         tls_message_dict = collections.OrderedDict([
             ('level', b'\x02'),        # FATAL
@@ -154,6 +174,24 @@ class TestTlsHandshake(unittest.TestCase):
             # pylint: disable=expression-not-assigned
             TlsHandshakeClientHello.parse_exact_size(self.server_hello_done_bytes)
 
+        with self.assertRaises(NotEnoughData) as context_manager:
+            TlsHandshakeClientHello.parse_exact_size(
+                b'\x01'            # handshake_type: CLIENT_HELLO
+                b'\x00\x00\x03' +  # handshake_length = 3
+                b'\x03\x03' +      # version = TLS 1.2
+                b''
+            )
+        self.assertEqual(context_manager.exception.bytes_needed, 1)
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            TlsHandshakeClientHello.parse_exact_size(
+                b'\xff'            # handshake_type: INVALID
+                b'\x00\x00\x02' +  # handshake_length = 2
+                b'\x03\x03' +      # version = TLS 1.2
+                b''
+            )
+        self.assertEqual(context_manager.exception.value, 0xff)
+
     def test_parse(self):
         record = TlsRecord.parse_exact_size(
             self.server_hello_done_record_bytes + self.server_hello_done_bytes
@@ -236,7 +274,6 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
     def test_parse(self):
         client_hello_minimal = TlsHandshakeClientHello.parse_exact_size(self.client_hello_minimal_bytes)
 
-        self.assertEqual(client_hello_minimal.get_content_type(), TlsContentType.HANDSHAKE)
         self.assertEqual(client_hello_minimal.get_handshake_type(), TlsHandshakeType.CLIENT_HELLO)
 
         self.assertEqual(
@@ -375,7 +412,6 @@ class TestTlsHandshakeServerHello(unittest.TestCase):
     def test_parse(self):
         server_hello_minimal = TlsHandshakeServerHello.parse_exact_size(self.server_hello_minimal_bytes)
 
-        self.assertEqual(server_hello_minimal.get_content_type(), TlsContentType.HANDSHAKE)
         self.assertEqual(server_hello_minimal.get_handshake_type(), TlsHandshakeType.SERVER_HELLO)
 
         self.assertEqual(
@@ -460,7 +496,6 @@ class TestTlsHandshakeHelloRetryRequest(unittest.TestCase):
             self.hello_retry_request_minimal_bytes
         )
 
-        self.assertEqual(hello_retry_request_minimal.get_content_type(), TlsContentType.HANDSHAKE)
         self.assertEqual(hello_retry_request_minimal.get_handshake_type(), TlsHandshakeType.HELLO_RETRY_REQUEST)
 
         self.assertEqual(
@@ -674,7 +709,6 @@ class TestTlsHandshakeServerHelloDone(unittest.TestCase):
     def test_parse(self):
         server_hello_done = TlsHandshakeServerHelloDone.parse_exact_size(self.server_hello_done_bytes)
 
-        self.assertEqual(server_hello_done.get_content_type(), TlsContentType.HANDSHAKE)
         self.assertEqual(server_hello_done.get_handshake_type(), TlsHandshakeType.SERVER_HELLO_DONE)
 
     def test_compose(self):
@@ -696,7 +730,6 @@ class TestTlsHandshakeServerKeyExcahnge(unittest.TestCase):
     def test_parse(self):
         server_key_exchange = TlsHandshakeServerKeyExchange.parse_exact_size(self.server_key_exchange_bytes)
 
-        self.assertEqual(server_key_exchange.get_content_type(), TlsContentType.HANDSHAKE)
         self.assertEqual(server_key_exchange.get_handshake_type(), TlsHandshakeType.SERVER_KEY_EXCHANGE)
 
         self.assertEqual(server_key_exchange.param_bytes, self.param_bytes)
@@ -722,7 +755,6 @@ class TestTlsHandshakeCertificateStatus(unittest.TestCase):
     def test_parse(self):
         certificate_status = TlsHandshakeCertificateStatus.parse_exact_size(self.certificate_status_bytes)
 
-        self.assertEqual(certificate_status.get_content_type(), TlsContentType.HANDSHAKE)
         self.assertEqual(certificate_status.get_handshake_type(), TlsHandshakeType.CERTIFICATE_STATUS)
 
         self.assertEqual(certificate_status.status, self.status_bytes)
