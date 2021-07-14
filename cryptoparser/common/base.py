@@ -8,7 +8,7 @@ import math
 try:
     from collections.abc import MutableSequence  # only works on python 3.3+
 except ImportError:  # pragma: no cover
-    from collections import MutableSequence
+    from collections import MutableSequence  # pylint: disable=deprecated-class
 
 from collections import OrderedDict
 
