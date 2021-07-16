@@ -7,12 +7,7 @@ import six
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 
 from cryptoparser.tls.record import TlsRecord, SslRecord
-from cryptoparser.tls.subprotocol import (
-    TlsContentType,
-    TlsHandshakeServerHelloDone,
-    TlsHandshakeServerKeyExchange,
-    TlsSubprotocolMessageBase,
-)
+from cryptoparser.tls.subprotocol import TlsContentType, TlsSubprotocolMessageBase
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
 
 from cryptoparser.tls.subprotocol import TlsAlertMessage, TlsAlertLevel, TlsAlertDescription
@@ -33,8 +28,9 @@ class TestTlsRecord(unittest.TestCase):
             description=TlsAlertDescription.HANDSHAKE_FAILURE
         )
         self.test_record = TlsRecord(
-            messages=[self.test_message, ],
-            protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0)
+            fragment=self.test_message.compose(),
+            protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
+            content_type=TlsContentType.ALERT,
         )
         self.test_record_bytes = bytes(
             b'\x15' +      # type = ALERT
@@ -83,78 +79,12 @@ class TestTlsRecord(unittest.TestCase):
             )
         self.assertEqual(context_manager.exception.bytes_needed, 2)
 
-        with self.assertRaises(NotEnoughData) as context_manager:
-            TlsRecord.parse_exact_size(
-                b'\x16' +          # type = handshake
-                b'\x03\x01' +      # version = TLS 1.0
-                b'\x00\x06' +      # length = 6
-                b'\x01'            # handshake_type: CLIENT_HELLO
-                b'\x00\x00\x03' +  # handshake_length = 3
-                b'\x03\x03' +      # version = TLS 1.2
-                b''
-            )
-        self.assertEqual(context_manager.exception.bytes_needed, 1)
-
-        with self.assertRaises(InvalidValue) as context_manager:
-            TlsRecord.parse_exact_size(
-                b'\x16' +          # type = handshake
-                b'\x03\x01' +      # version = TLS 1.0
-                b'\x00\x06' +      # length = 10
-                b'\xff'            # handshake_type: INVALID
-                b'\x00\x00\x02' +  # handshake_length = 2
-                b'\x03\x03' +      # version = TLS 1.2
-                b''
-            )
-
-        with self.assertRaises(InvalidValue) as context_manager:
-            TlsRecord.parse_exact_size(
-                b'\x15' +          # type = alert
-                b'\x03\x01' +      # version = TLS 1.0
-                b'\x00\x02' +      # length = 6
-                b'\x02'            # level: FATAL
-                b'\xff'            # description: INVALID
-                b''
-            )
-
-        with self.assertRaises(InvalidValue) as context_manager:
-            TlsRecord.parse_exact_size(
-                b'\x18' +      # type = heartbeat
-                b'\x03\x03' +  # version = TLS 1.2
-                b'\x00\x01' +  # length = 1
-                b'\x00'
-            )
-
-    def test_setter(self):
-        record = TlsRecord([self.test_message, ])
-        self.assertEqual(len(record.messages), 1)
-
-        record.messages = [self.test_message, self.test_message]
-        self.assertEqual(len(record.messages), 2)
-
     def test_parse(self):
         record = TlsRecord.parse_exact_size(self.test_record_bytes)
 
+        self.assertEqual(record.fragment, self.test_message.compose())
+        self.assertEqual(record.protocol_version, TlsProtocolVersionFinal(TlsVersion.TLS1_0))
         self.assertEqual(record.content_type, TlsContentType.ALERT)
-        self.assertEqual(len(record.messages), 1)
-        self.assertEqual(
-            record.messages[0],
-            self.test_message
-        )
-
-    def test_parse_multiple_messages(self):
-        record = TlsRecord(
-            messages=[TlsHandshakeServerHelloDone(), TlsHandshakeServerKeyExchange(b'')],
-            protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0)
-        )
-        record_bytes = record.compose()
-
-        parsed_record = TlsRecord.parse_exact_size(record_bytes)
-        self.assertEqual(record, parsed_record)
-
-        remaining_bytes = b'\x00\x01'
-        record_bytes += remaining_bytes
-        parsed_record = TlsRecord.parse_mutable(record_bytes)
-        self.assertEqual(record_bytes, remaining_bytes)
 
     def test_compose(self):
         self.assertEqual(
