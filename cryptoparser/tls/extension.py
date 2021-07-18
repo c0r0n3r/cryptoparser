@@ -859,6 +859,7 @@ class TlsExtensionVariantServer(TlsExtensionVariantBase):
     @classmethod
     def _get_parsed_extensions(cls):
         return collections.OrderedDict([
+            (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
             (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClientHelloRetry, TlsExtensionKeyShareServer]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsServer, ]),
         ])
