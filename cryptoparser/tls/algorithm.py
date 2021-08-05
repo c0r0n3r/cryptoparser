@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import abc
-import enum
 
 import attr
 
@@ -450,7 +449,7 @@ class TlsECPointFormatParams(object):
     code = attr.ib(validator=attr.validators.instance_of(int))
 
 
-class TlsECPointFormat(OneByteEnumComposer, enum.Enum):
+class TlsECPointFormat(OneByteEnumComposer):
     UNCOMPRESSED = TlsECPointFormatParams(code=0x00)
     ANSIX962_COMPRESSED_PRIME = TlsECPointFormatParams(code=0x01)
     ANSIX962_COMPRESSED_CHAR2 = TlsECPointFormatParams(code=0x02)
