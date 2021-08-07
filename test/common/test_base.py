@@ -196,6 +196,26 @@ class TestVectorString(unittest.TestCase):
             VectorStringTest([StringEnum.ONE, StringEnum.TWO, ]).compose(),
         )
 
+    def test_json(self):
+        self.assertEqual('[]', VectorStringTest([]).as_json())
+
+        self.assertEqual(
+            VectorStringTest([StringEnum.ONE, StringEnum.TWO, ]).as_json(),
+            '[{"ONE": {"code": "one"}}, {"TWO": {"code": "two"}}]',
+        )
+
+    def test_markdown(self):
+        self.assertEqual('-', VectorStringTest([]).as_markdown())
+
+        self.assertEqual(
+            VectorStringTest([StringEnum.ONE, StringEnum.TWO, ]).as_markdown(),
+            '\n'.join([
+                '1. ONE',
+                '2. TWO',
+                '',
+            ])
+        )
+
 
 class TestVectorParsable(unittest.TestCase):
     def test_error(self):

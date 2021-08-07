@@ -391,8 +391,11 @@ class ArrayBase(ParsableBase, MutableSequence, Serializable):
     def append(self, value):
         self.insert(len(self._items), value)
 
+    def _asdict(self):
+        return self._items
+
     def _as_markdown(self, level):
-        return self._markdown_result(self._items, level)
+        return self._markdown_result(self._asdict(), level)
 
 
 class Vector(ArrayBase):
