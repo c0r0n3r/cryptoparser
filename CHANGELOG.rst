@@ -2,6 +2,21 @@
 Changelog
 =========
 
+.. _v0-7-0:
+
+* TLS (``tls``)
+
+  * Extensions (``extensions``)
+
+    * add `application-layer protocol negotiation <https://www.rfc-editor.org/rfc/rfc5077.html>`_ extension related
+      messages (#40)
+    * add `encrypt-then-MAC <https://www.rfc-editor.org/rfc/rfc7366.html>`_ extension related messages (#40)
+    * add `extended master secret <https://www.rfc-editor.org/rfc/rfc7627.html>`_ extension related messages (#40)
+    * add `next protocol negotiation <https://tools.ietf.org/id/draft-agl-tls-nextprotoneg-03.html>`_ extension related
+      messages (#40)
+    * add `renegotiation indication <https://www.rfc-editor.org/rfc/rfc5746.html>`_ extension related messages (#40)
+    * add `session ticket <https://www.rfc-editor.org/rfc/rfc5077.html>`_ extension related messages (#40)
+
 .. _v0-6-0:
 
 0.6.0 - 2021-05-27
