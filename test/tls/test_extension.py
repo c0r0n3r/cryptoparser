@@ -3,20 +3,33 @@
 import collections
 import unittest
 
-from cryptoparser.common.exception import NotEnoughData, InvalidType
-from cryptoparser.tls.algorithm import TlsSignatureAndHashAlgorithm, TlsECPointFormat, TlsNamedCurve
+from cryptoparser.common.exception import NotEnoughData, InvalidType, InvalidValue
+from cryptoparser.tls.algorithm import (
+    TlsECPointFormat,
+    TlsNamedCurve,
+    TlsNextProtocolName,
+    TlsProtocolName,
+    TlsSignatureAndHashAlgorithm,
+)
 from cryptoparser.tls.extension import (
     TlsCertificateStatusRequestExtensions,
     TlsCertificateStatusRequestResponderId,
     TlsCertificateStatusRequestResponderIdList,
+    TlsExtensionApplicationLayerProtocolNegotiation,
     TlsExtensionCertificateStatusRequest,
     TlsExtensionECPointFormats,
     TlsExtensionEllipticCurves,
+    TlsExtensionEncryptThenMAC,
+    TlsExtensionExtendedMasterSecret,
     TlsExtensionKeyShareClient,
     TlsExtensionKeyShareClientHelloRetry,
     TlsExtensionKeyShareServer,
     TlsExtensionKeyShareReservedClient,
+    TlsExtensionNextProtocolNegotiationClient,
+    TlsExtensionNextProtocolNegotiationServer,
+    TlsExtensionRenegotiationInfo,
     TlsExtensionServerName,
+    TlsExtensionSessionTicket,
     TlsExtensionSignatureAlgorithms,
     TlsExtensionSignatureAlgorithmsCert,
     TlsExtensionSupportedVersionsClient,
@@ -24,9 +37,14 @@ from cryptoparser.tls.extension import (
     TlsExtensionUnparsed,
     TlsExtensionParsed,
     TlsExtensionType,
+    TlsNextProtocolNameList,
+    TlsProtocolNameList,
+    TlsRenegotiatedConnection,
 )
 from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
+
+from .classes import TestUnusedDataExtension
 
 
 class TestExtensionUnparsed(unittest.TestCase):
@@ -451,3 +469,128 @@ class TestExtensionCertificateStatusRequest(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(self.status_request_minimal.compose(), self.status_request_minimal_bytes)
         self.assertEqual(self.status_request.compose(), self.status_request_bytes)
+
+
+class TestExtensionRenegotiationInfo(unittest.TestCase):
+    def test_parse(self):
+        extension_renegotiation_info_dict = collections.OrderedDict([
+            ('extension_type', b'\xff\x01'),
+            ('extension_length', b'\x00\x09'),
+            ('renegotiated_connection_length', b'\x08'),
+            ('renegotiated_connection', b'\x00\x01\x02\x03\x04\x05\x06\x07'),
+        ])
+        extension_renegotiation_info_bytes = b''.join(extension_renegotiation_info_dict.values())
+        extension_renegotiation_info = TlsExtensionRenegotiationInfo.parse_exact_size(
+            extension_renegotiation_info_bytes
+        )
+        self.assertEqual(
+            extension_renegotiation_info.renegotiated_connection,
+            TlsRenegotiatedConnection(b'\x00\x01\x02\x03\x04\x05\x06\x07')
+        )
+        self.assertEqual(extension_renegotiation_info.compose(), extension_renegotiation_info_bytes)
+
+
+class TestExtensionSessionTicket(unittest.TestCase):
+    def test_parse(self):
+        extension_session_ticket_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x23'),
+            ('extension_length', b'\x00\x08'),
+            ('session_ticket', b'\x00\x01\x02\x03\x04\x05\x06\x07'),
+        ])
+        extension_session_ticket_bytes = b''.join(extension_session_ticket_dict.values())
+        extension_session_ticket = TlsExtensionSessionTicket.parse_exact_size(
+            extension_session_ticket_bytes
+        )
+        self.assertEqual(extension_session_ticket.session_ticket, b'\x00\x01\x02\x03\x04\x05\x06\x07')
+        self.assertEqual(extension_session_ticket.compose(), extension_session_ticket_bytes)
+
+
+class TestExtensionNextProtocolNegotiationClient(unittest.TestCase):
+    def test_parse(self):
+        extension_nex_protocol_names_dict = collections.OrderedDict([
+            ('extension_type', b'\x33\x74'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_nex_protocol_names_bytes = b''.join(extension_nex_protocol_names_dict.values())
+        extension_nex_protocol_names_mac = TlsExtensionNextProtocolNegotiationClient.parse_exact_size(
+            extension_nex_protocol_names_bytes
+        )
+        self.assertEqual(extension_nex_protocol_names_mac.compose(), extension_nex_protocol_names_bytes)
+
+
+class TestExtensionNextProtocolNegotiationServer(unittest.TestCase):
+    def test_parse(self):
+        extension_next_protocol_names_dict = collections.OrderedDict([
+            ('extension_type', b'\x33\x74'),
+            ('extension_length', b'\x00\x10'),
+            ('protocol_name_h2_length', b'\x08'),
+            ('protocol_name_h2', b'http/1.1'),
+            ('protocol_name_h2c_length', b'\x06'),
+            ('protocol_name_h2c', b'spdy/1'),
+        ])
+        extension_next_protocol_names_bytes = b''.join(extension_next_protocol_names_dict.values())
+        extension_next_protocol_names = TlsExtensionNextProtocolNegotiationServer.parse_exact_size(
+            extension_next_protocol_names_bytes
+        )
+        self.assertEqual(
+            extension_next_protocol_names.protocol_names,
+            TlsNextProtocolNameList([TlsNextProtocolName.HTTP_1_1, TlsNextProtocolName.SPDY_1])
+        )
+        self.assertEqual(extension_next_protocol_names.compose(), extension_next_protocol_names_bytes)
+
+
+class TestExtensionApplicationLayerProtocolNegotiation(unittest.TestCase):
+    def test_parse(self):
+        extension_alpn_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x10'),
+            ('extension_length', b'\x00\x09'),
+            ('protocol_name_list_length', b'\x00\x07'),
+            ('protocol_name_h2_length', b'\x02'),
+            ('protocol_name_h2', b'h2'),
+            ('protocol_name_h2c_length', b'\x03'),
+            ('protocol_name_h2c', b'h2c'),
+        ])
+        extension_alpn_bytes = b''.join(extension_alpn_dict.values())
+        extension_alpn = TlsExtensionApplicationLayerProtocolNegotiation.parse_exact_size(
+            extension_alpn_bytes
+        )
+        self.assertEqual(extension_alpn.protocol_names, TlsProtocolNameList([TlsProtocolName.H2, TlsProtocolName.H2C]))
+        self.assertEqual(extension_alpn.compose(), extension_alpn_bytes)
+
+
+class TestExtensionUnusedData(unittest.TestCase):
+    def test_error(self):
+        extension_unused_data_dict = collections.OrderedDict([
+            ('extension_type', b'\xff\x01'),
+            ('extension_length', b'\x00\x01'),
+            ('extension_data', b'\xff'),
+        ])
+        extension_unused_data_bytes = b''.join(extension_unused_data_dict.values())
+        with self.assertRaises(InvalidValue) as context_manager:
+            # pylint: disable=expression-not-assigned
+            TestUnusedDataExtension.parse_exact_size(extension_unused_data_bytes)
+        self.assertEqual(context_manager.exception.value, b'\xff')
+
+
+class TestExtensionEncryptThenMAC(unittest.TestCase):
+    def test_parse(self):
+        extension_encrypt_then_mac_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x16'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_encrypt_then_mac_bytes = b''.join(extension_encrypt_then_mac_dict.values())
+        extension_encrypt_then_mac = TlsExtensionEncryptThenMAC.parse_exact_size(extension_encrypt_then_mac_bytes)
+        self.assertEqual(extension_encrypt_then_mac.compose(), extension_encrypt_then_mac_bytes)
+
+
+class TestExtensionExtendedMasterSecret(unittest.TestCase):
+    def test_parse(self):
+        extension_extended_master_secret_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x17'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_extended_master_secret_bytes = b''.join(extension_extended_master_secret_dict.values())
+        extended_master_secret = TlsExtensionExtendedMasterSecret.parse_exact_size(
+            extension_extended_master_secret_bytes
+        )
+        self.assertEqual(extended_master_secret.compose(), extension_extended_master_secret_bytes)

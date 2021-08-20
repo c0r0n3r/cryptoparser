@@ -25,6 +25,8 @@ from .classes import (
     ListParsableTest,
     OneByteOddParsable,
     OneByteParsable,
+    OpaqueEnum,
+    OpaqueEnumFactory,
     SerializableAttributeOrder,
     SerializableEmptyValues,
     SerializableEnums,
@@ -196,6 +198,26 @@ class TestVectorString(unittest.TestCase):
             VectorStringTest([StringEnum.ONE, StringEnum.TWO, ]).compose(),
         )
 
+    def test_json(self):
+        self.assertEqual('[]', VectorStringTest([]).as_json())
+
+        self.assertEqual(
+            VectorStringTest([StringEnum.ONE, StringEnum.TWO, ]).as_json(),
+            '[{"ONE": {"code": "one"}}, {"TWO": {"code": "two"}}]',
+        )
+
+    def test_markdown(self):
+        self.assertEqual('-', VectorStringTest([]).as_markdown())
+
+        self.assertEqual(
+            VectorStringTest([StringEnum.ONE, StringEnum.TWO, ]).as_markdown(),
+            '\n'.join([
+                '1. ONE',
+                '2. TWO',
+                '',
+            ])
+        )
+
 
 class TestVectorParsable(unittest.TestCase):
     def test_error(self):
@@ -339,6 +361,31 @@ class TestOpaque(unittest.TestCase):
         self.assertEqual(
             b'\x03\x01\x02\x03',
             OpaqueTest(bytearray(b'\x01\x02\x03')).compose()
+        )
+
+
+class TestOpaqueEnum(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            OpaqueEnumFactory.parse_exact_size(b'\x0a' + u'δέλτα'.encode('utf-8'))
+        self.assertEqual(context_manager.exception.value, u'δέλτα'.encode('utf-8'))
+
+    def test_parse(self):
+        self.assertEqual(
+            OpaqueEnum.ALPHA,
+            OpaqueEnumFactory.parse_exact_size(b'\x08' + u'άλφα'.encode('utf-8'))
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            b'\x0a' + u'γάμμα'.encode('utf-8'),
+            OpaqueEnum.GAMMA.compose()  # pylint: disable=no-member
+        )
+
+    def test_repr(self):
+        self.assertEqual(
+            repr(OpaqueEnum.GAMMA),
+            'OpaqueEnum.GAMMA'
         )
 
 

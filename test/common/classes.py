@@ -13,6 +13,9 @@ from cryptoparser.common.base import (
     ParsableBase,
     ParserBinary,
     ComposerBinary,
+    OpaqueEnumComposer,
+    OpaqueEnumParsable,
+    OpaqueParam,
     Serializable,
     StringEnumParsable,
     TwoByteEnumComposer,
@@ -178,6 +181,33 @@ class SerializableEnumValue(Serializable):
 
     def _as_markdown(self, level):
         return False, self.code
+
+
+class OpaqueEnumFactory(OpaqueEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return OpaqueEnum
+
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(
+            min_byte_num=1, max_byte_num=32
+        )
+
+
+OpaqueEnumParams = collections.namedtuple('OpaqueEnumParams', ['code', ])
+
+
+class OpaqueEnum(OpaqueEnumComposer):
+    ALPHA = OpaqueEnumParams(
+        code=u'άλφα'
+    )
+    BETA = OpaqueEnumParams(
+        code=u'βήτα'
+    )
+    GAMMA = OpaqueEnumParams(
+        code=u'γάμμα'
+    )
 
 
 class TestObject(object):

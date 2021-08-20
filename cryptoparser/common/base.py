@@ -391,8 +391,11 @@ class ArrayBase(ParsableBase, MutableSequence, Serializable):
     def append(self, value):
         self.insert(len(self._items), value)
 
+    def _asdict(self):
+        return self._items
+
     def _as_markdown(self, level):
-        return self._markdown_result(self._items, level)
+        return self._markdown_result(self._asdict(), level)
 
 
 class Vector(ArrayBase):
@@ -526,13 +529,12 @@ class VectorParsableDerived(ArrayBase):
         return header_composer.composed_bytes + body_composer.composed_bytes
 
 
-@attr.s(init=False)
 class Opaque(ArrayBase):
-    def __init__(self, items):
-        if isinstance(items, (bytes, bytearray)):
-            items = [ord(items[i:i + 1]) for i in range(len(items))]
+    def __attrs_post_init__(self):
+        if isinstance(self._items, (bytes, bytearray)):
+            self._items = [ord(self._items[i:i + 1]) for i in range(len(self._items))]
 
-        super(Opaque, self).__init__(items)
+        super(Opaque, self).__attrs_post_init__()
 
     @classmethod
     def _parse(cls, parsable):
@@ -769,3 +771,47 @@ class ListParsable(ArrayBase):
             composer.compose_raw(separator)
 
         return composer.composed_bytes
+
+
+class OpaqueEnumParsable(Vector):
+    @classmethod
+    def _parse(cls, parsable):
+        opaque, parsed_length = super(OpaqueEnumParsable, cls)._parse(parsable)
+        code = bytearray(opaque).decode(cls.get_encoding())
+
+        try:
+            parsed_object = next(iter([
+                enum_item
+                for enum_item in cls.get_enum_class()
+                if enum_item.value.code == code
+            ]))
+        except StopIteration as e:
+            six.raise_from(InvalidValue(code.encode(cls.get_encoding()), cls), e)
+
+        return parsed_object, parsed_length
+
+    @classmethod
+    @abc.abstractmethod
+    def get_enum_class(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def get_encoding(cls):
+        return 'utf-8'
+
+
+class OpaqueEnumComposer(enum.Enum):
+    def __repr__(self):
+        return self.__class__.__name__ + '.' + self.name
+
+    def compose(self):
+        composer = ComposerBinary()
+        value = self.value.code.encode(self.get_encoding())  # pylint: disable=no-member
+
+        composer.compose_bytes(value, 1)
+
+        return composer.composed_bytes
+
+    @classmethod
+    def get_encoding(cls):
+        return 'utf-8'
