@@ -4,6 +4,7 @@ import abc
 import enum
 import json
 import math
+import types
 
 try:
     from collections.abc import MutableSequence  # only works on python 3.3+
@@ -184,7 +185,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             return False, obj.name
         elif hasattr(obj, '__dict__') or isinstance(obj, dict):
             result = cls._markdown_result_complex(obj, level)
-        elif isinstance(obj, (list, tuple, set)):
+        elif isinstance(obj, (list, tuple, set, ArrayBase)):
             result = cls._markdown_result_list(obj, level)
         else:
             result = False, str(obj)
@@ -304,8 +305,11 @@ class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
 class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-methods
     separator = attr.ib(validator=attr.validators.instance_of(six.string_types), default=',')
     encoding = attr.ib(validator=attr.validators.instance_of(six.string_types), default='ascii')
-    item_class = attr.ib(validator=attr.validators.instance_of(type), default=str)
-    fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)), default=None)
+    item_class = attr.ib(validator=attr.validators.instance_of((type, types.FunctionType)), default=str)
+    fallback_class = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of((type, types.FunctionType)))
+    )
 
     def get_item_size(self, item):
         if isinstance(item, (ParsableBase, StringEnumParsable)):
@@ -318,8 +322,10 @@ class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-meth
 
 @attr.s
 class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-methods
-    item_class = attr.ib(validator=attr.validators.instance_of(type))
-    fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)))
+    item_class = attr.ib(validator=attr.validators.instance_of((type, types.FunctionType)))
+    fallback_class = attr.ib(
+        validator=attr.validators.optional(attr.validators.instance_of((type, types.FunctionType)))
+    )
 
     def get_item_size(self, item):
         return len(item.compose())

@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import copy
 import datetime
 import enum
 import struct
+import time
 
 import attr
 import six
@@ -11,6 +13,7 @@ from six.moves import collections_abc
 
 import dateutil
 import dateutil.parser
+import dateutil.tz
 
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
 import cryptoparser.common.utils
@@ -76,6 +79,7 @@ _SIZE_TO_FORMAT = {
     2: 'H',
     3: 'I',
     4: 'I',
+    8: 'Q',
 }
 
 
@@ -117,10 +121,19 @@ class ParserBase(collections_abc.Mapping):
     def unparsed_length(self):
         return len(self._parsable) - self._parsed_length
 
-    def parse_parsable(self, name, parsable_class):
-        parsed_object, parsed_length = parsable_class.parse_immutable(
-            self._parsable[self._parsed_length:]
-        )
+    def parse_parsable(self, name, parsable_class, item_size=None):
+        if item_size is None:
+            parsed_object, parsed_length = parsable_class.parse_immutable(
+                self._parsable[self._parsed_length:]
+            )
+        else:
+            parsable_length, _ = self._parse_numeric_array(name, 1, item_size, int)
+            parsable_length = parsable_length[0]
+            parsed_object = parsable_class.parse_exact_size(
+                self._parsable[self._parsed_length + item_size:self._parsed_length + parsable_length + item_size]
+            )
+            parsed_length = item_size + parsable_length
+
         self._parsed_length += parsed_length
         self._parsed_values[name] = parsed_object
 
@@ -259,8 +272,11 @@ class ParserText(ParserBase):
             fallback_class,
             may_end):
         try:
-            if issubclass(item_class, ParsableBaseNoABC):
-                item = item_class.parse_exact_size(self._parsable[item_offset:item_end])
+            if not isinstance(item_class, type):
+                item = item_class(self._parsable[item_offset:item_end].decode(self._encoding))
+            elif issubclass(item_class, ParsableBaseNoABC):
+                item, parsed_length = item_class.parse_immutable(self._parsable[item_offset:item_end])
+                item_end = item_offset + parsed_length
             elif issubclass(item_class, str):
                 item = self._parsable[item_offset:item_end].decode(self._encoding)
             else:
@@ -434,13 +450,14 @@ class ParserText(ParserBase):
 class ParserBinary(ParserBase):
     byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
-    _INT_FORMATER_BY_SIZE = {
-        1: '!B',
-        2: '!H',
-        3: '!I',
-        4: '!I',
-        8: '!Q',
-    }
+    def parse_timestamp(self, name):
+        value, parsed_length = self._parse_numeric_array(name, 1, 8, int)
+
+        self._parsed_length += parsed_length
+        if value[0] == 0xffffffffffffffff:
+            self._parsed_values[name] = None
+        else:
+            self._parsed_values[name] = datetime.datetime.utcfromtimestamp(0x00000000ffffffff & value[0])
 
     def _parse_numeric_array(self, name, item_num, item_size, item_numeric_class):
         if self._parsed_length + (item_num * item_size) > len(self._parsable):
@@ -466,14 +483,14 @@ class ParserBinary(ParserBase):
 
         return value, item_num * item_size
 
-    def parse_numeric(self, name, size, numeric_class=int):
-        value, parsed_length = self._parse_numeric_array(name, 1, size, numeric_class)
+    def parse_numeric(self, name, size, converter=int):
+        value, parsed_length = self._parse_numeric_array(name, 1, size, converter)
 
         self._parsed_length += parsed_length
         self._parsed_values[name] = value[0]
 
-    def parse_numeric_array(self, name, item_num, item_size, numeric_class=int):
-        value, parsed_length = self._parse_numeric_array(name, item_num, item_size, numeric_class)
+    def parse_numeric_array(self, name, item_num, item_size, converter=int):
+        value, parsed_length = self._parse_numeric_array(name, item_num, item_size, converter)
 
         self._parsed_length += parsed_length
         self._parsed_values[name] = value
@@ -518,13 +535,13 @@ class ParserBinary(ParserBase):
         self._parsed_values[name] = parsed_bytes
         self._parsed_length += size
 
-    def parse_string(self, name, item_size, encoding):
+    def parse_string(self, name, item_size, encoding, converter=str):
         value, parsed_length = self._parse_numeric_array(name, 1, item_size, int)
         value = value[0]
         self._parsed_length += parsed_length
 
         try:
-            value, parsed_length = self._parse_string_by_length(name, value, value, encoding, str)
+            value, parsed_length = self._parse_string_by_length(name, value, value, encoding, converter)
             self._parsed_length += parsed_length
             self._parsed_values[name] = value
         except InvalidValue as e:
@@ -693,12 +710,14 @@ class ComposerText(ComposerBase):
 class ComposerBinary(ComposerBase):
     byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
-    _INT_FORMATER_BY_SIZE = {
-        1: '!B',
-        2: '!H',
-        3: '!I',
-        4: '!I',
-    }
+    def compose_timestamp(self, value):
+        if value is None:
+            value = 0xffffffffffffffff
+        else:
+            date_time = copy.copy(value)
+            value = int(time.mktime(date_time.replace(tzinfo=dateutil.tz.UTC).timetuple()))
+
+        return self._compose_numeric_array([value, ], 8)
 
     def _compose_numeric_array(self, values, item_size):
         composed_bytes = bytearray()
