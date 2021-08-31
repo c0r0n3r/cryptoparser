@@ -3,6 +3,8 @@
 import datetime
 import unittest
 
+import six
+
 try:
     from unittest import mock
 except ImportError:
@@ -30,11 +32,11 @@ from .classes import (
 
 
 class TestParsableBase(unittest.TestCase):
-    _ALPHA_BETA_GAMMA = u'αβγ'
-    _ALPHA_BETA_GAMMA_BYTES = u'αβγ'.encode('utf-8')
+    _ALPHA_BETA_GAMMA = six.ensure_text('αβγ')
+    _ALPHA_BETA_GAMMA_BYTES = six.ensure_text('αβγ').encode('utf-8')
     _ALPHA_BETA_GAMMA_LEN_BYTES = chr(len(_ALPHA_BETA_GAMMA_BYTES)).encode('ascii')
 
-    _ALPHA_BETA_GAMMA_HASHMARK_BYTES = bytes(u'αβγ#'.encode('utf-8'))
+    _ALPHA_BETA_GAMMA_HASHMARK_BYTES = bytes(six.ensure_text('αβγ#').encode('utf-8'))
 
 
 class TestParsable(TestParsableBase):
@@ -381,7 +383,7 @@ class TestParserText(TestParsableBase):
 
         parser = ParserText(self._ALPHA_BETA_GAMMA_HASHMARK_BYTES, 'utf-8')
         parser.parse_string_until_separator('alphabet', '#')
-        self.assertEqual(parser['alphabet'], u'αβγ')
+        self.assertEqual(parser['alphabet'], six.ensure_text('αβγ'))
         self.assertEqual(parser.unparsed_length, 1)
 
         parser = ParserText(b'ab')

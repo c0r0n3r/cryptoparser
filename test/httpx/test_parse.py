@@ -195,15 +195,15 @@ class TestHttpHeaderFieldValueMultiple(unittest.TestCase):
             HttpHeaderFieldValueMultipleTest(datetime.timedelta(seconds=1))
         )
         self.assertEqual(
-            header_field.option.value,
+            header_field.option.value,  # pylint: disable=no-member
             attr.fields_dict(HttpHeaderFieldValueMultipleTest)['option'].default
         )
         self.assertEqual(
-            header_field.string.value,
+            header_field.string.value,  # pylint: disable=no-member
             attr.fields_dict(HttpHeaderFieldValueMultipleTest)['string'].default
         )
         self.assertEqual(
-            header_field.number.value,
+            header_field.number.value,  # pylint: disable=no-member
             attr.fields_dict(HttpHeaderFieldValueMultipleTest)['number'].default
         )
 

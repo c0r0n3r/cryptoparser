@@ -3,6 +3,8 @@
 
 import unittest
 
+import six
+
 from cryptoparser.common.classes import LanguageTag
 from cryptoparser.common.exception import TooMuchData, InvalidValue
 
@@ -58,21 +60,33 @@ class TestProtocolMessage(unittest.TestCase):
 
     def test_software_version(self):
         with self.assertRaises(InvalidValue):
-            SshProtocolMessage(SshProtocolVersion(SshVersion.SSH2, 2), software_version=u'αβγ')
+            SshProtocolMessage(SshProtocolVersion(SshVersion.SSH2, 2), software_version=six.ensure_text('αβγ'))
         with self.assertRaises(InvalidValue):
-            SshProtocolMessage(SshProtocolVersion(SshVersion.SSH2, 2), software_version=u'software_version ')
+            SshProtocolMessage(
+                SshProtocolVersion(SshVersion.SSH2, 2), software_version=six.ensure_text('software_version ')
+            )
         with self.assertRaises(InvalidValue):
-            SshProtocolMessage(SshProtocolVersion(SshVersion.SSH2, 2), software_version=u'software_version\r')
+            SshProtocolMessage(
+                SshProtocolVersion(SshVersion.SSH2, 2), software_version=six.ensure_text('software_version\r')
+            )
         with self.assertRaises(InvalidValue):
-            SshProtocolMessage(SshProtocolVersion(SshVersion.SSH2, 2), software_version=u'software_version\n')
+            SshProtocolMessage(
+                SshProtocolVersion(SshVersion.SSH2, 2), software_version=six.ensure_text('software_version\n')
+            )
 
     def test_comment(self):
         with self.assertRaises(InvalidValue):
-            SshProtocolMessage(SshProtocolVersion(SshVersion.SSH2, 2), 'software_version', comment=u'αβγ')
+            SshProtocolMessage(
+                SshProtocolVersion(SshVersion.SSH2, 2), 'software_version', comment=six.ensure_text('αβγ')
+            )
         with self.assertRaises(InvalidValue):
-            SshProtocolMessage(SshProtocolVersion(SshVersion.SSH2, 2), 'software_version', comment=u'comment\r')
+            SshProtocolMessage(
+                SshProtocolVersion(SshVersion.SSH2, 2), 'software_version', comment=six.ensure_text('comment\r')
+            )
         with self.assertRaises(InvalidValue):
-            SshProtocolMessage(SshProtocolVersion(SshVersion.SSH2, 2), 'software_version', comment=u'comment\n')
+            SshProtocolMessage(
+                SshProtocolVersion(SshVersion.SSH2, 2), 'software_version', comment=six.ensure_text('comment\n')
+            )
 
     def test_compose(self):
         self.assertEqual(

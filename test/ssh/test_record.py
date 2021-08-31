@@ -15,21 +15,21 @@ class TestRecord(unittest.TestCase):
     def setUp(self):
         self.test_packet = SshDisconnectMessage(
             SshReasonCode.PROTOCOL_ERROR,
-            six.text_type(u'αβγ'),
+            six.text_type(six.ensure_text('αβγ')),
             six.text_type('en-US')
         )
         self.test_record = SshRecord(self.test_packet)
         self.test_record_bytes = bytes(
-            b'\x00\x00\x00\x24' +                  # length = 0x01020304
-            b'\x0b' +                              # padding length = 0x00
-            b'\x01' +                              # message code = DISCONNECT
-            b'\x00\x00\x00\x02' +                  # reason = PROTOCOL_ERROR
-            b'\x00\x00\x00\x06' +                  # description length = 6
-            bytearray(u'αβγ', 'utf-8') +           # description
-            b'\x00\x00\x00\x05' +                  # language length = 5
-            b'en-US' +                             # language
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +  # padding
-            b'\x00\x00\x00' +                      # padding
+            b'\x00\x00\x00\x24' +                     # length = 0x01020304
+            b'\x0b' +                                 # padding length = 0x00
+            b'\x01' +                                 # message code = DISCONNECT
+            b'\x00\x00\x00\x02' +                     # reason = PROTOCOL_ERROR
+            b'\x00\x00\x00\x06' +                     # description length = 6
+            six.ensure_text('αβγ').encode('utf-8') +  # description
+            b'\x00\x00\x00\x05' +                     # language length = 5
+            b'en-US' +                                # language
+            b'\x00\x00\x00\x00\x00\x00\x00\x00' +     # padding
+            b'\x00\x00\x00' +                         # padding
             b''
         )
 
@@ -47,7 +47,7 @@ class TestRecord(unittest.TestCase):
     def test_parse(self):
         record = SshRecord.parse_exact_size(self.test_record_bytes)
         self.assertEqual(record.packet.reason, SshReasonCode.PROTOCOL_ERROR)
-        self.assertEqual(record.packet.description, six.text_type(u'αβγ'))
+        self.assertEqual(record.packet.description, six.ensure_text('αβγ'))
         self.assertEqual(record.packet.language, 'en-US')
 
     def test_compose(self):

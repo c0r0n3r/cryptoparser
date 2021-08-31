@@ -94,7 +94,7 @@ class ParserBase(collections_abc.Mapping):
 
     def __attrs_post_init__(self):
         if self._parsed_values is None:
-            self._parsed_values = dict()
+            self._parsed_values = {}
 
     def __len__(self):
         return len(self._parsed_values)
@@ -189,7 +189,7 @@ class ParserText(ParserBase):
         )
 
     def _parse_numeric_array(self, name, item_num, separator, converter):
-        value = list()
+        value = []
         last_item_offset = self._parsed_length
         item_offset = self._parsed_length
         while True:
@@ -447,7 +447,7 @@ class ParserBinary(ParserBase):
             raise NotEnoughData(bytes_needed=(item_num * item_size) - self.unparsed_length)
 
         if item_size in _SIZE_TO_FORMAT:
-            value = list()
+            value = []
             for item_offset in range(self._parsed_length, self._parsed_length + (item_num * item_size), item_size):
                 item_bytes = self._parsable[item_offset:item_offset + item_size]
                 if item_size == 3:

@@ -200,13 +200,13 @@ OpaqueEnumParams = collections.namedtuple('OpaqueEnumParams', ['code', ])
 
 class OpaqueEnum(OpaqueEnumComposer):
     ALPHA = OpaqueEnumParams(
-        code=u'άλφα'
+        code=six.ensure_text('άλφα')
     )
     BETA = OpaqueEnumParams(
-        code=u'βήτα'
+        code=six.ensure_text('βήτα')
     )
     GAMMA = OpaqueEnumParams(
-        code=u'γάμμα'
+        code=six.ensure_text('γάμμα')
     )
 
 
@@ -341,9 +341,9 @@ class SerializableRecursive(Serializable):  # pylint: disable=too-many-instance-
 class SerializableEmptyValues(Serializable):
     def __init__(self):
         self.value = None
-        self.list = list()
+        self.list = []
         self.tuple = tuple()
-        self.dict = dict()
+        self.dict = {}
 
 
 class FlagEnum(enum.IntEnum):
