@@ -37,6 +37,7 @@ setup(
     author='Szilárd Pfeiffer',
     author_email='coroner@pfeifferszilard.hu',
     license='MPL-2.0',
+    license_files=['LICENSE.txt', ],
     url='https://gitlab.com/coroner/cryptoparser',
 
     install_requires=install_requirements,
