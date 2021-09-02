@@ -39,6 +39,7 @@ setup(
     license='MPL-2.0',
     license_files=['LICENSE.txt', ],
     url='https://gitlab.com/coroner/cryptoparser',
+    keywords='ssl tls gost ja3 ldap rdp ssh hsts',
 
     install_requires=install_requirements,
     extras_require={
