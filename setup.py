@@ -33,6 +33,7 @@ setup(
     version='0.6.0',
     description='Fast and flexible security protocol parser and generator',
     long_description=long_description,
+    long_description_content_type='text/x-rst',
     author='Szilárd Pfeiffer',
     author_email='coroner@pfeifferszilard.hu',
     license='MPL-2.0',
