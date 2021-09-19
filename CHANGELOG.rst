@@ -2,6 +2,12 @@
 Changelog
 =========
 
+.. _v0-7-1:
+
+* TLS (``tls``)
+
+  * protocol item classes for RDP support (#44)
+
 .. _v0-7-0:
 
 * TLS (``tls``)
