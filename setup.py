@@ -11,7 +11,7 @@ this_directory = os.getenv('REQUIREMENTS_DIR', '')
 with open(os.path.join(this_directory, 'requirements.txt')) as f:
     install_requirements = f.read().splitlines()
 this_directory = os.path.abspath(os.path.dirname(__file__))
-with codecs.open(os.path.join(this_directory, 'README.rst'), encoding='utf-8') as f:
+with codecs.open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 
@@ -33,7 +33,7 @@ setup(
     version='0.7.1',
     description='Fast and flexible security protocol parser and generator',
     long_description=long_description,
-    long_description_content_type='text/x-rst',
+    long_description_content_type='text/markdown',
     author='Szilárd Pfeiffer',
     author_email='coroner@pfeifferszilard.hu',
     license='MPL-2.0',
