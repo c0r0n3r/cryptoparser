@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.2 - 2021-10-07
+
+### Other
+
+- switch to Markdown format in changelog, readme and contributing
+- update contributing to the latest version from contribution-guide.org
+
 ## 0.7.1 - 2021-09-20
 
 - TLS (`tls`)
