@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.3 - 2021-12-26
+
+- Generic
+  - Fix time zone handlind in datetime parser
+
 ## 0.7.2 - 2021-10-07
 
 ### Other

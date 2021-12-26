@@ -30,7 +30,7 @@ def test_discover():
 
 setup(
     name='cryptoparser',
-    version='0.7.2',
+    version='0.7.3',
     description='Fast and flexible security protocol parser and generator',
     long_description=long_description,
     long_description_content_type='text/markdown',
