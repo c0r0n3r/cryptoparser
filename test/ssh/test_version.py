@@ -1,12 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import collections
 import unittest
 
 import six
 
 from cryptoparser.common.exception import InvalidValue
-from cryptoparser.ssh.version import SshVersion, SshProtocolVersion
+from cryptoparser.common.parse import ParserText
+
+from cryptoparser.ssh.version import (
+    SshVersion,
+    SshProtocolVersion,
+    SshSoftwareVersionCryptlib,
+    SshSoftwareVersionDropbear,
+    SshSoftwareVersionIPSSH,
+    SshSoftwareVersionMonacaSSH,
+    SshSoftwareVersionOpenSSH,
+    SshSoftwareVersionUnparsed,
+    SshSoftwareVersionParsedVariant
+)
 
 
 class TestSshVersion(unittest.TestCase):
@@ -87,3 +100,88 @@ class TestSshVersion(unittest.TestCase):
         self.assertEqual(str(SshProtocolVersion(SshVersion.SSH1, 1)), 'SSH 1.1')
         self.assertEqual(str(SshProtocolVersion(SshVersion.SSH2, 0)), 'SSH 2.0')
         self.assertEqual(str(SshProtocolVersion(SshVersion.SSH2, 1)), 'SSH 2.1')
+
+
+class TestSshSoftwareVersion(unittest.TestCase):
+    @staticmethod
+    def _get_software_version(raw):
+        parser = ParserText(raw)
+        parser.parse_parsable('software_version', SshSoftwareVersionParsedVariant)
+
+        return parser['software_version']
+
+    def test_parse(self):
+        software_version = self._get_software_version(b'cryptlib')
+        self.assertEqual(software_version.vendor, 'cryptlib')
+        self.assertEqual(software_version, SshSoftwareVersionCryptlib())
+
+        software_version = self._get_software_version(b'dropbear_2020.81')
+        self.assertEqual(software_version.vendor, 'dropbear')
+        self.assertEqual(software_version, SshSoftwareVersionDropbear('2020.81'))
+
+        software_version = self._get_software_version(b'IPSSH-6.9.0')
+        self.assertEqual(software_version.vendor, 'IPSSH')
+        self.assertEqual(software_version, SshSoftwareVersionIPSSH('6.9.0'))
+
+        software_version = self._get_software_version(b'Monaca')
+        self.assertEqual(software_version.vendor, 'Monaca')
+        self.assertEqual(software_version, SshSoftwareVersionMonacaSSH())
+
+        software_version = self._get_software_version(b'OpenSSH_8.6')
+        self.assertEqual(software_version.vendor, 'OpenSSH')
+        self.assertEqual(software_version, SshSoftwareVersionOpenSSH('8.6'))
+
+        parser = ParserText(b'unknown.ssh.server-1.2.3')
+        parser.parse_parsable('software_version', SshSoftwareVersionUnparsed)
+        software_version = parser['software_version']
+        self.assertEqual(software_version.raw, 'unknown.ssh.server-1.2.3')
+
+    def test_compose(self):
+        software_version = SshSoftwareVersionCryptlib()
+        self.assertEqual(software_version.compose(), b'cryptlib')
+        self.assertEqual(
+            software_version._asdict(),
+            collections.OrderedDict([('vendor', 'cryptlib'), ('version', None)])
+        )
+
+        software_version = SshSoftwareVersionDropbear('2020.81')
+        self.assertEqual(software_version.compose(), b'dropbear_2020.81')
+        self.assertEqual(
+            software_version._asdict(),
+            collections.OrderedDict([('vendor', 'dropbear'), ('version', '2020.81')])
+        )
+
+        software_version = SshSoftwareVersionIPSSH('6.9.0')
+        self.assertEqual(software_version.compose(), b'IPSSH-6.9.0')
+        self.assertEqual(
+            software_version._asdict(),
+            collections.OrderedDict([('vendor', 'IPSSH'), ('version', '6.9.0')])
+        )
+
+        software_version = SshSoftwareVersionMonacaSSH()
+        self.assertEqual(software_version.compose(), b'Monaca')
+        self.assertEqual(
+            software_version._asdict(),
+            collections.OrderedDict([('vendor', 'Monaca'), ('version', None)])
+        )
+
+        software_version = SshSoftwareVersionOpenSSH('8.6')
+        self.assertEqual(software_version.compose(), b'OpenSSH_8.6')
+        self.assertEqual(
+            software_version._asdict(),
+            collections.OrderedDict([('vendor', 'OpenSSH'), ('version', '8.6')])
+        )
+
+        software_version = SshSoftwareVersionUnparsed('unknown.ssh.server-1.2.3')
+        self.assertEqual(software_version.compose(), b'unknown.ssh.server-1.2.3')
+        self.assertEqual(software_version.as_markdown(), 'unknown.ssh.server-1.2.3')
+
+    def test_error_raw(self):
+        with self.assertRaises(InvalidValue):
+            SshSoftwareVersionUnparsed(six.ensure_text('αβγ'))
+        with self.assertRaises(InvalidValue):
+            SshSoftwareVersionUnparsed(six.ensure_text('software_version '))
+        with self.assertRaises(InvalidValue):
+            SshSoftwareVersionUnparsed(six.ensure_text('software_version\r'))
+        with self.assertRaises(InvalidValue):
+            SshSoftwareVersionUnparsed(six.ensure_text('software_version\n'))

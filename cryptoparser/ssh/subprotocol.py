@@ -25,7 +25,12 @@ from cryptoparser.ssh.ciphersuite import (
     SshMacAlgorithm,
     SshCompressionAlgorithm,
 )
-from cryptoparser.ssh.version import SshProtocolVersion
+from cryptoparser.ssh.version import (
+    SshProtocolVersion,
+    SshSoftwareVersionBase,
+    SshSoftwareVersionParsedVariant,
+    SshSoftwareVersionUnparsed,
+)
 
 
 class SshMessageCode(enum.IntEnum):
@@ -74,17 +79,8 @@ class SshMessageBase(ParsableBase):
 @attr.s
 class SshProtocolMessage(ParsableBase):
     protocol_version = attr.ib(validator=attr.validators.instance_of(SshProtocolVersion))
-    software_version = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    software_version = attr.ib(validator=attr.validators.instance_of(SshSoftwareVersionBase))
     comment = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)), default=None)
-
-    @software_version.validator
-    def software_version_validator(self, _, value):  # pylint: disable=no-self-use
-        if '\r' in value or '\n' in value or ' ' in value:
-            raise InvalidValue(value, SshProtocolMessage, 'software_version')
-        try:
-            value.encode('ascii')
-        except UnicodeEncodeError as e:
-            six.raise_from(InvalidValue(value, SshProtocolMessage, 'software_version'), e)
 
     @comment.validator
     def comment_validator(self, _, value):  # pylint: disable=no-self-use
@@ -114,7 +110,12 @@ class SshProtocolMessage(ParsableBase):
         if software_version_and_comment[-1][-1] == '\r':
             software_version_and_comment[-1] = software_version_and_comment[-1][:-1]
 
-        software_version = software_version_and_comment[0]
+        software_version_parser = ParserText(software_version_and_comment[0].encode('ascii'))
+        try:
+            software_version_parser.parse_parsable('value', SshSoftwareVersionParsedVariant)
+        except InvalidValue:
+            software_version_parser.parse_parsable('value', SshSoftwareVersionUnparsed)
+
         if len(software_version_and_comment) > 1:
             comment = ' '.join(software_version_and_comment[1:])
         else:
@@ -124,7 +125,11 @@ class SshProtocolMessage(ParsableBase):
         if parser.parsed_length > 255:
             raise TooMuchData(parser.parsed_length - 255)
 
-        return SshProtocolMessage(parser['protocol_version'], software_version, comment), parser.parsed_length
+        return SshProtocolMessage(
+            parser['protocol_version'],
+            software_version_parser['value'],
+            comment
+        ), parser.parsed_length
 
     def compose(self):
         composer = ComposerText()

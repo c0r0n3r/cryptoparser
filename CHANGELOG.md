@@ -1,5 +1,9 @@
 # Changelog
 
+- SSH (`ssh`)
+  - Versions (`versions`)
+    - add [software version](https://tools.ietf.org/html/rfc4253#section-4.2) related classes (\#46)
+
 ## 0.7.3 - 2021-12-26
 
 - Generic

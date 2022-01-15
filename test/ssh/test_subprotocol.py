@@ -31,7 +31,7 @@ from cryptoparser.ssh.subprotocol import (
     SshProtocolMessage,
     SshUnimplementedMessage,
 )
-from cryptoparser.ssh.version import SshProtocolVersion, SshVersion
+from cryptoparser.ssh.version import SshProtocolVersion, SshSoftwareVersionUnparsed, SshVersion
 
 
 class TestProtocolMessage(unittest.TestCase):
@@ -55,59 +55,49 @@ class TestProtocolMessage(unittest.TestCase):
     def test_parse(self):
         message = SshProtocolMessage.parse_exact_size(b'SSH-1.1-software_version\r\n')
         self.assertEqual(message.protocol_version, SshProtocolVersion(SshVersion.SSH1, 1))
-        self.assertEqual(message.software_version, 'software_version')
+        self.assertEqual(message.software_version, SshSoftwareVersionUnparsed('software_version'))
         self.assertEqual(message.comment, None)
 
         message = SshProtocolMessage.parse_exact_size(b'SSH-2.2-software_version\r\n')
         self.assertEqual(message.protocol_version, SshProtocolVersion(SshVersion.SSH2, 2))
-        self.assertEqual(message.software_version, 'software_version')
+        self.assertEqual(message.software_version, SshSoftwareVersionUnparsed('software_version'))
         self.assertEqual(message.comment, None)
 
         message = SshProtocolMessage.parse_exact_size(b'SSH-2.0-software_version comment\r\n')
         self.assertEqual(message.protocol_version, SshProtocolVersion(SshVersion.SSH2, 0))
-        self.assertEqual(message.software_version, 'software_version')
+        self.assertEqual(message.software_version, SshSoftwareVersionUnparsed('software_version'))
         self.assertEqual(message.comment, 'comment')
 
         message = SshProtocolMessage.parse_exact_size(b'SSH-2.0-software_version comment with spaces\r\n')
         self.assertEqual(message.protocol_version, SshProtocolVersion(SshVersion.SSH2, 0))
-        self.assertEqual(message.software_version, 'software_version')
+        self.assertEqual(message.software_version, SshSoftwareVersionUnparsed('software_version'))
         self.assertEqual(message.comment, 'comment with spaces')
-
-    def test_software_version(self):
-        with self.assertRaises(InvalidValue):
-            SshProtocolMessage(SshProtocolVersion(SshVersion.SSH2, 2), software_version=six.ensure_text('αβγ'))
-        with self.assertRaises(InvalidValue):
-            SshProtocolMessage(
-                SshProtocolVersion(SshVersion.SSH2, 2), software_version=six.ensure_text('software_version ')
-            )
-        with self.assertRaises(InvalidValue):
-            SshProtocolMessage(
-                SshProtocolVersion(SshVersion.SSH2, 2), software_version=six.ensure_text('software_version\r')
-            )
-        with self.assertRaises(InvalidValue):
-            SshProtocolMessage(
-                SshProtocolVersion(SshVersion.SSH2, 2), software_version=six.ensure_text('software_version\n')
-            )
 
     def test_comment(self):
         with self.assertRaises(InvalidValue):
             SshProtocolMessage(
-                SshProtocolVersion(SshVersion.SSH2, 2), 'software_version', comment=six.ensure_text('αβγ')
+                SshProtocolVersion(SshVersion.SSH2, 2),
+                SshSoftwareVersionUnparsed('software_version'),
+                comment=six.ensure_text('αβγ'),
             )
         with self.assertRaises(InvalidValue):
             SshProtocolMessage(
-                SshProtocolVersion(SshVersion.SSH2, 2), 'software_version', comment=six.ensure_text('comment\r')
+                SshProtocolVersion(SshVersion.SSH2, 2),
+                SshSoftwareVersionUnparsed('software_version'),
+                comment=six.ensure_text('comment\r'),
             )
         with self.assertRaises(InvalidValue):
             SshProtocolMessage(
-                SshProtocolVersion(SshVersion.SSH2, 2), 'software_version', comment=six.ensure_text('comment\n')
+                SshProtocolVersion(SshVersion.SSH2, 2),
+                SshSoftwareVersionUnparsed('software_version'),
+                comment=six.ensure_text('comment\n'),
             )
 
     def test_compose(self):
         self.assertEqual(
             SshProtocolMessage(
                 SshProtocolVersion(SshVersion.SSH2, 2),
-                'software_version'
+                SshSoftwareVersionUnparsed('software_version'),
             ).compose(),
             b'SSH-2.2-software_version\r\n'
         )
@@ -115,7 +105,7 @@ class TestProtocolMessage(unittest.TestCase):
         self.assertEqual(
             SshProtocolMessage(
                 SshProtocolVersion(SshVersion.SSH2, 2),
-                'software_version',
+                SshSoftwareVersionUnparsed('software_version'),
                 'comment'
             ).compose(),
             b'SSH-2.2-software_version comment\r\n'
@@ -124,7 +114,7 @@ class TestProtocolMessage(unittest.TestCase):
         self.assertEqual(
             SshProtocolMessage(
                 SshProtocolVersion(SshVersion.SSH2, 2),
-                'software_version',
+                SshSoftwareVersionUnparsed('software_version'),
                 'comment with spaces'
             ).compose(),
             b'SSH-2.2-software_version comment with spaces\r\n'
