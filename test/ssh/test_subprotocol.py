@@ -16,6 +16,7 @@ from cryptoparser.ssh.ciphersuite import (
     SshKexAlgorithm,
     SshMacAlgorithm,
 )
+from cryptoparser.ssh.key import SshHostKeyRSA
 from cryptoparser.ssh.subprotocol import (
     SshDHGroupExchangeInit,
     SshDHGroupExchangeGroup,
@@ -268,9 +269,13 @@ class TestDHKeyExchangeReply(unittest.TestCase):
     def setUp(self):
         self.dh_key_exchange_reply_dict = collections.OrderedDict([
             ('message_code', b'\x1f'),  # DH_KEX_REPLY
-            ('host_key_length', b'\x00\x00\x00\x10'),
+            ('host_key_length', b'\x00\x00\x00\x23'),
             ('host_public_key', (
+                b'\x00\x00\x00\x07' +
+                b'ssh-rsa' +
+                b'\x00\x00\x00\x08' +
                 b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x00\x00\x00\x08' +
                 b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
                 b''
             )),
@@ -289,7 +294,11 @@ class TestDHKeyExchangeReply(unittest.TestCase):
         ])
         self.dh_key_exchange_reply_bytes = b''.join(self.dh_key_exchange_reply_dict.values())
         self.dh_key_exchange_reply = SshDHKeyExchangeReply(
-            host_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+            host_public_key=SshHostKeyRSA(
+                host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA,
+                exponent=b'\x00\x01\x02\x03\x04\x05\x06\x07',
+                modulus=b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+            ),
             ephemeral_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
             signature=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
         )
@@ -306,9 +315,13 @@ class TestDHGroupExchangeReply(unittest.TestCase):
     def setUp(self):
         self.dh_group_exchange_reply_dict = collections.OrderedDict([
             ('message_code', b'\x21'),  # DH_GEX_REPLY
-            ('host_key_length', b'\x00\x00\x00\x10'),
+            ('host_key_length', b'\x00\x00\x00\x23'),
             ('host_public_key', (
+                b'\x00\x00\x00\x07' +
+                b'ssh-rsa' +
+                b'\x00\x00\x00\x08' +
                 b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x00\x00\x00\x08' +
                 b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
                 b''
             )),
@@ -327,7 +340,11 @@ class TestDHGroupExchangeReply(unittest.TestCase):
         ])
         self.dh_group_exchange_reply_bytes = b''.join(self.dh_group_exchange_reply_dict.values())
         self.dh_group_exchange_reply = SshDHGroupExchangeReply(
-            host_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+            host_public_key=SshHostKeyRSA(
+                host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA,
+                exponent=b'\x00\x01\x02\x03\x04\x05\x06\x07',
+                modulus=b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+            ),
             ephemeral_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
             signature=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
         )
