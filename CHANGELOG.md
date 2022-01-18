@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.8.0 - 2022-01-18
+
 - SSH (`ssh`)
   - Public Keys (`pubkeys`)
     - add [public key](https://datatracker.ietf.org/doc/html/rfc4253#section-6.6) related classes (\#43)
