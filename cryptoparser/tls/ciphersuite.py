@@ -32,8 +32,8 @@ class TlsCipherSuiteFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
-@attr.s  # pylint: disable=too-many-instance-attributes
-class CipherSuiteParams(object):
+@attr.s
+class CipherSuiteParams(object):  # pylint: disable=too-many-instance-attributes
     code = attr.ib(validator=attr.validators.instance_of(int))
     key_exchange = attr.ib(validator=attr.validators.optional(attr.validators.in_(KeyExchange)))
     authentication = attr.ib(validator=attr.validators.optional(attr.validators.in_(Authentication)))

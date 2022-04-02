@@ -214,8 +214,8 @@ class SshLanguageVector(VectorString):
         return VectorParamSshLanguage()
 
 
-@attr.s  # pylint: disable=too-many-instance-attributes
-class SshKeyExchangeInit(SshMessageBase):
+@attr.s
+class SshKeyExchangeInit(SshMessageBase):  # pylint: disable=too-many-instance-attributes
     kex_algorithms = attr.ib(
         converter=SshKexAlgorithmVector,
         validator=attr.validators.instance_of(SshKexAlgorithmVector)

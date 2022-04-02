@@ -424,8 +424,8 @@ class TlsSessionIdVector(Vector):
         return VectorParamNumeric(item_size=1, min_byte_num=0, max_byte_num=32)
 
 
-@attr.s  # pylint: disable=too-many-instance-attributes
-class TlsHandshakeClientHello(TlsHandshakeHello):
+@attr.s
+class TlsHandshakeClientHello(TlsHandshakeHello):  # pylint: disable=too-many-instance-attributes
     cipher_suites = attr.ib(
         converter=TlsCipherSuiteVector,
         validator=attr.validators.instance_of(TlsCipherSuiteVector)
