@@ -74,7 +74,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         elif isinstance(obj, six.string_types + six.integer_types + (float, bool, )) or obj is None:
             result = obj
         else:
-            result = repr(obj)
+            result = str(obj)
 
         return result
 
