@@ -117,6 +117,8 @@ Only features that cannot be or difficultly implemented by some of the most popu
 #### Cipher Suites
 
 1.  identifies as much encryption algorithms as possible (more than 200, compared to 70+ currently supported by OpenSSH)
+2.  supports [HASSH fingerprint](https://engineering.salesforce.com/open-sourcing-hassh-abed3ae5044c/) calculation
+    (\#96)
 
 ## License
 

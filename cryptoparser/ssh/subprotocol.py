@@ -3,6 +3,7 @@
 import abc
 import collections
 import enum
+import hashlib
 import random
 
 import attr
@@ -16,6 +17,7 @@ from cryptoparser.common.base import (
 from cryptoparser.common.classes import LanguageTag
 from cryptoparser.common.exception import InvalidValue, InvalidType, TooMuchData
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ParserText, ComposerText
+from cryptoparser.common.utils import bytes_to_hex_string
 
 from cryptoparser.ssh.ciphersuite import (
     SshKexAlgorithm,
@@ -302,6 +304,39 @@ class SshKeyExchangeInit(SshMessageBase):  # pylint: disable=too-many-instance-a
     @classmethod
     def get_message_code(cls):
         return SshMessageCode.KEXINIT
+
+    @staticmethod
+    def _hassh(algorithm_vectors):
+        hassh_text = ';'.join([
+            ','.join([
+                algorithm if isinstance(algorithm, six.string_types) else algorithm.value.code
+                for algorithm in algorithms
+            ])
+            for algorithms in algorithm_vectors
+        ])
+
+        message = hashlib.md5()
+        message.update(six.ensure_binary(hassh_text, 'ascii'))
+
+        return bytes_to_hex_string(message.digest(), lowercase=True)
+
+    @property
+    def hassh(self):
+        return self._hassh([
+            self.kex_algorithms,
+            self.encryption_algorithms_client_to_server,
+            self.mac_algorithms_client_to_server,
+            self.compression_algorithms_client_to_server,
+        ])
+
+    @property
+    def hassh_server(self):
+        return self._hassh([
+            self.kex_algorithms,
+            self.encryption_algorithms_server_to_client,
+            self.mac_algorithms_server_to_client,
+            self.compression_algorithms_server_to_client,
+        ])
 
 
 class SshReasonCode(enum.IntEnum):
