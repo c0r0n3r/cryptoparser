@@ -9,7 +9,7 @@ import six
 import urllib3
 
 from cryptodatahub.common.exception import InvalidValue
-from cryptodatahub.common.types import convert_url
+from cryptodatahub.common.types import Base64Data, convert_base64_data, convert_url
 
 from cryptoparser.common.base import Serializable
 from cryptoparser.common.exception import InvalidType, NotEnoughData
@@ -427,6 +427,27 @@ class FieldValueComponentTimeDelta(FieldValueComponentKeyValueBase):
 
     def _as_markdown(self, level):
         return self._markdown_result(str(self.value), level)
+
+
+@attr.s
+class FieldValueComponentStringBase64(FieldValueComponentQuotedString):
+    value = attr.ib(
+        converter=convert_base64_data(),
+        validator=attr.validators.instance_of(Base64Data)
+    )
+
+    @classmethod
+    @abc.abstractmethod
+    def get_canonical_name(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _check_name(cls, name):
+        cls._check_name_insensitive(name)
+
+    @classmethod
+    def _parse_value(cls, parser):
+        parser.parse_string_by_length('value')
 
 
 @attr.s

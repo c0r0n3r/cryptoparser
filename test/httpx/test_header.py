@@ -23,6 +23,7 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldLastModified,
     HttpHeaderFieldName,
     HttpHeaderFieldPragma,
+    HttpHeaderFieldPublicKeyPinning,
     HttpHeaderFieldReferrerPolicy,
     HttpHeaderFieldServer,
     HttpHeaderFieldSetCookie,
@@ -32,6 +33,7 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldValueExpectCT,
     HttpHeaderFieldValueExpectStaple,
     HttpHeaderFieldValuePragma,
+    HttpHeaderFieldValuePublicKeyPinning,
     HttpHeaderFieldValueReferrerPolicy,
     HttpHeaderFieldValueSetCookie,
     HttpHeaderFieldValueSTS,
@@ -183,6 +185,49 @@ class TestHttpHeaderFieldValueExpectCT(
     _header_full_lower_case_bytes = b'max-age=1, enforce, report-uri="http://example.com"'
 
 
+class TestHttpHeaderFieldValuePublicKeyPinning(
+        TestCasesBasesHttpHeader.MinimalHeader,
+        TestCasesBasesHttpHeader.FullHeader,
+        TestCasesBasesHttpHeader.CaseInsensitiveHeader):
+    _header_minimal = HttpHeaderFieldValuePublicKeyPinning(
+        pin_sha256='cGluLXNoYTI1Ng==',
+        max_age=datetime.timedelta(seconds=1),
+    )
+    _header_minimal_bytes = b'pin-sha256="cGluLXNoYTI1Ng=="; max-age=1'
+    _header_minimal_markdown = os.linesep.join([
+        '* Pin (SHA-256): cGluLXNoYTI1Ng==',
+        '* Max Age: 0:00:01',
+        '* Include Subdomains: no',
+        '* Report Uri: n/a',
+        '',
+    ])
+
+    _header_full = HttpHeaderFieldValuePublicKeyPinning(
+        pin_sha256='cGluLXNoYTI1Ng==',
+        max_age=datetime.timedelta(seconds=1),
+        include_subdomains=True,
+        report_uri='http://example.com'
+    )
+    _header_full_bytes = b'; '.join([
+        b'pin-sha256="cGluLXNoYTI1Ng=="',
+        b'max-age=1',
+        b'includeSubDomains',
+        b'report-uri="http://example.com"',
+    ])
+    _header_full_upper_case_bytes = b'; '.join([
+        b'PIN-SHA256="cGluLXNoYTI1Ng=="',
+        b'MAX-AGE=1',
+        b'INCLUDESUBDOMAINS',
+        b'REPORT-URI="http://example.com"',
+    ])
+    _header_full_lower_case_bytes = b'; '.join([
+        b'pin-sha256="cGluLXNoYTI1Ng=="',
+        b'max-age=1',
+        b'includesubdomains',
+        b'report-uri="http://example.com"',
+    ])
+
+
 class TestHttpHeaderFieldValueSetCookie(TestCasesBasesHttpHeader.MinimalHeader, TestCasesBasesHttpHeader.FullHeader):
     _header_minimal = HttpHeaderFieldValueSetCookie('name', 'value')
     _header_minimal_bytes = b'name=value'
@@ -284,6 +329,7 @@ class TestHttpHeaderFields(unittest.TestCase):
             b'Expires: Thu, 01 Jan 1970 00:00:00 GMT',
             b'Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT',
             b'Pragma: no-cache',
+            b'Public-Key-Pinning: pin-sha256="cGluLXNoYTI1Ng=="; max-age=1',
             b'Referrer-Policy: origin',
             b'Server: server',
             b'Set-Cookie: name=value',
@@ -306,6 +352,10 @@ class TestHttpHeaderFields(unittest.TestCase):
             HttpHeaderFieldExpires(datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC)),
             HttpHeaderFieldLastModified(datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC)),
             HttpHeaderFieldPragma(HttpHeaderPragma.NO_CACHE),
+            HttpHeaderFieldPublicKeyPinning(HttpHeaderFieldValuePublicKeyPinning(
+                pin_sha256='cGluLXNoYTI1Ng==',
+                max_age=datetime.timedelta(seconds=1),
+            )),
             HttpHeaderFieldReferrerPolicy(HttpHeaderReferrerPolicy.ORIGIN),
             HttpHeaderFieldServer('server'),
             HttpHeaderFieldSetCookie(HttpHeaderFieldValueSetCookie('name', 'value')),
@@ -374,12 +424,19 @@ class TestHttpHeaderFields(unittest.TestCase):
             '    * Name: Pragma',
             '    * Value: no-cache',
             '11.',
+            '    * Name: Public-Key-Pinning',
+            '    * Value:',
+            '        * Pin (SHA-256): cGluLXNoYTI1Ng==',
+            '        * Max Age: 0:00:01',
+            '        * Include Subdomains: no',
+            '        * Report Uri: n/a',
+            '12.',
             '    * Name: Referrer-Policy',
             '    * Value: origin',
-            '12.',
+            '13.',
             '    * Name: Server',
             '    * Value: server',
-            '13.',
+            '14.',
             '    * Name: Set-Cookie',
             '    * Value:',
             '        * Name: name',
@@ -391,22 +448,22 @@ class TestHttpHeaderFields(unittest.TestCase):
             '        * Secure: no',
             '        * Http Only: no',
             '        * Same Site: n/a',
-            '14.',
+            '15.',
             '    * Name: Strict-Transport-Security',
             '    * Value:',
             '        * Max Age: 0:00:01',
             '        * Include Subdomains: no',
             '        * Preload: no',
-            '15.',
+            '16.',
             '    * Name: X-Unparsed',
             '    * Value: Value',
-            '16.',
+            '17.',
             '    * Name: X-Content-Type-Options',
             '    * Value: nosniff',
-            '17.',
+            '18.',
             '    * Name: X-Frame-Options',
             '    * Value: SAMEORIGIN',
-            '18.',
+            '19.',
             '    * Name: X-XSS-Protection',
             '    * Value:',
             '        * State: enabled',
