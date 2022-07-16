@@ -17,12 +17,12 @@ class TestTlsCipherSuite(unittest.TestCase):
         for cipher_suite in filter(lambda cipher_suite: cipher_suite.value.openssl_name, TlsCipherSuite):
             self.assertIn(cipher_suite.value.openssl_name, cipher_suite.value.as_markdown())
 
-    def test_min_version(self):
+    def test_initial_version(self):
         self.assertEqual(
-            TlsCipherSuite.TLS_AES_128_GCM_SHA256.value.min_version,  # pylint: disable=no-member
-            TlsProtocolVersionDraft(1)
+            TlsCipherSuite.TLS_AES_128_GCM_SHA256.value.initial_version,
+            TlsProtocolVersionDraft(15)
         )
         self.assertEqual(
-            TlsCipherSuite.TLS_RSA_WITH_NULL_SHA256.value.min_version,  # pylint: disable=no-member
-            TlsProtocolVersionFinal(TlsVersion.TLS1_0)
+            TlsCipherSuite.TLS_RSA_WITH_NULL_SHA256.value.initial_version,
+            TlsProtocolVersionFinal(TlsVersion.TLS1_2)
         )
