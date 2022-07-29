@@ -808,7 +808,7 @@ class ComposerBinary(ComposerBase):
         composer.compose_numeric_array(reversed(value_numeric_array), 4)
         value_bytes = composer.composed_bytes.lstrip(b'\x00')
 
-        if value_bytes and bool(six.indexbytes(value_bytes, 0) & 0x80) != negative:
+        if value_bytes and bool(value_bytes[0] & 0x80) != negative:
             pad_byte = b'\xff' if negative else b'\x00'
         else:
             pad_byte = b''

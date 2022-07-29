@@ -645,6 +645,17 @@ class ThreeByteEnumParsable(NByteEnumParsable):
         raise NotImplementedError()
 
 
+class FourByteEnumParsable(NByteEnumParsable):
+    @classmethod
+    def get_byte_num(cls):
+        return 4
+
+    @classmethod
+    @abc.abstractmethod
+    def get_enum_class(cls):
+        raise NotImplementedError()
+
+
 class NByteEnumComposer(enum.Enum):
     def __repr__(self):
         return self.__class__.__name__ + '.' + self.name
@@ -681,6 +692,12 @@ class ThreeByteEnumComposer(NByteEnumComposer):
     @classmethod
     def get_byte_num(cls):
         return 3
+
+
+class FourByteEnumComposer(NByteEnumComposer):
+    @classmethod
+    def get_byte_num(cls):
+        return 4
 
 
 class StringEnumParsableBase(ParsableBaseNoABC):

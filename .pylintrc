@@ -1,6 +1,6 @@
 [BASIC]
 
-good-names = e,f,g,p,q,y,_,H2
+good-names = e,f,g,n,p,q,y,_,H2
 
 class-attribute-rgx = ([A-Za-z_][A-Za-z0-9_]{2,50}|(__.*__))$
 method-rgx = [a-z_][a-z0-9_]{2,50}$
