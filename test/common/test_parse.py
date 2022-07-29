@@ -192,6 +192,32 @@ class TestParserBinary(TestParsableBase):
         parser.parse_numeric_flags('flags', 1, FlagEnum)
         self.assertEqual(parser['flags'], [FlagEnum.ONE, FlagEnum.TWO])
 
+    def test_parse_ssh_mpint(self):
+        parser = ParserBinary(b'\x00')
+        with self.assertRaises(NotEnoughData) as context_manager:
+            parser.parse_ssh_mpint('mpint')
+        self.assertEqual(context_manager.exception.bytes_needed, 3)
+
+        parser = ParserBinary(b'\x00\x00\x00\x00')
+        parser.parse_ssh_mpint('mpint')
+        self.assertEqual(parser['mpint'], 0)
+
+        parser = ParserBinary(b'\x00\x00\x00\x08\x09\xa3\x78\xf9\xb2\xe3\x32\xa7')
+        parser.parse_ssh_mpint('mpint')
+        self.assertEqual(parser['mpint'], 0x9a378f9b2e332a7)
+
+        parser = ParserBinary(b'\x00\x00\x00\x02\x00\x80')
+        parser.parse_ssh_mpint('mpint')
+        self.assertEqual(parser['mpint'], 0x80)
+
+        parser = ParserBinary(b'\x00\x00\x00\x02\xed\xcc')
+        parser.parse_ssh_mpint('mpint')
+        self.assertEqual(parser['mpint'], -0x1234)
+
+        parser = ParserBinary(b'\x00\x00\x00\x05\xff\x21\x52\x41\x11')
+        parser.parse_ssh_mpint('mpint')
+        self.assertEqual(parser['mpint'], -0xdeadbeef)
+
     def test_parse_numeric_array(self):
         parser = ParserBinary(b'\x01\x02')
         parser.parse_numeric_array('one_byte_array', item_num=2, item_size=1)
@@ -714,6 +740,27 @@ class TestComposerBinary(TestParsableBase):
         composer = ComposerBinary()
         composer.compose_numeric_flags([FlagEnum.ONE, FlagEnum.TWO, ], 1)
         self.assertEqual(composer.composed_bytes, b'\x03')
+
+    def test_compose_ssh_mpint(self):
+        composer = ComposerBinary()
+        composer.compose_ssh_mpint(0)
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x00')
+
+        composer = ComposerBinary()
+        composer.compose_ssh_mpint(0x9a378f9b2e332a7)
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x08\x09\xa3\x78\xf9\xb2\xe3\x32\xa7')
+
+        composer = ComposerBinary()
+        composer.compose_ssh_mpint(0x80)
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x02\x00\x80')
+
+        composer = ComposerBinary()
+        composer.compose_ssh_mpint(-0x1234)
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x02\xed\xcc')
+
+        composer = ComposerBinary()
+        composer.compose_ssh_mpint(-0xdeadbeef)
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x05\xff\x21\x52\x41\x11')
 
     def test_compose_raw(self):
         composer = ComposerBinary()
