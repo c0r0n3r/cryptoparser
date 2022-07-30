@@ -12,6 +12,7 @@ from cryptoparser.common.base import Serializable
 from cryptoparser.common.base import TwoByteEnumComposer, TwoByteEnumParsable
 from cryptoparser.common.base import ThreeByteEnumParsable, ThreeByteEnumComposer
 from cryptoparser.tls.version import (
+    SslProtocolVersion,
     TlsProtocolVersionBase,
     TlsProtocolVersionDraft,
     TlsProtocolVersionFinal,
@@ -45,14 +46,17 @@ class CipherSuiteParams(Serializable):  # pylint: disable=too-many-instance-attr
     block_cipher_mode = attr.ib(validator=attr.validators.optional(attr.validators.in_(BlockCipherMode)))
     mac = attr.ib(validator=attr.validators.optional(attr.validators.in_(MAC)))
     authenticated_encryption = attr.ib(validator=attr.validators.instance_of(bool))
-    min_version = attr.ib(init=False, validator=attr.validators.instance_of(TlsProtocolVersionBase))
+    initial_version = attr.ib(validator=attr.validators.instance_of((TlsProtocolVersionBase, SslProtocolVersion)))
+    last_version = attr.ib(init=False, validator=attr.validators.instance_of(TlsProtocolVersionBase))
 
     def __attrs_post_init__(self):
-        self.min_version = (
-            TlsProtocolVersionDraft(1)
-            if (self.code & 0xff00) == 0x1300
-            else TlsProtocolVersionFinal(TlsVersion.TLS1_0)
-        )
+        if self.code > 0xffff:
+            self.last_version = SslProtocolVersion()
+        else:
+            if (self.code & 0xff00) == 0x1300:
+                self.last_version = TlsProtocolVersionFinal(TlsVersion.TLS1_3)
+            else:
+                self.last_version = TlsProtocolVersionFinal(TlsVersion.TLS1_2)
 
     def _as_markdown(self, level):
         if self.iana_name is None:
@@ -81,6 +85,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=None,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_WITH_NULL_MD5 = CipherSuiteParams(
         code=0x0001,
@@ -92,6 +97,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0x0002,
@@ -103,6 +109,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_EXPORT_WITH_RC4_40_MD5 = CipherSuiteParams(
         code=0x0003,
@@ -114,6 +121,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_WITH_RC4_128_MD5 = CipherSuiteParams(
         code=0x0004,
@@ -125,6 +133,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x0005,
@@ -136,6 +145,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5 = CipherSuiteParams(
         code=0x0006,
@@ -147,6 +157,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_WITH_IDEA_CBC_SHA = CipherSuiteParams(
         code=0x0007,
@@ -158,6 +169,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x0008,
@@ -169,6 +181,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0009,
@@ -180,6 +193,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x000a,
@@ -191,6 +205,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_DSS_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x000b,
@@ -202,6 +217,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_DSS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x000c,
@@ -213,6 +229,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x000d,
@@ -224,6 +241,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_RSA_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x000e,
@@ -235,6 +253,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_RSA_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x000f,
@@ -246,6 +265,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x0010,
@@ -257,6 +277,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x0011,
@@ -268,6 +289,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DHE_DSS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0012,
@@ -279,6 +301,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x0013,
@@ -290,6 +313,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x0014,
@@ -301,6 +325,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DHE_RSA_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0015,
@@ -312,6 +337,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x0016,
@@ -323,6 +349,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_anon_EXPORT_WITH_RC4_40_MD5 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0017,
@@ -334,6 +361,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_anon_WITH_RC4_128_MD5 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0018,
@@ -345,6 +373,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0019,
@@ -356,6 +385,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_anon_WITH_DES_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x001a,
@@ -367,6 +397,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x001b,
@@ -378,6 +409,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_FORTEZZA_KEA_WITH_NULL_SHA = CipherSuiteParams(
         code=0x001c,
@@ -389,6 +421,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_FORTEZZA_KEA_WITH_FORTEZZA_CBC_SHA = CipherSuiteParams(
         code=0x001d,
@@ -400,6 +433,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_KRB5_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x001e,
@@ -411,6 +445,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x001f,
@@ -422,6 +457,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x0020,
@@ -433,6 +469,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_WITH_IDEA_CBC_SHA = CipherSuiteParams(
         code=0x0021,
@@ -444,6 +481,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_WITH_DES_CBC_MD5 = CipherSuiteParams(
         code=0x0022,
@@ -455,6 +493,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_WITH_3DES_EDE_CBC_MD5 = CipherSuiteParams(
         code=0x0023,
@@ -466,6 +505,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_WITH_RC4_128_MD5 = CipherSuiteParams(
         code=0x0024,
@@ -477,6 +517,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_WITH_IDEA_CBC_MD5 = CipherSuiteParams(
         code=0x0025,
@@ -488,6 +529,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA = CipherSuiteParams(
         code=0x0026,
@@ -499,6 +541,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_EXPORT_WITH_RC2_CBC_40_SHA = CipherSuiteParams(
         code=0x0027,
@@ -510,6 +553,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_EXPORT_WITH_RC4_40_SHA = CipherSuiteParams(
         code=0x0028,
@@ -521,6 +565,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5 = CipherSuiteParams(
         code=0x0029,
@@ -532,6 +577,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_EXPORT_WITH_RC2_CBC_40_MD5 = CipherSuiteParams(
         code=0x002a,
@@ -543,6 +589,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_KRB5_EXPORT_WITH_RC4_40_MD5 = CipherSuiteParams(
         code=0x002b,
@@ -554,6 +601,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_NULL_SHA = CipherSuiteParams(
         code=0x002c,
@@ -565,6 +613,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_NULL_SHA = CipherSuiteParams(
         code=0x002d,
@@ -576,6 +625,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_NULL_SHA = CipherSuiteParams(
         code=0x002e,
@@ -587,6 +637,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x002f,
@@ -598,6 +649,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_DSS_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0030,
@@ -609,6 +661,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0031,
@@ -620,6 +673,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_DSS_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0032,
@@ -631,6 +685,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0033,
@@ -642,6 +697,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0034,
@@ -653,6 +709,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0035,
@@ -664,6 +721,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_DSS_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0036,
@@ -675,6 +733,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0037,
@@ -686,6 +745,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_DSS_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0038,
@@ -697,6 +757,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0039,
@@ -708,6 +769,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x003a,
@@ -719,6 +781,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_NULL_SHA256 = CipherSuiteParams(
         code=0x003b,
@@ -730,6 +793,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x003c,
@@ -741,6 +805,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x003d,
@@ -752,6 +817,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_DSS_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x003e,
@@ -763,6 +829,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x003f,
@@ -774,6 +841,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_DSS_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x0040,
@@ -785,6 +853,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0041,
@@ -796,6 +865,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0042,
@@ -807,6 +877,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0043,
@@ -818,6 +889,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0044,
@@ -829,6 +901,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0045,
@@ -840,6 +913,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0046,
@@ -851,6 +925,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     OLD_TLS_ECDH_ECDSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0x0047,
@@ -862,6 +937,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     OLD_TLS_ECDH_ECDSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x0048,
@@ -873,6 +949,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_ECDSA_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0049,
@@ -884,6 +961,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     OLD_TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x004a,
@@ -895,6 +973,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     OLD_TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x004b,
@@ -906,6 +985,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     OLD_TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x004c,
@@ -917,6 +997,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_EXPORT1024_WITH_RC4_56_MD5 = CipherSuiteParams(
         code=0x0060,
@@ -928,6 +1009,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_EXPORT1024_WITH_RC2_CBC_56_MD5 = CipherSuiteParams(
         code=0x0061,
@@ -939,6 +1021,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0062,
@@ -950,7 +1033,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
-
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0063,
@@ -962,6 +1045,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_RSA_EXPORT1024_WITH_RC4_56_SHA = CipherSuiteParams(
         code=0x0064,
@@ -973,6 +1057,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DHE_DSS_EXPORT1024_WITH_RC4_56_SHA = CipherSuiteParams(
         code=0x0065,
@@ -984,6 +1069,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DHE_DSS_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x0066,
@@ -995,6 +1081,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.SSL3),
     )
     TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x0067,
@@ -1006,6 +1093,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_DSS_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x0068,
@@ -1017,6 +1105,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_RSA_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x0069,
@@ -1028,6 +1117,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_DSS_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x006a,
@@ -1039,6 +1129,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x006b,
@@ -1050,6 +1141,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_anon_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x006c,
@@ -1061,6 +1153,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_anon_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x006d,
@@ -1072,6 +1165,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_GOSTR341094_WITH_28147_CNT_IMIT = CipherSuiteParams(
         code=0x0080,
@@ -1083,6 +1177,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.IMIT_GOST28147,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_GOSTR341001_WITH_28147_CNT_IMIT = CipherSuiteParams(
         code=0x0081,
@@ -1094,6 +1189,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.IMIT_GOST28147,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_GOSTR341094_WITH_NULL_GOSTR3411 = CipherSuiteParams(
         code=0x0082,
@@ -1105,6 +1201,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.GOST_R3411_94,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_GOSTR341001_WITH_NULL_GOSTR3411 = CipherSuiteParams(
         code=0x0083,
@@ -1116,6 +1213,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.GOST_R3411_94,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0084,
@@ -1127,6 +1225,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0085,
@@ -1138,6 +1237,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0086,
@@ -1149,6 +1249,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0087,
@@ -1160,6 +1261,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0088,
@@ -1171,6 +1273,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0089,
@@ -1182,6 +1285,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x008a,
@@ -1193,6 +1297,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x008b,
@@ -1204,6 +1309,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x008c,
@@ -1215,6 +1321,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x008d,
@@ -1226,6 +1333,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x008e,
@@ -1237,6 +1345,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x008f,
@@ -1248,6 +1357,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0090,
@@ -1259,6 +1369,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0091,
@@ -1270,6 +1381,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x0092,
@@ -1281,6 +1393,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x0093,
@@ -1292,6 +1405,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0094,
@@ -1303,6 +1417,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0095,
@@ -1314,6 +1429,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x0096,
@@ -1325,6 +1441,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_DSS_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x0097,
@@ -1336,6 +1453,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_RSA_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x0098,
@@ -1347,6 +1465,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_DSS_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x0099,
@@ -1358,6 +1477,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x009a,
@@ -1369,6 +1489,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_anon_WITH_SEED_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x009b,
@@ -1380,6 +1501,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x009c,
@@ -1391,6 +1513,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x009d,
@@ -1402,6 +1525,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x009e,
@@ -1413,6 +1537,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x009f,
@@ -1424,6 +1549,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_RSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00a0,
@@ -1435,6 +1561,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00a1,
@@ -1446,6 +1573,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_DSS_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00a2,
@@ -1457,6 +1585,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_DSS_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00a3,
@@ -1468,6 +1597,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_DSS_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00a4,
@@ -1479,6 +1609,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_DSS_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00a5,
@@ -1490,6 +1621,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_anon_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00a6,
@@ -1501,6 +1633,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_anon_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00a7,
@@ -1512,6 +1645,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00a8,
@@ -1523,6 +1657,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00a9,
@@ -1534,6 +1669,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00aa,
@@ -1545,6 +1681,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00ab,
@@ -1556,6 +1693,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_PSK_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00ac,
@@ -1567,6 +1705,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00ad,
@@ -1578,6 +1717,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00ae,
@@ -1589,6 +1729,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0x00af,
@@ -1600,6 +1741,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_NULL_SHA256 = CipherSuiteParams(
         code=0x00b0,
@@ -1611,6 +1753,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_NULL_SHA384 = CipherSuiteParams(
         code=0x00b1,
@@ -1622,6 +1765,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00b2,
@@ -1633,6 +1777,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0x00b3,
@@ -1644,6 +1789,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_NULL_SHA256 = CipherSuiteParams(
         code=0x00b4,
@@ -1655,6 +1801,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_NULL_SHA384 = CipherSuiteParams(
         code=0x00b5,
@@ -1666,6 +1813,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00b6,
@@ -1677,6 +1825,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0x00b7,
@@ -1688,6 +1837,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_NULL_SHA256 = CipherSuiteParams(
         code=0x00b8,
@@ -1699,6 +1849,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_NULL_SHA384 = CipherSuiteParams(
         code=0x00b9,
@@ -1710,6 +1861,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00ba,
@@ -1721,6 +1873,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00bb,
@@ -1732,6 +1885,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00bc,
@@ -1743,6 +1897,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00bd,
@@ -1754,6 +1909,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00be,
@@ -1765,6 +1921,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00bf,
@@ -1776,6 +1933,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c0,
@@ -1787,6 +1945,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c1,
@@ -1798,6 +1957,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c2,
@@ -1809,6 +1969,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c3,
@@ -1820,6 +1981,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c4,
@@ -1831,6 +1993,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00c5,
@@ -1842,6 +2005,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_CECPQ1_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0x16b7,
@@ -1853,6 +2017,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_CECPQ1_ECDSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0x16b8,
@@ -1864,6 +2029,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_CECPQ1_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x16b9,
@@ -1875,6 +2041,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_CECPQ1_ECDSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x16ba,
@@ -1886,6 +2053,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc001,
@@ -1897,6 +2065,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_ECDSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc002,
@@ -1908,6 +2077,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc003,
@@ -1919,6 +2089,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc004,
@@ -1930,6 +2101,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc005,
@@ -1941,6 +2113,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc006,
@@ -1952,6 +2125,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc007,
@@ -1963,6 +2137,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc008,
@@ -1974,6 +2149,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc009,
@@ -1985,6 +2161,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc00a,
@@ -1996,6 +2173,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_RSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc00b,
@@ -2007,6 +2185,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_RSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc00c,
@@ -2018,6 +2197,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc00d,
@@ -2029,6 +2209,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc00e,
@@ -2040,6 +2221,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc00f,
@@ -2051,6 +2233,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_RSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc010,
@@ -2062,6 +2245,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_RSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc011,
@@ -2073,6 +2257,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc012,
@@ -2084,6 +2269,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc013,
@@ -2095,6 +2281,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc014,
@@ -2106,6 +2293,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_anon_WITH_NULL_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc015,
@@ -2117,6 +2305,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_anon_WITH_RC4_128_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc016,
@@ -2128,6 +2317,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc017,
@@ -2139,6 +2329,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc018,
@@ -2150,6 +2341,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc019,
@@ -2161,6 +2353,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01a,
@@ -2172,6 +2365,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01b,
@@ -2183,6 +2377,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01c,
@@ -2194,6 +2389,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_SRP_SHA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01d,
@@ -2205,6 +2401,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01e,
@@ -2216,6 +2413,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01f,
@@ -2227,6 +2425,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_SRP_SHA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc020,
@@ -2238,6 +2437,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc021,
@@ -2249,6 +2449,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc022,
@@ -2260,6 +2461,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc023,
@@ -2271,6 +2473,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc024,
@@ -2282,6 +2485,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc025,
@@ -2293,6 +2497,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc026,
@@ -2304,6 +2509,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc027,
@@ -2315,6 +2521,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc028,
@@ -2326,6 +2533,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc029,
@@ -2337,6 +2545,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc02a,
@@ -2348,6 +2557,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc02b,
@@ -2359,6 +2569,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc02c,
@@ -2370,6 +2581,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc02d,
@@ -2381,6 +2593,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc02e,
@@ -2392,6 +2605,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc02f,
@@ -2403,6 +2617,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc030,
@@ -2414,6 +2629,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc031,
@@ -2425,6 +2641,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc032,
@@ -2436,6 +2653,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_PSK_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc033,
@@ -2447,6 +2665,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc034,
@@ -2458,6 +2677,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc035,
@@ -2469,6 +2689,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc036,
@@ -2480,6 +2701,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc037,
@@ -2491,6 +2713,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc038,
@@ -2502,6 +2725,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc039,
@@ -2513,6 +2737,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_NULL_SHA256 = CipherSuiteParams(
         code=0xc03a,
@@ -2524,6 +2749,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_NULL_SHA384 = CipherSuiteParams(
         code=0xc03b,
@@ -2535,6 +2761,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc03c,
@@ -2546,6 +2773,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc03d,
@@ -2557,6 +2785,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc03e,
@@ -2568,6 +2797,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc03f,
@@ -2579,6 +2809,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc040,
@@ -2590,6 +2821,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc041,
@@ -2601,6 +2833,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc042,
@@ -2612,6 +2845,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc043,
@@ -2623,6 +2857,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc044,
@@ -2634,6 +2869,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc045,
@@ -2645,6 +2881,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_anon_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc046,
@@ -2656,6 +2893,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DH_anon_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc047,
@@ -2667,6 +2905,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc048,
@@ -2678,6 +2917,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc049,
@@ -2689,6 +2929,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc04a,
@@ -2700,6 +2941,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc04b,
@@ -2711,6 +2953,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc04c,
@@ -2722,6 +2965,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc04d,
@@ -2733,6 +2977,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc04e,
@@ -2744,6 +2989,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc04f,
@@ -2755,6 +3001,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc050,
@@ -2766,6 +3013,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc051,
@@ -2777,6 +3025,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc052,
@@ -2788,6 +3037,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc053,
@@ -2799,6 +3049,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc054,
@@ -2810,6 +3061,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc055,
@@ -2821,6 +3073,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc056,
@@ -2832,6 +3085,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc057,
@@ -2843,6 +3097,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc058,
@@ -2854,6 +3109,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc059,
@@ -2865,6 +3121,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_anon_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc05a,
@@ -2876,6 +3133,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_anon_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc05b,
@@ -2887,6 +3145,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc05c,
@@ -2898,6 +3157,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc05d,
@@ -2909,6 +3169,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc05e,
@@ -2920,6 +3181,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc05f,
@@ -2931,6 +3193,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc060,
@@ -2942,6 +3205,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc061,
@@ -2953,6 +3217,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc062,
@@ -2964,6 +3229,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc063,
@@ -2975,6 +3241,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc064,
@@ -2986,6 +3253,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc065,
@@ -2997,6 +3265,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc066,
@@ -3008,6 +3277,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc067,
@@ -3019,6 +3289,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc068,
@@ -3030,6 +3301,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc069,
@@ -3041,6 +3313,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc06a,
@@ -3052,6 +3325,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc06b,
@@ -3063,6 +3337,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc06c,
@@ -3074,6 +3349,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc06d,
@@ -3085,6 +3361,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc06e,
@@ -3096,6 +3373,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc06f,
@@ -3107,6 +3385,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc070,
@@ -3118,6 +3397,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc071,
@@ -3129,6 +3409,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc072,
@@ -3140,6 +3421,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc073,
@@ -3151,6 +3433,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc074,
@@ -3162,6 +3445,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc075,
@@ -3173,6 +3457,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc076,
@@ -3184,6 +3469,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc077,
@@ -3195,6 +3481,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc078,
@@ -3206,6 +3493,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc079,
@@ -3217,6 +3505,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc07a,
@@ -3228,6 +3517,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc07b,
@@ -3239,6 +3529,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc07c,
@@ -3250,6 +3541,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc07d,
@@ -3261,6 +3553,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc07e,
@@ -3272,6 +3565,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc07f,
@@ -3283,6 +3577,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc080,
@@ -3294,6 +3589,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc081,
@@ -3305,6 +3601,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc082,
@@ -3316,6 +3613,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc083,
@@ -3327,6 +3625,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc084,
@@ -3338,6 +3637,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc085,
@@ -3349,6 +3649,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc086,
@@ -3360,6 +3661,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc087,
@@ -3371,6 +3673,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc088,
@@ -3382,6 +3685,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc089,
@@ -3393,6 +3697,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc08a,
@@ -3404,6 +3709,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc08b,
@@ -3415,6 +3721,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc08c,
@@ -3426,6 +3733,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc08d,
@@ -3437,6 +3745,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc08e,
@@ -3448,6 +3757,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc08f,
@@ -3459,6 +3769,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc090,
@@ -3470,6 +3781,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc091,
@@ -3481,6 +3793,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc092,
@@ -3492,6 +3805,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc093,
@@ -3503,6 +3817,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc094,
@@ -3514,6 +3829,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc095,
@@ -3525,6 +3841,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc096,
@@ -3536,6 +3853,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc097,
@@ -3547,6 +3865,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc098,
@@ -3558,6 +3877,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc099,
@@ -3569,6 +3889,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc09a,
@@ -3580,6 +3901,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc09b,
@@ -3591,6 +3913,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA2_384,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_AES_128_CCM = CipherSuiteParams(
         code=0xc09c,
@@ -3602,6 +3925,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_WITH_AES_256_CCM = CipherSuiteParams(
         code=0xc09d,
@@ -3613,6 +3937,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_AES_128_CCM = CipherSuiteParams(
         code=0xc09e,
@@ -3624,6 +3949,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_AES_256_CCM = CipherSuiteParams(
         code=0xc09f,
@@ -3635,6 +3961,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0a0,
@@ -3646,6 +3973,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0a1,
@@ -3657,6 +3985,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0a2,
@@ -3668,6 +3997,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0a3,
@@ -3679,6 +4009,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_AES_128_CCM = CipherSuiteParams(
         code=0xc0a4,
@@ -3690,6 +4021,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_AES_256_CCM = CipherSuiteParams(
         code=0xc0a5,
@@ -3701,6 +4033,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_AES_128_CCM = CipherSuiteParams(
         code=0xc0a6,
@@ -3712,6 +4045,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_AES_256_CCM = CipherSuiteParams(
         code=0xc0a7,
@@ -3723,6 +4057,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0a8,
@@ -3734,6 +4069,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0a9,
@@ -3745,6 +4081,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0aa,
@@ -3756,6 +4093,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0ab,
@@ -3767,6 +4105,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_AES_128_CCM = CipherSuiteParams(
         code=0xc0ac,
@@ -3778,6 +4117,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_AES_256_CCM = CipherSuiteParams(
         code=0xc0ad,
@@ -3789,6 +4129,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0ae,
@@ -3800,6 +4141,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0af,
@@ -3811,6 +4153,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC = CipherSuiteParams(
         code=0xc100,
@@ -3822,6 +4165,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.EAX,
         mac=MAC.GOST_R3412_15_KUZNYECHIK_CTR_OMAC,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_GOSTR341112_256_WITH_MAGMA_CTR_OMAC = CipherSuiteParams(
         code=0xc101,
@@ -3833,6 +4177,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.EAX,
         mac=MAC.GOST_R3412_15_MAGMA_CTR_OMAC,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_GOSTR341112_256_WITH_28147_CNT_IMIT = CipherSuiteParams(
         code=0xc102,
@@ -3844,6 +4189,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CNT,
         mac=MAC.IMIT_GOST28147,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L = CipherSuiteParams(
         code=0xc103,
@@ -3855,6 +4201,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.MGM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_3),
     )
     TLS_GOSTR341112_256_WITH_MAGMA_MGM_L = CipherSuiteParams(
         code=0xc104,
@@ -3866,6 +4213,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.MGM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_3),
     )
     TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S = CipherSuiteParams(
         code=0xc105,
@@ -3877,6 +4225,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.MGM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_3),
     )
     TLS_GOSTR341112_256_WITH_MAGMA_MGM_S = CipherSuiteParams(
         code=0xc106,
@@ -3888,6 +4237,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.MGM,
         mac=None,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_3),
     )
     OLD_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcc13,
@@ -3899,6 +4249,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     OLD_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcc14,
@@ -3910,6 +4261,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcc15,
@@ -3921,6 +4273,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcca8,
@@ -3932,6 +4285,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcca9,
@@ -3943,6 +4297,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccaa,
@@ -3954,6 +4309,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccab,
@@ -3965,6 +4321,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccac,
@@ -3976,6 +4333,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccad,
@@ -3987,6 +4345,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccae,
@@ -3998,6 +4357,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0xd001,
@@ -4009,6 +4369,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xd002,
@@ -4020,6 +4381,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 = CipherSuiteParams(
         code=0xd003,
@@ -4031,6 +4393,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256 = CipherSuiteParams(
         code=0xd005,
@@ -4042,6 +4405,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     TLS_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x1301,
@@ -4053,6 +4417,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionDraft(15),
     )
     TLS_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x1302,
@@ -4064,6 +4429,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.GCM,
         mac=MAC.SHA2_384,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionDraft(15),
     )
     TLS_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0x1303,
@@ -4075,6 +4441,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.POLY1305,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionDraft(15),
     )
     TLS_AES_128_CCM_SHA256 = CipherSuiteParams(
         code=0x1304,
@@ -4086,6 +4453,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionDraft(15),
     )
     TLS_AES_128_CCM_8_SHA256 = CipherSuiteParams(
         code=0x1305,
@@ -4097,6 +4465,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CCM_8,
         mac=MAC.SHA2_256,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionDraft(15),
     )
     TLS_RSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe410,
@@ -4108,6 +4477,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe411,
@@ -4119,6 +4489,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_RSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe412,
@@ -4130,6 +4501,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_RSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe413,
@@ -4141,6 +4513,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe414,
@@ -4152,6 +4525,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_ECDSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe415,
@@ -4163,6 +4537,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe416,
@@ -4174,6 +4549,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe417,
@@ -4185,6 +4561,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe418,
@@ -4196,6 +4573,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_ECDHE_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe419,
@@ -4207,6 +4585,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41a,
@@ -4218,6 +4597,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41b,
@@ -4229,6 +4609,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41c,
@@ -4240,6 +4621,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41d,
@@ -4251,6 +4633,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41e,
@@ -4262,6 +4645,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_DHE_RSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41f,
@@ -4273,6 +4657,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.SHA1,
         authenticated_encryption=True,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0xfefe,
@@ -4284,6 +4669,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xfeff,
@@ -4295,6 +4681,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_RC2_CBC_MD5 = CipherSuiteParams(
         code=0xff80,
@@ -4306,6 +4693,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_IDEA_CBC_MD5 = CipherSuiteParams(
         code=0xff81,
@@ -4317,6 +4705,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_DES_CBC_MD5 = CipherSuiteParams(
         code=0xff82,
@@ -4328,6 +4717,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_RSA_WITH_3DES_EDE_CBC_MD5 = CipherSuiteParams(
         code=0xff83,
@@ -4339,6 +4729,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     OLD_TLS_GOSTR341112_256_WITH_28147_CNT_IMIT = CipherSuiteParams(
         code=0xff85,
@@ -4350,6 +4741,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.IMIT_GOST28147,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     TLS_GOSTR341112_256_WITH_NULL_GOSTR3411 = CipherSuiteParams(
         code=0xff87,
@@ -4361,6 +4753,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.GOST_R3411_94,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
     )
     OLD_TLS_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0xffe0,
@@ -4372,6 +4765,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
     OLD_TLS_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xffe1,
@@ -4383,6 +4777,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
         authenticated_encryption=False,
+        initial_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
     )
 
 
@@ -4406,7 +4801,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         bulk_cipher=None,
         block_cipher_mode=None,
         mac=MAC.MD5,
-        authenticated_encryption=False
+        authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_RC4_128_WITH_MD5 = CipherSuiteParams(
         code=0x010080,
@@ -4418,6 +4814,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         block_cipher_mode=None,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_RC4_128_EXPORT40_WITH_MD5 = CipherSuiteParams(
         code=0x020080,
@@ -4429,6 +4826,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_RC2_128_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x030080,
@@ -4440,6 +4838,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_RC2_128_CBC_EXPORT40_WITH_MD5 = CipherSuiteParams(
         code=0x040080,
@@ -4451,6 +4850,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_IDEA_128_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x050080,
@@ -4462,6 +4862,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_DES_64_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x060040,
@@ -4473,6 +4874,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_DES_64_CBC_WITH_SHA = CipherSuiteParams(
         code=0x060140,
@@ -4483,7 +4885,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         bulk_cipher=BlockCipher.DES,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
-        authenticated_encryption=False
+        authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_DES_192_EDE3_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x0700C0,
@@ -4495,6 +4898,7 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.MD5,
         authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_DES_192_EDE3_CBC_WITH_SHA = CipherSuiteParams(
         code=0x0701C0,
@@ -4505,7 +4909,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         bulk_cipher=BlockCipher.TRIPLE_DES,
         block_cipher_mode=BlockCipherMode.CBC,
         mac=MAC.SHA1,
-        authenticated_encryption=False
+        authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_RC4_64_WITH_MD5 = CipherSuiteParams(
         code=0x080080,
@@ -4516,7 +4921,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         bulk_cipher=BlockCipher.RC4_64,
         block_cipher_mode=None,
         mac=MAC.MD5,
-        authenticated_encryption=False
+        authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_DES_64_CFB64_WITH_MD5_1 = CipherSuiteParams(
         code=0xFF8000,
@@ -4527,7 +4933,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         bulk_cipher=BlockCipher.DES,
         block_cipher_mode=BlockCipherMode.CFB,
         mac=MAC.MD5,
-        authenticated_encryption=False
+        authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
     SSL_CK_NULL = CipherSuiteParams(
         code=0xFF8010,
@@ -4538,5 +4945,6 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
         bulk_cipher=None,
         block_cipher_mode=None,
         mac=None,
-        authenticated_encryption=False
+        authenticated_encryption=False,
+        initial_version=SslProtocolVersion(),
     )
