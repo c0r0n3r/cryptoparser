@@ -3,7 +3,9 @@
 
 import abc
 import enum
+
 import attr
+import six
 
 from cryptoparser.common.algorithm import Authentication, BlockCipher, BlockCipherMode, KeyExchange, MAC
 from cryptoparser.common.base import Serializable
@@ -33,8 +35,10 @@ class TlsCipherSuiteFactory(TwoByteEnumParsable):
 
 
 @attr.s
-class CipherSuiteParams(object):  # pylint: disable=too-many-instance-attributes
+class CipherSuiteParams(Serializable):  # pylint: disable=too-many-instance-attributes
     code = attr.ib(validator=attr.validators.instance_of(int))
+    iana_name = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
+    openssl_name = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
     key_exchange = attr.ib(validator=attr.validators.optional(attr.validators.in_(KeyExchange)))
     authentication = attr.ib(validator=attr.validators.optional(attr.validators.in_(Authentication)))
     bulk_cipher = attr.ib(validator=attr.validators.optional(attr.validators.in_(BlockCipher)))
@@ -50,10 +54,27 @@ class CipherSuiteParams(object):  # pylint: disable=too-many-instance-attributes
             else TlsProtocolVersionFinal(TlsVersion.TLS1_0)
         )
 
+    def _as_markdown(self, level):
+        if self.iana_name is None:
+            result = six.next(
+                cipher_suite
+                for cipher_suite in TlsCipherSuite
+                if cipher_suite.value.code == self.code
+            ).name
+        else:
+            result = self.iana_name
+
+        if self.openssl_name:
+            result += ' (' + self.openssl_name + ')'
+
+        return self._markdown_result(result, level)
+
 
 class TlsCipherSuite(TwoByteEnumComposer):
     TLS_NULL_WITH_NULL_NULL = CipherSuiteParams(
         code=0x0000,
+        iana_name='TLS_NULL_WITH_NULL_NULL',
+        openssl_name=None,
         key_exchange=None,
         authentication=Authentication.anon,
         bulk_cipher=None,
@@ -63,6 +84,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_NULL_MD5 = CipherSuiteParams(
         code=0x0001,
+        iana_name='TLS_RSA_WITH_NULL_MD5',
+        openssl_name='NULL-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=None,
@@ -72,6 +95,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0x0002,
+        iana_name='TLS_RSA_WITH_NULL_SHA',
+        openssl_name='NULL-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=None,
@@ -81,6 +106,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_EXPORT_WITH_RC4_40_MD5 = CipherSuiteParams(
         code=0x0003,
+        iana_name='TLS_RSA_EXPORT_WITH_RC4_40_MD5',
+        openssl_name='EXP-RC4-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC4_40,
@@ -90,6 +117,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_RC4_128_MD5 = CipherSuiteParams(
         code=0x0004,
+        iana_name='TLS_RSA_WITH_RC4_128_MD5',
+        openssl_name='RC4-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC4_128,
@@ -99,6 +128,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x0005,
+        iana_name='TLS_RSA_WITH_RC4_128_SHA',
+        openssl_name='RC4-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC4_128,
@@ -108,6 +139,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5 = CipherSuiteParams(
         code=0x0006,
+        iana_name='TLS_RSA_EXPORT_WITH_RC2_CBC_40_MD5',
+        openssl_name='EXP-RC2-CBC-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC2_40,
@@ -117,6 +150,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_IDEA_CBC_SHA = CipherSuiteParams(
         code=0x0007,
+        iana_name='TLS_RSA_WITH_IDEA_CBC_SHA',
+        openssl_name='IDEA-CBC-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.IDEA,
@@ -126,6 +161,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x0008,
+        iana_name='TLS_RSA_EXPORT_WITH_DES40_CBC_SHA',
+        openssl_name='EXP-DES-CBC-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES40,
@@ -135,6 +172,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0009,
+        iana_name='TLS_RSA_WITH_DES_CBC_SHA',
+        openssl_name='DES-CBC-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES,
@@ -144,6 +183,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x000a,
+        iana_name='TLS_RSA_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='DES-CBC3-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -153,6 +194,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x000b,
+        iana_name='TLS_DH_DSS_EXPORT_WITH_DES40_CBC_SHA',
+        openssl_name='EXP-DH-DSS-DES-CBC-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.DES40,
@@ -162,6 +205,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x000c,
+        iana_name='TLS_DH_DSS_WITH_DES_CBC_SHA',
+        openssl_name='DH-DSS-DES-CBC-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.DES,
@@ -171,6 +216,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x000d,
+        iana_name='TLS_DH_DSS_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='DH-DSS-DES-CBC3-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -180,6 +227,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x000e,
+        iana_name='TLS_DH_RSA_EXPORT_WITH_DES40_CBC_SHA',
+        openssl_name='EXP-DH-RSA-DES-CBC-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES40,
@@ -189,6 +238,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x000f,
+        iana_name='TLS_DH_RSA_WITH_DES_CBC_SHA',
+        openssl_name='DH-RSA-DES-CBC-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES,
@@ -198,6 +249,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x0010,
+        iana_name='TLS_DH_RSA_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='DH-RSA-DES-CBC3-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -207,6 +260,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x0011,
+        iana_name='TLS_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA',
+        openssl_name='EXP-EDH-DSS-DES-CBC-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.DES40,
@@ -216,6 +271,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0012,
+        iana_name='TLS_DHE_DSS_WITH_DES_CBC_SHA',
+        openssl_name='EDH-DSS-DES-CBC-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.DES,
@@ -225,6 +282,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x0013,
+        iana_name='TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='EDH-DSS-DES-CBC3-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -234,6 +293,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(
         code=0x0014,
+        iana_name='TLS_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA',
+        openssl_name='EXP-EDH-RSA-DES-CBC-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES40,
@@ -243,6 +304,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0015,
+        iana_name='TLS_DHE_RSA_WITH_DES_CBC_SHA',
+        openssl_name='EDH-RSA-DES-CBC-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES,
@@ -252,6 +315,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x0016,
+        iana_name='TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='EDH-RSA-DES-CBC3-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -261,6 +326,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_EXPORT_WITH_RC4_40_MD5 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0017,
+        iana_name='TLS_DH_anon_EXPORT_WITH_RC4_40_MD5',
+        openssl_name='EXP-ADH-RC4-MD5',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.RC4_40,
@@ -270,6 +337,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_RC4_128_MD5 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0018,
+        iana_name='TLS_DH_anon_WITH_RC4_128_MD5',
+        openssl_name='ADH-RC4-MD5',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.RC4_128,
@@ -279,6 +348,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0019,
+        iana_name='TLS_DH_anon_EXPORT_WITH_DES40_CBC_SHA',
+        openssl_name='EXP-ADH-DES-CBC-SHA',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.DES40,
@@ -288,6 +359,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_DES_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x001a,
+        iana_name='TLS_DH_anon_WITH_DES_CBC_SHA',
+        openssl_name='ADH-DES-CBC-SHA',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.DES,
@@ -297,6 +370,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x001b,
+        iana_name='TLS_DH_anon_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='ADH-DES-CBC3-SHA',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -306,6 +381,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_FORTEZZA_KEA_WITH_NULL_SHA = CipherSuiteParams(
         code=0x001c,
+        iana_name='TLS_FORTEZZA_KEA_WITH_NULL_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.FORTEZZA_KEA,
         authentication=Authentication.FORTEZZA,
         bulk_cipher=None,
@@ -315,6 +392,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_FORTEZZA_KEA_WITH_FORTEZZA_CBC_SHA = CipherSuiteParams(
         code=0x001d,
+        iana_name='TLS_FORTEZZA_KEA_WITH_FORTEZZA_CBC_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.FORTEZZA_KEA,
         authentication=Authentication.FORTEZZA,
         bulk_cipher=BlockCipher.FORTEZZA,
@@ -324,6 +403,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x001e,
+        iana_name='TLS_KRB5_WITH_DES_CBC_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.DES,
@@ -333,6 +414,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x001f,
+        iana_name='TLS_KRB5_WITH_3DES_EDE_CBC_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -342,6 +425,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x0020,
+        iana_name='TLS_KRB5_WITH_RC4_128_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.RC4_128,
@@ -351,6 +436,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_WITH_IDEA_CBC_SHA = CipherSuiteParams(
         code=0x0021,
+        iana_name='TLS_KRB5_WITH_IDEA_CBC_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.IDEA,
@@ -360,6 +447,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_WITH_DES_CBC_MD5 = CipherSuiteParams(
         code=0x0022,
+        iana_name='TLS_KRB5_WITH_DES_CBC_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.DES,
@@ -369,6 +458,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_WITH_3DES_EDE_CBC_MD5 = CipherSuiteParams(
         code=0x0023,
+        iana_name='TLS_KRB5_WITH_3DES_EDE_CBC_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -378,6 +469,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_WITH_RC4_128_MD5 = CipherSuiteParams(
         code=0x0024,
+        iana_name='TLS_KRB5_WITH_RC4_128_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.RC4_128,
@@ -387,6 +480,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_WITH_IDEA_CBC_MD5 = CipherSuiteParams(
         code=0x0025,
+        iana_name='TLS_KRB5_WITH_IDEA_CBC_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.IDEA,
@@ -396,6 +491,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA = CipherSuiteParams(
         code=0x0026,
+        iana_name='TLS_KRB5_EXPORT_WITH_DES_CBC_40_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.DES40,
@@ -405,6 +502,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_EXPORT_WITH_RC2_CBC_40_SHA = CipherSuiteParams(
         code=0x0027,
+        iana_name='TLS_KRB5_EXPORT_WITH_RC2_CBC_40_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.RC2_40,
@@ -414,6 +513,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_EXPORT_WITH_RC4_40_SHA = CipherSuiteParams(
         code=0x0028,
+        iana_name='TLS_KRB5_EXPORT_WITH_RC4_40_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.RC4_40,
@@ -423,6 +524,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5 = CipherSuiteParams(
         code=0x0029,
+        iana_name='TLS_KRB5_EXPORT_WITH_DES_CBC_40_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.DES40,
@@ -432,6 +535,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_EXPORT_WITH_RC2_CBC_40_MD5 = CipherSuiteParams(
         code=0x002a,
+        iana_name='TLS_KRB5_EXPORT_WITH_RC2_CBC_40_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.RC2_40,
@@ -441,6 +546,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_KRB5_EXPORT_WITH_RC4_40_MD5 = CipherSuiteParams(
         code=0x002b,
+        iana_name='TLS_KRB5_EXPORT_WITH_RC4_40_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.KRB5,
         authentication=Authentication.KRB5,
         bulk_cipher=BlockCipher.RC4_40,
@@ -450,6 +557,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_NULL_SHA = CipherSuiteParams(
         code=0x002c,
+        iana_name='TLS_PSK_WITH_NULL_SHA',
+        openssl_name='PSK-NULL-SHA',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -459,6 +568,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_NULL_SHA = CipherSuiteParams(
         code=0x002d,
+        iana_name='TLS_DHE_PSK_WITH_NULL_SHA',
+        openssl_name='DHE-PSK-NULL-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -468,6 +579,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_NULL_SHA = CipherSuiteParams(
         code=0x002e,
+        iana_name='TLS_RSA_PSK_WITH_NULL_SHA',
+        openssl_name='RSA-PSK-NULL-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -477,6 +590,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x002f,
+        iana_name='TLS_RSA_WITH_AES_128_CBC_SHA',
+        openssl_name='AES128-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -486,6 +601,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0030,
+        iana_name='TLS_DH_DSS_WITH_AES_128_CBC_SHA',
+        openssl_name='DH-DSS-AES128-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_128,
@@ -495,6 +612,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0031,
+        iana_name='TLS_DH_RSA_WITH_AES_128_CBC_SHA',
+        openssl_name='DH-RSA-AES128-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -504,6 +623,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0032,
+        iana_name='TLS_DHE_DSS_WITH_AES_128_CBC_SHA',
+        openssl_name='DHE-DSS-AES128-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_128,
@@ -513,6 +634,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0033,
+        iana_name='TLS_DHE_RSA_WITH_AES_128_CBC_SHA',
+        openssl_name='DHE-RSA-AES128-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -522,6 +645,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0034,
+        iana_name='TLS_DH_anon_WITH_AES_128_CBC_SHA',
+        openssl_name='ADH-AES128-SHA',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_128,
@@ -531,6 +656,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0035,
+        iana_name='TLS_RSA_WITH_AES_256_CBC_SHA',
+        openssl_name='AES256-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -540,6 +667,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0036,
+        iana_name='TLS_DH_DSS_WITH_AES_256_CBC_SHA',
+        openssl_name='DH-DSS-AES256-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_256,
@@ -549,6 +678,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0037,
+        iana_name='TLS_DH_RSA_WITH_AES_256_CBC_SHA',
+        openssl_name='DH-RSA-AES256-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -558,6 +689,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0038,
+        iana_name='TLS_DHE_DSS_WITH_AES_256_CBC_SHA',
+        openssl_name='DHE-DSS-AES256-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_256,
@@ -567,6 +700,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0039,
+        iana_name='TLS_DHE_RSA_WITH_AES_256_CBC_SHA',
+        openssl_name='DHE-RSA-AES256-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -576,6 +711,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x003a,
+        iana_name='TLS_DH_anon_WITH_AES_256_CBC_SHA',
+        openssl_name='ADH-AES256-SHA',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_256,
@@ -585,6 +722,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_NULL_SHA256 = CipherSuiteParams(
         code=0x003b,
+        iana_name='TLS_RSA_WITH_NULL_SHA256',
+        openssl_name='NULL-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=None,
@@ -594,6 +733,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x003c,
+        iana_name='TLS_RSA_WITH_AES_128_CBC_SHA256',
+        openssl_name='AES128-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -603,6 +744,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x003d,
+        iana_name='TLS_RSA_WITH_AES_256_CBC_SHA256',
+        openssl_name='AES256-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -612,6 +755,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x003e,
+        iana_name='TLS_DH_DSS_WITH_AES_128_CBC_SHA256',
+        openssl_name='DH-DSS-AES128-SHA256',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_128,
@@ -621,6 +766,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x003f,
+        iana_name='TLS_DH_RSA_WITH_AES_128_CBC_SHA256',
+        openssl_name='DH-RSA-AES128-SHA256',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -630,6 +777,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x0040,
+        iana_name='TLS_DHE_DSS_WITH_AES_128_CBC_SHA256',
+        openssl_name='DHE-DSS-AES128-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_128,
@@ -639,6 +788,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0041,
+        iana_name='TLS_RSA_WITH_CAMELLIA_128_CBC_SHA',
+        openssl_name='CAMELLIA128-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -648,6 +799,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0042,
+        iana_name='TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA',
+        openssl_name='DH-DSS-CAMELLIA128-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -657,6 +810,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0043,
+        iana_name='TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA',
+        openssl_name='DH-RSA-CAMELLIA128-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -666,6 +821,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0044,
+        iana_name='TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA',
+        openssl_name='DHE-DSS-CAMELLIA128-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -675,6 +832,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(
         code=0x0045,
+        iana_name='TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA',
+        openssl_name='DHE-RSA-CAMELLIA128-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -684,6 +843,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0046,
+        iana_name='TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA',
+        openssl_name='ADH-CAMELLIA128-SHA',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -693,6 +854,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_ECDH_ECDSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0x0047,
+        iana_name=None,
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=None,
@@ -702,6 +865,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_ECDH_ECDSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x0048,
+        iana_name=None,
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.RC4_128,
@@ -711,6 +876,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0049,
+        iana_name='TLS_ECDH_ECDSA_WITH_DES_CBC_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.DES,
@@ -720,6 +887,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x004a,
+        iana_name=None,
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -729,6 +898,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x004b,
+        iana_name=None,
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -738,6 +909,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x004c,
+        iana_name=None,
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -747,6 +920,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_EXPORT1024_WITH_RC4_56_MD5 = CipherSuiteParams(
         code=0x0060,
+        iana_name='TLS_RSA_EXPORT1024_WITH_RC4_56_MD5',
+        openssl_name='EXP1024-RC4-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC4_56,
@@ -756,6 +931,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_EXPORT1024_WITH_RC2_CBC_56_MD5 = CipherSuiteParams(
         code=0x0061,
+        iana_name='TLS_RSA_EXPORT1024_WITH_RC2_CBC_56_MD5',
+        openssl_name='EXP1024-RC2-CBC-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC2_56,
@@ -765,6 +942,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0062,
+        iana_name='TLS_RSA_EXPORT1024_WITH_DES_CBC_SHA',
+        openssl_name='EXP1024-DES-CBC-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES,
@@ -775,6 +954,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0x0063,
+        iana_name='TLS_DHE_DSS_EXPORT1024_WITH_DES_CBC_SHA',
+        openssl_name='EXP1024-DHE-DSS-DES-CBC-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.DES,
@@ -784,6 +965,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_EXPORT1024_WITH_RC4_56_SHA = CipherSuiteParams(
         code=0x0064,
+        iana_name='TLS_RSA_EXPORT1024_WITH_RC4_56_SHA',
+        openssl_name='EXP1024-RC4-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC4_56,
@@ -793,6 +976,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_EXPORT1024_WITH_RC4_56_SHA = CipherSuiteParams(
         code=0x0065,
+        iana_name='TLS_DHE_DSS_EXPORT1024_WITH_RC4_56_SHA',
+        openssl_name='EXP1024-DHE-DSS-RC4-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.RC4_56,
@@ -802,6 +987,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x0066,
+        iana_name='TLS_DHE_DSS_WITH_RC4_128_SHA',
+        openssl_name='DHE-DSS-RC4-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.RC4_128,
@@ -811,6 +998,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x0067,
+        iana_name='TLS_DHE_RSA_WITH_AES_128_CBC_SHA256',
+        openssl_name='DHE-RSA-AES128-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -820,6 +1009,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x0068,
+        iana_name='TLS_DH_DSS_WITH_AES_256_CBC_SHA256',
+        openssl_name='DH-DSS-AES256-SHA256',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_256,
@@ -829,6 +1020,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x0069,
+        iana_name='TLS_DH_RSA_WITH_AES_256_CBC_SHA256',
+        openssl_name='DH-RSA-AES256-SHA256',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -838,6 +1031,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x006a,
+        iana_name='TLS_DHE_DSS_WITH_AES_256_CBC_SHA256',
+        openssl_name='DHE-DSS-AES256-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_256,
@@ -847,6 +1042,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(
         code=0x006b,
+        iana_name='TLS_DHE_RSA_WITH_AES_256_CBC_SHA256',
+        openssl_name='DHE-RSA-AES256-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -856,6 +1053,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x006c,
+        iana_name='TLS_DH_anon_WITH_AES_128_CBC_SHA256',
+        openssl_name='ADH-AES128-SHA256',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_128,
@@ -865,6 +1064,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_AES_256_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x006d,
+        iana_name='TLS_DH_anon_WITH_AES_256_CBC_SHA256',
+        openssl_name='ADH-AES256-SHA256',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_256,
@@ -874,6 +1075,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341094_WITH_28147_CNT_IMIT = CipherSuiteParams(
         code=0x0080,
+        iana_name='TLS_GOSTR341094_WITH_28147_CNT_IMIT',
+        openssl_name='GOST94-GOST89-GOST89',
         key_exchange=KeyExchange.GOST_R3410_94,
         authentication=Authentication.GOST_R3410_94,
         bulk_cipher=BlockCipher.GOST2814789,
@@ -883,6 +1086,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341001_WITH_28147_CNT_IMIT = CipherSuiteParams(
         code=0x0081,
+        iana_name='TLS_GOSTR341001_WITH_28147_CNT_IMIT',
+        openssl_name='GOST2001-GOST89-GOST89',
         key_exchange=KeyExchange.GOST_R3410_01,
         authentication=Authentication.GOST_R3410_94,
         bulk_cipher=BlockCipher.GOST2814789,
@@ -892,6 +1097,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341094_WITH_NULL_GOSTR3411 = CipherSuiteParams(
         code=0x0082,
+        iana_name='TLS_GOSTR341094_WITH_NULL_GOSTR3411',
+        openssl_name='GOST94-NULL-GOST94',
         key_exchange=KeyExchange.GOST_R3410_94,
         authentication=Authentication.GOST_R3410_94,
         bulk_cipher=None,
@@ -901,6 +1108,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341001_WITH_NULL_GOSTR3411 = CipherSuiteParams(
         code=0x0083,
+        iana_name='TLS_GOSTR341001_WITH_NULL_GOSTR3411',
+        openssl_name='GOST2001-NULL-GOST94',
         key_exchange=KeyExchange.GOST_R3410_01,
         authentication=Authentication.GOST_R3410_94,
         bulk_cipher=None,
@@ -910,6 +1119,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0084,
+        iana_name='TLS_RSA_WITH_CAMELLIA_256_CBC_SHA',
+        openssl_name='CAMELLIA256-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -919,6 +1130,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0085,
+        iana_name='TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA',
+        openssl_name='DH-DSS-CAMELLIA256-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -928,6 +1141,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0086,
+        iana_name='TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA',
+        openssl_name='DH-RSA-CAMELLIA256-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -937,6 +1152,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0087,
+        iana_name='TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA',
+        openssl_name='DHE-DSS-CAMELLIA256-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -946,6 +1163,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(
         code=0x0088,
+        iana_name='TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA',
+        openssl_name='DHE-RSA-CAMELLIA256-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -955,6 +1174,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x0089,
+        iana_name='TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA',
+        openssl_name='ADH-CAMELLIA256-SHA',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -964,6 +1185,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x008a,
+        iana_name='TLS_PSK_WITH_RC4_128_SHA',
+        openssl_name='PSK-RC4-SHA',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.RC4_128,
@@ -973,6 +1196,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x008b,
+        iana_name='TLS_PSK_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='PSK-3DES-EDE-CBC-SHA',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -982,6 +1207,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x008c,
+        iana_name='TLS_PSK_WITH_AES_128_CBC_SHA',
+        openssl_name='PSK-AES128-CBC-SHA',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -991,6 +1218,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x008d,
+        iana_name='TLS_PSK_WITH_AES_256_CBC_SHA',
+        openssl_name='PSK-AES256-CBC-SHA',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -1000,6 +1229,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x008e,
+        iana_name='TLS_DHE_PSK_WITH_RC4_128_SHA',
+        openssl_name='DHE-PSK-RC4-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.RC4_128,
@@ -1009,6 +1240,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x008f,
+        iana_name='TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='DHE-PSK-3DES-EDE-CBC-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -1018,6 +1251,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0090,
+        iana_name='TLS_DHE_PSK_WITH_AES_128_CBC_SHA',
+        openssl_name='DHE-PSK-AES128-CBC-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -1027,6 +1262,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0091,
+        iana_name='TLS_DHE_PSK_WITH_AES_256_CBC_SHA',
+        openssl_name='DHE-PSK-AES256-CBC-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -1036,6 +1273,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0x0092,
+        iana_name='TLS_RSA_PSK_WITH_RC4_128_SHA',
+        openssl_name='RSA-PSK-RC4-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.RC4_128,
@@ -1045,6 +1284,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0x0093,
+        iana_name='TLS_RSA_PSK_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='RSA-PSK-3DES-EDE-CBC-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -1054,6 +1295,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0x0094,
+        iana_name='TLS_RSA_PSK_WITH_AES_128_CBC_SHA',
+        openssl_name='RSA-PSK-AES128-CBC-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -1063,6 +1306,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0x0095,
+        iana_name='TLS_RSA_PSK_WITH_AES_256_CBC_SHA',
+        openssl_name='RSA-PSK-AES256-CBC-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -1072,6 +1317,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x0096,
+        iana_name='TLS_RSA_WITH_SEED_CBC_SHA',
+        openssl_name='SEED-SHA',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.SEED,
@@ -1081,6 +1328,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x0097,
+        iana_name='TLS_DH_DSS_WITH_SEED_CBC_SHA',
+        openssl_name='DH-DSS-SEED-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.SEED,
@@ -1090,6 +1339,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x0098,
+        iana_name='TLS_DH_RSA_WITH_SEED_CBC_SHA',
+        openssl_name='DH-RSA-SEED-SHA',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.SEED,
@@ -1099,6 +1350,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x0099,
+        iana_name='TLS_DHE_DSS_WITH_SEED_CBC_SHA',
+        openssl_name='DHE-DSS-SEED-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.SEED,
@@ -1108,6 +1361,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_SEED_CBC_SHA = CipherSuiteParams(
         code=0x009a,
+        iana_name='TLS_DHE_RSA_WITH_SEED_CBC_SHA',
+        openssl_name='DHE-RSA-SEED-SHA',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.SEED,
@@ -1117,6 +1372,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_SEED_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x009b,
+        iana_name='TLS_DH_anon_WITH_SEED_CBC_SHA',
+        openssl_name='ADH-SEED-SHA',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.SEED,
@@ -1126,6 +1383,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x009c,
+        iana_name='TLS_RSA_WITH_AES_128_GCM_SHA256',
+        openssl_name='AES128-GCM-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1135,6 +1394,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x009d,
+        iana_name='TLS_RSA_WITH_AES_256_GCM_SHA384',
+        openssl_name='AES256-GCM-SHA384',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1144,6 +1405,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x009e,
+        iana_name='TLS_DHE_RSA_WITH_AES_128_GCM_SHA256',
+        openssl_name='DHE-RSA-AES128-GCM-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1153,6 +1416,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x009f,
+        iana_name='TLS_DHE_RSA_WITH_AES_256_GCM_SHA384',
+        openssl_name='DHE-RSA-AES256-GCM-SHA384',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1162,6 +1427,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00a0,
+        iana_name='TLS_DH_RSA_WITH_AES_128_GCM_SHA256',
+        openssl_name='DH-RSA-AES128-GCM-SHA256',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1171,6 +1438,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00a1,
+        iana_name='TLS_DH_RSA_WITH_AES_256_GCM_SHA384',
+        openssl_name='DH-RSA-AES256-GCM-SHA384',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1180,6 +1449,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00a2,
+        iana_name='TLS_DHE_DSS_WITH_AES_128_GCM_SHA256',
+        openssl_name='DHE-DSS-AES128-GCM-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_128,
@@ -1189,6 +1460,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00a3,
+        iana_name='TLS_DHE_DSS_WITH_AES_256_GCM_SHA384',
+        openssl_name='DHE-DSS-AES256-GCM-SHA384',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_256,
@@ -1198,6 +1471,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00a4,
+        iana_name='TLS_DH_DSS_WITH_AES_128_GCM_SHA256',
+        openssl_name='DH-DSS-AES128-GCM-SHA256',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_128,
@@ -1207,6 +1482,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00a5,
+        iana_name='TLS_DH_DSS_WITH_AES_256_GCM_SHA384',
+        openssl_name='DH-DSS-AES256-GCM-SHA384',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_256,
@@ -1216,6 +1493,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00a6,
+        iana_name='TLS_DH_anon_WITH_AES_128_GCM_SHA256',
+        openssl_name='ADH-AES128-GCM-SHA256',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_128,
@@ -1225,6 +1504,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00a7,
+        iana_name='TLS_DH_anon_WITH_AES_256_GCM_SHA384',
+        openssl_name='ADH-AES256-GCM-SHA384',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_256,
@@ -1234,6 +1515,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00a8,
+        iana_name='TLS_PSK_WITH_AES_128_GCM_SHA256',
+        openssl_name='PSK-AES128-GCM-SHA256',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -1243,6 +1526,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00a9,
+        iana_name='TLS_PSK_WITH_AES_256_GCM_SHA384',
+        openssl_name='PSK-AES256-GCM-SHA384',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -1252,6 +1537,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00aa,
+        iana_name='TLS_DHE_PSK_WITH_AES_128_GCM_SHA256',
+        openssl_name='DHE-PSK-AES128-GCM-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -1261,6 +1548,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00ab,
+        iana_name='TLS_DHE_PSK_WITH_AES_256_GCM_SHA384',
+        openssl_name='DHE-PSK-AES256-GCM-SHA384',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -1270,6 +1559,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x00ac,
+        iana_name='TLS_RSA_PSK_WITH_AES_128_GCM_SHA256',
+        openssl_name='RSA-PSK-AES128-GCM-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -1279,6 +1570,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x00ad,
+        iana_name='TLS_RSA_PSK_WITH_AES_256_GCM_SHA384',
+        openssl_name='RSA-PSK-AES256-GCM-SHA384',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -1288,6 +1581,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00ae,
+        iana_name='TLS_PSK_WITH_AES_128_CBC_SHA256',
+        openssl_name='PSK-AES128-CBC-SHA256',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -1297,6 +1592,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0x00af,
+        iana_name='TLS_PSK_WITH_AES_256_CBC_SHA384',
+        openssl_name='PSK-AES256-CBC-SHA384',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -1306,6 +1603,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_NULL_SHA256 = CipherSuiteParams(
         code=0x00b0,
+        iana_name='TLS_PSK_WITH_NULL_SHA256',
+        openssl_name='PSK-NULL-SHA256',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -1315,6 +1614,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_NULL_SHA384 = CipherSuiteParams(
         code=0x00b1,
+        iana_name='TLS_PSK_WITH_NULL_SHA384',
+        openssl_name='PSK-NULL-SHA384',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -1324,6 +1625,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00b2,
+        iana_name='TLS_DHE_PSK_WITH_AES_128_CBC_SHA256',
+        openssl_name='DHE-PSK-AES128-CBC-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -1333,6 +1636,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0x00b3,
+        iana_name='TLS_DHE_PSK_WITH_AES_256_CBC_SHA384',
+        openssl_name='DHE-PSK-AES256-CBC-SHA384',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -1342,6 +1647,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_NULL_SHA256 = CipherSuiteParams(
         code=0x00b4,
+        iana_name='TLS_DHE_PSK_WITH_NULL_SHA256',
+        openssl_name='DHE-PSK-NULL-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -1351,6 +1658,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_NULL_SHA384 = CipherSuiteParams(
         code=0x00b5,
+        iana_name='TLS_DHE_PSK_WITH_NULL_SHA384',
+        openssl_name='DHE-PSK-NULL-SHA384',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -1360,6 +1669,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00b6,
+        iana_name='TLS_RSA_PSK_WITH_AES_128_CBC_SHA256',
+        openssl_name='RSA-PSK-AES128-CBC-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -1369,6 +1680,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0x00b7,
+        iana_name='TLS_RSA_PSK_WITH_AES_256_CBC_SHA384',
+        openssl_name='RSA-PSK-AES256-CBC-SHA384',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -1378,6 +1691,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_NULL_SHA256 = CipherSuiteParams(
         code=0x00b8,
+        iana_name='TLS_RSA_PSK_WITH_NULL_SHA256',
+        openssl_name='RSA-PSK-NULL-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -1387,6 +1702,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_NULL_SHA384 = CipherSuiteParams(
         code=0x00b9,
+        iana_name='TLS_RSA_PSK_WITH_NULL_SHA384',
+        openssl_name='RSA-PSK-NULL-SHA384',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -1396,6 +1713,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00ba,
+        iana_name='TLS_RSA_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='CAMELLIA128-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -1405,6 +1724,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00bb,
+        iana_name='TLS_DH_DSS_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='DH-DSS-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -1414,6 +1735,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00bc,
+        iana_name='TLS_DH_RSA_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='DH-RSA-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -1423,6 +1746,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00bd,
+        iana_name='TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='DHE-DSS-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -1432,6 +1757,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0x00be,
+        iana_name='TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='DHE-RSA-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -1441,6 +1768,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00bf,
+        iana_name='TLS_DH_anon_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='ADH-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -1450,6 +1779,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c0,
+        iana_name='TLS_RSA_WITH_CAMELLIA_256_CBC_SHA256',
+        openssl_name='CAMELLIA256-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -1459,6 +1790,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c1,
+        iana_name='TLS_DH_DSS_WITH_CAMELLIA_256_CBC_SHA256',
+        openssl_name='DH-DSS-CAMELLIA256-SHA256',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -1468,6 +1801,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c2,
+        iana_name='TLS_DH_RSA_WITH_CAMELLIA_256_CBC_SHA256',
+        openssl_name='DH-RSA-CAMELLIA256-SHA256',
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -1477,6 +1812,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c3,
+        iana_name='TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA256',
+        openssl_name='DHE-DSS-CAMELLIA256-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -1486,6 +1823,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(
         code=0x00c4,
+        iana_name='TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA256',
+        openssl_name='DHE-RSA-CAMELLIA256-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -1495,6 +1834,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0x00c5,
+        iana_name='TLS_DH_anon_WITH_CAMELLIA_256_CBC_SHA256',
+        openssl_name='ADH-CAMELLIA256-SHA256',
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -1504,6 +1845,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_CECPQ1_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0x16b7,
+        iana_name='TLS_CECPQ1_RSA_WITH_CHACHA20_POLY1305_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.CECPQ1,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -1513,6 +1856,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_CECPQ1_ECDSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0x16b8,
+        iana_name='TLS_CECPQ1_ECDSA_WITH_CHACHA20_POLY1305_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.CECPQ1,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -1522,6 +1867,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_CECPQ1_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x16b9,
+        iana_name='TLS_CECPQ1_RSA_WITH_AES_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.CECPQ1,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1531,6 +1878,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_CECPQ1_ECDSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x16ba,
+        iana_name='TLS_CECPQ1_ECDSA_WITH_AES_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.CECPQ1,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1540,6 +1889,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc001,
+        iana_name='TLS_ECDH_ECDSA_WITH_NULL_SHA',
+        openssl_name='ECDH-ECDSA-NULL-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=None,
@@ -1549,6 +1900,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc002,
+        iana_name='TLS_ECDH_ECDSA_WITH_RC4_128_SHA',
+        openssl_name='ECDH-ECDSA-RC4-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.RC4_128,
@@ -1558,6 +1911,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc003,
+        iana_name='TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='ECDH-ECDSA-DES-CBC3-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -1567,6 +1922,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc004,
+        iana_name='TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA',
+        openssl_name='ECDH-ECDSA-AES128-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1576,6 +1933,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc005,
+        iana_name='TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA',
+        openssl_name='ECDH-ECDSA-AES256-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1585,6 +1944,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc006,
+        iana_name='TLS_ECDHE_ECDSA_WITH_NULL_SHA',
+        openssl_name='ECDHE-ECDSA-NULL-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=None,
@@ -1594,6 +1955,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc007,
+        iana_name='TLS_ECDHE_ECDSA_WITH_RC4_128_SHA',
+        openssl_name='ECDHE-ECDSA-RC4-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.RC4_128,
@@ -1603,6 +1966,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc008,
+        iana_name='TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='ECDHE-ECDSA-DES-CBC3-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -1612,6 +1977,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc009,
+        iana_name='TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA',
+        openssl_name='ECDHE-ECDSA-AES128-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1621,6 +1988,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc00a,
+        iana_name='TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA',
+        openssl_name='ECDHE-ECDSA-AES256-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1630,6 +1999,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc00b,
+        iana_name='TLS_ECDH_RSA_WITH_NULL_SHA',
+        openssl_name='ECDH-RSA-NULL-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=None,
@@ -1639,6 +2010,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc00c,
+        iana_name='TLS_ECDH_RSA_WITH_RC4_128_SHA',
+        openssl_name='ECDH-RSA-RC4-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC4_128,
@@ -1648,6 +2021,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc00d,
+        iana_name='TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='ECDH-RSA-DES-CBC3-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -1657,6 +2032,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc00e,
+        iana_name='TLS_ECDH_RSA_WITH_AES_128_CBC_SHA',
+        openssl_name='ECDH-RSA-AES128-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1666,6 +2043,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc00f,
+        iana_name='TLS_ECDH_RSA_WITH_AES_256_CBC_SHA',
+        openssl_name='ECDH-RSA-AES256-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1675,6 +2054,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc010,
+        iana_name='TLS_ECDHE_RSA_WITH_NULL_SHA',
+        openssl_name='ECDHE-RSA-NULL-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=None,
@@ -1684,6 +2065,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc011,
+        iana_name='TLS_ECDHE_RSA_WITH_RC4_128_SHA',
+        openssl_name='ECDHE-RSA-RC4-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC4_128,
@@ -1693,6 +2076,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc012,
+        iana_name='TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='ECDHE-RSA-DES-CBC3-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -1702,6 +2087,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc013,
+        iana_name='TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA',
+        openssl_name='ECDHE-RSA-AES128-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1711,6 +2098,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc014,
+        iana_name='TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA',
+        openssl_name='ECDHE-RSA-AES256-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1720,6 +2109,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_anon_WITH_NULL_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc015,
+        iana_name='TLS_ECDH_anon_WITH_NULL_SHA',
+        openssl_name='AECDH-NULL-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.anon,
         bulk_cipher=None,
@@ -1729,6 +2120,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_anon_WITH_RC4_128_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc016,
+        iana_name='TLS_ECDH_anon_WITH_RC4_128_SHA',
+        openssl_name='AECDH-RC4-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.RC4_128,
@@ -1738,6 +2131,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc017,
+        iana_name='TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='AECDH-DES-CBC3-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -1747,6 +2142,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_anon_WITH_AES_128_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc018,
+        iana_name='TLS_ECDH_anon_WITH_AES_128_CBC_SHA',
+        openssl_name='AECDH-AES128-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_128,
@@ -1756,6 +2153,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_anon_WITH_AES_256_CBC_SHA = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc019,
+        iana_name='TLS_ECDH_anon_WITH_AES_256_CBC_SHA',
+        openssl_name='AECDH-AES256-SHA',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_256,
@@ -1765,6 +2164,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01a,
+        iana_name='TLS_SRP_SHA_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='SRP-3DES-EDE-CBC-SHA',
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.SRP,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -1774,6 +2175,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01b,
+        iana_name='TLS_SRP_SHA_RSA_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='SRP-RSA-3DES-EDE-CBC-SHA',
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -1783,6 +2186,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc01c,
+        iana_name='TLS_SRP_SHA_DSS_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='SRP-DSS-3DES-EDE-CBC-SHA',
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -1792,6 +2197,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_SRP_SHA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01d,
+        iana_name='TLS_SRP_SHA_WITH_AES_128_CBC_SHA',
+        openssl_name='SRP-AES-128-CBC-SHA',
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.SRP,
         bulk_cipher=BlockCipher.AES_128,
@@ -1801,6 +2208,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01e,
+        iana_name='TLS_SRP_SHA_RSA_WITH_AES_128_CBC_SHA',
+        openssl_name='SRP-RSA-AES-128-CBC-SHA',
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1810,6 +2219,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc01f,
+        iana_name='TLS_SRP_SHA_DSS_WITH_AES_128_CBC_SHA',
+        openssl_name='SRP-DSS-AES-128-CBC-SHA',
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_128,
@@ -1819,6 +2230,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_SRP_SHA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc020,
+        iana_name='TLS_SRP_SHA_WITH_AES_256_CBC_SHA',
+        openssl_name='SRP-AES-256-CBC-SHA',
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.SRP,
         bulk_cipher=BlockCipher.AES_256,
@@ -1828,6 +2241,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc021,
+        iana_name='TLS_SRP_SHA_RSA_WITH_AES_256_CBC_SHA',
+        openssl_name='SRP-RSA-AES-256-CBC-SHA',
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1837,6 +2252,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc022,
+        iana_name='TLS_SRP_SHA_DSS_WITH_AES_256_CBC_SHA',
+        openssl_name='SRP-DSS-AES-256-CBC-SHA',
         key_exchange=KeyExchange.SRP,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.AES_256,
@@ -1846,6 +2263,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc023,
+        iana_name='TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256',
+        openssl_name='ECDHE-ECDSA-AES128-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1855,6 +2274,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc024,
+        iana_name='TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384',
+        openssl_name='ECDHE-ECDSA-AES256-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1864,6 +2285,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc025,
+        iana_name='TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256',
+        openssl_name='ECDH-ECDSA-AES128-SHA256',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1873,6 +2296,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc026,
+        iana_name='TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384',
+        openssl_name='ECDH-ECDSA-AES256-SHA384',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1882,6 +2307,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc027,
+        iana_name='TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256',
+        openssl_name='ECDHE-RSA-AES128-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1891,6 +2318,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc028,
+        iana_name='TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384',
+        openssl_name='ECDHE-RSA-AES256-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1900,6 +2329,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc029,
+        iana_name='TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256',
+        openssl_name='ECDH-RSA-AES128-SHA256',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1909,6 +2340,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc02a,
+        iana_name='TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384',
+        openssl_name='ECDH-RSA-AES256-SHA384',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1918,6 +2351,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc02b,
+        iana_name='TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256',
+        openssl_name='ECDHE-ECDSA-AES128-GCM-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1927,6 +2362,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc02c,
+        iana_name='TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384',
+        openssl_name='ECDHE-ECDSA-AES256-GCM-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1936,6 +2373,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc02d,
+        iana_name='TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256',
+        openssl_name='ECDH-ECDSA-AES128-GCM-SHA256',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1945,6 +2384,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc02e,
+        iana_name='TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384',
+        openssl_name='ECDH-ECDSA-AES256-GCM-SHA384',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1954,6 +2395,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc02f,
+        iana_name='TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
+        openssl_name='ECDHE-RSA-AES128-GCM-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1963,6 +2406,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc030,
+        iana_name='TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384',
+        openssl_name='ECDHE-RSA-AES256-GCM-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1972,6 +2417,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc031,
+        iana_name='TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256',
+        openssl_name='ECDH-RSA-AES128-GCM-SHA256',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -1981,6 +2428,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc032,
+        iana_name='TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384',
+        openssl_name='ECDH-RSA-AES256-GCM-SHA384',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -1990,6 +2439,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_RC4_128_SHA = CipherSuiteParams(
         code=0xc033,
+        iana_name='TLS_ECDHE_PSK_WITH_RC4_128_SHA',
+        openssl_name='ECDHE-PSK-RC4-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.RC4_128,
@@ -1999,6 +2450,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xc034,
+        iana_name='TLS_ECDHE_PSK_WITH_3DES_EDE_CBC_SHA',
+        openssl_name='ECDHE-PSK-3DES-EDE-CBC-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -2008,6 +2461,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA = CipherSuiteParams(
         code=0xc035,
+        iana_name='TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA',
+        openssl_name='ECDHE-PSK-AES128-CBC-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -2017,6 +2472,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA = CipherSuiteParams(
         code=0xc036,
+        iana_name='TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA',
+        openssl_name='ECDHE-PSK-AES256-CBC-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -2026,6 +2483,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc037,
+        iana_name='TLS_ECDHE_PSK_WITH_AES_128_CBC_SHA256',
+        openssl_name='ECDHE-PSK-AES128-CBC-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -2035,6 +2494,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc038,
+        iana_name='TLS_ECDHE_PSK_WITH_AES_256_CBC_SHA384',
+        openssl_name='ECDHE-PSK-AES256-CBC-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -2044,6 +2505,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_NULL_SHA = CipherSuiteParams(
         code=0xc039,
+        iana_name='TLS_ECDHE_PSK_WITH_NULL_SHA',
+        openssl_name='ECDHE-PSK-NULL-SHA',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -2053,6 +2516,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_NULL_SHA256 = CipherSuiteParams(
         code=0xc03a,
+        iana_name='TLS_ECDHE_PSK_WITH_NULL_SHA256',
+        openssl_name='ECDHE-PSK-NULL-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -2062,6 +2527,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_NULL_SHA384 = CipherSuiteParams(
         code=0xc03b,
+        iana_name='TLS_ECDHE_PSK_WITH_NULL_SHA384',
+        openssl_name='ECDHE-PSK-NULL-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=None,
@@ -2071,6 +2538,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc03c,
+        iana_name='TLS_RSA_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2080,6 +2549,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc03d,
+        iana_name='TLS_RSA_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2089,6 +2560,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc03e,
+        iana_name='TLS_DH_DSS_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2098,6 +2571,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc03f,
+        iana_name='TLS_DH_DSS_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2107,6 +2582,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc040,
+        iana_name='TLS_DH_RSA_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2116,6 +2593,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc041,
+        iana_name='TLS_DH_RSA_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2125,6 +2604,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc042,
+        iana_name='TLS_DHE_DSS_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2134,6 +2615,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc043,
+        iana_name='TLS_DHE_DSS_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2143,6 +2626,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc044,
+        iana_name='TLS_DHE_RSA_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2152,6 +2637,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc045,
+        iana_name='TLS_DHE_RSA_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2161,6 +2648,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc046,
+        iana_name='TLS_DH_anon_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2170,6 +2659,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc047,
+        iana_name='TLS_DH_anon_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2179,6 +2670,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc048,
+        iana_name='TLS_ECDHE_ECDSA_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2188,6 +2681,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc049,
+        iana_name='TLS_ECDHE_ECDSA_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2197,6 +2692,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc04a,
+        iana_name='TLS_ECDH_ECDSA_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2206,6 +2703,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc04b,
+        iana_name='TLS_ECDH_ECDSA_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2215,6 +2714,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc04c,
+        iana_name='TLS_ECDHE_RSA_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2224,6 +2725,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc04d,
+        iana_name='TLS_ECDHE_RSA_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2233,6 +2736,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc04e,
+        iana_name='TLS_ECDH_RSA_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2242,6 +2747,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc04f,
+        iana_name='TLS_ECDH_RSA_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2251,6 +2758,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc050,
+        iana_name='TLS_RSA_WITH_ARIA_128_GCM_SHA256',
+        openssl_name='ARIA128-GCM-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2260,6 +2769,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc051,
+        iana_name='TLS_RSA_WITH_ARIA_256_GCM_SHA384',
+        openssl_name='ARIA256-GCM-SHA384',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2269,6 +2780,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc052,
+        iana_name='TLS_DHE_RSA_WITH_ARIA_128_GCM_SHA256',
+        openssl_name='DHE-RSA-ARIA128-GCM-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2278,6 +2791,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc053,
+        iana_name='TLS_DHE_RSA_WITH_ARIA_256_GCM_SHA384',
+        openssl_name='DHE-RSA-ARIA256-GCM-SHA384',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2287,6 +2802,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc054,
+        iana_name='TLS_DH_RSA_WITH_ARIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2296,6 +2813,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc055,
+        iana_name='TLS_DH_RSA_WITH_ARIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2305,6 +2824,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc056,
+        iana_name='TLS_DHE_DSS_WITH_ARIA_128_GCM_SHA256',
+        openssl_name='DHE-DSS-ARIA128-GCM-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2314,6 +2835,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc057,
+        iana_name='TLS_DHE_DSS_WITH_ARIA_256_GCM_SHA384',
+        openssl_name='DHE-DSS-ARIA256-GCM-SHA384',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2323,6 +2846,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc058,
+        iana_name='TLS_DH_DSS_WITH_ARIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2332,6 +2857,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc059,
+        iana_name='TLS_DH_DSS_WITH_ARIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2341,6 +2868,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc05a,
+        iana_name='TLS_DH_anon_WITH_ARIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2350,6 +2879,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc05b,
+        iana_name='TLS_DH_anon_WITH_ARIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2359,6 +2890,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc05c,
+        iana_name='TLS_ECDHE_ECDSA_WITH_ARIA_128_GCM_SHA256',
+        openssl_name='ECDHE-ECDSA-ARIA128-GCM-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2368,6 +2901,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc05d,
+        iana_name='TLS_ECDHE_ECDSA_WITH_ARIA_256_GCM_SHA384',
+        openssl_name='ECDHE-ECDSA-ARIA256-GCM-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2377,6 +2912,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc05e,
+        iana_name='TLS_ECDH_ECDSA_WITH_ARIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2386,6 +2923,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc05f,
+        iana_name='TLS_ECDH_ECDSA_WITH_ARIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2395,6 +2934,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc060,
+        iana_name='TLS_ECDHE_RSA_WITH_ARIA_128_GCM_SHA256',
+        openssl_name='ECDHE-ARIA128-GCM-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2404,6 +2945,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc061,
+        iana_name='TLS_ECDHE_RSA_WITH_ARIA_256_GCM_SHA384',
+        openssl_name='ECDHE-ARIA256-GCM-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2413,6 +2956,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc062,
+        iana_name='TLS_ECDH_RSA_WITH_ARIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2422,6 +2967,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc063,
+        iana_name='TLS_ECDH_RSA_WITH_ARIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2431,6 +2978,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc064,
+        iana_name='TLS_PSK_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2440,6 +2989,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc065,
+        iana_name='TLS_PSK_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2449,6 +3000,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc066,
+        iana_name='TLS_DHE_PSK_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2458,6 +3011,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc067,
+        iana_name='TLS_DHE_PSK_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2467,6 +3022,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc068,
+        iana_name='TLS_RSA_PSK_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2476,6 +3033,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc069,
+        iana_name='TLS_RSA_PSK_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2485,6 +3044,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc06a,
+        iana_name='TLS_PSK_WITH_ARIA_128_GCM_SHA256',
+        openssl_name='PSK-ARIA128-GCM-SHA256',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2494,6 +3055,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc06b,
+        iana_name='TLS_PSK_WITH_ARIA_256_GCM_SHA384',
+        openssl_name='PSK-ARIA256-GCM-SHA384',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2503,6 +3066,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc06c,
+        iana_name='TLS_DHE_PSK_WITH_ARIA_128_GCM_SHA256',
+        openssl_name='DHE-PSK-ARIA128-GCM-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2512,6 +3077,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc06d,
+        iana_name='TLS_DHE_PSK_WITH_ARIA_256_GCM_SHA384',
+        openssl_name='DHE-PSK-ARIA256-GCM-SHA384',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2521,6 +3088,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc06e,
+        iana_name='TLS_RSA_PSK_WITH_ARIA_128_GCM_SHA256',
+        openssl_name='RSA-PSK-ARIA128-GCM-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2530,6 +3099,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc06f,
+        iana_name='TLS_RSA_PSK_WITH_ARIA_256_GCM_SHA384',
+        openssl_name='RSA-PSK-ARIA256-GCM-SHA384',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2539,6 +3110,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc070,
+        iana_name='TLS_ECDHE_PSK_WITH_ARIA_128_CBC_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_128,
@@ -2548,6 +3121,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc071,
+        iana_name='TLS_ECDHE_PSK_WITH_ARIA_256_CBC_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ARIA_256,
@@ -2557,6 +3132,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc072,
+        iana_name='TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='ECDHE-ECDSA-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2566,6 +3143,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc073,
+        iana_name='TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_CBC_SHA384',
+        openssl_name='ECDHE-ECDSA-CAMELLIA256-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2575,6 +3154,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc074,
+        iana_name='TLS_ECDH_ECDSA_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='ECDH-ECDSA-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2584,6 +3165,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc075,
+        iana_name='TLS_ECDH_ECDSA_WITH_CAMELLIA_256_CBC_SHA384',
+        openssl_name='ECDH-ECDSA-CAMELLIA256-SHA384',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2593,6 +3176,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc076,
+        iana_name='TLS_ECDHE_RSA_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='ECDHE-RSA-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2602,6 +3187,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc077,
+        iana_name='TLS_ECDHE_RSA_WITH_CAMELLIA_256_CBC_SHA384',
+        openssl_name='ECDHE-RSA-CAMELLIA256-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2611,6 +3198,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc078,
+        iana_name='TLS_ECDH_RSA_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='ECDH-RSA-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2620,6 +3209,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc079,
+        iana_name='TLS_ECDH_RSA_WITH_CAMELLIA_256_CBC_SHA384',
+        openssl_name='ECDH-RSA-CAMELLIA256-SHA384',
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2629,6 +3220,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc07a,
+        iana_name='TLS_RSA_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2638,6 +3231,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc07b,
+        iana_name='TLS_RSA_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2647,6 +3242,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc07c,
+        iana_name='TLS_DHE_RSA_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2656,6 +3253,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc07d,
+        iana_name='TLS_DHE_RSA_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2665,6 +3264,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc07e,
+        iana_name='TLS_DH_RSA_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2674,6 +3275,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc07f,
+        iana_name='TLS_DH_RSA_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2683,6 +3286,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc080,
+        iana_name='TLS_DHE_DSS_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2692,6 +3297,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc081,
+        iana_name='TLS_DHE_DSS_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2701,6 +3308,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc082,
+        iana_name='TLS_DH_DSS_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2710,6 +3319,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc083,
+        iana_name='TLS_DH_DSS_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DH,
         authentication=Authentication.DSS,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2719,6 +3330,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc084,
+        iana_name='TLS_DH_anon_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2728,6 +3341,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(  # pylint: disable=invalid-name
         code=0xc085,
+        iana_name='TLS_DH_anon_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ADH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2737,6 +3352,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc086,
+        iana_name='TLS_ECDHE_ECDSA_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2746,6 +3363,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc087,
+        iana_name='TLS_ECDHE_ECDSA_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2755,6 +3374,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc088,
+        iana_name='TLS_ECDH_ECDSA_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2764,6 +3385,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc089,
+        iana_name='TLS_ECDH_ECDSA_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2773,6 +3396,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc08a,
+        iana_name='TLS_ECDHE_RSA_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2782,6 +3407,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc08b,
+        iana_name='TLS_ECDHE_RSA_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2791,6 +3418,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc08c,
+        iana_name='TLS_ECDH_RSA_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2800,6 +3429,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc08d,
+        iana_name='TLS_ECDH_RSA_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDH,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2809,6 +3440,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc08e,
+        iana_name='TLS_PSK_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2818,6 +3451,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc08f,
+        iana_name='TLS_PSK_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2827,6 +3462,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc090,
+        iana_name='TLS_DHE_PSK_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2836,6 +3473,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc091,
+        iana_name='TLS_DHE_PSK_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2845,6 +3484,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256 = CipherSuiteParams(
         code=0xc092,
+        iana_name='TLS_RSA_PSK_WITH_CAMELLIA_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2854,6 +3495,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384 = CipherSuiteParams(
         code=0xc093,
+        iana_name='TLS_RSA_PSK_WITH_CAMELLIA_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2863,6 +3506,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc094,
+        iana_name='TLS_PSK_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='PSK-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2872,6 +3517,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc095,
+        iana_name='TLS_PSK_WITH_CAMELLIA_256_CBC_SHA384',
+        openssl_name='PSK-CAMELLIA256-SHA384',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2881,6 +3528,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc096,
+        iana_name='TLS_DHE_PSK_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='DHE-PSK-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2890,6 +3539,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc097,
+        iana_name='TLS_DHE_PSK_WITH_CAMELLIA_256_CBC_SHA384',
+        openssl_name='DHE-PSK-CAMELLIA256-SHA384',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2899,6 +3550,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc098,
+        iana_name='TLS_RSA_PSK_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='RSA-PSK-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2908,6 +3561,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc099,
+        iana_name='TLS_RSA_PSK_WITH_CAMELLIA_256_CBC_SHA384',
+        openssl_name='RSA-PSK-CAMELLIA256-SHA384',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2917,6 +3572,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256 = CipherSuiteParams(
         code=0xc09a,
+        iana_name='TLS_ECDHE_PSK_WITH_CAMELLIA_128_CBC_SHA256',
+        openssl_name='ECDHE-PSK-CAMELLIA128-SHA256',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_128,
@@ -2926,6 +3583,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384 = CipherSuiteParams(
         code=0xc09b,
+        iana_name='TLS_ECDHE_PSK_WITH_CAMELLIA_256_CBC_SHA384',
+        openssl_name='ECDHE-PSK-CAMELLIA256-SHA384',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CAMELLIA_256,
@@ -2935,6 +3594,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_AES_128_CCM = CipherSuiteParams(
         code=0xc09c,
+        iana_name='TLS_RSA_WITH_AES_128_CCM',
+        openssl_name='AES128-CCM',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -2944,6 +3605,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_AES_256_CCM = CipherSuiteParams(
         code=0xc09d,
+        iana_name='TLS_RSA_WITH_AES_256_CCM',
+        openssl_name='AES256-CCM',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -2953,6 +3616,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_AES_128_CCM = CipherSuiteParams(
         code=0xc09e,
+        iana_name='TLS_DHE_RSA_WITH_AES_128_CCM',
+        openssl_name='DHE-RSA-AES128-CCM',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -2962,6 +3627,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_AES_256_CCM = CipherSuiteParams(
         code=0xc09f,
+        iana_name='TLS_DHE_RSA_WITH_AES_256_CCM',
+        openssl_name='DHE-RSA-AES256-CCM',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -2971,6 +3638,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0a0,
+        iana_name='TLS_RSA_WITH_AES_128_CCM_8',
+        openssl_name='AES128-CCM8',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -2980,6 +3649,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0a1,
+        iana_name='TLS_RSA_WITH_AES_256_CCM_8',
+        openssl_name='AES256-CCM8',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -2989,6 +3660,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0a2,
+        iana_name='TLS_DHE_RSA_WITH_AES_128_CCM_8',
+        openssl_name='DHE-RSA-AES128-CCM8',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -2998,6 +3671,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0a3,
+        iana_name='TLS_DHE_RSA_WITH_AES_256_CCM_8',
+        openssl_name='DHE-RSA-AES256-CCM8',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -3007,6 +3682,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_AES_128_CCM = CipherSuiteParams(
         code=0xc0a4,
+        iana_name='TLS_PSK_WITH_AES_128_CCM',
+        openssl_name='PSK-AES128-CCM',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -3016,6 +3693,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_AES_256_CCM = CipherSuiteParams(
         code=0xc0a5,
+        iana_name='TLS_PSK_WITH_AES_256_CCM',
+        openssl_name='PSK-AES256-CCM',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -3025,6 +3704,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_AES_128_CCM = CipherSuiteParams(
         code=0xc0a6,
+        iana_name='TLS_DHE_PSK_WITH_AES_128_CCM',
+        openssl_name='DHE-PSK-AES128-CCM',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -3034,6 +3715,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_AES_256_CCM = CipherSuiteParams(
         code=0xc0a7,
+        iana_name='TLS_DHE_PSK_WITH_AES_256_CCM',
+        openssl_name='DHE-PSK-AES256-CCM',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -3043,6 +3726,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0a8,
+        iana_name='TLS_PSK_WITH_AES_128_CCM_8',
+        openssl_name='PSK-AES128-CCM8',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -3052,6 +3737,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0a9,
+        iana_name='TLS_PSK_WITH_AES_256_CCM_8',
+        openssl_name='PSK-AES256-CCM8',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -3061,6 +3748,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0aa,
+        iana_name='TLS_DHE_PSK_WITH_AES_128_CCM_8',
+        openssl_name='DHE-PSK-AES128-CCM8',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -3070,6 +3759,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0ab,
+        iana_name='TLS_DHE_PSK_WITH_AES_256_CCM_8',
+        openssl_name='DHE-PSK-AES256-CCM8',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -3079,6 +3770,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_AES_128_CCM = CipherSuiteParams(
         code=0xc0ac,
+        iana_name='TLS_ECDHE_ECDSA_WITH_AES_128_CCM',
+        openssl_name='ECDHE-ECDSA-AES128-CCM',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -3088,6 +3781,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_AES_256_CCM = CipherSuiteParams(
         code=0xc0ad,
+        iana_name='TLS_ECDHE_ECDSA_WITH_AES_256_CCM',
+        openssl_name='ECDHE-ECDSA-AES256-CCM',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -3097,6 +3792,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8 = CipherSuiteParams(
         code=0xc0ae,
+        iana_name='TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8',
+        openssl_name='ECDHE-ECDSA-AES128-CCM8',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_128,
@@ -3106,6 +3803,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8 = CipherSuiteParams(
         code=0xc0af,
+        iana_name='TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8',
+        openssl_name='ECDHE-ECDSA-AES256-CCM8',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.AES_256,
@@ -3115,6 +3814,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC = CipherSuiteParams(
         code=0xc100,
+        iana_name='TLS_GOSTR341112_256_WITH_KUZNYECHIK_CTR_OMAC',
+        openssl_name=None,
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_12_256,
         bulk_cipher=BlockCipher.GOST_R3412_15_128,
@@ -3124,6 +3825,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341112_256_WITH_MAGMA_CTR_OMAC = CipherSuiteParams(
         code=0xc101,
+        iana_name='TLS_GOSTR341112_256_WITH_MAGMA_CTR_OMAC',
+        openssl_name=None,
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_12_256,
         bulk_cipher=BlockCipher.GOST_R3412_15_64,
@@ -3133,6 +3836,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341112_256_WITH_28147_CNT_IMIT = CipherSuiteParams(
         code=0xc102,
+        iana_name='TLS_GOSTR341112_256_WITH_28147_CNT_IMIT',
+        openssl_name='GOST2012-GOST8912-GOST8912',
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_12_256,
         bulk_cipher=BlockCipher.GOST2814789,
@@ -3142,6 +3847,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L = CipherSuiteParams(
         code=0xc103,
+        iana_name='TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_L',
+        openssl_name=None,
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_12_256,
         bulk_cipher=BlockCipher.GOST_R3412_15_128,
@@ -3151,6 +3858,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341112_256_WITH_MAGMA_MGM_L = CipherSuiteParams(
         code=0xc104,
+        iana_name='TLS_GOSTR341112_256_WITH_MAGMA_MGM_L',
+        openssl_name=None,
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_12_256,
         bulk_cipher=BlockCipher.GOST_R3412_15_64,
@@ -3160,6 +3869,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S = CipherSuiteParams(
         code=0xc105,
+        iana_name='TLS_GOSTR341112_256_WITH_KUZNYECHIK_MGM_S',
+        openssl_name=None,
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_12_256,
         bulk_cipher=BlockCipher.GOST_R3412_15_128,
@@ -3169,6 +3880,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341112_256_WITH_MAGMA_MGM_S = CipherSuiteParams(
         code=0xc106,
+        iana_name='TLS_GOSTR341112_256_WITH_MAGMA_MGM_S',
+        openssl_name=None,
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_12_256,
         bulk_cipher=BlockCipher.GOST_R3412_15_64,
@@ -3178,6 +3891,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcc13,
+        iana_name=None,
+        openssl_name='ECDHE-RSA-CHACHA20-POLY1305',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3187,6 +3902,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcc14,
+        iana_name=None,
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3196,6 +3913,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcc15,
+        iana_name=None,
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3205,6 +3924,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcca8,
+        iana_name='TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256',
+        openssl_name='ECDHE-RSA-CHACHA20-POLY1305',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3214,6 +3935,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xcca9,
+        iana_name='TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256',
+        openssl_name='ECDHE-ECDSA-CHACHA20-POLY1305',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3223,6 +3946,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccaa,
+        iana_name='TLS_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256',
+        openssl_name='DHE-RSA-CHACHA20-POLY1305',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3232,6 +3957,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccab,
+        iana_name='TLS_PSK_WITH_CHACHA20_POLY1305_SHA256',
+        openssl_name='PSK-CHACHA20-POLY1305',
         key_exchange=KeyExchange.PSK,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3241,6 +3968,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccac,
+        iana_name='TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256',
+        openssl_name='ECDHE-PSK-CHACHA20-POLY1305',
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3250,6 +3979,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccad,
+        iana_name='TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256',
+        openssl_name='DHE-PSK-CHACHA20-POLY1305',
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3259,6 +3990,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0xccae,
+        iana_name='TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256',
+        openssl_name='RSA-PSK-CHACHA20-POLY1305',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3268,6 +4001,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0xd001,
+        iana_name='TLS_ECDHE_PSK_WITH_AES_128_GCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -3277,6 +4012,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0xd002,
+        iana_name='TLS_ECDHE_PSK_WITH_AES_256_GCM_SHA384',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_256,
@@ -3286,6 +4023,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256 = CipherSuiteParams(
         code=0xd003,
+        iana_name='TLS_ECDHE_PSK_WITH_AES_128_CCM_8_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -3295,6 +4034,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256 = CipherSuiteParams(
         code=0xd005,
+        iana_name='TLS_ECDHE_PSK_WITH_AES_128_CCM_SHA256',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.AES_128,
@@ -3304,6 +4045,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_AES_128_GCM_SHA256 = CipherSuiteParams(
         code=0x1301,
+        iana_name='TLS_AES_128_GCM_SHA256',
+        openssl_name='TLS_AES_128_GCM_SHA256',
         key_exchange=None,
         authentication=None,
         bulk_cipher=BlockCipher.AES_128,
@@ -3313,6 +4056,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_AES_256_GCM_SHA384 = CipherSuiteParams(
         code=0x1302,
+        iana_name='TLS_AES_256_GCM_SHA384',
+        openssl_name='TLS_AES_256_GCM_SHA384',
         key_exchange=None,
         authentication=None,
         bulk_cipher=BlockCipher.AES_256,
@@ -3322,6 +4067,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_CHACHA20_POLY1305_SHA256 = CipherSuiteParams(
         code=0x1303,
+        iana_name='TLS_CHACHA20_POLY1305_SHA256',
+        openssl_name='TLS_CHACHA20_POLY1305_SHA256',
         key_exchange=None,
         authentication=None,
         bulk_cipher=BlockCipher.CHACHA20,
@@ -3331,6 +4078,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_AES_128_CCM_SHA256 = CipherSuiteParams(
         code=0x1304,
+        iana_name='TLS_AES_128_CCM_SHA256',
+        openssl_name='TLS_AES_128_CCM_SHA256',
         key_exchange=None,
         authentication=None,
         bulk_cipher=BlockCipher.AES_128,
@@ -3340,6 +4089,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_AES_128_CCM_8_SHA256 = CipherSuiteParams(
         code=0x1305,
+        iana_name='TLS_AES_128_CCM_8_SHA256',
+        openssl_name='TLS_AES_128_CCM_8_SHA256',
         key_exchange=None,
         authentication=None,
         bulk_cipher=BlockCipher.AES_128,
@@ -3349,6 +4100,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe410,
+        iana_name='TLS_RSA_WITH_ESTREAM_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ESTREAM_SALSA20,
@@ -3358,6 +4111,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe411,
+        iana_name='TLS_RSA_WITH_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.SALSA20,
@@ -3367,6 +4122,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe412,
+        iana_name='TLS_ECDHE_RSA_WITH_ESTREAM_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ESTREAM_SALSA20,
@@ -3376,6 +4133,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_RSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe413,
+        iana_name='TLS_ECDHE_RSA_WITH_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.SALSA20,
@@ -3385,6 +4144,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe414,
+        iana_name='TLS_ECDHE_ECDSA_WITH_ESTREAM_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.ESTREAM_SALSA20,
@@ -3394,6 +4155,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_ECDSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe415,
+        iana_name='TLS_ECDHE_ECDSA_WITH_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.ECDSA,
         bulk_cipher=BlockCipher.SALSA20,
@@ -3403,6 +4166,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe416,
+        iana_name='TLS_PSK_WITH_ESTREAM_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ESTREAM_SALSA20,
@@ -3412,6 +4177,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe417,
+        iana_name='TLS_PSK_WITH_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.SALSA20,
@@ -3421,6 +4188,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe418,
+        iana_name='TLS_ECDHE_PSK_WITH_ESTREAM_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ESTREAM_SALSA20,
@@ -3430,6 +4199,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_ECDHE_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe419,
+        iana_name='TLS_ECDHE_PSK_WITH_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.ECDHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.SALSA20,
@@ -3439,6 +4210,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41a,
+        iana_name='TLS_RSA_PSK_WITH_ESTREAM_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ESTREAM_SALSA20,
@@ -3448,6 +4221,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41b,
+        iana_name='TLS_RSA_PSK_WITH_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.SALSA20,
@@ -3457,6 +4232,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41c,
+        iana_name='TLS_DHE_PSK_WITH_ESTREAM_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.ESTREAM_SALSA20,
@@ -3466,6 +4243,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_PSK_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41d,
+        iana_name='TLS_DHE_PSK_WITH_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.PSK,
         bulk_cipher=BlockCipher.SALSA20,
@@ -3475,6 +4254,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_ESTREAM_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41e,
+        iana_name='TLS_DHE_RSA_WITH_ESTREAM_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.ESTREAM_SALSA20,
@@ -3484,6 +4265,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_DHE_RSA_WITH_SALSA20_SHA1 = CipherSuiteParams(
         code=0xe41f,
+        iana_name='TLS_DHE_RSA_WITH_SALSA20_SHA1',
+        openssl_name=None,
         key_exchange=KeyExchange.DHE,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.SALSA20,
@@ -3493,6 +4276,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0xfefe,
+        iana_name='TLS_RSA_FIPS_WITH_DES_CBC_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES,
@@ -3502,6 +4287,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xfeff,
+        iana_name='TLS_RSA_FIPS_WITH_3DES_EDE_CBC_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -3511,6 +4298,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_RC2_CBC_MD5 = CipherSuiteParams(
         code=0xff80,
+        iana_name='TLS_RSA_WITH_RC2_CBC_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC2,
@@ -3520,6 +4309,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_IDEA_CBC_MD5 = CipherSuiteParams(
         code=0xff81,
+        iana_name='TLS_RSA_WITH_IDEA_CBC_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.IDEA,
@@ -3529,6 +4320,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_DES_CBC_MD5 = CipherSuiteParams(
         code=0xff82,
+        iana_name='TLS_RSA_WITH_DES_CBC_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES,
@@ -3538,6 +4331,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_RSA_WITH_3DES_EDE_CBC_MD5 = CipherSuiteParams(
         code=0xff83,
+        iana_name='TLS_RSA_WITH_3DES_EDE_CBC_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -3547,6 +4342,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_GOSTR341112_256_WITH_28147_CNT_IMIT = CipherSuiteParams(
         code=0xff85,
+        iana_name=None,
+        openssl_name='LEGACY-GOST2012-GOST8912-GOST8912',
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_94,
         bulk_cipher=BlockCipher.GOST2814789,
@@ -3556,6 +4353,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     TLS_GOSTR341112_256_WITH_NULL_GOSTR3411 = CipherSuiteParams(
         code=0xff87,
+        iana_name='TLS_GOSTR341112_256_WITH_NULL_GOSTR3411',
+        openssl_name='GOST2012-NULL-GOST12',
         key_exchange=KeyExchange.GOST_R3411_12_256,
         authentication=Authentication.GOST_R3410_94,
         bulk_cipher=None,
@@ -3565,6 +4364,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_RSA_FIPS_WITH_DES_CBC_SHA = CipherSuiteParams(
         code=0xffe0,
+        iana_name=None,
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES,
@@ -3574,6 +4375,8 @@ class TlsCipherSuite(TwoByteEnumComposer):
     )
     OLD_TLS_RSA_FIPS_WITH_3DES_EDE_CBC_SHA = CipherSuiteParams(
         code=0xffe1,
+        iana_name=None,
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -3596,6 +4399,8 @@ class SslCipherKindFactory(ThreeByteEnumParsable):
 class SslCipherKind(Serializable, ThreeByteEnumComposer):
     SSL_CK_NULL_WITH_MD5 = CipherSuiteParams(
         code=0x000000,
+        iana_name='SSL_CK_NULL_WITH_MD5',
+        openssl_name='NULL-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=None,
@@ -3605,6 +4410,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_RC4_128_WITH_MD5 = CipherSuiteParams(
         code=0x010080,
+        iana_name='SSL_CK_RC4_128_WITH_MD5',
+        openssl_name='RC4-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC4_128,
@@ -3614,6 +4421,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_RC4_128_EXPORT40_WITH_MD5 = CipherSuiteParams(
         code=0x020080,
+        iana_name='SSL_CK_RC4_128_EXPORT40_WITH_MD5',
+        openssl_name='EXP-RC4-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC4_128,
@@ -3623,6 +4432,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_RC2_128_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x030080,
+        iana_name='SSL_CK_RC2_128_CBC_WITH_MD5',
+        openssl_name='RC2-CBC-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC2_128,
@@ -3632,6 +4443,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_RC2_128_CBC_EXPORT40_WITH_MD5 = CipherSuiteParams(
         code=0x040080,
+        iana_name='SSL_CK_RC2_128_CBC_EXPORT40_WITH_MD5',
+        openssl_name='EXP-RC2-CBC-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC2_128,
@@ -3641,6 +4454,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_IDEA_128_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x050080,
+        iana_name='SSL_CK_IDEA_128_CBC_WITH_MD5',
+        openssl_name='IDEA-CBC-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.IDEA_128,
@@ -3650,6 +4465,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_DES_64_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x060040,
+        iana_name='SSL_CK_DES_64_CBC_WITH_MD5',
+        openssl_name='DES-CBC-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES,
@@ -3659,6 +4476,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_DES_64_CBC_WITH_SHA = CipherSuiteParams(
         code=0x060140,
+        iana_name='SSL_CK_DES_64_CBC_WITH_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES,
@@ -3668,6 +4487,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_DES_192_EDE3_CBC_WITH_MD5 = CipherSuiteParams(
         code=0x0700C0,
+        iana_name='SSL_CK_DES_192_EDE3_CBC_WITH_MD5',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
@@ -3677,6 +4498,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_DES_192_EDE3_CBC_WITH_SHA = CipherSuiteParams(
         code=0x0701C0,
+        iana_name='SSL_CK_DES_192_EDE3_CBC_WITH_SHA',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.TRIPLE_DES,
@@ -3686,6 +4509,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_RC4_64_WITH_MD5 = CipherSuiteParams(
         code=0x080080,
+        iana_name='SSL_CK_RC4_64_WITH_MD5',
+        openssl_name='RC4-64-MD5',
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.RC4_64,
@@ -3695,6 +4520,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_DES_64_CFB64_WITH_MD5_1 = CipherSuiteParams(
         code=0xFF8000,
+        iana_name='SSL_CK_DES_64_CFB64_WITH_MD5_1',
+        openssl_name=None,
         key_exchange=KeyExchange.RSA,
         authentication=Authentication.RSA,
         bulk_cipher=BlockCipher.DES,
@@ -3704,6 +4531,8 @@ class SslCipherKind(Serializable, ThreeByteEnumComposer):
     )
     SSL_CK_NULL = CipherSuiteParams(
         code=0xFF8010,
+        iana_name='SSL_CK_NULL',
+        openssl_name=None,
         key_exchange=None,
         authentication=None,
         bulk_cipher=None,
