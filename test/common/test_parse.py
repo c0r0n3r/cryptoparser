@@ -322,7 +322,7 @@ class TestParserBinary(TestParsableBase):
     def test_parse_timestamp(self):
         parser = ParserBinary(b'\x00\x00\x00\x00\x00\x00\x00\x00')
         parser.parse_timestamp('timestamp')
-        self.assertEqual(parser['timestamp'], datetime.datetime.utcfromtimestamp(0))
+        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0, dateutil.tz.UTC))
 
         parser = ParserBinary(b'\xff\xff\xff\xff\xff\xff\xff\xff')
         parser.parse_timestamp('timestamp')
@@ -330,7 +330,7 @@ class TestParserBinary(TestParsableBase):
 
         parser = ParserBinary(b'\x00\x00\x00\x00\xff\xff\xff\xff')
         parser.parse_timestamp('timestamp')
-        self.assertEqual(parser['timestamp'], datetime.datetime.utcfromtimestamp(0xffffffff))
+        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0xffffffff, dateutil.tz.UTC))
 
 
 class TestParserText(TestParsableBase):

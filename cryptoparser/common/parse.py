@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import abc
-import copy
 import datetime
 import enum
 import struct
@@ -457,7 +456,9 @@ class ParserBinary(ParserBase):
         if value[0] == 0xffffffffffffffff:
             self._parsed_values[name] = None
         else:
-            self._parsed_values[name] = datetime.datetime.utcfromtimestamp(0x00000000ffffffff & value[0])
+            self._parsed_values[name] = datetime.datetime.fromtimestamp(
+                0x00000000ffffffff & value[0], dateutil.tz.UTC
+            )
 
     def _parse_numeric_array(self, name, item_num, item_size, item_numeric_class):
         if self._parsed_length + (item_num * item_size) > len(self._parsable):
@@ -725,8 +726,7 @@ class ComposerBinary(ComposerBase):
         if value is None:
             value = 0xffffffffffffffff
         else:
-            date_time = copy.copy(value)
-            value = int(time.mktime(date_time.replace(tzinfo=dateutil.tz.UTC).timetuple()))
+            value = int(time.mktime(value.timetuple())) - time.timezone
 
         return self._compose_numeric_array([value, ], 8)
 
