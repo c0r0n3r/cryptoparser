@@ -15,7 +15,7 @@ import dateutil
 import dateutil.parser
 import dateutil.tz
 
-from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidType, InvalidValue
 import cryptoparser.common.utils
 
 
@@ -691,10 +691,21 @@ class ComposerText(ComposerBase):
     def compose_parsable(self, value):
         self._composed += value.compose()
 
-    def compose_parsable_array(self, values, separator=','):
+    def compose_parsable_array(self, values, separator=',', fallback_class=None):
         separator = six.ensure_binary(separator, self._encoding)
 
-        self._composed += bytearray(separator).join(map(lambda item: item.compose(), values))
+        composed_items = []
+        for item in values:
+            if isinstance(item, (ComposerBase, ParsableBase, ParsableBaseNoABC)):
+                composed_item = item.compose()
+            elif fallback_class is not None and isinstance(item, fallback_class):
+                composed_item = six.ensure_binary(item, self._encoding)
+            else:
+                raise InvalidType()
+
+            composed_items.append(composed_item)
+
+        self._composed += bytearray(separator).join(composed_items)
 
     def compose_separator(self, value):
         self.compose_string(value)

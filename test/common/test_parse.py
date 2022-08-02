@@ -11,7 +11,7 @@ try:
 except ImportError:
     import mock
 
-from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidType, InvalidValue
 from cryptoparser.common.parse import ParserBinary, ParserText, ParsableBase, ComposerBinary, ComposerText, ByteOrder
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
 
@@ -771,11 +771,28 @@ class TestComposerBinary(TestParsableBase):
 
     def test_compose_parsable_array(self):
         composer = ComposerText()
+        with self.assertRaises(InvalidType):
+            composer.compose_parsable_array([
+                StringEnum.THREE,
+                StringEnum.ONE,
+                'four'
+            ])
+
+        composer = ComposerText()
+        with self.assertRaises(InvalidType):
+            composer.compose_parsable_array([
+                StringEnum.THREE,
+                StringEnum.ONE,
+                'four'
+            ], fallback_class=int)
+
+        composer = ComposerText()
         composer.compose_parsable_array([
             StringEnum.THREE,
             StringEnum.ONE,
-        ])
-        self.assertEqual(composer.composed, b'three,one')
+            'four'
+        ], fallback_class=str)
+        self.assertEqual(composer.composed, b'three,one,four')
 
         composer = ComposerBinary()
         parsable_array = [OneByteParsable(0x01), TwoByteParsable(0x0203), ]

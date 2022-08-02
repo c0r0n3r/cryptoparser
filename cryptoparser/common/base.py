@@ -463,7 +463,7 @@ class VectorString(ArrayBase):
         vector_param = self.get_param()
 
         body_composer = ComposerText(vector_param.encoding)
-        body_composer.compose_parsable_array(self._items, vector_param.separator)
+        body_composer.compose_parsable_array(self._items, vector_param.separator, vector_param.fallback_class)
 
         header_composer = ComposerBinary()
         header_composer.compose_numeric(body_composer.composed_length, self.param.item_num_size)
