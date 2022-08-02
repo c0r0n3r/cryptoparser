@@ -2,6 +2,8 @@
 
 import inspect
 
+import six
+
 
 def get_leaf_classes(base_class):
 
@@ -18,3 +20,12 @@ def get_leaf_classes(base_class):
         return subclasses
 
     return _get_leaf_classes(base_class)
+
+
+def bytes_to_hex_string(byte_array, separator='', lowercase=False):
+    if lowercase:
+        format_str = '{:02x}'
+    else:
+        format_str = '{:02X}'
+
+    return separator.join([format_str.format(x) for x in six.iterbytes(byte_array)])
