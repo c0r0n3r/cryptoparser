@@ -108,6 +108,9 @@ class ParserBase(collections_abc.Mapping):
     def __getitem__(self, key):
         return self._parsed_values[key]
 
+    def __delitem__(self, key):
+        del self._parsed_values[key]
+
     @property
     def parsed_length(self):
         return self._parsed_length
@@ -499,13 +502,13 @@ class ParserBinary(ParserBase):
         self._parsed_length += parsed_length
         self._parsed_values[name] = value
 
-    def parse_numeric_flags(self, name, size, flags_class):
+    def parse_numeric_flags(self, name, size, flags_class, shift_left=0):
         value, parsed_length = self._parse_numeric_array(name, 1, size, int)
-        value = [
-            flags_class(flag & value[0])
+        value = {
+            flags_class(flag & (value[0] << shift_left))
             for flag in flags_class
-            if flag & value[0]
-        ]
+            if flag & (value[0] << shift_left)
+        }
 
         self._parsed_length += parsed_length
         self._parsed_values[name] = value
@@ -804,10 +807,10 @@ class ComposerBinary(ComposerBase):
     def compose_numeric_array(self, values, item_size):
         self._compose_numeric_array(values, item_size)
 
-    def compose_numeric_flags(self, values, item_size):
+    def compose_numeric_flags(self, values, item_size, shift_right=0):
         flag = 0
         for value in values:
-            flag |= value
+            flag |= value >> shift_right
         self._compose_numeric_array([flag, ], item_size)
 
     def compose_ssh_mpint(self, value):

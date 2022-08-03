@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import datetime
 import unittest
@@ -198,11 +199,11 @@ class TestParserBinary(TestParsableBase):
     def test_parse_numeric_flags(self):
         parser = ParserBinary(b'\x01')
         parser.parse_numeric_flags('flags', 1, FlagEnum)
-        self.assertEqual(parser['flags'], [FlagEnum.ONE, ])
+        self.assertEqual(parser['flags'], {FlagEnum.ONE, })
 
         parser = ParserBinary(b'\x03')
         parser.parse_numeric_flags('flags', 1, FlagEnum)
-        self.assertEqual(parser['flags'], [FlagEnum.ONE, FlagEnum.TWO])
+        self.assertEqual(parser['flags'], {FlagEnum.ONE, FlagEnum.TWO})
 
     def test_parse_ssh_mpint(self):
         parser = ParserBinary(b'\x00')
