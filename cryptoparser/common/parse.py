@@ -577,6 +577,20 @@ class ParserBinary(ParserBase):
         except InvalidValue as e:
             raise e
 
+    def parse_string_null_terminated(self, name, encoding, converter=str):
+        try:
+            length = next(iter([
+                i
+                for i, value in enumerate(six.iterbytes(self._parsable[self._parsed_length:]))
+                if value == 0
+            ]))
+        except StopIteration as e:
+            six.raise_from(InvalidValue(self._parsable[self._parsed_length:], str, name), e)
+
+        value, parsed_length = self._parse_string_by_length(name, length, length, encoding, converter)
+        self._parsed_length += parsed_length + 1
+        self._parsed_values[name] = value
+
     def _parse_parsable_derived_array(self, items_size, item_classes, fallback_class=None):
         if items_size > self.unparsed_length:
             raise NotEnoughData(bytes_needed=items_size - self.unparsed_length)
@@ -841,6 +855,15 @@ class ComposerBinary(ComposerBase):
             six.raise_from(InvalidValue(value, type(self)), e)
 
         self.compose_bytes(value, item_size)
+
+    def compose_string_null_terminated(self, value, encoding):
+        try:
+            value = value.encode(encoding)
+        except UnicodeError as e:
+            six.raise_from(InvalidValue(value, type(self)), e)
+
+        self.compose_raw(value)
+        self.compose_raw(b'\x00')
 
     @property
     def composed_bytes(self):
