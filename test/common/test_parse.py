@@ -183,6 +183,18 @@ class TestParserBinary(TestParsableBase):
         parser.parse_numeric('number', 4)
         self.assertEqual(parser['number'], 0x01020304)
 
+        parser = ParserBinary(b'\x01\x02\x03', byte_order=ByteOrder.BIG_ENDIAN)
+        parser.parse_numeric('number', 3)
+        self.assertEqual(parser['number'], 0x010203)
+
+        parser = ParserBinary(b'\x01\x02\x03', byte_order=ByteOrder.LITTLE_ENDIAN)
+        parser.parse_numeric('number', 3)
+        self.assertEqual(parser['number'], 0x030201)
+
+        parser = ParserBinary(b'\x01\x02\x03', byte_order=ByteOrder.NETWORK)
+        parser.parse_numeric('number', 3)
+        self.assertEqual(parser['number'], 0x010203)
+
     def test_parse_numeric_flags(self):
         parser = ParserBinary(b'\x01')
         parser.parse_numeric_flags('flags', 1, FlagEnum)
@@ -729,6 +741,18 @@ class TestComposerBinary(TestParsableBase):
         composer = ComposerBinary(byte_order=ByteOrder.NETWORK)
         composer.compose_numeric(0x01020304, 4)
         self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
+
+        composer = ComposerBinary(byte_order=ByteOrder.BIG_ENDIAN)
+        composer.compose_numeric(0x010203, 3)
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03')
+
+        composer = ComposerBinary(byte_order=ByteOrder.LITTLE_ENDIAN)
+        composer.compose_numeric(0x010203, 3)
+        self.assertEqual(composer.composed_bytes, b'\x03\x02\x01')
+
+        composer = ComposerBinary(byte_order=ByteOrder.NETWORK)
+        composer.compose_numeric(0x010203, 3)
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03')
 
     def test_compose_numeric_array(self):
         composer = ComposerBinary()

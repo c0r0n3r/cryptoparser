@@ -469,7 +469,10 @@ class ParserBinary(ParserBase):
             for item_offset in range(self._parsed_length, self._parsed_length + (item_num * item_size), item_size):
                 item_bytes = self._parsable[item_offset:item_offset + item_size]
                 if item_size == 3:
-                    item_bytes = b'\x00' + item_bytes
+                    if self.byte_order in [ByteOrder.BIG_ENDIAN, ByteOrder.NETWORK]:
+                        item_bytes = b'\x00' + item_bytes
+                    else:
+                        item_bytes = item_bytes + b'\x00'
 
                 item = struct.unpack(
                     self.byte_order.value + _SIZE_TO_FORMAT[item_size],
@@ -778,14 +781,18 @@ class ComposerBinary(ComposerBase):
 
         for value in values:
             try:
-                composed_bytes += struct.pack(
+                packed_bytes = struct.pack(
                     self.byte_order.value + _SIZE_TO_FORMAT[item_size],
                     value
                 )
 
                 if item_size == 3:
-                    del composed_bytes[-4]
-
+                    if self.byte_order in [ByteOrder.BIG_ENDIAN, ByteOrder.NETWORK]:
+                        composed_bytes += packed_bytes[1:]
+                    else:
+                        composed_bytes += packed_bytes[:3]
+                else:
+                    composed_bytes += packed_bytes
             except struct.error as e:
                 six.raise_from(InvalidValue(value, int), e)
 
