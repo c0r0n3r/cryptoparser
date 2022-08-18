@@ -33,6 +33,7 @@ from .classes import (
     SerializableEmptyValues,
     SerializableEnums,
     SerializableHidden,
+    SerializableHumanFriendly,
     SerializableHumanReadable,
     SerializableIterables,
     SerializableRecursive,
@@ -455,6 +456,14 @@ class TestSerializable(unittest.TestCase):
             '{"complex_number": "(1+2j)"}'
         )
         self.assertEqual(
+            SerializableHumanFriendly().as_json(),
+            '{' +
+            '"human_friendly": "human-friendly", ' +
+            '"human_friendly_by_default": "human-friendly-by-default", ' +
+            '"non_human_friendly": "non-human-friendly"' +
+            '}'
+        )
+        self.assertEqual(
             SerializableRecursive().as_json(),
             '{' +
             '"json_asdict_object": {"attr_b": "b", "attr_a": "a"}, ' +
@@ -520,6 +529,11 @@ class TestSerializable(unittest.TestCase):
             SerializableHumanReadable().as_markdown(),
             '* Human Readable Name 2: value 2\n'
             '* Human Readable Name 1: value 1\n'
+        )
+        self.assertEqual(
+            SerializableHumanFriendly().as_markdown(),
+            '* Human Friendly: human-friendly\n'
+            '* Human Friendly By Default: human-friendly-by-default\n'
         )
         self.assertEqual(
             SerializableAttributeOrder().as_markdown(),

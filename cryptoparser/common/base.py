@@ -42,13 +42,29 @@ json.JSONEncoder.default = _default
 
 class Serializable(object):  # pylint: disable=too-few-public-methods
     @staticmethod
-    def _get_ordered_dict(dict_value):
+    def _filter_out_non_human_friendly(obj, dict_value, human_friendly_only):
+        if not attr.has(type(obj)) or not human_friendly_only:
+            return dict_value
+
+        fields_dict = attr.fields_dict(type(obj))
+        dict_value = OrderedDict([
+            (name, value)
+            for name, value in dict_value.items()
+            if name not in fields_dict or fields_dict[name].metadata.get('human_friendly', True)
+        ])
+
+        return dict_value
+
+    @staticmethod
+    def _get_ordered_dict(dict_value, human_friendly_only=False):
         if attr.has(type(dict_value)):
+            obj = dict_value
             dict_value = OrderedDict([
                 (name, getattr(dict_value, name))
                 for name, field in attr.fields_dict(type(dict_value)).items()
                 if not name.startswith('_')
             ])
+            dict_value = Serializable._filter_out_non_human_friendly(obj, dict_value, human_friendly_only)
             keys = dict_value.keys()
         elif isinstance(dict_value, OrderedDict):
             keys = dict_value.keys()
@@ -129,8 +145,9 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
 
         if hasattr(obj, '_asdict'):
             dict_value = obj._asdict()
+            dict_value = Serializable._filter_out_non_human_friendly(obj, dict_value, human_friendly_only=True)
         else:
-            dict_value = Serializable._get_ordered_dict(obj)
+            dict_value = Serializable._get_ordered_dict(obj, human_friendly_only=True)
 
         result = ''
         name_dict = cls._markdown_human_readable_names(obj, dict_value)

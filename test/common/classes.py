@@ -285,6 +285,13 @@ class SerializableHumanReadable(Serializable):
 
 
 @attr.s
+class SerializableHumanFriendly(Serializable):
+    human_friendly = attr.ib(default='human-friendly', metadata={'human_friendly': True})
+    human_friendly_by_default = attr.ib(default='human-friendly-by-default')
+    non_human_friendly = attr.ib(default='non-human-friendly', metadata={'human_friendly': False})
+
+
+@attr.s
 class SerializableAttributeOrder(Serializable):
     attr_b = attr.ib(default='b')
     attr_a = attr.ib(default='a')
