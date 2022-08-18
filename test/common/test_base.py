@@ -427,6 +427,7 @@ class TestSerializable(unittest.TestCase):
             '{' +
             '"UPPER": "upper", ' +
             '"bool_value": false, ' +
+            '"bytearray_value": "00:01:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D:0E:0F", ' +
             '"float_value": 1.0, ' +
             '"int_value": 1, ' +
             '"none_value": null, ' +
@@ -479,6 +480,7 @@ class TestSerializable(unittest.TestCase):
             '\n'.join([
                 '* UPPER: upper',
                 '* Bool Value: no',
+                '* Bytearray Value: 00:01:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D:0E:0F',
                 '* Float Value: 1.0',
                 '* Int Value: 1',
                 '* None Value: n/a',

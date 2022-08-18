@@ -25,6 +25,7 @@ from cryptoparser.common.parse import (
     ParserText,
 )
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue, InvalidType
+from cryptoparser.common.utils import bytes_to_hex_string
 
 
 def _default(
@@ -73,6 +74,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             result = {obj.name: obj.value}
         elif isinstance(obj, six.string_types + six.integer_types + (float, bool, )) or obj is None:
             result = obj
+        elif isinstance(obj, (bytes, bytearray)):
+            result = bytes_to_hex_string(obj, separator=':', lowercase=False)
         else:
             result = str(obj)
 
@@ -187,6 +190,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             result = cls._markdown_result_complex(obj, level)
         elif isinstance(obj, (list, tuple, set, ArrayBase)):
             result = cls._markdown_result_list(obj, level)
+        elif isinstance(obj, (bytes, bytearray)):
+            result = False, bytes_to_hex_string(obj, separator=':', lowercase=False)
         else:
             result = False, str(obj)
 
