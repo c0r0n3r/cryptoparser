@@ -20,16 +20,16 @@ class TestRecord(unittest.TestCase):
         )
         self.test_record = SshRecordInit(self.test_packet)
         self.test_record_bytes = bytes(
-            b'\x00\x00\x00\x24' +                     # length = 0x01020304
-            b'\x0b' +                                 # padding length = 0x00
-            b'\x01' +                                 # message code = DISCONNECT
-            b'\x00\x00\x00\x02' +                     # reason = PROTOCOL_ERROR
-            b'\x00\x00\x00\x06' +                     # description length = 6
-            six.ensure_text('αβγ').encode('utf-8') +  # description
-            b'\x00\x00\x00\x05' +                     # language length = 5
-            b'en-US' +                                # language
-            b'\x00\x00\x00\x00\x00\x00\x00\x00' +     # padding
-            b'\x00\x00\x00' +                         # padding
+            b'\x00\x00\x00\x24' +                                 # length = 0x01020304
+            b'\x0b' +                                             # padding length = 0x00
+            b'\x01' +                                             # message code = DISCONNECT
+            b'\x00\x00\x00\x02' +                                 # reason = PROTOCOL_ERROR
+            b'\x00\x00\x00\x06' +                                 # description length = 6
+            six.ensure_binary(six.ensure_text('αβγ'), 'utf-8') +  # description
+            b'\x00\x00\x00\x05' +                                 # language length = 5
+            b'en-US' +                                            # language
+            b'\x00\x00\x00\x00\x00\x00\x00\x00' +                 # padding
+            b'\x00\x00\x00' +                                     # padding
             b''
         )
 

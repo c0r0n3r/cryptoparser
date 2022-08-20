@@ -97,7 +97,7 @@ class HttpHeaderFieldValueSingleBase(HttpHeaderFieldValueBase, Serializable):
             raise InvalidValue(value, value_type, 'value')
 
     def _value_to_str(self):
-        return self.compose().decode('ascii')
+        return six.ensure_text(bytes(self.compose()), 'ascii')
 
     def _as_markdown(self, level):
         return self._markdown_result(self._value_to_str(), level)
@@ -170,7 +170,7 @@ class HttpHeaderFieldValueStringEnum(HttpHeaderFieldValueSingleComplexBase):
         try:
             value = cls._get_value_type().parse_exact_size(parsable)
         except InvalidValue as e:
-            six.raise_from(InvalidValue(parsable.decode('ascii'), cls, 'value'), e)
+            six.raise_from(InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value'), e)
 
         return cls(value), len(parsable)
 
@@ -315,7 +315,7 @@ class HttpHeaderFieldValueMultiple(HttpHeaderFieldValueBase):
                     parsable = attr_to_component_name_dict[name].get_canonical_name()
                 else:
                     parsable = '='.join([attr_to_component_name_dict[name].get_canonical_name(), parsable])
-                params[name] = attr_to_component_name_dict[name].parse_exact_size(parsable.encode('ascii'))
+                params[name] = attr_to_component_name_dict[name].parse_exact_size(six.ensure_binary(parsable, 'ascii'))
             else:
                 params[name] = attribute.default
 

@@ -32,10 +32,10 @@ from .classes import (
 
 class TestParsableBase(unittest.TestCase):
     _ALPHA_BETA_GAMMA = six.ensure_text('αβγ')
-    _ALPHA_BETA_GAMMA_BYTES = six.ensure_text('αβγ').encode('utf-8')
-    _ALPHA_BETA_GAMMA_LEN_BYTES = chr(len(_ALPHA_BETA_GAMMA_BYTES)).encode('ascii')
+    _ALPHA_BETA_GAMMA_BYTES = six.ensure_binary(six.ensure_text('αβγ'), 'utf-8')
+    _ALPHA_BETA_GAMMA_LEN_BYTES = six.int2byte(len(_ALPHA_BETA_GAMMA_BYTES))
 
-    _ALPHA_BETA_GAMMA_HASHMARK_BYTES = bytes(six.ensure_text('αβγ#').encode('utf-8'))
+    _ALPHA_BETA_GAMMA_HASHMARK_BYTES = six.ensure_binary(six.ensure_text('αβγ#'), 'utf-8')
 
 
 class TestParsable(TestParsableBase):
@@ -615,7 +615,7 @@ class TestParserTextStringArray(TestParsableBase):
         self.assertEqual(parser['timedelta'], datetime.timedelta(1))
         self.assertEqual(parser.unparsed_length, 0)
 
-        timedelta_value = str(int(datetime.timedelta.max.total_seconds())).encode('ascii')
+        timedelta_value = six.ensure_binary(str(int(datetime.timedelta.max.total_seconds())), 'ascii')
         parser = ParserText(timedelta_value)
         with self.assertRaises(InvalidValue) as context_manager:
             parser.parse_time_delta('timedelta')
@@ -846,7 +846,7 @@ class TestComposerText(TestParsableBase):
         composer = ComposerText('utf-8')
         for index, char in enumerate(self._ALPHA_BETA_GAMMA):
             composer.compose_string(char)
-            expected_composed = bytes(self._ALPHA_BETA_GAMMA[0:index + 1].encode('utf-8'))
+            expected_composed = six.ensure_binary(self._ALPHA_BETA_GAMMA[0:index + 1], 'utf-8')
             self.assertEqual(composer.composed, expected_composed)
             self.assertEqual(composer.composed_length, (index + 1) * 2)
 
@@ -864,7 +864,7 @@ class TestComposerText(TestParsableBase):
 
         composer = ComposerText('utf-8')
         composer.compose_string_array(list(self._ALPHA_BETA_GAMMA), '')
-        self.assertEqual(composer.composed, self._ALPHA_BETA_GAMMA.encode('utf-8'))
+        self.assertEqual(composer.composed, six.ensure_binary(self._ALPHA_BETA_GAMMA, 'utf-8'))
         self.assertEqual(composer.composed_length, len(self._ALPHA_BETA_GAMMA) * 2)
 
         composer = ComposerText()
@@ -888,7 +888,7 @@ class TestComposerText(TestParsableBase):
         composer = ComposerText('utf-8')
 
         composer.compose_separator(self._ALPHA_BETA_GAMMA)
-        self.assertEqual(composer.composed, self._ALPHA_BETA_GAMMA.encode('utf-8'))
+        self.assertEqual(composer.composed, six.ensure_binary(self._ALPHA_BETA_GAMMA, 'utf-8'))
 
     def test_compose_date_time(self):
         composer = ComposerText()

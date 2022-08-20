@@ -88,7 +88,7 @@ class SshProtocolMessage(ParsableBase):
             if '\r' in value or '\n' in value:
                 raise InvalidValue(value, SshProtocolMessage, 'comment')
             try:
-                value.encode('ascii')
+                six.ensure_binary(value, 'ascii')
             except UnicodeEncodeError as e:
                 six.raise_from(InvalidValue(value, SshProtocolMessage, 'comment'), e)
 
@@ -110,7 +110,7 @@ class SshProtocolMessage(ParsableBase):
         if software_version_and_comment[-1][-1] == '\r':
             software_version_and_comment[-1] = software_version_and_comment[-1][:-1]
 
-        software_version_parser = ParserText(software_version_and_comment[0].encode('ascii'))
+        software_version_parser = ParserText(six.ensure_binary(software_version_and_comment[0], 'ascii'))
         try:
             software_version_parser.parse_parsable('value', SshSoftwareVersionParsedVariant)
         except InvalidValue:

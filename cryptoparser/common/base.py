@@ -677,7 +677,7 @@ class StringEnumParsableBase(ParsableBaseNoABC):
         enum_items.sort(key=lambda color: len(color.value.code), reverse=True)
 
         try:
-            code = parsable.decode('ascii')
+            code = six.ensure_text(parsable, 'ascii')
         except UnicodeDecodeError as e:
             six.raise_from(InvalidValue(parsable, cls), e)
 
@@ -688,7 +688,7 @@ class StringEnumParsableBase(ParsableBaseNoABC):
         raise InvalidValue(parsable, cls, 'code')
 
     def compose(self):
-        return self._asdict().encode('ascii')
+        return six.ensure_binary(self._asdict(), 'ascii')
 
     def _asdict(self):
         return getattr(self, 'value').code
@@ -783,7 +783,10 @@ class OpaqueEnumParsable(Vector):
     @classmethod
     def _parse(cls, parsable):
         opaque, parsed_length = super(OpaqueEnumParsable, cls)._parse(parsable)
-        code = bytearray(opaque).decode(cls.get_encoding())
+        code = six.ensure_text(
+            b''.join([six.int2byte(opaque_item) for opaque_item in opaque]),
+            cls.get_encoding()
+        )
 
         try:
             parsed_object = next(iter([
@@ -792,7 +795,7 @@ class OpaqueEnumParsable(Vector):
                 if enum_item.value.code == code
             ]))
         except StopIteration as e:
-            six.raise_from(InvalidValue(code.encode(cls.get_encoding()), cls), e)
+            six.raise_from(InvalidValue(code, cls), e)
 
         return parsed_object, parsed_length
 
@@ -812,7 +815,7 @@ class OpaqueEnumComposer(enum.Enum):
 
     def compose(self):
         composer = ComposerBinary()
-        value = self.value.code.encode(self.get_encoding())  # pylint: disable=no-member
+        value = six.ensure_binary(self.value.code, self.get_encoding())  # pylint: disable=no-member
 
         composer.compose_bytes(value, 1)
 
