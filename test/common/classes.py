@@ -214,13 +214,14 @@ class TestObject(object):
     pass
 
 
-class SerializableSimpleTypes(Serializable):
+class SerializableSimpleTypes(Serializable):  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         self.UPPER = six.u('upper')  # pylint: disable=invalid-name
         self.int_value = 1
         self.float_value = 1.0
         self.bool_value = False
         self.str_value = six.u('string')
+        self.bytearray_value = bytearray(b'\x00\x01\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f')
         self.none_value = None
 
 
@@ -281,6 +282,13 @@ class SerializableUnhandled(Serializable):
 class SerializableHumanReadable(Serializable):
     attr_2 = attr.ib(default='value 2', metadata={'human_readable_name': 'Human Readable Name 2'})
     attr_1 = attr.ib(default='value 1', metadata={'human_readable_name': 'Human Readable Name 1'})
+
+
+@attr.s
+class SerializableHumanFriendly(Serializable):
+    human_friendly = attr.ib(default='human-friendly', metadata={'human_friendly': True})
+    human_friendly_by_default = attr.ib(default='human-friendly-by-default')
+    non_human_friendly = attr.ib(default='non-human-friendly', metadata={'human_friendly': False})
 
 
 @attr.s

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import abc
-import copy
 import datetime
 import enum
 import struct
@@ -457,7 +456,9 @@ class ParserBinary(ParserBase):
         if value[0] == 0xffffffffffffffff:
             self._parsed_values[name] = None
         else:
-            self._parsed_values[name] = datetime.datetime.utcfromtimestamp(0x00000000ffffffff & value[0])
+            self._parsed_values[name] = datetime.datetime.fromtimestamp(
+                0x00000000ffffffff & value[0], dateutil.tz.UTC
+            )
 
     def _parse_numeric_array(self, name, item_num, item_size, item_numeric_class):
         if self._parsed_length + (item_num * item_size) > len(self._parsable):
@@ -505,6 +506,35 @@ class ParserBinary(ParserBase):
 
         self._parsed_length += parsed_length
         self._parsed_values[name] = value
+
+    def parse_ssh_mpint(self, name):
+        if self.unparsed_length < 4:
+            raise NotEnoughData(bytes_needed=4 - self.unparsed_length)
+
+        mpint_length, parsed_length = self._parse_numeric_array(name, 1, 4, int)
+        mpint_length = mpint_length[0]
+
+        negative = (mpint_length and (six.indexbytes(self._parsable, self._parsed_length + 4) >= 0x80))
+
+        if mpint_length % 4:
+            pad_byte = six.int2byte(0xff) if negative else six.int2byte(0x00)
+            pad_bytes = (4 - (mpint_length % 4)) * pad_byte
+        else:
+            pad_bytes = b''
+
+        parsable = pad_bytes + self._parsable[self._parsed_length + 4:]
+        parser = ParserBinary(parsable)
+        parser.parse_numeric_array('mpint_part_array', (mpint_length + len(pad_bytes)) // 4, 4, int)
+
+        value = 0
+        for mpint_part in parser['mpint_part_array']:
+            value = (value << 32) + mpint_part
+        if negative:
+            complement = 1 << (8 * (mpint_length + len(pad_bytes)))
+            value -= complement
+
+        self._parsed_values[name] = value
+        self._parsed_length += parsed_length + mpint_length
 
     def _parse_bytes(self, size):
         if self.unparsed_length < size:
@@ -725,8 +755,7 @@ class ComposerBinary(ComposerBase):
         if value is None:
             value = 0xffffffffffffffff
         else:
-            date_time = copy.copy(value)
-            value = int(time.mktime(date_time.replace(tzinfo=dateutil.tz.UTC).timetuple()))
+            value = int(time.mktime(value.timetuple())) - time.timezone
 
         return self._compose_numeric_array([value, ], 8)
 
@@ -759,6 +788,34 @@ class ComposerBinary(ComposerBase):
         for value in values:
             flag |= value
         self._compose_numeric_array([flag, ], item_size)
+
+    def compose_ssh_mpint(self, value):
+        negative = value < 0
+        array_length = value.bit_length() // 32
+
+        if value.bit_length() % 32:
+            array_length += 1
+        if negative:
+            positive_value = (1 << ((value.bit_length() // 8 * 8) + 8)) + value
+        else:
+            positive_value = value
+
+        value_numeric_array = []
+        for mpint_offset in range(0, array_length * 32, 32):
+            value_numeric_array.append(positive_value >> mpint_offset & 0xffffffff)
+
+        composer = ComposerBinary()
+        composer.compose_numeric_array(reversed(value_numeric_array), 4)
+        value_bytes = composer.composed_bytes.lstrip(b'\x00')
+
+        if value_bytes and bool(value_bytes[0] & 0x80) != negative:
+            pad_byte = b'\xff' if negative else b'\x00'
+        else:
+            pad_byte = b''
+
+        self.compose_numeric(len(pad_byte) + len(value_bytes), 4)
+
+        self._composed += pad_byte + value_bytes
 
     def compose_parsable(self, value, item_size=None):
         composed = value.compose()

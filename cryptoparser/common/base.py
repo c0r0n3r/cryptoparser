@@ -25,6 +25,7 @@ from cryptoparser.common.parse import (
     ParserText,
 )
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue, InvalidType
+from cryptoparser.common.utils import bytes_to_hex_string
 
 
 def _default(
@@ -41,13 +42,29 @@ json.JSONEncoder.default = _default
 
 class Serializable(object):  # pylint: disable=too-few-public-methods
     @staticmethod
-    def _get_ordered_dict(dict_value):
+    def _filter_out_non_human_friendly(obj, dict_value, human_friendly_only):
+        if not attr.has(type(obj)) or not human_friendly_only:
+            return dict_value
+
+        fields_dict = attr.fields_dict(type(obj))
+        dict_value = OrderedDict([
+            (name, value)
+            for name, value in dict_value.items()
+            if name not in fields_dict or fields_dict[name].metadata.get('human_friendly', True)
+        ])
+
+        return dict_value
+
+    @staticmethod
+    def _get_ordered_dict(dict_value, human_friendly_only=False):
         if attr.has(type(dict_value)):
+            obj = dict_value
             dict_value = OrderedDict([
                 (name, getattr(dict_value, name))
                 for name, field in attr.fields_dict(type(dict_value)).items()
                 if not name.startswith('_')
             ])
+            dict_value = Serializable._filter_out_non_human_friendly(obj, dict_value, human_friendly_only)
             keys = dict_value.keys()
         elif isinstance(dict_value, OrderedDict):
             keys = dict_value.keys()
@@ -73,6 +90,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             result = {obj.name: obj.value}
         elif isinstance(obj, six.string_types + six.integer_types + (float, bool, )) or obj is None:
             result = obj
+        elif isinstance(obj, (bytes, bytearray)):
+            result = bytes_to_hex_string(obj, separator=':', lowercase=False)
         else:
             result = str(obj)
 
@@ -126,8 +145,9 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
 
         if hasattr(obj, '_asdict'):
             dict_value = obj._asdict()
+            dict_value = Serializable._filter_out_non_human_friendly(obj, dict_value, human_friendly_only=True)
         else:
-            dict_value = Serializable._get_ordered_dict(obj)
+            dict_value = Serializable._get_ordered_dict(obj, human_friendly_only=True)
 
         result = ''
         name_dict = cls._markdown_human_readable_names(obj, dict_value)
@@ -187,6 +207,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             result = cls._markdown_result_complex(obj, level)
         elif isinstance(obj, (list, tuple, set, ArrayBase)):
             result = cls._markdown_result_list(obj, level)
+        elif isinstance(obj, (bytes, bytearray)):
+            result = False, bytes_to_hex_string(obj, separator=':', lowercase=False)
         else:
             result = False, str(obj)
 
@@ -623,6 +645,17 @@ class ThreeByteEnumParsable(NByteEnumParsable):
         raise NotImplementedError()
 
 
+class FourByteEnumParsable(NByteEnumParsable):
+    @classmethod
+    def get_byte_num(cls):
+        return 4
+
+    @classmethod
+    @abc.abstractmethod
+    def get_enum_class(cls):
+        raise NotImplementedError()
+
+
 class NByteEnumComposer(enum.Enum):
     def __repr__(self):
         return self.__class__.__name__ + '.' + self.name
@@ -659,6 +692,12 @@ class ThreeByteEnumComposer(NByteEnumComposer):
     @classmethod
     def get_byte_num(cls):
         return 3
+
+
+class FourByteEnumComposer(NByteEnumComposer):
+    @classmethod
+    def get_byte_num(cls):
+        return 4
 
 
 class StringEnumParsableBase(ParsableBaseNoABC):

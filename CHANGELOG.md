@@ -5,6 +5,8 @@
 - SSH (`ssh`)
   - Public Keys (`pubkeys`)
     - [HASSH fingerprint](https://engineering.salesforce.com/open-sourcing-hassh-abed3ae5044c/) calculation (\#48)
+    - add [host certificate](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys) related classes
+      (\#53)
 
 ## 0.8.0 - 2022-01-18
 

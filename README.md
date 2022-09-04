@@ -120,6 +120,10 @@ Only features that cannot be or difficultly implemented by some of the most popu
 2.  supports [HASSH fingerprint](https://engineering.salesforce.com/open-sourcing-hassh-abed3ae5044c/) calculation
     (\#96)
 
+#### Public Keys
+
+1.  supports host keys and cretificates (both `V00` and `V01`)
+
 ## License
 
 The code is available under the terms of Mozilla Public License Version 2.0 (MPL 2.0).

@@ -286,7 +286,7 @@ class TestDHKeyExchangeReply(unittest.TestCase):
                 b'\x00\x00\x00\x07' +
                 b'ssh-rsa' +
                 b'\x00\x00\x00\x08' +
-                b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x01\x01\x02\x03\x04\x05\x06\x07' +
                 b'\x00\x00\x00\x08' +
                 b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
                 b''
@@ -308,8 +308,8 @@ class TestDHKeyExchangeReply(unittest.TestCase):
         self.dh_key_exchange_reply = SshDHKeyExchangeReply(
             host_public_key=SshHostKeyRSA(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA,
-                exponent=b'\x00\x01\x02\x03\x04\x05\x06\x07',
-                modulus=b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+                e=0x0101020304050607,
+                n=0x08090a0b0c0d0e0f,
             ),
             ephemeral_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
             signature=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
@@ -332,7 +332,7 @@ class TestDHGroupExchangeReply(unittest.TestCase):
                 b'\x00\x00\x00\x07' +
                 b'ssh-rsa' +
                 b'\x00\x00\x00\x08' +
-                b'\x00\x01\x02\x03\x04\x05\x06\x07' +
+                b'\x01\x01\x02\x03\x04\x05\x06\x07' +
                 b'\x00\x00\x00\x08' +
                 b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +
                 b''
@@ -354,8 +354,8 @@ class TestDHGroupExchangeReply(unittest.TestCase):
         self.dh_group_exchange_reply = SshDHGroupExchangeReply(
             host_public_key=SshHostKeyRSA(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA,
-                exponent=b'\x00\x01\x02\x03\x04\x05\x06\x07',
-                modulus=b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+                e=0x0101020304050607,
+                n=0x08090a0b0c0d0e0f,
             ),
             ephemeral_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
             signature=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
