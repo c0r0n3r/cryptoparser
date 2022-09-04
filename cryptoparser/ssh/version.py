@@ -80,7 +80,7 @@ class SshSoftwareVersionUnparsed(SshSoftwareVersionBase, Serializable):
         if '\r' in value or '\n' in value or ' ' in value:
             raise InvalidValue(value, SshSoftwareVersionUnparsed, 'raw')
         try:
-            value.encode('ascii')
+            six.ensure_binary(value, 'ascii')
         except UnicodeEncodeError as e:
             six.raise_from(InvalidValue(value, SshSoftwareVersionUnparsed, 'raw'), e)
 

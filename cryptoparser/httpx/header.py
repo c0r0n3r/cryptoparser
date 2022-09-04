@@ -458,14 +458,14 @@ class HttpHeaderFieldParsedBase(HttpHeaderFieldBase):
         if parser['name'].lower() != cls.get_canonical_name().value.code:
             raise InvalidType()
 
-        value = cls._get_value_class().parse_exact_size(parser['value'].encode('ascii'))
+        value = cls._get_value_class().parse_exact_size(six.ensure_binary(parser['value'], 'ascii'))
 
         return cls(value), parser.parsed_length
 
     def compose(self):
         return self._compose_name_and_value(
             self.get_canonical_name().value.normalized_name,
-            self.value.compose().decode('ascii')
+            six.ensure_text(bytes(self.value.compose()), 'ascii')
         )
 
     def _asdict(self):

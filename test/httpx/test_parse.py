@@ -9,6 +9,7 @@ from collections import OrderedDict
 
 import attr
 import dateutil
+import six
 
 from cryptoparser.common.exception import InvalidValue, InvalidType
 
@@ -152,7 +153,7 @@ class TestHttpHeaderFieldValueComponentTimeDelta(unittest.TestCase):
 
         with self.assertRaises(InvalidValue) as context_manager:
             HttpHeaderFieldValueComponentTimeDeltaTest.parse_exact_size(
-                b'testTimeDelta=' + str(2 ** 48).encode('ascii')
+                b'testTimeDelta=' + six.ensure_binary(str(2 ** 48), 'ascii')
             )
         self.assertEqual(context_manager.exception.value, 2 ** 48)
 

@@ -125,65 +125,73 @@ class TestProtocolMessage(unittest.TestCase):
 class TestKeyExchangeInitMessage(unittest.TestCase):
     def setUp(self):
         self.key_exchange_init_bytes = bytes(
-            b'\x14' +                                           # message_code = SshMessageCode.KEXINIT
+            b'\x14' +                                               # message_code = SshMessageCode.KEXINIT
             b'\x00\x01\x02\x03\x04\x05\x06\x07' +
-            b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +               # cookie
-            b'\x00\x00\x00\x2d' +                               # kex_algorithms_length
-            b'diffie-hellman-group1-sha1,ecdh-sha2-nistp256' +  # kex_algorithms
-            b'\x00\x00\x00\x1f' +                               # host_key_algorithms_length
-            b'ssh-ed25519,ecdsa-sha2-nistp256' +                # host_key_algorithms
-            b'\x00\x00\x00\x21' +                               # encryption_algorithms_client_to_server_length
-            b'aes128-cbc,aes256-gcm@openssh.com' +              # encryption_algorithms_client_to_server
-            b'\x00\x00\x00\x21' +                               # encryption_algorithms_server_to_client_length
-            b'aes256-gcm@openssh.com,aes128-cbc' +              # encryption_algorithms_server_to_client
-            b'\x00\x00\x00\x1e' +                               # mac_algorithms_client_to_server_length
-            b'hmac-sha1,umac-128@openssh.com' +                 # mac_algorithms_client_to_server
-            b'\x00\x00\x00\x1e' +                               # mac_algorithms_server_to_client_length
-            b'umac-128@openssh.com,hmac-sha1' +                 # mac_algorithms_server_to_client
-            b'\x00\x00\x00\x15' +                               # compression_algorithms_client_to_server_length
-            b'none,zlib@openssh.com' +                          # compression_algorithms_client_to_server
-            b'\x00\x00\x00\x15' +                               # compression_algorithms_server_to_client_length
-            b'zlib@openssh.com,none' +                          # compression_algorithms_server_to_client
-            b'\x00\x00\x00\x0b' +                               # languages_client_to_server_length
-            b'en-UK,en-US' +                                    # languages_client_to_server
-            b'\x00\x00\x00\x0b' +                               # languages_server_to_client_length
-            b'en-US,en-UK' +                                    # languages_server_to_client
-            b'\x00' +                                           # first_kex_packet_follows
-            b'\x00\x01\x02\x03' +                               # reserved
+            b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f' +                   # cookie
+            b'\x00\x00\x00\x3d' +
+            b'diffie-hellman-group1-sha1,ecdh-sha2-nistp256,unparsable-algo' +  # kex_algorithms
+            b'\x00\x00\x00\x2f' +
+            b'ssh-ed25519,ecdsa-sha2-nistp256,unparsable-algo' +    # host_key_algorithms
+            b'\x00\x00\x00\x31' +
+            b'aes128-cbc,aes256-gcm@openssh.com,unparsable-algo' +  # encryption_algorithms_client_to_server
+            b'\x00\x00\x00\x31' +
+            b'aes256-gcm@openssh.com,aes128-cbc,unparsable-algo' +  # encryption_algorithms_server_to_client
+            b'\x00\x00\x00\x2e' +
+            b'hmac-sha1,umac-128@openssh.com,unparsable-algo' +     # mac_algorithms_client_to_server
+            b'\x00\x00\x00\x2e' +
+            b'umac-128@openssh.com,hmac-sha1,unparsable-algo' +     # mac_algorithms_server_to_client
+            b'\x00\x00\x00\x25' +
+            b'none,zlib@openssh.com,unparsable-algo' +              # compression_algorithms_client_to_server
+            b'\x00\x00\x00\x25' +
+            b'zlib@openssh.com,none,unparsable-algo' +              # compression_algorithms_server_to_client
+            b'\x00\x00\x00\x0b' +
+            b'en-UK,en-US' +                                        # languages_client_to_server
+            b'\x00\x00\x00\x0b' +
+            b'en-US,en-UK' +                                        # languages_server_to_client
+            b'\x00' +                                               # first_kex_packet_follows
+            b'\x00\x01\x02\x03' +                                   # reserved
             b''
         )
         self.key_exchange_init = SshKeyExchangeInit(
             kex_algorithms=[
                 SshKexAlgorithm.DIFFIE_HELLMAN_GROUP1_SHA1,
                 SshKexAlgorithm.ECDH_SHA2_NISTP256,
+                'unparsable-algo',
             ],
             host_key_algorithms=[
                 SshHostKeyAlgorithm.SSH_ED25519,
                 SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256,
+                'unparsable-algo',
             ],
             encryption_algorithms_client_to_server=[
                 SshEncryptionAlgorithm.AES128_CBC,
                 SshEncryptionAlgorithm.AES256_GCM_OPENSSH_COM,
+                'unparsable-algo',
             ],
             encryption_algorithms_server_to_client=[
                 SshEncryptionAlgorithm.AES256_GCM_OPENSSH_COM,
                 SshEncryptionAlgorithm.AES128_CBC,
+                'unparsable-algo',
             ],
             mac_algorithms_client_to_server=[
                 SshMacAlgorithm.HMAC_SHA1,
                 SshMacAlgorithm.UMAC_128_OPENSSH_COM,
+                'unparsable-algo',
             ],
             mac_algorithms_server_to_client=[
                 SshMacAlgorithm.UMAC_128_OPENSSH_COM,
                 SshMacAlgorithm.HMAC_SHA1,
+                'unparsable-algo',
             ],
             compression_algorithms_client_to_server=[
                 SshCompressionAlgorithm.NONE,
                 SshCompressionAlgorithm.ZLIB_OPENSSH_COM,
+                'unparsable-algo',
             ],
             compression_algorithms_server_to_client=[
                 SshCompressionAlgorithm.ZLIB_OPENSSH_COM,
                 SshCompressionAlgorithm.NONE,
+                'unparsable-algo',
             ],
             languages_client_to_server=[
                 LanguageTag('en', ['UK', ]),
@@ -202,6 +210,10 @@ class TestKeyExchangeInitMessage(unittest.TestCase):
 
     def test_compose(self):
         self.assertEqual(self.key_exchange_init.compose(), self.key_exchange_init_bytes)
+
+    def test_hassh(self):
+        self.assertEqual(self.key_exchange_init.hassh, 'cc40dc455f685d8f57f8794262e30422')
+        self.assertEqual(self.key_exchange_init.hassh_server, '55a954fe89f7f04218e3013996beee76')
 
 
 class TestUnimplementedMessage(unittest.TestCase):

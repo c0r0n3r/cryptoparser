@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2
+
+- SSH (`ssh`)
+  - Public Keys (`pubkeys`)
+    - [HASSH fingerprint](https://engineering.salesforce.com/open-sourcing-hassh-abed3ae5044c/) calculation (\#48)
+
 ## 0.8.0 - 2022-01-18
 
 - SSH (`ssh`)
