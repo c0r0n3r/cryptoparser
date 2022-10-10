@@ -2,6 +2,10 @@
 
 ## 0.8.2
 
+- TLS (`tls`)
+  - Cipher Suites (`ciphers`)
+    - add OpenSSL names (\#54)
+    - add min/max versions (\#55)
 - SSH (`ssh`)
   - Public Keys (`pubkeys`)
     - [HASSH fingerprint](https://engineering.salesforce.com/open-sourcing-hassh-abed3ae5044c/) calculation (\#48)
