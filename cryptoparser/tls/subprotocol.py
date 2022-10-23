@@ -297,7 +297,7 @@ class TlsHandshakeHelloRandom(ParsableBase):
 
     @time.default
     def _default_time(self):  # pylint: disable=no-self-use
-        return datetime.datetime.now()
+        return datetime.datetime.utcnow()
 
     @random.default
     def _default_random(self):  # pylint: disable=no-self-use
