@@ -72,6 +72,10 @@ class NamedGroupParams(AlgortihmOIDOptionalParams):
 
 
 class KeyExchange(enum.Enum):
+    AECDH = KeyExchangeParams(
+        name='Anonymous Elliptic-curve Diffie–Hellman (ECDH)',
+        forward_secret=True
+    )
     ADH = KeyExchangeParams(
         name='Anonymous Diffie–Hellman (ADH)',
         forward_secret=False
