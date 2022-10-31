@@ -78,7 +78,7 @@ class KeyExchange(enum.Enum):
     )
     ADH = KeyExchangeParams(
         name='Anonymous Diffie–Hellman (ADH)',
-        forward_secret=False
+        forward_secret=True
     )
     CECPQ1 = KeyExchangeParams(
         name='Combined Elliptic-Curve and Post-Quantum 1 (CECPQ1)',
