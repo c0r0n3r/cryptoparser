@@ -1128,6 +1128,66 @@ class TlsExtensionTokenBinding(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
+class TlsPskKeyExchangeModeFactory(OneByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsPskKeyExchangeMode
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+@attr.s(frozen=True)
+class TlsPskKeyExchangeModeParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+
+
+class TlsPskKeyExchangeMode(OneByteEnumComposer):
+    PSK_KE = TlsPskKeyExchangeModeParams(code=0x00)
+    PSK_DH_KE = TlsPskKeyExchangeModeParams(code=0x01)
+
+
+class TlsPskKeyExchangeModeVector(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsPskKeyExchangeModeFactory,
+            fallback_class=TlsInvalidTypeOneByte,
+            min_byte_num=1,
+            max_byte_num=2 ** 8 - 1,
+        )
+
+
+@attr.s
+class TlsExtensionPskKeyExchangeModes(TlsExtensionParsed):
+    key_exchange_modes = attr.ib(
+        converter=TlsPskKeyExchangeModeVector,
+        validator=attr.validators.instance_of(TlsPskKeyExchangeModeVector)
+    )
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.PSK_KEY_EXCHANGE_MODES
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionPskKeyExchangeModes, cls)._parse_header(parsable)
+
+        parser.parse_parsable('key_exchange_modes', TlsPskKeyExchangeModeVector)
+
+        return TlsExtensionPskKeyExchangeModes(parser['key_exchange_modes']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.key_exchange_modes)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
 class TlsExtensionVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1162,6 +1222,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.SUPPORTED_GROUPS, [TlsExtensionEllipticCurves, ]),
             (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
             (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClient, ]),
+            (TlsExtensionType.PSK_KEY_EXCHANGE_MODES, [TlsExtensionPskKeyExchangeModes, ]),
             (TlsExtensionType.SIGNATURE_ALGORITHMS, [TlsExtensionSignatureAlgorithms, ]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsClient, ]),
             (TlsExtensionType.TOKEN_BINDING, [TlsExtensionTokenBinding, ]),

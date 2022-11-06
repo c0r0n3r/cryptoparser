@@ -29,6 +29,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionKeyShareReservedClient,
     TlsExtensionNextProtocolNegotiationClient,
     TlsExtensionNextProtocolNegotiationServer,
+    TlsExtensionPskKeyExchangeModes,
     TlsExtensionRenegotiationInfo,
     TlsExtensionServerName,
     TlsExtensionSessionTicket,
@@ -42,6 +43,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionType,
     TlsNextProtocolNameList,
     TlsProtocolNameList,
+    TlsPskKeyExchangeMode,
     TlsRenegotiatedConnection,
     TlsTokenBindingParamater,
     TlsTokenBindingProtocolVersion,
@@ -504,6 +506,27 @@ class TestExtensionCertificateStatusRequest(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(self.status_request_minimal.compose(), self.status_request_minimal_bytes)
         self.assertEqual(self.status_request.compose(), self.status_request_bytes)
+
+
+class TestTlsExtensionPskKeyExchangeModes(unittest.TestCase):
+    def test_parse(self):
+        extension_pks_key_exchange_modes_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x2d'),
+            ('extension_length', b'\x00\x03'),
+            ('supported_version_list', b'\x02\x01\x00'),
+        ])
+        extension_pks_key_exchange_modes_bytes = b''.join(extension_pks_key_exchange_modes_dict.values())
+        extension_pks_key_exchange_modes = TlsExtensionPskKeyExchangeModes.parse_exact_size(
+            extension_pks_key_exchange_modes_bytes
+        )
+        self.assertEqual(
+            list(extension_pks_key_exchange_modes.key_exchange_modes),
+            [
+                TlsPskKeyExchangeMode.PSK_DH_KE,
+                TlsPskKeyExchangeMode.PSK_KE,
+            ]
+        )
+        self.assertEqual(extension_pks_key_exchange_modes.compose(), extension_pks_key_exchange_modes_bytes)
 
 
 class TestExtensionRenegotiationInfo(unittest.TestCase):
