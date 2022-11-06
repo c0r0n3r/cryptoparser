@@ -30,6 +30,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionNextProtocolNegotiationClient,
     TlsExtensionNextProtocolNegotiationServer,
     TlsExtensionPskKeyExchangeModes,
+    TlsExtensionRecordSizeLimit,
     TlsExtensionRenegotiationInfo,
     TlsExtensionServerName,
     TlsExtensionSessionTicket,
@@ -652,3 +653,16 @@ class TestExtensionExtendedMasterSecret(unittest.TestCase):
             extension_extended_master_secret_bytes
         )
         self.assertEqual(extended_master_secret.compose(), extension_extended_master_secret_bytes)
+
+
+class TestExtensionRecordSizeLimit(unittest.TestCase):
+    def test_parse(self):
+        extension_record_size_limit_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x1c'),
+            ('extension_length', b'\x00\x02'),
+            ('record_size_limit', b'\x00\xff'),
+        ])
+        extension_record_size_limit_bytes = b''.join(extension_record_size_limit_dict.values())
+        extension_record_size_limit = TlsExtensionRecordSizeLimit.parse_exact_size(extension_record_size_limit_bytes)
+        self.assertEqual(extension_record_size_limit.record_size_limit, 0xff)
+        self.assertEqual(extension_record_size_limit.compose(), extension_record_size_limit_bytes)
