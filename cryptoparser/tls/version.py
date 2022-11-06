@@ -8,7 +8,7 @@ import attr
 
 import six
 
-from cryptoparser.common.base import ProtocolVersionBase
+from cryptoparser.common.base import ProtocolVersionBase, ProtocolVersionMajorMinorBase
 from cryptoparser.common.exception import NotEnoughData, InvalidValue
 from cryptoparser.common.parse import ParserBinary, ComposerBinary
 
@@ -23,21 +23,10 @@ class TlsVersion(enum.IntEnum):
 
 @attr.s(order=False, eq=False, hash=True)
 @functools.total_ordering
-class TlsProtocolVersionBase(ProtocolVersionBase):
-    _SIZE = 2
-
-    major = attr.ib()
-    minor = attr.ib()
-
+class TlsProtocolVersionBase(ProtocolVersionMajorMinorBase):
     @classmethod
     def _parse(cls, parsable):
-        if len(parsable) < cls._SIZE:
-            raise NotEnoughData(bytes_needed=cls._SIZE)
-
-        parser = ParserBinary(parsable)
-
-        parser.parse_numeric('major', 1)
-        parser.parse_numeric('minor', 1)
+        parser = cls._parse_version_numbers(parsable)
 
         for subclass in TlsProtocolVersionBase.__subclasses__():
             try:

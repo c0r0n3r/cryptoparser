@@ -9,8 +9,11 @@ import attr
 
 from cryptoparser.tls.algorithm import TlsNextProtocolName, TlsProtocolName
 from cryptoparser.common.base import (
+    OneByteEnumComposer,
+    OneByteEnumParsable,
     Opaque,
     OpaqueParam,
+    ProtocolVersionMajorMinorBase,
     TwoByteEnumComposer,
     OpaqueEnumParsable,
     TwoByteEnumParsable,
@@ -1057,6 +1060,74 @@ class TlsExtensionExtendedMasterSecret(TlsExtensionUnusedData):
         return TlsExtensionType.EXTENDED_MASTER_SECRET
 
 
+class TlsTokenBindingProtocolVersion(ProtocolVersionMajorMinorBase):
+    pass
+
+
+class TlsTokenBindingParamaterFactory(OneByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsTokenBindingParamater
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+@attr.s(frozen=True)
+class TlsTokenBindingParamaterParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+
+
+class TlsTokenBindingParamater(OneByteEnumComposer):
+    RSA2048_PKCS1_5 = TlsTokenBindingParamaterParams(code=0x00)
+    RSA2048_PSS = TlsTokenBindingParamaterParams(code=0x01)
+    ECDSAP256 = TlsTokenBindingParamaterParams(code=0x02)
+
+
+class TlsTokenBindingParamaterVector(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsTokenBindingParamaterFactory,
+            fallback_class=TlsInvalidTypeOneByte,
+            min_byte_num=1,
+            max_byte_num=2 ** 8 - 1,
+        )
+
+
+@attr.s
+class TlsExtensionTokenBinding(TlsExtensionParsed):
+    protocol_version = attr.ib(validator=attr.validators.instance_of(TlsTokenBindingProtocolVersion))
+    parameters = attr.ib(
+        converter=TlsTokenBindingParamaterVector,
+        validator=attr.validators.instance_of(TlsTokenBindingParamaterVector)
+    )
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.TOKEN_BINDING
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionTokenBinding, cls)._parse_header(parsable)
+
+        parser.parse_parsable('protocol_version', TlsTokenBindingProtocolVersion)
+        parser.parse_parsable('parameters', TlsTokenBindingParamaterVector)
+
+        return cls(parser['protocol_version'], parser['parameters']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.protocol_version)
+        payload_composer.compose_parsable(self.parameters)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
 class TlsExtensionVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1093,6 +1164,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClient, ]),
             (TlsExtensionType.SIGNATURE_ALGORITHMS, [TlsExtensionSignatureAlgorithms, ]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsClient, ]),
+            (TlsExtensionType.TOKEN_BINDING, [TlsExtensionTokenBinding, ]),
         ])
 
 

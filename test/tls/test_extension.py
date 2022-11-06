@@ -36,12 +36,15 @@ from cryptoparser.tls.extension import (
     TlsExtensionSignatureAlgorithmsCert,
     TlsExtensionSupportedVersionsClient,
     TlsExtensionSupportedVersionsServer,
+    TlsExtensionTokenBinding,
     TlsExtensionUnparsed,
     TlsExtensionParsed,
     TlsExtensionType,
     TlsNextProtocolNameList,
     TlsProtocolNameList,
     TlsRenegotiatedConnection,
+    TlsTokenBindingParamater,
+    TlsTokenBindingProtocolVersion,
 )
 from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
@@ -238,6 +241,33 @@ class TestExtensionSupportedVersions(unittest.TestCase):
             TlsProtocolVersionFinal(TlsVersion.TLS1_2)
         )
         self.assertEqual(extension_supported_versions.compose(), extension_supported_versions_bytes)
+
+
+class TestExtensionTokenBinding(unittest.TestCase):
+    def test_parse(self):
+        extension_token_binding_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x18'),
+            ('extension_length', b'\x00\x06'),
+            ('protocol_version', b'\x01\x02'),
+            ('supported_version_list', b'\x03\x02\x01\x00'),
+        ])
+        extension_token_binding_bytes = b''.join(extension_token_binding_dict.values())
+        extension_token_binding = TlsExtensionTokenBinding.parse_exact_size(
+            extension_token_binding_bytes
+        )
+        self.assertEqual(
+            list(extension_token_binding.parameters),
+            [
+                TlsTokenBindingParamater.ECDSAP256,
+                TlsTokenBindingParamater.RSA2048_PSS,
+                TlsTokenBindingParamater.RSA2048_PKCS1_5,
+            ]
+        )
+        self.assertEqual(
+            extension_token_binding.protocol_version,
+            TlsTokenBindingProtocolVersion(1, 2),
+        )
+        self.assertEqual(extension_token_binding.compose(), extension_token_binding_bytes)
 
 
 class TestExtensionSignatureAlgorithms(unittest.TestCase):

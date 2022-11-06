@@ -773,6 +773,47 @@ class ProtocolVersionBase(Serializable, ParsableBase):
 
 
 @attr.s
+class ProtocolVersionMajorMinorBase(ProtocolVersionBase):
+    _SIZE = 2
+
+    major = attr.ib()
+    minor = attr.ib()
+
+    @classmethod
+    def _parse_version_numbers(cls, parsable):
+        if len(parsable) < cls._SIZE:
+            raise NotEnoughData(bytes_needed=cls._SIZE)
+
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('major', 1)
+        parser.parse_numeric('minor', 1)
+
+        return parser
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_version_numbers(parsable)
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric(self.major, 1)
+        composer.compose_numeric(self.minor, 1)
+
+        return composer.composed_bytes
+
+    @property
+    def identifier(self):
+        return '{}_{}'.format(self.major, self.minor)
+
+    def __str__(self):
+        return '{}.{}'.format(self.major, self.minor)
+
+
+@attr.s
 class ListParamParsable(object):  # pylint: disable=too-few-public-methods
     item_class = attr.ib(validator=attr.validators.instance_of(type))
     fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)))

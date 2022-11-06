@@ -9,6 +9,7 @@ from cryptoparser.common.exception import InvalidValue, NotEnoughData, TooMuchDa
 from cryptoparser.common.base import (
     Opaque,
     OpaqueParam,
+    ProtocolVersionMajorMinorBase,
     Vector,
     VectorParamNumeric,
     VectorParamParsable,
@@ -45,6 +46,30 @@ from .classes import (
     TwoByteEvenParsable,
     TwoByteParsable,
 )
+
+
+class TestProtocolVersionMajorMinorBase(unittest.TestCase):
+    def setUp(self):
+        self.protocol_version = ProtocolVersionMajorMinorBase(1, 2)
+        self.protocol_version_bytes = b'\x01\x02'
+
+    def test_parse(self):
+        self.assertEqual(
+            ProtocolVersionMajorMinorBase.parse_exact_size(self.protocol_version_bytes),
+            self.protocol_version
+        )
+
+    def test_compose(self):
+        self.assertEqual(self.protocol_version.compose(), self.protocol_version_bytes)
+
+    def test_identifier(self):
+        self.assertEqual(self.protocol_version.identifier, '1_2')
+
+    def test_markdown(self):
+        self.assertEqual(self.protocol_version.as_markdown(), '1.2')
+
+    def test_str(self):
+        self.assertEqual(str(self.protocol_version), '1.2')
 
 
 class VectorNumericTestErrors(Vector):
