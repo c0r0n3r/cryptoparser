@@ -26,6 +26,7 @@ from cryptoparser.common.base import (
 )
 from cryptoparser.common.exception import NotEnoughData, InvalidType, InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
+from cryptoparser.common.x509 import SignedCertificateTimestampList
 from cryptoparser.tls.algorithm import (
     TlsNamedCurve,
     TlsNamedCurveFactory,
@@ -1214,6 +1215,37 @@ class TlsExtensionRecordSizeLimit(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
+@attr.s
+class TlsExtensionSignedCertificateTimestamp(TlsExtensionParsed):
+    scts = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(SignedCertificateTimestampList)))
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionSignedCertificateTimestamp, cls)._parse_header(parsable)
+
+        if parser['extension_length']:
+            parser.parse_parsable('scts', SignedCertificateTimestampList)
+            scts = parser['scts']
+        else:
+            scts = None
+
+        return TlsExtensionSignedCertificateTimestamp(scts), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        if self.scts:
+            payload_composer.compose_parsable(self.scts)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
 class TlsExtensionVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1251,6 +1283,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.PSK_KEY_EXCHANGE_MODES, [TlsExtensionPskKeyExchangeModes, ]),
             (TlsExtensionType.RECORD_SIZE_LIMIT, [TlsExtensionRecordSizeLimit, ]),
             (TlsExtensionType.SIGNATURE_ALGORITHMS, [TlsExtensionSignatureAlgorithms, ]),
+            (TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP, [TlsExtensionSignedCertificateTimestamp, ]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsClient, ]),
             (TlsExtensionType.TOKEN_BINDING, [TlsExtensionTokenBinding, ]),
         ])
@@ -1270,5 +1303,6 @@ class TlsExtensionVariantServer(TlsExtensionVariantBase):
             (TlsExtensionType.RECORD_SIZE_LIMIT, [TlsExtensionRecordSizeLimit, ]),
             (TlsExtensionType.RENEGOTIATION_INFO, [TlsExtensionRenegotiationInfo, ]),
             (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
+            (TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP, [TlsExtensionSignedCertificateTimestamp, ]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsServer, ]),
         ])
