@@ -1322,6 +1322,37 @@ class TlsExtensionCompressCertificate(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
+@attr.s
+class TlsExtensionPadding(TlsExtensionParsed):
+    length = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.PADDING
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionPadding, cls)._parse_header(parsable)
+
+        parser.parse_raw('padding', parser['extension_length'])
+        try:
+            non_zero_int = next(byte for byte in six.iterbytes(parser['padding']) if byte != 0)
+            raise InvalidValue(six.int2byte(non_zero_int), cls)
+        except StopIteration:
+            pass
+
+        return cls(parser['extension_length']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_raw(self.length * b'\x00')
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
 class TlsExtensionVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1354,6 +1385,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
             (TlsExtensionType.RENEGOTIATION_INFO, [TlsExtensionRenegotiationInfo, ]),
             (TlsExtensionType.NEXT_PROTOCOL_NEGOTIATION, [TlsExtensionNextProtocolNegotiationClient, ]),
+            (TlsExtensionType.PADDING, [TlsExtensionPadding, ]),
             (TlsExtensionType.SERVER_NAME, [TlsExtensionServerName, ]),
             (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
             (TlsExtensionType.STATUS_REQUEST, [TlsExtensionCertificateStatusRequest, ]),

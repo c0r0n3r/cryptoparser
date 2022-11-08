@@ -33,6 +33,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionKeyShareReservedClient,
     TlsExtensionNextProtocolNegotiationClient,
     TlsExtensionNextProtocolNegotiationServer,
+    TlsExtensionPadding,
     TlsExtensionPskKeyExchangeModes,
     TlsExtensionRecordSizeLimit,
     TlsExtensionRenegotiationInfo,
@@ -750,3 +751,37 @@ class TestExtensionRecordSizeLimit(unittest.TestCase):
         extension_record_size_limit = TlsExtensionRecordSizeLimit.parse_exact_size(extension_record_size_limit_bytes)
         self.assertEqual(extension_record_size_limit.record_size_limit, 0xff)
         self.assertEqual(extension_record_size_limit.compose(), extension_record_size_limit_bytes)
+
+
+class TestExtensionPadding(unittest.TestCase):
+    def test_error_non_zero_padding(self):
+        extension_padding_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x15'),
+            ('extension_length', b'\x00\x04'),
+            ('extension_data', b'\x00\x00\x00\x01'),
+        ])
+        extension_padding_bytes = b''.join(extension_padding_dict.values())
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            TlsExtensionPadding.parse_exact_size(extension_padding_bytes)
+        self.assertEqual(context_manager.exception.value, b'\x01')
+
+    def test_parse(self):
+        extension_padding_minimal_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x15'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_padding_minimal_bytes = b''.join(extension_padding_minimal_dict.values())
+
+        extension_padding_minimal = TlsExtensionPadding.parse_exact_size(extension_padding_minimal_bytes)
+        self.assertEqual(extension_padding_minimal.compose(), extension_padding_minimal_bytes)
+
+        extension_padding_with_data_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x15'),
+            ('extension_length', b'\x00\x04'),
+            ('extension_data', b'\x00\x00\x00\x00'),
+        ])
+        extension_padding_with_data_bytes = b''.join(extension_padding_with_data_dict.values())
+
+        extension_padding_with_data = TlsExtensionPadding.parse_exact_size(extension_padding_with_data_bytes)
+        self.assertEqual(extension_padding_with_data.compose(), extension_padding_with_data_bytes)
