@@ -19,6 +19,7 @@ from cryptoparser.tls.extension import (
     TlsCertificateStatusRequestResponderId,
     TlsCertificateStatusRequestResponderIdList,
     TlsExtensionApplicationLayerProtocolNegotiation,
+    TlsExtensionApplicationLayerProtocolSettings,
     TlsExtensionCertificateStatusRequest,
     TlsExtensionECPointFormats,
     TlsExtensionEllipticCurves,
@@ -649,6 +650,25 @@ class TestExtensionApplicationLayerProtocolNegotiation(unittest.TestCase):
         ])
         extension_alpn_bytes = b''.join(extension_alpn_dict.values())
         extension_alpn = TlsExtensionApplicationLayerProtocolNegotiation.parse_exact_size(
+            extension_alpn_bytes
+        )
+        self.assertEqual(extension_alpn.protocol_names, TlsProtocolNameList([TlsProtocolName.H2, TlsProtocolName.H2C]))
+        self.assertEqual(extension_alpn.compose(), extension_alpn_bytes)
+
+
+class TestExtensionApplicationLayerProtocolSettings(unittest.TestCase):
+    def test_parse(self):
+        extension_alpn_dict = collections.OrderedDict([
+            ('extension_type', b'\x44\x69'),
+            ('extension_length', b'\x00\x09'),
+            ('protocol_name_list_length', b'\x00\x07'),
+            ('protocol_name_h2_length', b'\x02'),
+            ('protocol_name_h2', b'h2'),
+            ('protocol_name_h2c_length', b'\x03'),
+            ('protocol_name_h2c', b'h2c'),
+        ])
+        extension_alpn_bytes = b''.join(extension_alpn_dict.values())
+        extension_alpn = TlsExtensionApplicationLayerProtocolSettings.parse_exact_size(
             extension_alpn_bytes
         )
         self.assertEqual(extension_alpn.protocol_names, TlsProtocolNameList([TlsProtocolName.H2, TlsProtocolName.H2C]))

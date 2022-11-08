@@ -203,6 +203,9 @@ class TlsExtensionType(TwoByteEnumComposer, enum.Enum):
     NEXT_PROTOCOL_NEGOTIATION = TlsExtensionTypeParams(               # [DRAFT-AGL-TLS-NEXTPROTONEG-04]
         code=0x3374
     )
+    APPLICATION_LAYER_PROTOCOL_SETTINGS = TlsExtensionTypeParams(     # [DRAFT-VVV-TLS-ALPS]
+        code=0x4469
+    )
     CHANNEL_ID = TlsExtensionTypeParams(                              # [DRAFT-BALFANZ-TLS-OBC-01]
         code=0x7550
     )
@@ -960,23 +963,24 @@ class TlsProtocolNameList(VectorParsable):
 
 
 @attr.s
-class TlsExtensionApplicationLayerProtocolNegotiation(TlsExtensionParsed):
+class TlsExtensionApplicationLayerProtocolBase(TlsExtensionParsed):
     protocol_names = attr.ib(
         converter=TlsProtocolNameList,
         validator=attr.validators.instance_of(TlsProtocolNameList),
     )
 
     @classmethod
+    @abc.abstractmethod
     def get_extension_type(cls):
-        return TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION
+        raise NotImplementedError()
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionApplicationLayerProtocolNegotiation, cls)._parse_header(parsable)
+        parser = super(TlsExtensionApplicationLayerProtocolBase, cls)._parse_header(parsable)
 
         parser.parse_parsable('protocol_names', TlsProtocolNameList)
 
-        return TlsExtensionApplicationLayerProtocolNegotiation(parser['protocol_names']), parser.parsed_length
+        return cls(parser['protocol_names']), parser.parsed_length
 
     def compose(self):
         payload_composer = ComposerBinary()
@@ -986,6 +990,18 @@ class TlsExtensionApplicationLayerProtocolNegotiation(TlsExtensionParsed):
         header_bytes = self._compose_header(payload_composer.composed_length)
 
         return header_bytes + payload_composer.composed_bytes
+
+
+class TlsExtensionApplicationLayerProtocolNegotiation(TlsExtensionApplicationLayerProtocolBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION
+
+
+class TlsExtensionApplicationLayerProtocolSettings(TlsExtensionApplicationLayerProtocolBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.APPLICATION_LAYER_PROTOCOL_SETTINGS
 
 
 class TlsExtensionNextProtocolNegotiationClient(TlsExtensionUnusedData):
@@ -1271,6 +1287,8 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
         return collections.OrderedDict([
             (TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION,
                 [TlsExtensionApplicationLayerProtocolNegotiation, ]),
+            (TlsExtensionType.APPLICATION_LAYER_PROTOCOL_SETTINGS,
+                [TlsExtensionApplicationLayerProtocolSettings, ]),
             (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
             (TlsExtensionType.RENEGOTIATION_INFO, [TlsExtensionRenegotiationInfo, ]),
