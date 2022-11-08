@@ -15,12 +15,14 @@ from cryptoparser.tls.algorithm import (
     TlsSignatureAndHashAlgorithm,
 )
 from cryptoparser.tls.extension import (
+    TlsCertificateCompressionAlgorithm,
     TlsCertificateStatusRequestExtensions,
     TlsCertificateStatusRequestResponderId,
     TlsCertificateStatusRequestResponderIdList,
     TlsExtensionApplicationLayerProtocolNegotiation,
     TlsExtensionApplicationLayerProtocolSettings,
     TlsExtensionCertificateStatusRequest,
+    TlsExtensionCompressCertificate,
     TlsExtensionECPointFormats,
     TlsExtensionEllipticCurves,
     TlsExtensionEncryptThenMAC,
@@ -274,6 +276,30 @@ class TestExtensionTokenBinding(unittest.TestCase):
             TlsTokenBindingProtocolVersion(1, 2),
         )
         self.assertEqual(extension_token_binding.compose(), extension_token_binding_bytes)
+
+
+class TestExtensionCompressCertificateAlgorithms(unittest.TestCase):
+    def test_parse(self):
+        extension_compress_certificate_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x1b'),
+            ('extension_length', b'\x00\x07'),
+            ('compression_algorithm_list_length', b'\x06'),
+            ('compression_algorithm_list', b'\x00\x03\x00\x02\x00\x01'),
+        ])
+        extension_compress_certificate_bytes = b''.join(extension_compress_certificate_dict.values())
+        extension_compress_certificate = TlsExtensionCompressCertificate.parse_exact_size(
+            extension_compress_certificate_bytes
+        )
+        self.assertEqual(extension_compress_certificate.extension_type, TlsExtensionType.COMPRESS_CERTIFICATE)
+        self.assertEqual(
+            list(extension_compress_certificate.compression_algorithms),
+            [
+                TlsCertificateCompressionAlgorithm.ZSTD,
+                TlsCertificateCompressionAlgorithm.BROTLI,
+                TlsCertificateCompressionAlgorithm.ZLIB,
+            ]
+        )
+        self.assertEqual(extension_compress_certificate.compose(), extension_compress_certificate_bytes)
 
 
 class TestExtensionSignatureAlgorithms(unittest.TestCase):

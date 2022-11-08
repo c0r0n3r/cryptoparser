@@ -1262,6 +1262,66 @@ class TlsExtensionSignedCertificateTimestamp(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
+class TlsCertificateCompressionAlgorithmFactory(TwoByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return TlsCertificateCompressionAlgorithm
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+@attr.s(frozen=True)
+class TlsCertificateCompressionAlgorithmParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+
+
+class TlsCertificateCompressionAlgorithm(TwoByteEnumComposer):
+    ZLIB = TlsCertificateCompressionAlgorithmParams(code=0x0001)
+    BROTLI = TlsCertificateCompressionAlgorithmParams(code=0x0002)
+    ZSTD = TlsCertificateCompressionAlgorithmParams(code=0x0003)
+
+
+class TlsCertificateCompressionAlgorithmVector(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsCertificateCompressionAlgorithmFactory,
+            fallback_class=TlsInvalidTypeTwoByte,
+            min_byte_num=2, max_byte_num=2 ** 8 - 2
+        )
+
+
+@attr.s
+class TlsExtensionCompressCertificate(TlsExtensionParsed):
+    compression_algorithms = attr.ib(
+        converter=TlsCertificateCompressionAlgorithmVector,
+        validator=attr.validators.instance_of(TlsCertificateCompressionAlgorithmVector),
+    )
+
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.COMPRESS_CERTIFICATE
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = super(TlsExtensionCompressCertificate, cls)._parse_header(parsable)
+
+        parser.parse_parsable('compression_algorithms', TlsCertificateCompressionAlgorithmVector)
+
+        return cls(parser['compression_algorithms']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_parsable(self.compression_algorithms)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
 class TlsExtensionVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1289,6 +1349,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
                 [TlsExtensionApplicationLayerProtocolNegotiation, ]),
             (TlsExtensionType.APPLICATION_LAYER_PROTOCOL_SETTINGS,
                 [TlsExtensionApplicationLayerProtocolSettings, ]),
+            (TlsExtensionType.COMPRESS_CERTIFICATE, [TlsExtensionCompressCertificate, ]),
             (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
             (TlsExtensionType.RENEGOTIATION_INFO, [TlsExtensionRenegotiationInfo, ]),
