@@ -295,8 +295,10 @@ class TestExtensionKeyShareClient(unittest.TestCase):
     def test_parse(self):
         extension_key_share_dict = collections.OrderedDict([
             ('extension_type', b'\x00\x33'),
-            ('extension_length', b'\x00\x26'),
-            ('key_share_length', b'\x00\x24'),
+            ('extension_length', b'\x00\x2a'),
+            ('key_share_length', b'\x00\x28'),
+            ('group_grease', b'\x0a\x0a'),
+            ('key_exchange_length_grease', b'\x00\x00'),
             ('group', b'\x00\x1d'),
             ('key_exchange_length', b'\x00\x20'),
             ('key_exchange',
@@ -311,10 +313,11 @@ class TestExtensionKeyShareClient(unittest.TestCase):
             extension_key_share_bytes
         )
         key_share_entries = extension_key_share.key_share_entries
-        self.assertEqual(len(key_share_entries), 1)
-        self.assertEqual(key_share_entries[0].group, TlsNamedCurve.X25519)
+        self.assertEqual(len(key_share_entries), 2)
+        self.assertEqual(key_share_entries[0].group, TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A))
+        self.assertEqual(key_share_entries[1].group, TlsNamedCurve.X25519)
         self.assertEqual(
-            bytearray(key_share_entries[0].key_exchange),
+            bytearray(key_share_entries[1].key_exchange),
             extension_key_share_dict['key_exchange']
         )
         self.assertEqual(extension_key_share.compose(), extension_key_share_bytes)

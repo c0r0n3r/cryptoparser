@@ -653,12 +653,35 @@ class TlsKeyShareEntry(ParsableBase):
         return composer.composed_bytes
 
 
+@attr.s
+class TlsKeyShareEntryInvalidType(ParsableBase):
+    group = attr.ib(validator=attr.validators.instance_of(TlsInvalidTypeTwoByte))
+    data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_parsable('group', TlsInvalidTypeTwoByte)
+        parser.parse_bytes('data', 2)
+
+        return TlsKeyShareEntryInvalidType(parser['group'], parser['data']), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_parsable(self.group)
+        composer.compose_bytes(self.data, 2)
+
+        return composer.composed_bytes
+
+
 class TlsKeyShareEntryVector(VectorParsable):
     @classmethod
     def get_param(cls):
         return VectorParamParsable(
             item_class=TlsKeyShareEntry,
-            fallback_class=None,
+            fallback_class=TlsKeyShareEntryInvalidType,
             min_byte_num=0, max_byte_num=2 ** 16 - 1
         )
 
