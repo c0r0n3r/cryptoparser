@@ -152,6 +152,9 @@ class TlsExtensionType(TwoByteEnumComposer, enum.Enum):
     TLS_CERT_WITH_EXTERN_PSK = TlsExtensionTypeParams(                # [RFC-IETF-TLS-TLS13-CERT-WITH-EXTERN-PSK-07]
         code=0x0021
     )
+    DELEGATED_CREDENTIALS = TlsExtensionTypeParams(                   # [RFC-IETF-TLS-SUBCERTS-15]
+        code=0x0022
+    )
     SESSION_TICKET = TlsExtensionTypeParams(                          # [RFC4507]
         code=0x0023
     )
@@ -629,6 +632,12 @@ class TlsExtensionSignatureAlgorithmsCert(TlsExtensionSignatureAlgorithmsBase):
     @classmethod
     def get_extension_type(cls):
         return TlsExtensionType.SIGNATURE_ALGORITHMS_CERT
+
+
+class TlsExtensionDelegatedCredentials(TlsExtensionSignatureAlgorithmsBase):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.DELEGATED_CREDENTIALS
 
 
 class TlsKeyExchangeVector(Vector):
@@ -1390,6 +1399,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
             (TlsExtensionType.STATUS_REQUEST, [TlsExtensionCertificateStatusRequest, ]),
             (TlsExtensionType.SUPPORTED_GROUPS, [TlsExtensionEllipticCurves, ]),
+            (TlsExtensionType.DELEGATED_CREDENTIALS, [TlsExtensionDelegatedCredentials, ]),
             (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
             (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClient, ]),
             (TlsExtensionType.KEY_SHARE_RESERVED, [TlsExtensionKeyShareReservedClient, ]),
