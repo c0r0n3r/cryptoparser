@@ -509,15 +509,15 @@ class TestExtensionSessionTicket(unittest.TestCase):
 
 class TestExtensionNextProtocolNegotiationClient(unittest.TestCase):
     def test_parse(self):
-        extension_nex_protocol_names_dict = collections.OrderedDict([
+        extension_next_protocol_names_dict = collections.OrderedDict([
             ('extension_type', b'\x33\x74'),
             ('extension_length', b'\x00\x00'),
         ])
-        extension_nex_protocol_names_bytes = b''.join(extension_nex_protocol_names_dict.values())
-        extension_nex_protocol_names_mac = TlsExtensionNextProtocolNegotiationClient.parse_exact_size(
-            extension_nex_protocol_names_bytes
+        extension_next_protocol_names_bytes = b''.join(extension_next_protocol_names_dict.values())
+        extension_next_protocol_names_mac = TlsExtensionNextProtocolNegotiationClient.parse_exact_size(
+            extension_next_protocol_names_bytes
         )
-        self.assertEqual(extension_nex_protocol_names_mac.compose(), extension_nex_protocol_names_bytes)
+        self.assertEqual(extension_next_protocol_names_mac.compose(), extension_next_protocol_names_bytes)
 
 
 class TestExtensionNextProtocolNegotiationServer(unittest.TestCase):
