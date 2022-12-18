@@ -22,6 +22,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionApplicationLayerProtocolNegotiation,
     TlsExtensionApplicationLayerProtocolSettings,
     TlsExtensionCertificateStatusRequest,
+    TlsExtensionChannelId,
     TlsExtensionCompressCertificate,
     TlsExtensionECPointFormats,
     TlsExtensionEllipticCurves,
@@ -573,6 +574,19 @@ class TestExtensionCertificateStatusRequest(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(self.status_request_minimal.compose(), self.status_request_minimal_bytes)
         self.assertEqual(self.status_request.compose(), self.status_request_bytes)
+
+
+class TestExtensionChannelId(unittest.TestCase):
+    def test_parse(self):
+        extension_channel_id_dict = collections.OrderedDict([
+            ('extension_type', b'\x75\x50'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_channel_id_bytes = b''.join(extension_channel_id_dict.values())
+        extension_channel_id = TlsExtensionChannelId.parse_exact_size(
+            extension_channel_id_bytes
+        )
+        self.assertEqual(extension_channel_id.compose(), extension_channel_id_bytes)
 
 
 class TestTlsExtensionPskKeyExchangeModes(unittest.TestCase):

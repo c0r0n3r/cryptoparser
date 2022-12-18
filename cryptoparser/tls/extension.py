@@ -1074,6 +1074,12 @@ class TlsExtensionNextProtocolNegotiationServer(TlsExtensionParsed):
         return header_composer.composed_bytes + payload_composer.composed_bytes
 
 
+class TlsExtensionChannelId(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.CHANNEL_ID
+
+
 class TlsExtensionEncryptThenMAC(TlsExtensionUnusedData):
     @classmethod
     def get_extension_type(cls):
@@ -1389,6 +1395,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
                 [TlsExtensionApplicationLayerProtocolNegotiation, ]),
             (TlsExtensionType.APPLICATION_LAYER_PROTOCOL_SETTINGS,
                 [TlsExtensionApplicationLayerProtocolSettings, ]),
+            (TlsExtensionType.CHANNEL_ID, [TlsExtensionChannelId, ]),
             (TlsExtensionType.COMPRESS_CERTIFICATE, [TlsExtensionCompressCertificate, ]),
             (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
@@ -1419,6 +1426,7 @@ class TlsExtensionVariantServer(TlsExtensionVariantBase):
         return collections.OrderedDict([
             (TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION,
                 [TlsExtensionApplicationLayerProtocolNegotiation, ]),
+            (TlsExtensionType.CHANNEL_ID, [TlsExtensionChannelId, ]),
             (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
             (TlsExtensionType.ENCRYPT_THEN_MAC, [TlsExtensionEncryptThenMAC, ]),
             (TlsExtensionType.EXTENDED_MASTER_SECRET, [TlsExtensionExtendedMasterSecret, ]),
