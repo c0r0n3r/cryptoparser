@@ -2,6 +2,8 @@
 
 import abc
 import enum
+import random
+
 import attr
 
 from cryptoparser.common.base import ParsableBase
@@ -58,6 +60,12 @@ class TlsInvalidTypeBase(ParsableBase):
         composer.compose_numeric(self.value.code, self.get_byte_num())
 
         return composer.composed_bytes
+
+    @classmethod
+    def from_random(cls):
+        grease_enum_type = cls.get_grease_enum()
+
+        return cls(random.choice(list(grease_enum_type)))
 
 
 class TlsInvalidTypeOneByte(TlsInvalidTypeBase):

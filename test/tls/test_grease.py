@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from cryptoparser.tls.grease import TlsInvalidType, TlsInvalidTypeParams, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 
@@ -43,3 +47,8 @@ class TestGrease(unittest.TestCase):
             b'\x2b\x2b',
             TlsInvalidTypeTwoByte(0x2b2b).compose()
         )
+
+    @mock.patch('random.choice')
+    def test_random(self, mock_choice):
+        mock_choice.side_effect = [0xabcd, ]
+        self.assertEqual(TlsInvalidTypeTwoByte.from_random(), TlsInvalidTypeTwoByte(0xabcd))
