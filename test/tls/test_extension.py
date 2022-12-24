@@ -40,6 +40,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionRenegotiationInfo,
     TlsExtensionServerName,
     TlsExtensionSessionTicket,
+    TlsExtensionShortRecordHeader,
     TlsExtensionSignatureAlgorithms,
     TlsExtensionSignatureAlgorithmsCert,
     TlsExtensionSignedCertificateTimestamp,
@@ -752,6 +753,19 @@ class TestExtensionExtendedMasterSecret(unittest.TestCase):
             extension_extended_master_secret_bytes
         )
         self.assertEqual(extended_master_secret.compose(), extension_extended_master_secret_bytes)
+
+
+class TestExtensionExtendedShortRecordHeader(unittest.TestCase):
+    def test_parse(self):
+        extension_short_record_header_dict = collections.OrderedDict([
+            ('extension_type', b'\xff\x03'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_short_record_header_bytes = b''.join(extension_short_record_header_dict.values())
+        short_record_header = TlsExtensionShortRecordHeader.parse_exact_size(
+            extension_short_record_header_bytes
+        )
+        self.assertEqual(short_record_header.compose(), extension_short_record_header_bytes)
 
 
 class TestExtensionRecordSizeLimit(unittest.TestCase):

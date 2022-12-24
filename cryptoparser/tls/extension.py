@@ -215,7 +215,7 @@ class TlsExtensionType(TwoByteEnumComposer, enum.Enum):
     RENEGOTIATION_INFO = TlsExtensionTypeParams(                      # [DRAFT-AGL-TLS-NEXTPROTONEG-03]
         code=0xff01
     )
-    RECORD_HEADER = TlsExtensionTypeParams(                           # [DRAFT-FOSSATI-TLS-EXT-HEADER]
+    SHORT_RECORD_HEADER = TlsExtensionTypeParams(                     # [DRAFT-FOSSATI-TLS-EXT-HEADER]
         code=0xff03
     )
 
@@ -1092,6 +1092,13 @@ class TlsExtensionExtendedMasterSecret(TlsExtensionUnusedData):
         return TlsExtensionType.EXTENDED_MASTER_SECRET
 
 
+@attr.s
+class TlsExtensionShortRecordHeader(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.SHORT_RECORD_HEADER
+
+
 class TlsTokenBindingProtocolVersion(ProtocolVersionMajorMinorBase):
     pass
 
@@ -1412,6 +1419,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.KEY_SHARE_RESERVED, [TlsExtensionKeyShareReservedClient, ]),
             (TlsExtensionType.PSK_KEY_EXCHANGE_MODES, [TlsExtensionPskKeyExchangeModes, ]),
             (TlsExtensionType.RECORD_SIZE_LIMIT, [TlsExtensionRecordSizeLimit, ]),
+            (TlsExtensionType.SHORT_RECORD_HEADER, [TlsExtensionShortRecordHeader, ]),
             (TlsExtensionType.SIGNATURE_ALGORITHMS, [TlsExtensionSignatureAlgorithms, ]),
             (TlsExtensionType.SIGNATURE_ALGORITHMS_CERT, [TlsExtensionSignatureAlgorithmsCert, ]),
             (TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP, [TlsExtensionSignedCertificateTimestamp, ]),
