@@ -158,6 +158,40 @@ class TlsProtocolVersionDraft(TlsProtocolVersionBase):
             raise InvalidValue(value, TlsProtocolVersionDraft, 'draft number')
 
 
+@attr.s(init=False, eq=False, order=False)
+class TlsProtocolVersionGoogleExperiment(TlsProtocolVersionBase):
+    _MAJOR = 0x7e
+    MAX_EXPERIMENT_NUMBER = 3
+
+    major = attr.ib()
+    minor = attr.ib()
+
+    def __init__(self, experiemnt_number):
+        self.major = self._MAJOR
+        self.minor = experiemnt_number
+
+        attr.validate(self)
+
+    @property
+    def identifier(self):
+        return 'tls1_3_google_experiment{}'.format(self.minor)
+
+    def __str__(self):
+        return 'TLS 1.3 Google Experiment {}'.format(self.minor)
+
+    @major.validator
+    def major_validator(self, attribute, value):  # pylint: disable=unused-argument
+        if value != self._MAJOR:
+            raise InvalidValue(value, TlsProtocolVersionFinal, 'major')
+
+    @minor.validator
+    def minor_validator(self, attribute, value):  # pylint: disable=unused-argument
+        if value > self.MAX_EXPERIMENT_NUMBER:
+            raise InvalidValue(value, TlsProtocolVersionDraft, 'experiemnt number')
+        if value < 0x00:
+            raise InvalidValue(value, TlsProtocolVersionDraft, 'experiemnt number')
+
+
 class SslVersion(enum.IntEnum):
     SSL2 = 0x0002
 
