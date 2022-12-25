@@ -866,13 +866,12 @@ class TestComposerBinary(TestParsableBase):
 
     def test_compose_timestamp(self):
         composer = ComposerBinary()
-        date_time = datetime.datetime.fromtimestamp(0)
-        date_time.replace(tzinfo=None)
+        date_time = datetime.datetime.utcfromtimestamp(0)
         composer.compose_timestamp(date_time)
         self.assertEqual(b'\x00\x00\x00\x00\x00\x00\x00\x00', composer.composed_bytes)
 
         composer = ComposerBinary()
-        date_time = datetime.datetime.fromtimestamp(0xffffffff)
+        date_time = datetime.datetime.utcfromtimestamp(0xffffffff)
         date_time.replace(tzinfo=None)
         composer.compose_timestamp(date_time)
         self.assertEqual(b'\x00\x00\x00\x00\xff\xff\xff\xff', composer.composed_bytes)
