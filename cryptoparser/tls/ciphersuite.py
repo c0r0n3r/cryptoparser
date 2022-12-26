@@ -48,6 +48,7 @@ class CipherSuiteParams(Serializable):  # pylint: disable=too-many-instance-attr
     authenticated_encryption = attr.ib(validator=attr.validators.instance_of(bool))
     initial_version = attr.ib(validator=attr.validators.instance_of((TlsProtocolVersionBase, SslProtocolVersion)))
     last_version = attr.ib(init=False, validator=attr.validators.instance_of(TlsProtocolVersionBase))
+    export_grade = attr.ib(init=False, validator=attr.validators.instance_of(bool))
 
     def __attrs_post_init__(self):
         if self.code > 0xffff:
@@ -57,6 +58,8 @@ class CipherSuiteParams(Serializable):  # pylint: disable=too-many-instance-attr
                 self.last_version = TlsProtocolVersionFinal(TlsVersion.TLS1_3)
             else:
                 self.last_version = TlsProtocolVersionFinal(TlsVersion.TLS1_2)
+
+        self.export_grade = self.iana_name is not None and '_EXPORT' in self.iana_name
 
     def _as_markdown(self, level):
         if self.iana_name is None:
