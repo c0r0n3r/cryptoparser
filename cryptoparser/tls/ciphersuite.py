@@ -2302,7 +2302,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         code=0xc015,
         iana_name='TLS_ECDH_anon_WITH_NULL_SHA',
         openssl_name='AECDH-NULL-SHA',
-        key_exchange=KeyExchange.ECDH,
+        key_exchange=KeyExchange.AECDH,
         authentication=Authentication.anon,
         bulk_cipher=None,
         block_cipher_mode=None,
@@ -2314,7 +2314,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         code=0xc016,
         iana_name='TLS_ECDH_anon_WITH_RC4_128_SHA',
         openssl_name='AECDH-RC4-SHA',
-        key_exchange=KeyExchange.ECDH,
+        key_exchange=KeyExchange.AECDH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.RC4_128,
         block_cipher_mode=None,
@@ -2326,7 +2326,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         code=0xc017,
         iana_name='TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA',
         openssl_name='AECDH-DES-CBC3-SHA',
-        key_exchange=KeyExchange.ECDH,
+        key_exchange=KeyExchange.AECDH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.TRIPLE_DES_EDE,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -2338,7 +2338,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         code=0xc018,
         iana_name='TLS_ECDH_anon_WITH_AES_128_CBC_SHA',
         openssl_name='AECDH-AES128-SHA',
-        key_exchange=KeyExchange.ECDH,
+        key_exchange=KeyExchange.AECDH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_128,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -2350,7 +2350,7 @@ class TlsCipherSuite(TwoByteEnumComposer):
         code=0xc019,
         iana_name='TLS_ECDH_anon_WITH_AES_256_CBC_SHA',
         openssl_name='AECDH-AES256-SHA',
-        key_exchange=KeyExchange.ECDH,
+        key_exchange=KeyExchange.AECDH,
         authentication=Authentication.anon,
         bulk_cipher=BlockCipher.AES_256,
         block_cipher_mode=BlockCipherMode.CBC,
@@ -4794,7 +4794,7 @@ class SslCipherKindFactory(ThreeByteEnumParsable):
         raise NotImplementedError()
 
 
-class SslCipherKind(Serializable, ThreeByteEnumComposer):
+class SslCipherKind(ThreeByteEnumComposer):
     SSL_CK_NULL_WITH_MD5 = CipherSuiteParams(
         code=0x000000,
         iana_name='SSL_CK_NULL_WITH_MD5',

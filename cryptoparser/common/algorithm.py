@@ -72,16 +72,20 @@ class NamedGroupParams(AlgortihmOIDOptionalParams):
 
 
 class KeyExchange(enum.Enum):
+    AECDH = KeyExchangeParams(
+        name='Anonymous Elliptic-curve Diffie–Hellman (ECDH)',
+        forward_secret=True
+    )
     ADH = KeyExchangeParams(
         name='Anonymous Diffie–Hellman (ADH)',
-        forward_secret=False
+        forward_secret=True
     )
     CECPQ1 = KeyExchangeParams(
         name='Combined Elliptic-Curve and Post-Quantum 1 (CECPQ1)',
         forward_secret=False
     )
     DH = KeyExchangeParams(  # pylint: disable=invalid-name
-        name='static Diffie–Hellman Ephemeral (DH)',
+        name='Fixed Diffie–Hellman Ephemeral (DH)',
         forward_secret=False
     )
     DHE = KeyExchangeParams(
@@ -89,7 +93,7 @@ class KeyExchange(enum.Enum):
         forward_secret=True
     )
     ECDH = KeyExchangeParams(
-        name='static Elliptic-curve Diffie–Hellman (ECDH)',
+        name='Fixed Elliptic-curve Diffie–Hellman (ECDH)',
         forward_secret=False
     )
     ECDHE = KeyExchangeParams(
