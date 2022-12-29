@@ -201,6 +201,10 @@ class TlsNamedCurve(TwoByteEnumComposer):
         code=0x0104,
         named_group=NamedGroup.FFDHE8192,
     )
+    CECPQ2 = TlsNamedCurveParams(
+        code=0x4138,
+        named_group=NamedGroup.FFDHE8192,
+    )
 
     ARBITRARY_EXPLICIT_PRIME_CURVES = TlsNamedCurveParams(
         code=0xff01,

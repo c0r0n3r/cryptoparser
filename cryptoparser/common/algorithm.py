@@ -977,6 +977,12 @@ class NamedGroup(AlgortihmOIDBase, enum.Enum):
         size=431,
         group_type=NamedGroupType.ELLIPTIC_CURVE,
     )
+    CECPQ2 = NamedGroupParams(
+        name='CECPQ2',
+        oid=None,
+        size=256,
+        group_type=NamedGroupType.ELLIPTIC_CURVE,
+    )
     GC256A = NamedGroupParams(
         name='tc26-gost-3410-2012-256-paramSetA',
         oid='1.2.643.7.1.2.1.1.1',
