@@ -379,6 +379,13 @@ class TestParserBinary(TestParsableBase):
         parser.parse_timestamp('timestamp')
         self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0, dateutil.tz.UTC))
 
+        parser = ParserBinary(b'\x00\x00\x00\x00\x00\x00\x00\xff')
+        parser.parse_timestamp('timestamp', milliseconds=True)
+        self.assertEqual(
+            parser['timestamp'],
+            datetime.datetime.fromtimestamp(0, dateutil.tz.UTC) + datetime.timedelta(microseconds=255000)
+        )
+
         parser = ParserBinary(b'\xff\xff\xff\xff\xff\xff\xff\xff')
         parser.parse_timestamp('timestamp')
         self.assertEqual(parser['timestamp'], None)
@@ -942,6 +949,11 @@ class TestComposerBinary(TestParsableBase):
         date_time = datetime.datetime.utcfromtimestamp(0)
         composer.compose_timestamp(date_time)
         self.assertEqual(b'\x00\x00\x00\x00\x00\x00\x00\x00', composer.composed_bytes)
+
+        composer = ComposerBinary()
+        date_time = datetime.datetime.utcfromtimestamp(0) + datetime.timedelta(microseconds=255000)
+        composer.compose_timestamp(date_time, milliseconds=True)
+        self.assertEqual(b'\x00\x00\x00\x00\x00\x00\x00\xff', composer.composed_bytes)
 
         composer = ComposerBinary()
         date_time = datetime.datetime.utcfromtimestamp(0xffffffff)

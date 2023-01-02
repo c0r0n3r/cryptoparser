@@ -457,16 +457,21 @@ class ParserText(ParserBase):
 class ParserBinary(ParserBase):
     byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
-    def parse_timestamp(self, name):
+    def parse_timestamp(self, name, milliseconds=False):
         value, parsed_length = self._parse_numeric_array(name, 1, 8, int)
 
         self._parsed_length += parsed_length
         if value[0] == 0xffffffffffffffff:
             self._parsed_values[name] = None
         else:
-            self._parsed_values[name] = datetime.datetime.fromtimestamp(
-                0x00000000ffffffff & value[0], dateutil.tz.UTC
-            )
+            value = value[0]
+            if milliseconds:
+                millis = value % 1000
+                value //= 1000
+            value = datetime.datetime.fromtimestamp(0x00000000ffffffff & value, dateutil.tz.UTC)
+            if milliseconds:
+                value += datetime.timedelta(milliseconds=millis)
+            self._parsed_values[name] = value
 
     def _parse_numeric_array(self, name, item_num, item_size, item_numeric_class):
         if self._parsed_length + (item_num * item_size) > len(self._parsable):
@@ -782,13 +787,17 @@ class ComposerText(ComposerBase):
 class ComposerBinary(ComposerBase):
     byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
-    def compose_timestamp(self, value):
+    def compose_timestamp(self, value, milliseconds=False):
         if value is None:
-            value = 0xffffffffffffffff
+            timestamp = 0xffffffffffffffff
         else:
-            value = int(time.mktime(value.timetuple())) - time.timezone
+            timestamp = int(time.mktime(value.timetuple())) - time.timezone
 
-        return self._compose_numeric_array([value, ], 8)
+            if milliseconds:
+                timestamp *= 1000
+                timestamp += value.microsecond // 1000
+
+        return self._compose_numeric_array([timestamp, ], 8)
 
     def _compose_numeric_array(self, values, item_size):
         composed_bytes = bytearray()
