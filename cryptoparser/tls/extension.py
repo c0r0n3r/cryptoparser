@@ -391,7 +391,7 @@ class TlsServerName(Vector):
 
 
 @attr.s
-class TlsExtensionServerName(TlsExtensionParsed):
+class TlsExtensionServerNameClient(TlsExtensionParsed):
     host_name = attr.ib(validator=attr.validators.instance_of(six.string_types))
     name_type = attr.ib(validator=attr.validators.in_(TlsServerNameType), default=TlsServerNameType.HOST_NAME)
 
@@ -401,33 +401,36 @@ class TlsExtensionServerName(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionServerName, cls)._parse_header(parsable)
+        parser = super(TlsExtensionServerNameClient, cls)._parse_header(parsable)
 
-        if parser['extension_length'] > 0:
-            parser.parse_numeric('server_name_list_length', 2)
-            parser.parse_numeric('server_name_type', 1, TlsServerNameType)
-            parser.parse_parsable('server_name', TlsServerName)
+        parser.parse_numeric('server_name_list_length', 2)
+        parser.parse_numeric('server_name_type', 1, TlsServerNameType)
+        parser.parse_parsable('server_name', TlsServerName)
 
-            return TlsExtensionServerName(
-                six.ensure_text(bytes(bytearray(parser['server_name'])), 'idna')
-            ), parser.parsed_length
-
-        return TlsExtensionServerName(six.ensure_text('', 'idna')), parser.parsed_length
+        return cls(
+            six.ensure_text(bytes(bytearray(parser['server_name'])), 'idna')
+        ), parser.parsed_length
 
     def compose(self):
         composer = ComposerBinary()
 
-        if self.host_name:
-            idna_encoded_host_name = six.ensure_binary(self.host_name, 'idna')
+        idna_encoded_host_name = six.ensure_binary(self.host_name, 'idna')
 
-            composer.compose_numeric(3 + len(idna_encoded_host_name), 2)
-            composer.compose_numeric(self.name_type, 1)
+        composer.compose_numeric(3 + len(idna_encoded_host_name), 2)
+        composer.compose_numeric(self.name_type, 1)
 
-            composer.compose_bytes(idna_encoded_host_name, 2)
+        composer.compose_bytes(idna_encoded_host_name, 2)
 
         header_bytes = self._compose_header(composer.composed_length)
 
         return header_bytes + composer.composed_bytes
+
+
+@attr.s
+class TlsExtensionServerNameServer(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.SERVER_NAME
 
 
 class TlsECPointFormatVector(VectorParsable):
@@ -1409,7 +1412,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.RENEGOTIATION_INFO, [TlsExtensionRenegotiationInfo, ]),
             (TlsExtensionType.NEXT_PROTOCOL_NEGOTIATION, [TlsExtensionNextProtocolNegotiationClient, ]),
             (TlsExtensionType.PADDING, [TlsExtensionPadding, ]),
-            (TlsExtensionType.SERVER_NAME, [TlsExtensionServerName, ]),
+            (TlsExtensionType.SERVER_NAME, [TlsExtensionServerNameClient, ]),
             (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
             (TlsExtensionType.STATUS_REQUEST, [TlsExtensionCertificateStatusRequest, ]),
             (TlsExtensionType.SUPPORTED_GROUPS, [TlsExtensionEllipticCurves, ]),
@@ -1442,6 +1445,7 @@ class TlsExtensionVariantServer(TlsExtensionVariantBase):
             (TlsExtensionType.NEXT_PROTOCOL_NEGOTIATION, [TlsExtensionNextProtocolNegotiationServer, ]),
             (TlsExtensionType.RECORD_SIZE_LIMIT, [TlsExtensionRecordSizeLimit, ]),
             (TlsExtensionType.RENEGOTIATION_INFO, [TlsExtensionRenegotiationInfo, ]),
+            (TlsExtensionType.SERVER_NAME, [TlsExtensionServerNameServer, ]),
             (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
             (TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP, [TlsExtensionSignedCertificateTimestamp, ]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsServer, ]),

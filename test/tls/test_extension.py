@@ -38,7 +38,8 @@ from cryptoparser.tls.extension import (
     TlsExtensionPskKeyExchangeModes,
     TlsExtensionRecordSizeLimit,
     TlsExtensionRenegotiationInfo,
-    TlsExtensionServerName,
+    TlsExtensionServerNameClient,
+    TlsExtensionServerNameServer,
     TlsExtensionSessionTicket,
     TlsExtensionShortRecordHeader,
     TlsExtensionSignatureAlgorithms,
@@ -125,18 +126,8 @@ class TestExtensionParsed(unittest.TestCase):
             ExtensionInvalidType.parse_exact_size(extension_invalid_type_bytes)
 
 
-class TestExtensionHostname(unittest.TestCase):
+class TestExtensionHostnameClient(unittest.TestCase):
     def test_parse(self):
-        extension_hostname_empty_dict = collections.OrderedDict([
-            ('extension_type', b'\x00\x00'),
-            ('extension_length', b'\x00\x00'),
-        ])
-        extension_hostname_empty_bytes = b''.join(extension_hostname_empty_dict.values())
-
-        extension_hostname_empty = TlsExtensionServerName.parse_exact_size(extension_hostname_empty_bytes)
-        self.assertEqual(extension_hostname_empty.host_name, '')
-        self.assertEqual(extension_hostname_empty.compose(), extension_hostname_empty_bytes)
-
         extension_hostname_dict = collections.OrderedDict([
             ('extension_type', b'\x00\x00'),
             ('extension_length', b'\x00\x14'),
@@ -147,7 +138,7 @@ class TestExtensionHostname(unittest.TestCase):
         ])
         extension_hostname_bytes = b''.join(extension_hostname_dict.values())
 
-        extension_hostname = TlsExtensionServerName.parse_exact_size(extension_hostname_bytes)
+        extension_hostname = TlsExtensionServerNameClient.parse_exact_size(extension_hostname_bytes)
         self.assertEqual(extension_hostname.host_name, 'www.example.com')
         self.assertEqual(extension_hostname.compose(), extension_hostname_bytes)
 
@@ -164,7 +155,7 @@ class TestExtensionHostname(unittest.TestCase):
         ])
         extension_hostname_internationalized_bytes = b''.join(extension_hostname_internationalized_dict.values())
 
-        extension_hostname_internationalized = TlsExtensionServerName.parse_exact_size(
+        extension_hostname_internationalized = TlsExtensionServerNameClient.parse_exact_size(
             extension_hostname_internationalized_bytes
         )
         self.assertEqual(extension_hostname_internationalized.host_name, six.ensure_text('ísland.icom.museum'))
@@ -190,6 +181,18 @@ class TestExtensionECPointFormat(unittest.TestCase):
             ]
         )
         self.assertEqual(extension_point_formats.compose(), extension_ec_point_formats_bytes)
+
+
+class TestExtensionHostnameServer(unittest.TestCase):
+    def test_parse(self):
+        extension_hostname_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x00'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_hostname_bytes = b''.join(extension_hostname_dict.values())
+
+        extension_hostname = TlsExtensionServerNameServer.parse_exact_size(extension_hostname_bytes)
+        self.assertEqual(extension_hostname.compose(), extension_hostname_bytes)
 
 
 class TestExtensionEllipticCurves(unittest.TestCase):
