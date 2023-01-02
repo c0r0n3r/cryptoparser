@@ -211,6 +211,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
                 return False, str(obj.value)
 
             return False, obj.name
+        elif hasattr(obj, '_asdict'):
+            result = cls._markdown_result(obj._asdict(), level)
         elif hasattr(obj, '__dict__') or isinstance(obj, dict):
             result = cls._markdown_result_complex(obj, level)
         elif isinstance(obj, (list, tuple, set, ArrayBase)):

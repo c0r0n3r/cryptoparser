@@ -578,7 +578,7 @@ class ParserBinary(ParserBase):
     def parse_raw(self, name, size):
         parsed_bytes = self._parse_bytes(size)
 
-        self._parsed_values[name] = parsed_bytes
+        self._parsed_values[name] = bytearray(parsed_bytes)
         self._parsed_length += size
 
     def parse_string(self, name, item_size, encoding, converter=str):

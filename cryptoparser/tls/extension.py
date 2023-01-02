@@ -1080,7 +1080,10 @@ class TlsExtensionSignedCertificateTimestampClient(TlsExtensionUnusedData):
 
 @attr.s
 class TlsExtensionSignedCertificateTimestampServer(TlsExtensionParsed):
-    scts = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(SignedCertificateTimestampList)))
+    scts = attr.ib(
+        converter=SignedCertificateTimestampList,
+        validator=attr.validators.optional(attr.validators.instance_of(SignedCertificateTimestampList))
+    )
 
     @classmethod
     def get_extension_type(cls):
@@ -1167,7 +1170,7 @@ class TlsExtensionPadding(TlsExtensionParsed):
 
         parser.parse_raw('padding', parser['extension_length'])
         try:
-            non_zero_int = next(byte for byte in six.iterbytes(parser['padding']) if byte != 0)
+            non_zero_int = next(byte for byte in parser['padding'] if byte != 0)
             raise InvalidValue(six.int2byte(non_zero_int), cls)
         except StopIteration:
             pass

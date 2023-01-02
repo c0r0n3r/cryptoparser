@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import collections
+import datetime
 import unittest
 
+import dateutil
 import six
 
 from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.types import Base64Data
+from cryptodatahub.common.stores import CertificateTransparencyLog
 from cryptodatahub.tls.algorithm import (
     TlsECPointFormat,
     TlsCertificateCompressionAlgorithm,
@@ -18,7 +22,8 @@ from cryptodatahub.tls.algorithm import (
 )
 
 from cryptoparser.common.exception import NotEnoughData, InvalidType
-from cryptoparser.common.x509 import SerializedSCT
+from cryptoparser.common.x509 import CtExtensions, CtVersion, SignedCertificateTimestamp
+
 from cryptoparser.tls.extension import (
     TlsCertificateStatusRequestExtensions,
     TlsCertificateStatusRequestResponderId,
@@ -364,39 +369,94 @@ class TestExtensionSignatureAlgorithmsCert(unittest.TestCase):
 
 class TestExtensionSignedCertificateTimestampClient(unittest.TestCase):
     def test_parse_minimal(self):
-        extension_signed_certificate_timestamp_dict = collections.OrderedDict([
+        extension_sct_dict = collections.OrderedDict([
             ('extension_type', b'\x00\x12'),
             ('extension_length', b'\x00\x00'),
         ])
-        extension_signed_certificate_timestamp_bytes = b''.join(extension_signed_certificate_timestamp_dict.values())
-        extension_signed_certificate_timestamp = TlsExtensionSignedCertificateTimestampClient.parse_exact_size(
-            extension_signed_certificate_timestamp_bytes
+        extension_sct_bytes = b''.join(extension_sct_dict.values())
+        extension_sct = TlsExtensionSignedCertificateTimestampClient.parse_exact_size(
+            extension_sct_bytes
         )
         self.assertEqual(
-            extension_signed_certificate_timestamp.extension_type, TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP
+            extension_sct.extension_type, TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP
         )
-        self.assertEqual(extension_signed_certificate_timestamp.compose(), extension_signed_certificate_timestamp_bytes)
+        self.assertEqual(extension_sct.compose(), extension_sct_bytes)
 
 
 class TestExtensionSignedCertificateTimestampServer(unittest.TestCase):
-    def test_parse_full(self):
-        extension_signed_certificate_timestamp_dict = collections.OrderedDict([
+    def setUp(self):
+        extension_sct_dict = collections.OrderedDict([
             ('extension_type', b'\x00\x12'),
-            ('extension_length', b'\x00\x0e'),
-            ('signed_certificate_timestamp_list', b'\x00\x0c\x00\x04\x00\x01\x02\x03\x00\x04\x04\x05\x06\x07'),
+            ('extension_length', b'\x00\x84'),
+            ('signed_certificate_timestamp_list_length', b'\x00\x82'),
+            ('signed_certificate_timestamp_list', b''.join([
+                b'\x00\x3f',                                                                  # length
+                b'\x00',                                                                      # version
+                b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+                b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',          # log
+                b'\x00\x00\x00\x00\x00\x00\x00\x01',                                          # timestamp
+                b'\x00\x00',                                                                  # extensions
+                b'\x00\x00',                                                                  # signature_algorithm
+                b'\x00\x10\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',  # signature
+
+                b'\x00\x3f',                                                                  # length
+                b'\x00',                                                                      # version
+                b'\x96\x06\xc0\x2c\x69\x00\x33\xaa\x1d\x14\x5f\x59\xc6\xe2\x64\x8d',
+                b'\x05\x49\xf0\xdf\x96\xaa\xb8\xdb\x91\x5a\x70\xd8\xec\xf3\x90\xa5',          # log
+                b'\x00\x00\x00\x00\x00\x00\x00\x01',                                          # timestamp
+                b'\x00\x00',                                                                  # extensions
+                b'\x00\x00',                                                                  # signature_algorithm
+                b'\x00\x10\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',  # signature
+            ]))
         ])
-        extension_signed_certificate_timestamp_bytes = b''.join(extension_signed_certificate_timestamp_dict.values())
-        extension_signed_certificate_timestamp = TlsExtensionSignedCertificateTimestampServer.parse_exact_size(
-            extension_signed_certificate_timestamp_bytes
+        self.extension_sct_bytes = b''.join(extension_sct_dict.values())
+
+    def test_parse(self):
+        extension_sct = TlsExtensionSignedCertificateTimestampServer.parse_exact_size(
+            self.extension_sct_bytes
         )
-        self.assertEqual(
-            extension_signed_certificate_timestamp.extension_type, TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP
+        self.assertEqual(extension_sct.extension_type, TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP)
+
+        sct = SignedCertificateTimestamp(
+            CtVersion.V1,
+            Base64Data(2 * b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'),
+            datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=dateutil.tz.UTC),
+            CtExtensions([]),
+            TlsSignatureAndHashAlgorithm.ANONYMOUS_NONE,
+            b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
         )
-        self.assertEqual(
-            list(extension_signed_certificate_timestamp.scts),
-            [SerializedSCT(b'\x00\x01\x02\x03'), SerializedSCT(b'\x04\x05\x06\x07')]
-        )
-        self.assertEqual(extension_signed_certificate_timestamp.compose(), extension_signed_certificate_timestamp_bytes)
+        self.assertEqual(extension_sct.scts[0], sct)
+
+        sct.log = CertificateTransparencyLog.AKAMAI_CT_LOG.value
+        self.assertEqual(extension_sct.scts[1], sct)
+
+        self.assertEqual(extension_sct.compose(), self.extension_sct_bytes)
+
+    def test_markdown(self):
+        scts = TlsExtensionSignedCertificateTimestampServer.parse_exact_size(
+            self.extension_sct_bytes
+        ).scts
+
+        self.assertEqual(scts[0].as_markdown(), '\n'.join([
+            '* Version: V1',
+            '* Log:',
+            '    * ID: AAECAwQFBgcICQoLDA0ODwABAgMEBQYHCAkKCwwNDg8=',
+            '* Timestamp: 1970-01-01 00:00:00.001000+00:00',
+            '* Extensions: -',
+            '* Signature Algorithm: none with no encryption',
+            ''
+        ]))
+
+        self.assertEqual(scts[1].as_markdown(), '\n'.join([
+            '* Version: V1',
+            '* Log:',
+            '    * Description: Akamai CT Log',
+            '    * ID: lgbALGkAM6odFF9ZxuJkjQVJ8N+WqrjbkVpw2OzzkKU=',
+            '* Timestamp: 1970-01-01 00:00:00.001000+00:00',
+            '* Extensions: -',
+            '* Signature Algorithm: none with no encryption',
+            ''
+        ]))
 
 
 class TestExtensionKeyShareClient(unittest.TestCase):

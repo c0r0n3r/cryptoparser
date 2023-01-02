@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.9.1
+-----
+
+-  TLS (``tls``)
+
+   -  Generic
+
+      -  add parser for `signed certificate timestamp <https://www.rfc-editor.org/rfc/rfc6962.html#section-3.3.1>`__
+         entries (#52)
+
 0.9.0 - 2023-04-29
 ------------------
 
