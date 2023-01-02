@@ -44,7 +44,8 @@ from cryptoparser.tls.extension import (
     TlsExtensionShortRecordHeader,
     TlsExtensionSignatureAlgorithms,
     TlsExtensionSignatureAlgorithmsCert,
-    TlsExtensionSignedCertificateTimestamp,
+    TlsExtensionSignedCertificateTimestampClient,
+    TlsExtensionSignedCertificateTimestampServer,
     TlsExtensionSupportedVersionsClient,
     TlsExtensionSupportedVersionsServer,
     TlsExtensionTokenBinding,
@@ -359,22 +360,23 @@ class TestExtensionSignatureAlgorithmsCert(unittest.TestCase):
         self.assertEqual(extension_signature_algorithms_cert.compose(), extension_signature_algorithms_cert_bytes)
 
 
-class TestExtensionSignedCertificateTimestamp(unittest.TestCase):
+class TestExtensionSignedCertificateTimestampClient(unittest.TestCase):
     def test_parse_minimal(self):
         extension_signed_certificate_timestamp_dict = collections.OrderedDict([
             ('extension_type', b'\x00\x12'),
             ('extension_length', b'\x00\x00'),
         ])
         extension_signed_certificate_timestamp_bytes = b''.join(extension_signed_certificate_timestamp_dict.values())
-        extension_signed_certificate_timestamp = TlsExtensionSignedCertificateTimestamp.parse_exact_size(
+        extension_signed_certificate_timestamp = TlsExtensionSignedCertificateTimestampClient.parse_exact_size(
             extension_signed_certificate_timestamp_bytes
         )
         self.assertEqual(
             extension_signed_certificate_timestamp.extension_type, TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP
         )
-        self.assertEqual(extension_signed_certificate_timestamp.scts, None)
         self.assertEqual(extension_signed_certificate_timestamp.compose(), extension_signed_certificate_timestamp_bytes)
 
+
+class TestExtensionSignedCertificateTimestampServer(unittest.TestCase):
     def test_parse_full(self):
         extension_signed_certificate_timestamp_dict = collections.OrderedDict([
             ('extension_type', b'\x00\x12'),
@@ -382,7 +384,7 @@ class TestExtensionSignedCertificateTimestamp(unittest.TestCase):
             ('signed_certificate_timestamp_list', b'\x00\x0c\x00\x04\x00\x01\x02\x03\x00\x04\x04\x05\x06\x07'),
         ])
         extension_signed_certificate_timestamp_bytes = b''.join(extension_signed_certificate_timestamp_dict.values())
-        extension_signed_certificate_timestamp = TlsExtensionSignedCertificateTimestamp.parse_exact_size(
+        extension_signed_certificate_timestamp = TlsExtensionSignedCertificateTimestampServer.parse_exact_size(
             extension_signed_certificate_timestamp_bytes
         )
         self.assertEqual(
