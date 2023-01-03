@@ -1257,5 +1257,6 @@ class TlsExtensionVariantServer(TlsExtensionVariantBase):
             (TlsExtensionType.SERVER_NAME, [TlsExtensionServerNameServer, ]),
             (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
             (TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP, [TlsExtensionSignedCertificateTimestampServer, ]),
+            (TlsExtensionType.STATUS_REQUEST, [TlsExtensionCertificateStatusRequest, ]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsServer, ]),
         ])
