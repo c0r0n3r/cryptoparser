@@ -30,7 +30,8 @@ from cryptoparser.tls.extension import (
     TlsCertificateStatusRequestResponderIdList,
     TlsExtensionApplicationLayerProtocolNegotiation,
     TlsExtensionApplicationLayerProtocolSettings,
-    TlsExtensionCertificateStatusRequest,
+    TlsExtensionCertificateStatusRequestClient,
+    TlsExtensionCertificateStatusRequestServer,
     TlsExtensionChannelId,
     TlsExtensionCompressCertificate,
     TlsExtensionECPointFormats,
@@ -575,15 +576,8 @@ class TestExtensionKeyShareServer(unittest.TestCase):
         self.assertEqual(extension_key_share.compose(), extension_key_share_bytes)
 
 
-class TestExtensionCertificateStatusRequest(unittest.TestCase):
+class TestExtensionCertificateStatusRequestClient(unittest.TestCase):
     def setUp(self):
-        self.status_request_empty_bytes = bytes(
-            b'\x00\x05' +                          # handshake_type = STATUS_REQUEST
-            b'\x00\x00' +                          # length = 0x05
-            b''
-        )
-        self.status_request_empty = TlsExtensionCertificateStatusRequest()
-
         self.status_request_minimal_bytes = bytes(
             b'\x00\x05' +                          # handshake_type = STATUS_REQUEST
             b'\x00\x05' +                          # length = 0x05
@@ -592,7 +586,7 @@ class TestExtensionCertificateStatusRequest(unittest.TestCase):
             b'\x00\x00' +                          # request_extensions_length = 0x00
             b''
         )
-        self.status_request_minimal = TlsExtensionCertificateStatusRequest()
+        self.status_request_minimal = TlsExtensionCertificateStatusRequestClient()
 
         self.request_extensions = b'\x00\x01\x02\x03\x04\x05\x06\x07'
         self.status_request_bytes = bytes(
@@ -605,7 +599,7 @@ class TestExtensionCertificateStatusRequest(unittest.TestCase):
             self.request_extensions +              # request_extensions
             b''
         )
-        self.status_request = TlsExtensionCertificateStatusRequest(
+        self.status_request = TlsExtensionCertificateStatusRequestClient(
             responder_id_list=TlsCertificateStatusRequestResponderIdList([
                 TlsCertificateStatusRequestResponderId(b'\x00'),
                 TlsCertificateStatusRequestResponderId(b'\x01\x02\x03')
@@ -614,19 +608,13 @@ class TestExtensionCertificateStatusRequest(unittest.TestCase):
         )
 
     def test_parse(self):
-        status_request_empty = TlsExtensionCertificateStatusRequest.parse_exact_size(
-            self.status_request_empty_bytes
-        )
-        self.assertEqual(status_request_empty.responder_id_list, TlsCertificateStatusRequestResponderIdList([]))
-        self.assertEqual(status_request_empty.request_extensions, TlsCertificateStatusRequestExtensions([]))
-
-        status_request_minimal = TlsExtensionCertificateStatusRequest.parse_exact_size(
+        status_request_minimal = TlsExtensionCertificateStatusRequestClient.parse_exact_size(
             self.status_request_minimal_bytes
         )
         self.assertEqual(status_request_minimal.responder_id_list, TlsCertificateStatusRequestResponderIdList([]))
         self.assertEqual(status_request_minimal.request_extensions, TlsCertificateStatusRequestExtensions([]))
 
-        status_request = TlsExtensionCertificateStatusRequest.parse_exact_size(self.status_request_bytes)
+        status_request = TlsExtensionCertificateStatusRequestClient.parse_exact_size(self.status_request_bytes)
         self.assertEqual(
             status_request.responder_id_list,
             TlsCertificateStatusRequestResponderIdList([
@@ -642,6 +630,25 @@ class TestExtensionCertificateStatusRequest(unittest.TestCase):
     def test_compose(self):
         self.assertEqual(self.status_request_minimal.compose(), self.status_request_minimal_bytes)
         self.assertEqual(self.status_request.compose(), self.status_request_bytes)
+
+
+class TestExtensionCertificateStatusRequestServer(unittest.TestCase):
+    def setUp(self):
+        self.status_request_empty_bytes = bytes(
+            b'\x00\x05' +                          # handshake_type = STATUS_REQUEST
+            b'\x00\x00' +                          # length = 0x05
+            b''
+        )
+        self.status_request_empty = TlsExtensionCertificateStatusRequestServer()
+
+    def test_parse(self):
+        status_request_empty = TlsExtensionCertificateStatusRequestServer.parse_exact_size(
+            self.status_request_empty_bytes
+        )
+        self.assertEqual(status_request_empty, self.status_request_empty)
+
+    def test_compose(self):
+        self.assertEqual(self.status_request_empty.compose(), self.status_request_empty_bytes)
 
 
 class TestExtensionChannelId(unittest.TestCase):

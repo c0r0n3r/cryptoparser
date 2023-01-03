@@ -685,9 +685,9 @@ class TlsCertificateStatusRequestResponderIdList(VectorParsable):
         )
 
 
-class TlsExtensionCertificateStatusRequest(TlsExtensionParsed):
+class TlsExtensionCertificateStatusRequestClient(TlsExtensionParsed):
     def __init__(self, responder_id_list=(), extensions=()):
-        super(TlsExtensionCertificateStatusRequest, self).__init__()
+        super(TlsExtensionCertificateStatusRequestClient, self).__init__()
 
         self.responder_id_list = TlsCertificateStatusRequestResponderIdList(responder_id_list)
         self.request_extensions = TlsCertificateStatusRequestExtensions(extensions)
@@ -698,15 +698,13 @@ class TlsExtensionCertificateStatusRequest(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionCertificateStatusRequest, cls)._parse_header(parsable)
-        if parser['extension_length'] == 0:
-            return TlsExtensionCertificateStatusRequest(), parser.parsed_length
+        parser = super(TlsExtensionCertificateStatusRequestClient, cls)._parse_header(parsable)
 
         parser.parse_numeric('status_type', 1, TlsCertificateStatusType)
         parser.parse_parsable('responder_id_list', TlsCertificateStatusRequestResponderIdList)
         parser.parse_parsable('extensions', TlsCertificateStatusRequestExtensions)
 
-        return TlsExtensionCertificateStatusRequest(
+        return cls(
             parser['responder_id_list'],
             parser['extensions'],
         ), parser.parsed_length
@@ -721,6 +719,12 @@ class TlsExtensionCertificateStatusRequest(TlsExtensionParsed):
         header_bytes = self._compose_header(payload_composer.composed_length)
 
         return header_bytes + payload_composer.composed_bytes
+
+
+class TlsExtensionCertificateStatusRequestServer(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.STATUS_REQUEST
 
 
 class TlsRenegotiatedConnection(Opaque):
@@ -1223,7 +1227,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.PADDING, [TlsExtensionPadding, ]),
             (TlsExtensionType.SERVER_NAME, [TlsExtensionServerNameClient, ]),
             (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
-            (TlsExtensionType.STATUS_REQUEST, [TlsExtensionCertificateStatusRequest, ]),
+            (TlsExtensionType.STATUS_REQUEST, [TlsExtensionCertificateStatusRequestClient, ]),
             (TlsExtensionType.SUPPORTED_GROUPS, [TlsExtensionEllipticCurves, ]),
             (TlsExtensionType.DELEGATED_CREDENTIALS, [TlsExtensionDelegatedCredentials, ]),
             (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
@@ -1257,6 +1261,6 @@ class TlsExtensionVariantServer(TlsExtensionVariantBase):
             (TlsExtensionType.SERVER_NAME, [TlsExtensionServerNameServer, ]),
             (TlsExtensionType.SESSION_TICKET, [TlsExtensionSessionTicket, ]),
             (TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP, [TlsExtensionSignedCertificateTimestampServer, ]),
-            (TlsExtensionType.STATUS_REQUEST, [TlsExtensionCertificateStatusRequest, ]),
+            (TlsExtensionType.STATUS_REQUEST, [TlsExtensionCertificateStatusRequestServer, ]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsServer, ]),
         ])
