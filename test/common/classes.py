@@ -195,7 +195,9 @@ class OpaqueEnumFactory(OpaqueEnumParsable):
         )
 
 
-OpaqueEnumParams = collections.namedtuple('OpaqueEnumParams', ['code', ])
+@attr.s
+class OpaqueEnumParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
 
 
 class OpaqueEnum(OpaqueEnumComposer):
