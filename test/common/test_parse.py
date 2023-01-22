@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import datetime
 import unittest
@@ -183,14 +184,26 @@ class TestParserBinary(TestParsableBase):
         parser.parse_numeric('number', 4)
         self.assertEqual(parser['number'], 0x01020304)
 
+        parser = ParserBinary(b'\x01\x02\x03', byte_order=ByteOrder.BIG_ENDIAN)
+        parser.parse_numeric('number', 3)
+        self.assertEqual(parser['number'], 0x010203)
+
+        parser = ParserBinary(b'\x01\x02\x03', byte_order=ByteOrder.LITTLE_ENDIAN)
+        parser.parse_numeric('number', 3)
+        self.assertEqual(parser['number'], 0x030201)
+
+        parser = ParserBinary(b'\x01\x02\x03', byte_order=ByteOrder.NETWORK)
+        parser.parse_numeric('number', 3)
+        self.assertEqual(parser['number'], 0x010203)
+
     def test_parse_numeric_flags(self):
         parser = ParserBinary(b'\x01')
         parser.parse_numeric_flags('flags', 1, FlagEnum)
-        self.assertEqual(parser['flags'], [FlagEnum.ONE, ])
+        self.assertEqual(parser['flags'], {FlagEnum.ONE, })
 
         parser = ParserBinary(b'\x03')
         parser.parse_numeric_flags('flags', 1, FlagEnum)
-        self.assertEqual(parser['flags'], [FlagEnum.ONE, FlagEnum.TWO])
+        self.assertEqual(parser['flags'], {FlagEnum.ONE, FlagEnum.TWO})
 
     def test_parse_ssh_mpint(self):
         parser = ParserBinary(b'\x00')
@@ -248,6 +261,21 @@ class TestParserBinary(TestParsableBase):
         parser = ParserBinary(self._ALPHA_BETA_GAMMA_LEN_BYTES + self._ALPHA_BETA_GAMMA_BYTES)
         parser.parse_string('utf-8-string', 1, 'utf-8')
         self.assertEqual(parser['utf-8-string'], self._ALPHA_BETA_GAMMA)
+
+    def test_parse_string_null_terminated(self):
+        parser = ParserBinary(b'non-null-terminated-string')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_string_null_terminated('non-utf-8-string', 1, 'utf-8')
+        self.assertEqual(context_manager.exception.value, b'non-null-terminated-string')
+
+        parser = ParserBinary(b'1\x00')
+        parser.parse_string_null_terminated('one-byte-string', 'utf-8', int)
+        self.assertEqual(parser['one-byte-string'], 1)
+
+        parser = ParserBinary(self._ALPHA_BETA_GAMMA_BYTES + b'\x00remaining-data')
+        parser.parse_string_null_terminated('utf-8-string', 'utf-8')
+        self.assertEqual(parser['utf-8-string'], self._ALPHA_BETA_GAMMA)
+        self.assertEqual(parser.unparsed, b'remaining-data')
 
     def test_parse_parsable(self):
         parser = ParserBinary(b'\x01\x02\x03\x04')
@@ -715,6 +743,18 @@ class TestComposerBinary(TestParsableBase):
         composer.compose_numeric(0x01020304, 4)
         self.assertEqual(composer.composed_bytes, b'\x01\x02\x03\x04')
 
+        composer = ComposerBinary(byte_order=ByteOrder.BIG_ENDIAN)
+        composer.compose_numeric(0x010203, 3)
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03')
+
+        composer = ComposerBinary(byte_order=ByteOrder.LITTLE_ENDIAN)
+        composer.compose_numeric(0x010203, 3)
+        self.assertEqual(composer.composed_bytes, b'\x03\x02\x01')
+
+        composer = ComposerBinary(byte_order=ByteOrder.NETWORK)
+        composer.compose_numeric(0x010203, 3)
+        self.assertEqual(composer.composed_bytes, b'\x01\x02\x03')
+
     def test_compose_numeric_array(self):
         composer = ComposerBinary()
         composer.compose_numeric_array(values=[1, 2, 3, 4], item_size=1)
@@ -778,6 +818,16 @@ class TestComposerBinary(TestParsableBase):
         composer = ComposerBinary()
         composer.compose_string(self._ALPHA_BETA_GAMMA, 'utf-8', 1)
         self.assertEqual(composer.composed_bytes[1:], self._ALPHA_BETA_GAMMA_BYTES)
+
+    def test_compose_string_null_terminated(self):
+        composer = ComposerBinary()
+        with self.assertRaises(InvalidValue) as context_manager:
+            composer.compose_string_null_terminated(self._ALPHA_BETA_GAMMA, 'ascii')
+        self.assertEqual(context_manager.exception.value, self._ALPHA_BETA_GAMMA)
+
+        composer = ComposerBinary()
+        composer.compose_string_null_terminated(self._ALPHA_BETA_GAMMA, 'utf-8')
+        self.assertEqual(composer.composed_bytes, self._ALPHA_BETA_GAMMA_BYTES + b'\x00')
 
     def test_compose_multiple(self):
         composer = ComposerBinary()

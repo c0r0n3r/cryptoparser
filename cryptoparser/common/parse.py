@@ -108,6 +108,9 @@ class ParserBase(collections_abc.Mapping):
     def __getitem__(self, key):
         return self._parsed_values[key]
 
+    def __delitem__(self, key):
+        del self._parsed_values[key]
+
     @property
     def parsed_length(self):
         return self._parsed_length
@@ -469,7 +472,10 @@ class ParserBinary(ParserBase):
             for item_offset in range(self._parsed_length, self._parsed_length + (item_num * item_size), item_size):
                 item_bytes = self._parsable[item_offset:item_offset + item_size]
                 if item_size == 3:
-                    item_bytes = b'\x00' + item_bytes
+                    if self.byte_order in [ByteOrder.BIG_ENDIAN, ByteOrder.NETWORK]:
+                        item_bytes = b'\x00' + item_bytes
+                    else:
+                        item_bytes = item_bytes + b'\x00'
 
                 item = struct.unpack(
                     self.byte_order.value + _SIZE_TO_FORMAT[item_size],
@@ -496,13 +502,13 @@ class ParserBinary(ParserBase):
         self._parsed_length += parsed_length
         self._parsed_values[name] = value
 
-    def parse_numeric_flags(self, name, size, flags_class):
+    def parse_numeric_flags(self, name, size, flags_class, shift_left=0):
         value, parsed_length = self._parse_numeric_array(name, 1, size, int)
-        value = [
-            flags_class(flag & value[0])
+        value = {
+            flags_class(flag & (value[0] << shift_left))
             for flag in flags_class
-            if flag & value[0]
-        ]
+            if flag & (value[0] << shift_left)
+        }
 
         self._parsed_length += parsed_length
         self._parsed_values[name] = value
@@ -576,6 +582,20 @@ class ParserBinary(ParserBase):
             self._parsed_values[name] = value
         except InvalidValue as e:
             raise e
+
+    def parse_string_null_terminated(self, name, encoding, converter=str):
+        try:
+            length = next(iter([
+                i
+                for i, value in enumerate(six.iterbytes(self._parsable[self._parsed_length:]))
+                if value == 0
+            ]))
+        except StopIteration as e:
+            six.raise_from(InvalidValue(self._parsable[self._parsed_length:], str, name), e)
+
+        value, parsed_length = self._parse_string_by_length(name, length, length, encoding, converter)
+        self._parsed_length += parsed_length + 1
+        self._parsed_values[name] = value
 
     def _parse_parsable_derived_array(self, items_size, item_classes, fallback_class=None):
         if items_size > self.unparsed_length:
@@ -764,14 +784,18 @@ class ComposerBinary(ComposerBase):
 
         for value in values:
             try:
-                composed_bytes += struct.pack(
+                packed_bytes = struct.pack(
                     self.byte_order.value + _SIZE_TO_FORMAT[item_size],
                     value
                 )
 
                 if item_size == 3:
-                    del composed_bytes[-4]
-
+                    if self.byte_order in [ByteOrder.BIG_ENDIAN, ByteOrder.NETWORK]:
+                        composed_bytes += packed_bytes[1:]
+                    else:
+                        composed_bytes += packed_bytes[:3]
+                else:
+                    composed_bytes += packed_bytes
             except struct.error as e:
                 six.raise_from(InvalidValue(value, int), e)
 
@@ -783,10 +807,10 @@ class ComposerBinary(ComposerBase):
     def compose_numeric_array(self, values, item_size):
         self._compose_numeric_array(values, item_size)
 
-    def compose_numeric_flags(self, values, item_size):
+    def compose_numeric_flags(self, values, item_size, shift_right=0):
         flag = 0
         for value in values:
-            flag |= value
+            flag |= value >> shift_right
         self._compose_numeric_array([flag, ], item_size)
 
     def compose_ssh_mpint(self, value):
@@ -841,6 +865,15 @@ class ComposerBinary(ComposerBase):
             six.raise_from(InvalidValue(value, type(self)), e)
 
         self.compose_bytes(value, item_size)
+
+    def compose_string_null_terminated(self, value, encoding):
+        try:
+            value = value.encode(encoding)
+        except UnicodeError as e:
+            six.raise_from(InvalidValue(value, type(self)), e)
+
+        self.compose_raw(value)
+        self.compose_raw(b'\x00')
 
     @property
     def composed_bytes(self):

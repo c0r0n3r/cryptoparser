@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.3
+
+- TLS (`tls`)
+  - Generic
+    - protocol item classes for MySQL support (\#61)
+
 ## 0.8.2
 
 - TLS (`tls`)

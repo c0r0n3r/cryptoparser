@@ -140,11 +140,11 @@ class TestRDPNegotiationRequest(unittest.TestCase):
         self.rdp_negotiation_request_bytes = b''.join(self.rdp_negotiation_request_dict.values())
 
         self.rdp_negotiation_request = RDPNegotiationRequest(
-            flags=[
+            flags={
                 RDPNegotiationRequestFlags.RESTRICTED_ADMIN_MODE_REQUIRED,
                 RDPNegotiationRequestFlags.REDIRECTED_AUTHENTICATION_MODE_REQUIRED
-            ],
-            protocol=[RDPProtocol.SSL, RDPProtocol.HYBRID]
+            },
+            protocol={RDPProtocol.SSL, RDPProtocol.HYBRID}
         )
 
     def test_error(self):
@@ -183,11 +183,11 @@ class TestRDPNegotiationResponse(unittest.TestCase):
         self.rdp_negotiation_request_bytes = b''.join(self.rdp_negotiation_request_dict.values())
 
         self.rdp_negotiation_request = RDPNegotiationResponse(
-            flags=[
+            flags={
                 RDPNegotiationResponseFlags.EXTENDED_CLIENT_DATA_SUPPORTED,
                 RDPNegotiationResponseFlags.DYNVC_GFX_PROTOCOL_SUPPORTED
-            ],
-            protocol=[RDPProtocol.SSL, RDPProtocol.HYBRID]
+            },
+            protocol={RDPProtocol.SSL, RDPProtocol.HYBRID}
         )
 
     def test_parse(self):
