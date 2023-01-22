@@ -1,12 +1,12 @@
 # Changelog
 
-## 0.8.3
+## 0.8.4 - 2023-01-22
 
 - TLS (`tls`)
   - Generic
     - protocol item classes for MySQL support (\#61)
 
-## 0.8.2
+## 0.8.2 - 2022-10-10
 
 - TLS (`tls`)
   - Cipher Suites (`ciphers`)
