@@ -4,18 +4,14 @@ import unittest
 
 import six
 
-from cryptoparser.common.algorithm import Authentication, MAC, Signature
-from cryptoparser.common.exception import InvalidValue
+from cryptodatahub.common.algorithm import Authentication, MAC, Signature
+from cryptodatahub.common.exception import InvalidValue
 
 
 class TestAlgortihmOIDBase(unittest.TestCase):
     def test_error_not_found(self):
         with six.assertRaisesRegex(self, InvalidValue, '\'1.2.3.4.5.6.7.8\' is not a valid Authentication oid value'):
             Authentication.from_oid('1.2.3.4.5.6.7.8')
-
-    def test_error_multiple_found(self):
-        with six.assertRaisesRegex(self, InvalidValue, 'None is not a valid Authentication oid value'):
-            Authentication.from_oid(None)
 
     def test_from_oid(self):
         self.assertEqual(
@@ -25,8 +21,8 @@ class TestAlgortihmOIDBase(unittest.TestCase):
 
 
 class TestAlgortihmParam(unittest.TestCase):
-    def test_markdown(self):
-        self.assertEqual(Signature.RSA_WITH_SHA2_224.value.as_markdown(), 'SHA-224 with RSA Encryption')
+    def test_str(self):
+        self.assertEqual(str(Signature.RSA_WITH_SHA2_224.value), 'SHA-224 with RSA Encryption')
 
 
 class TestMAC(unittest.TestCase):

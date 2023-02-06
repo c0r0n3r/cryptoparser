@@ -4,7 +4,9 @@ import unittest
 
 import six
 
-from cryptoparser.common.exception import InvalidType, InvalidValue, NotEnoughData, TooMuchData
+from cryptodatahub.common.exception import InvalidValue
+
+from cryptoparser.common.exception import InvalidType, NotEnoughData, TooMuchData
 
 
 class TestException(unittest.TestCase):

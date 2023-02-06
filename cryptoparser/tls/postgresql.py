@@ -2,8 +2,10 @@
 
 import attr
 
+from cryptodatahub.common.exception import InvalidValue
+
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData
 
 
 @attr.s

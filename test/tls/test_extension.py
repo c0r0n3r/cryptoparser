@@ -5,17 +5,21 @@ import unittest
 
 import six
 
-from cryptoparser.common.exception import NotEnoughData, InvalidType, InvalidValue
-from cryptoparser.common.x509 import SerializedSCT
-from cryptoparser.tls.algorithm import (
+from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.tls.algorithm import (
     TlsECPointFormat,
+    TlsCertificateCompressionAlgorithm,
     TlsNamedCurve,
     TlsNextProtocolName,
     TlsProtocolName,
+    TlsPskKeyExchangeMode,
     TlsSignatureAndHashAlgorithm,
+    TlsTokenBindingParamater,
 )
+
+from cryptoparser.common.exception import NotEnoughData, InvalidType
+from cryptoparser.common.x509 import SerializedSCT
 from cryptoparser.tls.extension import (
-    TlsCertificateCompressionAlgorithm,
     TlsCertificateStatusRequestExtensions,
     TlsCertificateStatusRequestResponderId,
     TlsCertificateStatusRequestResponderIdList,
@@ -54,13 +58,11 @@ from cryptoparser.tls.extension import (
     TlsExtensionType,
     TlsNextProtocolNameList,
     TlsProtocolNameList,
-    TlsPskKeyExchangeMode,
     TlsRenegotiatedConnection,
-    TlsTokenBindingParamater,
     TlsTokenBindingProtocolVersion,
 )
 from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
-from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal, TlsProtocolVersionDraft
+from cryptoparser.tls.version import TlsVersion, TlsProtocolVersion
 
 from .classes import TestUnusedDataExtension
 
@@ -234,10 +236,10 @@ class TestExtensionSupportedVersions(unittest.TestCase):
         self.assertEqual(
             list(extension_supported_versions.supported_versions),
             [
-                TlsProtocolVersionFinal(TlsVersion.TLS1_1),
-                TlsProtocolVersionFinal(TlsVersion.TLS1_2),
-                TlsProtocolVersionDraft(24),
-                TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A),
+                TlsProtocolVersion(TlsVersion.TLS1_1),
+                TlsProtocolVersion(TlsVersion.TLS1_2),
+                TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_24),
+                TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A.value.code),
             ]
         )
         self.assertEqual(extension_supported_versions.compose(), extension_supported_versions_bytes)
@@ -253,7 +255,7 @@ class TestExtensionSupportedVersions(unittest.TestCase):
         )
         self.assertEqual(
             extension_supported_versions.selected_version,
-            TlsProtocolVersionFinal(TlsVersion.TLS1_2)
+            TlsProtocolVersion(TlsVersion.TLS1_2)
         )
         self.assertEqual(extension_supported_versions.compose(), extension_supported_versions_bytes)
 

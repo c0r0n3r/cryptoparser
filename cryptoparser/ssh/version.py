@@ -8,8 +8,10 @@ import six
 
 import attr
 
+from cryptodatahub.common.exception import InvalidValue
+
 from cryptoparser.common.base import ProtocolVersionBase, Serializable, VariantParsable
-from cryptoparser.common.exception import InvalidType, InvalidValue
+from cryptoparser.common.exception import InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserText, ComposerText
 
 

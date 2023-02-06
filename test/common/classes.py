@@ -7,22 +7,31 @@ import json
 import attr
 import six
 
+from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.types import CryptoDataEnumBase, CryptoDataParamsNamed
+
 from cryptoparser.common.base import (
+    ComposerBinary,
+    FourByteEnumComposer,
+    FourByteEnumParsable,
     ListParamParsable,
     ListParsable,
-    ParsableBase,
-    ParserBinary,
-    ComposerBinary,
+    OneByteEnumComposer,
+    OneByteEnumParsable,
     OpaqueEnumComposer,
     OpaqueEnumParsable,
     OpaqueParam,
+    ParsableBase,
+    ParserBinary,
     Serializable,
     StringEnumParsable,
+    ThreeByteEnumComposer,
+    ThreeByteEnumParsable,
     TwoByteEnumComposer,
     TwoByteEnumParsable,
     VariantParsable
 )
-from cryptoparser.common.exception import TooMuchData, InvalidValue, InvalidType
+from cryptoparser.common.exception import TooMuchData, InvalidType
 from cryptoparser.common.parse import ParserCRLF
 
 
@@ -182,6 +191,10 @@ class SerializableEnumValue(Serializable):
     def _as_markdown(self, level):
         return False, self.code
 
+    @classmethod
+    def get_code_size(cls):
+        return 2
+
 
 class OpaqueEnumFactory(OpaqueEnumParsable):
     @classmethod
@@ -335,12 +348,17 @@ class ClassAttrAsDict(object):
         ])
 
 
+class ClassCryptoDataEnum(CryptoDataEnumBase):
+    ONE = CryptoDataParamsNamed('one', 'long one')
+
+
 class SerializableRecursive(Serializable):  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         self.json_object = Class()
         self.json_attr_object = ClassAttr()
         self.json_attr_as_dict = ClassAttrAsDict()
         self.json_asdict_object = ClassAsDict()
+        self.json_crypto_data_hub_enum = ClassCryptoDataEnum.ONE
         self.json_serializable_hidden = SerializableHidden()
         self.json_serializable_single = 'single'
         self.json_serializable_in_list = list([SerializableHidden(), 'single'])
@@ -370,6 +388,10 @@ class StringEnumParams(object):
     def _check_code(self, code):
         if code != self.code:
             raise InvalidType()
+
+    @classmethod
+    def get_code_size(cls):
+        return 2
 
 
 class StringEnum(StringEnumParsable, enum.Enum):
@@ -402,3 +424,83 @@ class ListParsableTest(ListParsable):
             fallback_class=None,
             separator_class=ParserCRLF,
         )
+
+
+@attr.s
+class NByteEnumParam(object):
+    code = attr.ib(validator=attr.validators.instance_of(int))
+
+
+class NByteEnumTest(enum.Enum):
+    ONE = NByteEnumParam(code=1)
+    TWO = NByteEnumParam(code=2)
+    THREE = NByteEnumParam(code=3)
+    FOUR = NByteEnumParam(code=4)
+
+
+class OneByteEnumParsableTest(OneByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return NByteEnumTest
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+class OneByteEnumComposerTest(OneByteEnumComposer, enum.Enum):
+    ONE = NByteEnumParam(code=1)
+    TWO = NByteEnumParam(code=2)
+    THREE = NByteEnumParam(code=3)
+    FOUR = NByteEnumParam(code=4)
+
+
+class TwoByteEnumParsableTest(TwoByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return NByteEnumTest
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+class TwoByteEnumComposerTest(TwoByteEnumComposer, enum.Enum):
+    ONE = NByteEnumParam(code=1)
+    TWO = NByteEnumParam(code=2)
+    THREE = NByteEnumParam(code=3)
+    FOUR = NByteEnumParam(code=4)
+
+
+class ThreeByteEnumParsableTest(ThreeByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return NByteEnumTest
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+class ThreeByteEnumComposerTest(ThreeByteEnumComposer, enum.Enum):
+    ONE = NByteEnumParam(code=1)
+    TWO = NByteEnumParam(code=2)
+    THREE = NByteEnumParam(code=3)
+    FOUR = NByteEnumParam(code=4)
+
+
+class FourByteEnumParsableTest(FourByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return NByteEnumTest
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+class FourByteEnumComposerTest(FourByteEnumComposer, enum.Enum):
+    ONE = NByteEnumParam(code=1)
+    TWO = NByteEnumParam(code=2)
+    THREE = NByteEnumParam(code=3)
+    FOUR = NByteEnumParam(code=4)

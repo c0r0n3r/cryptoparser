@@ -4,14 +4,15 @@ import unittest
 
 import six
 
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptodatahub.common.exception import InvalidValue
+from cryptoparser.common.exception import NotEnoughData
 
 from cryptoparser.tls.record import TlsRecord, SslRecord
 from cryptoparser.tls.subprotocol import TlsContentType, TlsSubprotocolMessageBase
-from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
+from cryptoparser.tls.version import TlsVersion, TlsProtocolVersion
 
 from cryptoparser.tls.subprotocol import TlsAlertMessage, TlsAlertLevel, TlsAlertDescription
-from cryptoparser.tls.subprotocol import SslErrorMessage, SslErrorType, SslMessageType, SslVersion
+from cryptoparser.tls.subprotocol import SslErrorMessage, SslErrorType, SslMessageType
 
 
 class TestTlsSubprotocolMessageBase(unittest.TestCase):
@@ -29,12 +30,12 @@ class TestTlsRecord(unittest.TestCase):
         )
         self.test_record = TlsRecord(
             fragment=self.test_message.compose(),
-            protocol_version=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
+            protocol_version=TlsProtocolVersion(TlsVersion.TLS1),
             content_type=TlsContentType.ALERT,
         )
         self.test_record_bytes = bytes(
             b'\x15' +      # type = ALERT
-            b'\x03\x01' +  # version = TLS1_0
+            b'\x03\x01' +  # version = TLS1
             b'\x00\x02' +  # length = 2
             b'\x02' +      # level = FATAL
             b'\x28' +      # description = HANDSHAKE_FAILURE
@@ -83,7 +84,7 @@ class TestTlsRecord(unittest.TestCase):
         record = TlsRecord.parse_exact_size(self.test_record_bytes)
 
         self.assertEqual(record.fragment, self.test_message.compose())
-        self.assertEqual(record.protocol_version, TlsProtocolVersionFinal(TlsVersion.TLS1_0))
+        self.assertEqual(record.protocol_version, TlsProtocolVersion(TlsVersion.TLS1))
         self.assertEqual(record.content_type, TlsContentType.ALERT)
 
     def test_compose(self):
@@ -157,7 +158,7 @@ class TestSslRecord(unittest.TestCase):
         record = SslRecord(self.test_message)
 
         record.message = self.test_message
-        record.protocol_version = SslVersion.SSL2
+        record.protocol_version = TlsVersion.SSL2
 
     def test_parse(self):
         record = SslRecord.parse_exact_size(self.test_record_bytes)

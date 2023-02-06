@@ -11,7 +11,9 @@ import attr
 import dateutil
 import six
 
-from cryptoparser.common.exception import InvalidValue, InvalidType
+from cryptodatahub.common.exception import InvalidValue
+
+from cryptoparser.common.exception import InvalidType
 
 from cryptoparser.httpx.parse import (
     HttpHeaderFieldValueString,

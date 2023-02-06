@@ -3,8 +3,9 @@
 
 import unittest
 
+from cryptodatahub.common.exception import InvalidValue
+
 from cryptoparser.common.classes import LanguageTag
-from cryptoparser.common.exception import InvalidValue
 
 
 class TestLanguageTag(unittest.TestCase):

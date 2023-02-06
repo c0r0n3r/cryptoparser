@@ -4,9 +4,11 @@ import attr
 
 import six
 
+from cryptodatahub.common.exception import InvalidValue
+
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
-from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionBase, TlsProtocolVersionFinal, SslVersion
+from cryptoparser.common.exception import NotEnoughData
+from cryptoparser.tls.version import TlsVersion, TlsProtocolVersion
 from cryptoparser.tls.subprotocol import TlsContentType
 from cryptoparser.tls.subprotocol import SslMessageBase, SslMessageType, SslSubprotocolMessageParser
 
@@ -17,8 +19,8 @@ class TlsRecord(ParsableBase):
 
     fragment = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
     protocol_version = attr.ib(
-        default=TlsProtocolVersionFinal(TlsVersion.TLS1_0),
-        validator=attr.validators.instance_of(TlsProtocolVersionBase),
+        default=TlsProtocolVersion(TlsVersion.TLS1),
+        validator=attr.validators.instance_of(TlsProtocolVersion),
     )
     content_type = attr.ib(
         default=TlsContentType.HANDSHAKE,
@@ -36,7 +38,7 @@ class TlsRecord(ParsableBase):
             parser.parse_numeric('content_type', 1, TlsContentType)
         except InvalidValue as e:
             six.raise_from(InvalidValue(e.value, TlsContentType), e)
-        parser.parse_parsable('protocol_version', TlsProtocolVersionBase)
+        parser.parse_parsable('protocol_version', TlsProtocolVersion)
         parser.parse_numeric('fragment_length', 2)
 
         return parser
@@ -66,7 +68,7 @@ class TlsRecord(ParsableBase):
 @attr.s
 class SslRecord(ParsableBase):
     message = attr.ib(validator=attr.validators.instance_of(SslMessageBase))
-    protocol_version = attr.ib(init=False, default=SslVersion.SSL2, validator=attr.validators.in_(SslVersion))
+    protocol_version = attr.ib(init=False, default=TlsVersion.SSL2, validator=attr.validators.in_(TlsVersion))
 
     @classmethod
     def _parse(cls, parsable):

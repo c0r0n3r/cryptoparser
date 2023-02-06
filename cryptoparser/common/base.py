@@ -16,6 +16,9 @@ from collections import OrderedDict
 import attr
 import six
 
+from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.types import CryptoDataEnumCodedBase, CryptoDataParamsBase
+
 from cryptoparser.common.parse import (
     ComposerBinary,
     ComposerText,
@@ -24,7 +27,7 @@ from cryptoparser.common.parse import (
     ParserBinary,
     ParserText,
 )
-from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidValue, InvalidType
+from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidType
 from cryptoparser.common.utils import bytes_to_hex_string
 
 
@@ -78,7 +81,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             keys = sorted(filter(lambda key: not key.startswith('_'), dict_value.keys()))
 
         result = OrderedDict([
-            (key, dict_value[key])
+            (str(key), dict_value[key])
             for key in keys
         ])
 
@@ -87,7 +90,10 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
     @staticmethod
     def _json_result(obj):
         if isinstance(obj, enum.Enum):
-            result = {obj.name: obj.value}
+            if isinstance(obj.value, CryptoDataParamsBase):
+                result = obj.name
+            else:
+                result = {obj.name: obj.value}
         elif isinstance(obj, six.string_types + six.integer_types + (float, bool, )) or obj is None:
             result = obj
         elif isinstance(obj, (bytes, bytearray)):
@@ -201,6 +207,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         elif isinstance(obj, enum.Enum):
             if isinstance(obj.value, Serializable):
                 return obj.value._as_markdown(level)  # pylint: disable=protected-access
+            if isinstance(obj.value, CryptoDataParamsBase):
+                return False, str(obj.value)
 
             return False, obj.name
         elif hasattr(obj, '__dict__') or isinstance(obj, dict):
@@ -336,6 +344,8 @@ class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-meth
     def get_item_size(self, item):
         if isinstance(item, (ParsableBase, StringEnumParsable)):
             return len(item.compose())
+        if isinstance(item, CryptoDataEnumCodedBase):
+            return item.value.get_code_size()
         if isinstance(item, six.string_types):
             return len(item)
 
@@ -354,13 +364,36 @@ class VectorParamParsable(VectorParamBase):  # pylint: disable=too-few-public-me
 
 
 @attr.s
+class VectorParamEnumCodeNumeric(VectorParamBase):  # pylint: disable=too-few-public-methods
+    item_class = attr.ib(validator=attr.validators.instance_of((type, types.FunctionType)))
+    fallback_class = attr.ib(
+        validator=attr.validators.optional(attr.validators.instance_of((type, types.FunctionType)))
+    )
+
+    def get_item_size(self, item):
+        return self.fallback_class.get_byte_num()
+
+
+@attr.s
+class VectorParamEnumCodeString(VectorParamBase):  # pylint: disable=too-few-public-methods
+    item_class = attr.ib(validator=attr.validators.instance_of((type, types.FunctionType)))
+    fallback_class = attr.ib(init=False, default=None)
+
+    def get_item_size(self, item):
+        return len(item.value.code)
+
+
+@attr.s
 class ArrayBase(ParsableBase, MutableSequence, Serializable):
     _items = attr.ib()
     _items_size = attr.ib(init=False, default=0)
     param = attr.ib(init=False, default=None)
 
     def __attrs_post_init__(self):
-        items = self._items
+        if isinstance(self._items, six.binary_type):
+            items = six.iterbytes(bytes(self._items))
+        else:
+            items = self._items
 
         self.param = self.get_param()
         self._items = []
@@ -525,6 +558,46 @@ class VectorParsable(ArrayBase):
         return header_composer.composed_bytes + body_composer.composed_bytes
 
 
+class VectorEnumCodeNumeric(VectorParsable):
+    @classmethod
+    @abc.abstractmethod
+    def get_param(cls):
+        raise NotImplementedError()
+
+    def compose(self):
+        body_composer = ComposerBinary()
+
+        for item in self:
+            if isinstance(self.param.fallback_class, type) and isinstance(item, self.param.fallback_class):
+                body_composer.compose_parsable(item)
+            else:
+                body_composer.compose_numeric_enum_coded(item)
+
+        header_composer = ComposerBinary()
+        header_composer.compose_numeric(body_composer.composed_length, self.param.item_num_size)
+
+        return header_composer.composed_bytes + body_composer.composed_bytes
+
+
+class VectorEnumCodeString(VectorParsable):
+    @classmethod
+    @abc.abstractmethod
+    def get_param(cls):
+        raise NotImplementedError()
+
+    def compose(self):
+        body_composer = ComposerBinary()
+
+        item_size = self.get_param().item_class.get_param().item_num_size
+        for item in self:
+            body_composer.compose_string_enum_coded(item, item_size)
+
+        header_composer = ComposerBinary()
+        header_composer.compose_numeric(body_composer.composed_length, self.param.item_num_size)
+
+        return header_composer.composed_bytes + body_composer.composed_bytes
+
+
 class VectorParsableDerived(ArrayBase):
     @classmethod
     @abc.abstractmethod
@@ -558,12 +631,6 @@ class VectorParsableDerived(ArrayBase):
 
 
 class Opaque(ArrayBase):
-    def __attrs_post_init__(self):
-        if isinstance(self._items, (bytes, bytearray)):
-            self._items = [ord(self._items[i:i + 1]) for i in range(len(self._items))]
-
-        super(Opaque, self).__attrs_post_init__()
-
     @classmethod
     def _parse(cls, parsable):
         parser = ParserBinary(parsable)
@@ -782,7 +849,7 @@ class ProtocolVersionMajorMinorBase(ProtocolVersionBase):
     @classmethod
     def _parse_version_numbers(cls, parsable):
         if len(parsable) < cls._SIZE:
-            raise NotEnoughData(bytes_needed=cls._SIZE)
+            raise NotEnoughData(bytes_needed=cls._SIZE - len(parsable))
 
         parser = ParserBinary(parsable)
 

@@ -11,18 +11,22 @@ import attr
 
 import six
 
+from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.tls.algorithm import SslCipherKind, TlsCipherSuite, TlsCipherSuiteExtension, TlsCompressionMethod
+
 from cryptoparser.common.base import (
-    OneByteEnumComposer,
     OneByteEnumParsable,
     Opaque,
     OpaqueParam,
     VariantParsable,
     Vector,
+    VectorEnumCodeNumeric,
+    VectorParamEnumCodeNumeric,
     VectorParamNumeric,
     VectorParamParsable,
     VectorParsable,
 )
-from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
+from cryptoparser.common.exception import NotEnoughData, InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 
 from cryptoparser.tls.extension import (
@@ -33,20 +37,8 @@ from cryptoparser.tls.extension import (
     TlsSignatureAndHashAlgorithmVector,
 )
 from cryptoparser.tls.grease import TlsInvalidType, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
-from cryptoparser.tls.version import (
-    SslProtocolVersion,
-    SslVersion,
-    TlsProtocolVersionBase,
-    TlsProtocolVersionFinal,
-    TlsVersion,
-)
-from cryptoparser.tls.ciphersuite import (
-    SslCipherKind,
-    SslCipherKindFactory,
-    TlsCipherSuite,
-    TlsCipherSuiteExtension,
-    TlsCipherSuiteFactory,
-)
+from cryptoparser.tls.version import TlsProtocolVersion, TlsVersion
+from cryptoparser.tls.ciphersuite import SslCipherKindFactory, TlsCipherSuiteFactory
 
 
 class TlsContentType(enum.IntEnum):
@@ -334,7 +326,7 @@ class TlsHandshakeHello(TlsHandshakeMessage):
     def _parse_hello_header(cls, parsable):
         parser = ParserBinary(parsable)
 
-        parser.parse_parsable('protocol_version', TlsProtocolVersionBase)
+        parser.parse_parsable('protocol_version', TlsProtocolVersion)
         parser.parse_parsable('random', TlsHandshakeHelloRandom)
         parser.parse_parsable('session_id', TlsSessionIdVector)
 
@@ -384,7 +376,7 @@ class TlsHandshakeHello(TlsHandshakeMessage):
 class TlsCipherSuiteVector(VectorParsable):
     @classmethod
     def get_param(cls):
-        return VectorParamParsable(
+        return VectorParamEnumCodeNumeric(
             item_class=TlsCipherSuiteFactory,
             fallback_class=TlsInvalidTypeTwoByte,
             min_byte_num=2, max_byte_num=2 ** 16 - 2
@@ -401,21 +393,10 @@ class TlsCompressionMethodFactory(OneByteEnumParsable):
         raise NotImplementedError()
 
 
-@attr.s(frozen=True)
-class TlsCompressionMethodParams(object):
-    code = attr.ib(validator=attr.validators.instance_of(int))
-
-
-class TlsCompressionMethod(OneByteEnumComposer, enum.Enum):
-    NULL = TlsCompressionMethodParams(code=0x00)
-    DEFLATE = TlsCompressionMethodParams(code=0x01)
-    LZS = TlsCompressionMethodParams(code=0x40)
-
-
-class TlsCompressionMethodVector(VectorParsable):
+class TlsCompressionMethodVector(VectorEnumCodeNumeric):
     @classmethod
     def get_param(cls):
-        return VectorParamParsable(
+        return VectorParamEnumCodeNumeric(
             item_class=TlsCompressionMethodFactory,
             fallback_class=TlsInvalidTypeOneByte,
             min_byte_num=1,
@@ -436,8 +417,8 @@ class TlsHandshakeClientHello(TlsHandshakeHello):  # pylint: disable=too-many-in
         validator=attr.validators.instance_of(TlsCipherSuiteVector)
     )
     protocol_version = attr.ib(
-        default=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
-        validator=attr.validators.instance_of((TlsProtocolVersionBase, SslProtocolVersion)),
+        default=TlsProtocolVersion(TlsVersion.TLS1_2),
+        validator=attr.validators.instance_of(TlsProtocolVersion),
     )
     random = attr.ib(
         default=TlsHandshakeHelloRandom(),
@@ -480,9 +461,9 @@ class TlsHandshakeClientHello(TlsHandshakeHello):  # pylint: disable=too-many-in
         fallback_scsv = False
         empty_renegotiation_info_scsv = False
         for cipher_suite in parser['cipher_suites']:
-            if cipher_suite.value.code == TlsCipherSuiteExtension.FALLBACK_SCSV:
+            if cipher_suite.value.code == TlsCipherSuiteExtension.FALLBACK_SCSV.value.code:
                 fallback_scsv = True
-            elif cipher_suite.value.code == TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV:
+            elif cipher_suite.value.code == TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV.value.code:
                 empty_renegotiation_info_scsv = True
             else:
                 cipher_suites.append(cipher_suite)
@@ -505,10 +486,11 @@ class TlsHandshakeClientHello(TlsHandshakeHello):  # pylint: disable=too-many-in
         payload_composer.compose_parsable(self.random)
         payload_composer.compose_parsable(self.session_id)
         if self.fallback_scsv:
-            self.cipher_suites.append(TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.FALLBACK_SCSV))
+            self.cipher_suites.append(TlsCipherSuiteExtension.FALLBACK_SCSV)
         if self.empty_renegotiation_info_scsv:
-            self.cipher_suites.append(TlsInvalidTypeTwoByte(TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV))
-        payload_composer.compose_parsable(self.cipher_suites)
+            self.cipher_suites.append(TlsCipherSuiteExtension.EMPTY_RENEGOTIATION_INFO_SCSV)
+        payload_composer.compose_numeric(len(self.cipher_suites) * self.cipher_suites.get_param().item_num_size, 2)
+        payload_composer.compose_numeric_array_enum_coded(self.cipher_suites)
         if self.fallback_scsv:
             del self.cipher_suites[-1]
         if self.empty_renegotiation_info_scsv:
@@ -562,8 +544,8 @@ class TlsHandshakeClientHello(TlsHandshakeHello):  # pylint: disable=too-many-in
 @attr.s
 class TlsHandshakeServerHello(TlsHandshakeHello):
     protocol_version = attr.ib(
-        default=TlsProtocolVersionFinal(TlsVersion.TLS1_2),
-        validator=attr.validators.instance_of((TlsProtocolVersionBase, SslProtocolVersion)),
+        default=TlsProtocolVersion(TlsVersion.TLS1_2),
+        validator=attr.validators.instance_of(TlsProtocolVersion),
     )
     random = attr.ib(
         default=TlsHandshakeHelloRandom(),
@@ -616,8 +598,8 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
         payload_composer.compose_parsable(self.protocol_version)
         payload_composer.compose_parsable(self.random)
         payload_composer.compose_parsable(self.session_id)
-        payload_composer.compose_parsable(self.cipher_suite)
-        payload_composer.compose_parsable(self.compression_method)
+        payload_composer.compose_numeric_enum_coded(self.cipher_suite)
+        payload_composer.compose_numeric_enum_coded(self.compression_method)
 
         extension_bytes = self._compose_extensions(self.extensions)
 
@@ -877,8 +859,8 @@ TLS_HANDSHAKE_HELLO_RETRY_REQUEST_RANDOM = TlsHandshakeHelloRandom.parse_exact_s
 class TlsHandshakeHelloRetryRequest(TlsHandshakeHello):
     cipher_suite = attr.ib(default=None, validator=attr.validators.in_(TlsCipherSuite))
     protocol_version = attr.ib(
-        default=TlsProtocolVersionFinal(TlsVersion.TLS1_3),
-        validator=attr.validators.instance_of((TlsProtocolVersionBase, SslProtocolVersion)),
+        default=TlsProtocolVersion(TlsVersion.TLS1_3),
+        validator=attr.validators.instance_of(TlsProtocolVersion),
     )
     random_bytes = attr.ib(
         default=TLS_HANDSHAKE_HELLO_RETRY_REQUEST_RANDOM,
@@ -932,8 +914,8 @@ class TlsHandshakeHelloRetryRequest(TlsHandshakeHello):
         payload_composer.compose_parsable(self.protocol_version)
         payload_composer.compose_parsable(self.random_bytes)
         payload_composer.compose_parsable(self.session_id)
-        payload_composer.compose_parsable(self.cipher_suite)
-        payload_composer.compose_parsable(self.compression_method)
+        payload_composer.compose_numeric_enum_coded(self.cipher_suite)
+        payload_composer.compose_numeric_enum_coded(self.compression_method)
 
         extension_bytes = self._compose_extensions(self.extensions)
 
@@ -1032,7 +1014,7 @@ class SslHandshakeClientHello(SslMessageBase):
     def _parse(cls, parsable):
         parser = ParserBinary(parsable)
 
-        parser.parse_numeric('version', 2, SslVersion)
+        parser.parse_parsable('version', TlsProtocolVersion)
         parser.parse_numeric('cipher_kinds_length', 2)
         parser.parse_numeric('session_id_length', 2)
         parser.parse_numeric('challenge_length', 2)
@@ -1049,13 +1031,12 @@ class SslHandshakeClientHello(SslMessageBase):
     def compose(self):
         composer = ComposerBinary()
 
-        composer.compose_numeric(SslVersion.SSL2, 2)
+        composer.compose_parsable(TlsProtocolVersion(TlsVersion.SSL2))
 
         composer.compose_numeric(len(self.cipher_kinds) * 3, 2)
         composer.compose_numeric(len(self.session_id), 2)
         composer.compose_numeric(len(self.challenge), 2)
-
-        composer.compose_parsable_array(self.cipher_kinds)
+        composer.compose_numeric_array_enum_coded(self.cipher_kinds)
         composer.compose_raw(self.session_id)
         composer.compose_raw(self.challenge)
 
@@ -1083,7 +1064,7 @@ class SslHandshakeServerHello(SslMessageBase):
 
         parser.parse_numeric('session_id_hit', 1)
         parser.parse_numeric('certificate_type', 1, SslCertificateType)
-        parser.parse_numeric('version', 2, SslVersion)
+        parser.parse_parsable('version', TlsProtocolVersion)
         parser.parse_numeric('certificate_length', 2)
         parser.parse_numeric('cipher_kinds_length', 2)
         parser.parse_numeric('connection_id_length', 2)
@@ -1103,12 +1084,12 @@ class SslHandshakeServerHello(SslMessageBase):
 
         composer.compose_numeric(1 if self.session_id_hit else 0, 1)
         composer.compose_numeric(SslCertificateType.X509_CERTIFICATE, 1)
-        composer.compose_numeric(SslVersion.SSL2, 2)
+        composer.compose_parsable(TlsProtocolVersion(TlsVersion.SSL2))
         composer.compose_numeric(len(self.certificate), 2)
         composer.compose_numeric(len(self.cipher_kinds) * 3, 2)
         composer.compose_numeric(len(self.connection_id), 2)
         composer.compose_raw(self.certificate)
-        composer.compose_parsable_array(self.cipher_kinds)
+        composer.compose_numeric_array_enum_coded(self.cipher_kinds)
         composer.compose_raw(self.connection_id)
 
         return composer.composed_bytes

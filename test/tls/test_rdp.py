@@ -3,7 +3,8 @@
 import unittest
 import collections
 
-from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
+from cryptodatahub.common.exception import InvalidValue
+from cryptoparser.common.exception import NotEnoughData, InvalidType
 
 from cryptoparser.tls.rdp import (
     COTPConnectionConfirm,

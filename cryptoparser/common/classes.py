@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-from cryptoparser.common.exception import InvalidValue
+from cryptodatahub.common.exception import InvalidValue
 from cryptoparser.common.parse import ParsableBase, ParserText, ComposerText
 
 

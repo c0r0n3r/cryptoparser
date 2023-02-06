@@ -4,8 +4,10 @@ import abc
 import enum
 import attr
 
+from cryptodatahub.common.exception import InvalidValue
+
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ByteOrder
-from cryptoparser.common.exception import NotEnoughData, InvalidValue, InvalidType
+from cryptoparser.common.exception import NotEnoughData, InvalidType
 
 
 @attr.s

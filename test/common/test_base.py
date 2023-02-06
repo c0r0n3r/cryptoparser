@@ -5,12 +5,17 @@ import unittest
 
 import six
 
-from cryptoparser.common.exception import InvalidValue, NotEnoughData, TooMuchData
+from cryptodatahub.common.exception import InvalidValue
+
+from cryptoparser.common.exception import NotEnoughData, TooMuchData
 from cryptoparser.common.base import (
     Opaque,
+    OpaqueEnumParsable,
     OpaqueParam,
     ProtocolVersionMajorMinorBase,
     Vector,
+    VectorEnumCodeString,
+    VectorParamEnumCodeString,
     VectorParamNumeric,
     VectorParamParsable,
     VectorParamString,
@@ -18,14 +23,18 @@ from cryptoparser.common.base import (
     VectorParsableDerived,
     VectorString,
 )
-
-from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
+from cryptoparser.common.parse import ComposerBinary
 
 from .classes import (
     AlwaysTestStringComposer,
     ConditionalParsable,
     EnumStringValue,
+    FourByteEnumComposerTest,
+    FourByteEnumParsableTest,
     ListParsableTest,
+    NByteEnumTest,
+    OneByteEnumComposerTest,
+    OneByteEnumParsableTest,
     OneByteOddParsable,
     OneByteParsable,
     OpaqueEnum,
@@ -43,6 +52,10 @@ from .classes import (
     SerializableUnhandled,
     StringEnum,
     TestObject,
+    ThreeByteEnumComposerTest,
+    ThreeByteEnumParsableTest,
+    TwoByteEnumComposerTest,
+    TwoByteEnumParsableTest,
     TwoByteEvenParsable,
     TwoByteParsable,
 )
@@ -52,6 +65,11 @@ class TestProtocolVersionMajorMinorBase(unittest.TestCase):
     def setUp(self):
         self.protocol_version = ProtocolVersionMajorMinorBase(1, 2)
         self.protocol_version_bytes = b'\x01\x02'
+
+    def test_error(self):
+        with self.assertRaises(NotEnoughData) as context_manager:
+            ProtocolVersionMajorMinorBase.parse_exact_size(b'\x00')
+        self.assertEqual(context_manager.exception.bytes_needed, 1)
 
     def test_parse(self):
         self.assertEqual(
@@ -247,6 +265,69 @@ class TestVectorString(unittest.TestCase):
         )
 
 
+class StringEnumFactory(OpaqueEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return StringEnum
+
+    @classmethod
+    def get_param(cls):
+        return OpaqueParam(
+            min_byte_num=1, max_byte_num=2 ** 8 - 1
+        )
+
+
+class VectorEnumCodeStringTest(VectorEnumCodeString):
+    @classmethod
+    def get_param(cls):
+        return VectorParamEnumCodeString(
+            item_class=StringEnumFactory,
+            min_byte_num=0, max_byte_num=2 ** 16 - 1
+        )
+
+
+class TestVectorEnumCodeString(unittest.TestCase):
+    def test_error(self):
+        pass
+
+    def test_parse(self):
+        self.assertEqual(
+            [StringEnum.ONE, StringEnum.TWO, StringEnum.THREE, ],
+            list(VectorEnumCodeStringTest.parse_exact_size(b'\x00\x0e\x03one\x03two\x05three'))
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            b'\x00\x00',
+            VectorEnumCodeStringTest([]).compose(),
+        )
+
+        self.assertEqual(
+            b'\x00\x08\x03one\x03two',
+            VectorEnumCodeStringTest([StringEnum.ONE, StringEnum.TWO, ]).compose(),
+        )
+
+    def test_json(self):
+        self.assertEqual('[]', VectorEnumCodeStringTest([]).as_json())
+
+        self.assertEqual(
+            VectorEnumCodeStringTest([StringEnum.ONE, StringEnum.TWO, ]).as_json(),
+            '[{"ONE": {"code": "one"}}, {"TWO": {"code": "two"}}]',
+        )
+
+    def test_markdown(self):
+        self.assertEqual('-', VectorEnumCodeStringTest([]).as_markdown())
+
+        self.assertEqual(
+            VectorEnumCodeStringTest([StringEnum.ONE, StringEnum.TWO, ]).as_markdown(),
+            '\n'.join([
+                '1. ONE',
+                '2. TWO',
+                '',
+            ])
+        )
+
+
 class TestVectorParsable(unittest.TestCase):
     def test_error(self):
         with self.assertRaises(NotEnoughData) as context_manager:
@@ -417,15 +498,40 @@ class TestOpaqueEnum(unittest.TestCase):
         )
 
 
-class TestEnum(unittest.TestCase):
+class TestNByteEnumParsable(unittest.TestCase):
     def test_compose(self):
+        composer = ComposerBinary()
+        composer.compose_parsable(OneByteEnumComposerTest.ONE)
+        self.assertEqual(composer.composed_bytes, b'\x01')
+
+        composer = ComposerBinary()
+        composer.compose_parsable(TwoByteEnumComposerTest.TWO)
+        self.assertEqual(composer.composed_bytes, b'\x00\x02')
+
+        composer = ComposerBinary()
+        composer.compose_parsable(ThreeByteEnumComposerTest.THREE)
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x03')
+
+        composer = ComposerBinary()
+        composer.compose_parsable(FourByteEnumComposerTest.FOUR)
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x04')
+
+    def test_parse(self):
         self.assertEqual(
-            len(TlsCipherSuite.TLS_NULL_WITH_NULL_NULL.compose()),  # pylint: disable=no-member
-            TlsCipherSuite.get_byte_num()
+            OneByteEnumParsableTest.parse_exact_size(b'\x01'),
+            NByteEnumTest.ONE
         )
         self.assertEqual(
-            len(SslCipherKind.SSL_CK_RC4_128_WITH_MD5.compose()),  # pylint: disable=no-member
-            SslCipherKind.get_byte_num()
+            TwoByteEnumParsableTest.parse_exact_size(b'\x00\x02'),
+            NByteEnumTest.TWO
+        )
+        self.assertEqual(
+            ThreeByteEnumParsableTest.parse_exact_size(b'\x00\x00\x03'),
+            NByteEnumTest.THREE
+        )
+        self.assertEqual(
+            FourByteEnumParsableTest.parse_exact_size(b'\x00\x00\x00\x04'),
+            NByteEnumTest.FOUR
         )
 
 
@@ -494,6 +600,7 @@ class TestSerializable(unittest.TestCase):
             '"json_asdict_object": {"attr_b": "b", "attr_a": "a"}, ' +
             '"json_attr_as_dict": {"attr_b": "b", "attr_a": "a"}, ' +
             '"json_attr_object": {"attr_b": "b", "attr_a": "a"}, ' +
+            '"json_crypto_data_hub_enum": "ONE", ' +
             '"json_object": {"attr_a": "a", "attr_b": "b"}, ' +
             '"json_serializable_hidden": {"visible_value": "value"}, ' +
             '"json_serializable_in_dict": {"key1": {"visible_value": "value"}, "key2": "single"}, ' +
@@ -589,6 +696,7 @@ class TestSerializable(unittest.TestCase):
                 '* Json Attr Object:',
                 '    * Attr B: b',
                 '    * Attr A: a',
+                '* Json Crypto Data Hub Enum: one',
                 '* Json Object:',
                 '    * Attr A: a',
                 '    * Attr B: b',

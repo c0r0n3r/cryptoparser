@@ -2,7 +2,7 @@
 
 import unittest
 
-from cryptoparser.common.utils import bytes_to_hex_string
+from cryptoparser.common.utils import bytes_from_hex_string, bytes_to_hex_string
 
 
 class TestBytesToHexString(unittest.TestCase):

@@ -6,7 +6,7 @@ import unittest
 
 import six
 
-from cryptoparser.common.exception import InvalidValue
+from cryptodatahub.common.exception import InvalidValue
 from cryptoparser.common.parse import ParserText
 
 from cryptoparser.ssh.version import (
