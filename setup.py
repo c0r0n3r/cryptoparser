@@ -11,7 +11,7 @@ this_directory = os.getenv('REQUIREMENTS_DIR', '')
 with open(os.path.join(this_directory, 'requirements.txt')) as f:
     install_requirements = f.read().splitlines()
 this_directory = os.path.abspath(os.path.dirname(__file__))
-with codecs.open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+with codecs.open(os.path.join(this_directory, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 
