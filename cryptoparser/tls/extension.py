@@ -1382,12 +1382,12 @@ class TlsExtensionPadding(TlsExtensionParsed):
 class TlsExtensionVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
-    def _get_parsed_extensions(cls):
+    def get_parsed_extensions(cls):
         raise NotImplementedError()
 
     @classmethod
     def _get_variants(cls):
-        variants = cls._get_parsed_extensions()
+        variants = cls.get_parsed_extensions()
 
         variants.update([
             (extension_type, (TlsExtensionUnparsed, ))
@@ -1400,7 +1400,7 @@ class TlsExtensionVariantBase(VariantParsable):
 
 class TlsExtensionVariantClient(TlsExtensionVariantBase):
     @classmethod
-    def _get_parsed_extensions(cls):
+    def get_parsed_extensions(cls):
         return collections.OrderedDict([
             (TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION,
                 [TlsExtensionApplicationLayerProtocolNegotiation, ]),
@@ -1434,7 +1434,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
 
 class TlsExtensionVariantServer(TlsExtensionVariantBase):
     @classmethod
-    def _get_parsed_extensions(cls):
+    def get_parsed_extensions(cls):
         return collections.OrderedDict([
             (TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION,
                 [TlsExtensionApplicationLayerProtocolNegotiation, ]),
