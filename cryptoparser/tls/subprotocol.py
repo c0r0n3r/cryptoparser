@@ -251,9 +251,9 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
             parser.parse_numeric('handshake_type', 1, TlsHandshakeType)
         except InvalidValue as e:
             raise e
-        else:
-            if parser['handshake_type'] != cls.get_handshake_type():
-                raise InvalidType()
+
+        if parser['handshake_type'] != cls.get_handshake_type():
+            raise InvalidType()
 
         try:
             parser.parse_bytes('payload', 3)
