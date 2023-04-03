@@ -12,7 +12,8 @@ try:
 except ImportError:
     import mock
 
-from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidType, InvalidValue
+from cryptodatahub.common.exception import InvalidValue
+from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidType
 from cryptoparser.common.parse import ParserBinary, ParserText, ParsableBase, ComposerBinary, ComposerText, ByteOrder
 from cryptoparser.tls.ciphersuite import TlsCipherSuiteFactory
 
@@ -772,6 +773,23 @@ class TestComposerBinary(TestParsableBase):
         composer.compose_numeric_array(values=[1, 2, 3, 4], item_size=4)
         self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00\x04')
 
+    def test_compose_numeric_enum_coded(self):
+        composer = ComposerBinary()
+        composer.compose_numeric_enum_coded(SerializableEnum.FIRST)
+        self.assertEqual(composer.composed_bytes, b'\x00\x01')
+
+    def test_compose_numeric_array_enum_coded(self):
+        composer = ComposerBinary()
+        composer.compose_numeric_array_enum_coded(values=[])
+        self.assertEqual(composer.composed_bytes, b'')
+
+        composer = ComposerBinary()
+        composer.compose_numeric_array_enum_coded(values=[
+            SerializableEnum.FIRST,
+            SerializableEnum.SECOND,
+        ])
+        self.assertEqual(composer.composed_bytes, b'\x00\x01\x00\x02')
+
     def test_compose_numeric_flags(self):
         composer = ComposerBinary()
         composer.compose_numeric_flags([FlagEnum.ONE, ], 1)
@@ -828,6 +846,11 @@ class TestComposerBinary(TestParsableBase):
         composer = ComposerBinary()
         composer.compose_string_null_terminated(self._ALPHA_BETA_GAMMA, 'utf-8')
         self.assertEqual(composer.composed_bytes, self._ALPHA_BETA_GAMMA_BYTES + b'\x00')
+
+    def test_compose_string_enum_coded(self):
+        composer = ComposerBinary()
+        composer.compose_string_enum_coded(StringEnum.ONE, 2)
+        self.assertEqual(composer.composed_bytes, b'\x00\x03one')
 
     def test_compose_multiple(self):
         composer = ComposerBinary()

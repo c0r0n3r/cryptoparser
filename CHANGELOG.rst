@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.8.5
+-----
+
+   -  Generic
+
+      -  move data classes to `CryptoDataHub repository <https://gitlab.com/coroner/cryptodatahub>`__ (#67)
+
 0.8.4 - 2023-01-22
 ------------------
 

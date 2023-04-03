@@ -2,7 +2,13 @@
 
 import abc
 import enum
+import random
+
 import attr
+
+from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.types import CryptoDataEnumCodedBase
+from cryptodatahub.tls.algorithm import TlsGreaseOneByte, TlsGreaseTwoByte
 
 from cryptoparser.common.base import ParsableBase
 from cryptoparser.common.parse import ParserBinary, ComposerBinary
@@ -14,35 +20,60 @@ class TlsInvalidType(enum.IntEnum):
 
 
 @attr.s
-class TlsInvalidTypeParams(object):
+class TlsInvalidTypeParamsBase(object):
     code = attr.ib(validator=attr.validators.instance_of(int))
     value_type = attr.ib(validator=attr.validators.in_(TlsInvalidType))
+
+    @classmethod
+    def get_code_size(cls):
+        raise NotImplementedError()
+
+
+class TlsInvalidTypeParamsOneByte(TlsInvalidTypeParamsBase):
+    @classmethod
+    def get_code_size(cls):
+        return 1
+
+
+class TlsInvalidTypeParamsTwoByte(TlsInvalidTypeParamsBase):
+    @classmethod
+    def get_code_size(cls):
+        return 2
 
 
 @attr.s
 class TlsInvalidTypeBase(ParsableBase):
-    code = attr.ib(validator=attr.validators.instance_of(int))
-    value = attr.ib(init=False, validator=attr.validators.instance_of(TlsInvalidTypeParams))
+    code = attr.ib(validator=attr.validators.instance_of((int, CryptoDataEnumCodedBase)))
+    value = attr.ib(init=False, validator=attr.validators.instance_of(TlsInvalidTypeParamsBase))
 
     def __attrs_post_init__(self):
         if isinstance(self.code, self.get_grease_enum()):
             value_type = TlsInvalidType.GREASE
-            self.code = self.code.value
-        elif self.code in set(self.get_grease_enum()):
-            value_type = TlsInvalidType.GREASE
-        else:
+            self.code = self.code.value.code
+        elif isinstance(self.code, CryptoDataEnumCodedBase):
             value_type = TlsInvalidType.UNKNOWN
-        self.value = TlsInvalidTypeParams(self.code, value_type)
+            self.code = self.code.value.code
+        else:
+            try:
+                self.code = self.get_grease_enum().from_code(self.code).value.code
+                value_type = TlsInvalidType.GREASE
+            except InvalidValue:
+                value_type = TlsInvalidType.UNKNOWN
+        self.value = self.get_param_class()(self.code, value_type)
 
     @classmethod
     @abc.abstractmethod
-    def get_byte_num(cls):
+    def get_param_class(cls):
         raise NotImplementedError()
 
     @classmethod
     @abc.abstractmethod
     def get_grease_enum(cls):
         raise NotImplementedError()
+
+    @classmethod
+    def get_byte_num(cls):
+        return cls.get_param_class().get_code_size()
 
     @classmethod
     def _parse(cls, parsable):
@@ -55,15 +86,21 @@ class TlsInvalidTypeBase(ParsableBase):
     def compose(self):
         composer = ComposerBinary()
 
-        composer.compose_numeric(self.value.code, self.get_byte_num())
+        composer.compose_numeric(self.code, self.get_byte_num())
 
         return composer.composed_bytes
+
+    @classmethod
+    def from_random(cls):
+        grease_enum_type = cls.get_grease_enum()
+
+        return cls(random.choice(list(grease_enum_type)))
 
 
 class TlsInvalidTypeOneByte(TlsInvalidTypeBase):
     @classmethod
-    def get_byte_num(cls):
-        return 1
+    def get_param_class(cls):
+        return TlsInvalidTypeParamsOneByte
 
     @classmethod
     def get_grease_enum(cls):
@@ -72,39 +109,9 @@ class TlsInvalidTypeOneByte(TlsInvalidTypeBase):
 
 class TlsInvalidTypeTwoByte(TlsInvalidTypeBase):
     @classmethod
-    def get_byte_num(cls):
-        return 2
+    def get_param_class(cls):
+        return TlsInvalidTypeParamsTwoByte
 
     @classmethod
     def get_grease_enum(cls):
         return TlsGreaseTwoByte
-
-
-class TlsGreaseOneByte(enum.IntEnum):
-    GREASE_0B = 0x0b
-    GREASE_2A = 0x2a
-    GREASE_49 = 0x49
-    GREASE_68 = 0x68
-    GREASE_87 = 0x87
-    GREASE_A6 = 0xa6
-    GREASE_C5 = 0xc5
-    GREASE_E4 = 0xe4
-
-
-class TlsGreaseTwoByte(enum.IntEnum):
-    GREASE_0A0A = 0x0a0a
-    GREASE_1A1A = 0x1a1a
-    GREASE_2A2A = 0x2a2a
-    GREASE_3A3A = 0x3a3a
-    GREASE_4A4A = 0x4a4a
-    GREASE_5A5A = 0x5a5a
-    GREASE_6A6A = 0x6a6a
-    GREASE_7A7A = 0x7a7a
-    GREASE_8A8A = 0x8a8a
-    GREASE_9A9A = 0x9a9a
-    GREASE_AAAA = 0xaaaa
-    GREASE_BABA = 0xbaba
-    GREASE_CACA = 0xcaca
-    GREASE_DADA = 0xdada
-    GREASE_EAEA = 0xeaea
-    GREASE_FAFA = 0xfafa

@@ -7,10 +7,18 @@ import copy
 import datetime
 import six
 
-from cryptoparser.common.exception import InvalidValue, InvalidType, NotEnoughData
+from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.tls.algorithm import (
+    TlsCipherSuiteExtension,
+    TlsECPointFormat,
+    TlsGreaseOneByte,
+    TlsGreaseTwoByte,
+    TlsNamedCurve,
+    TlsSignatureAndHashAlgorithm,
+)
 
-from cryptoparser.tls.algorithm import TlsSignatureAndHashAlgorithm, TlsNamedCurve, TlsECPointFormat
-from cryptoparser.tls.ciphersuite import TlsCipherSuite, TlsCipherSuiteExtension, SslCipherKind
+from cryptoparser.common.exception import InvalidType, NotEnoughData
+from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 from cryptoparser.tls.extension import (
     TlsExtensionSupportedVersionsClient,
     TlsExtensionSupportedVersionsServer,
@@ -21,7 +29,7 @@ from cryptoparser.tls.extension import (
     TlsEllipticCurveVector,
     TlsSupportedVersionVector,
 )
-from cryptoparser.tls.grease import TlsGreaseOneByte, TlsGreaseTwoByte, TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
+from cryptoparser.tls.grease import TlsInvalidTypeOneByte, TlsInvalidTypeTwoByte
 from cryptoparser.tls.subprotocol import (
     TLS_HANDSHAKE_HELLO_RETRY_REQUEST_RANDOM,
     TLS_HANDSHAKE_HELLO_RETRY_REQUEST_RANDOM_BYTES,
@@ -58,23 +66,13 @@ from cryptoparser.tls.subprotocol import (
 )
 
 from cryptoparser.tls.record import TlsRecord
-from cryptoparser.tls.version import TlsVersion, TlsProtocolVersionFinal
+from cryptoparser.tls.version import TlsVersion, TlsProtocolVersion
 
 from .classes import TestMessage
 
 
 class TestSubprotocolParser(unittest.TestCase):
     def test_error(self):
-        subprotocol_parser = TlsSubprotocolMessageParser(TlsContentType.HANDSHAKE)
-        with self.assertRaises(InvalidValue) as context_manager:
-            subprotocol_parser.parse(
-                b'\x18'            # handshake_type: CLIENT_HELLO
-                b'\x00\x00\x03' +  # handshake_length = 3
-                b'\x03\x03' +      # version = TLS 1.2
-                b''
-            )
-        self.assertEqual(context_manager.exception.value, 0x18)
-
         subprotocol_parser = TlsSubprotocolMessageParser(TlsContentType.HEARTBEAT)
         with self.assertRaises(InvalidValue) as context_manager:
             subprotocol_parser.parse(
@@ -83,6 +81,7 @@ class TestSubprotocolParser(unittest.TestCase):
                 b'\x00\x01' +  # length = 1
                 b'\x00'
             )
+        self.assertEqual(context_manager.exception.value, 0x18)
 
     def test_registered_parser(self):
         tls_message_dict = collections.OrderedDict([
@@ -159,7 +158,7 @@ class TestTlsHandshake(unittest.TestCase):
         self.server_hello_done_bytes = b''.join(self.server_hello_done_dict.values())
         self.server_hello_done_record_dict = collections.OrderedDict([
             ('content_type', b'\x16'),          # HANDSHAKE
-            ('protocol_version', b'\x03\x01'),  # TLS1_0
+            ('protocol_version', b'\x03\x01'),  # TLS1
             ('length', b'\x00\x04'),
         ])
         self.server_hello_done_record_bytes = b''.join(self.server_hello_done_record_dict.values())
@@ -196,9 +195,9 @@ class TestTlsHandshake(unittest.TestCase):
         record = TlsRecord.parse_exact_size(
             self.server_hello_done_record_bytes + self.server_hello_done_bytes
         )
-        self.assertEqual(record.protocol_version, TlsProtocolVersionFinal(TlsVersion.TLS1_0))
-        record.protocol_version = TlsProtocolVersionFinal(TlsVersion.TLS1_2)
-        self.assertEqual(record.protocol_version, TlsProtocolVersionFinal(TlsVersion.TLS1_2))
+        self.assertEqual(record.protocol_version, TlsProtocolVersion(TlsVersion.TLS1))
+        record.protocol_version = TlsProtocolVersion(TlsVersion.TLS1_2)
+        self.assertEqual(record.protocol_version, TlsProtocolVersion(TlsVersion.TLS1_2))
 
 
 class TestTlsHandshakeClientHello(unittest.TestCase):
@@ -253,7 +252,7 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
                 TlsCipherSuite.TLS_RSA_WITH_RC4_128_MD5,
                 TlsCipherSuite.TLS_RSA_WITH_RC4_128_SHA,
             ]),
-            TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+            TlsProtocolVersion(TlsVersion.TLS1_2),
             TlsHandshakeHelloRandom(
                 self.random_time,
                 TlsHandshakeHelloRandomBytes(bytearray(
@@ -278,7 +277,7 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
 
         self.assertEqual(
             client_hello_minimal.protocol_version,
-            TlsProtocolVersionFinal(TlsVersion.TLS1_2)
+            TlsProtocolVersion(TlsVersion.TLS1_2)
         )
         self.assertEqual(
             client_hello_minimal.random,
@@ -312,8 +311,8 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
         self.assertEqual(
             client_hello_extension.extensions.get_item_by_type(TlsExtensionType.SUPPORTED_VERSIONS),
             TlsExtensionSupportedVersionsClient(TlsSupportedVersionVector([
-                TlsProtocolVersionFinal(TlsVersion.TLS1_1),
-                TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+                TlsProtocolVersion(TlsVersion.TLS1_1),
+                TlsProtocolVersion(TlsVersion.TLS1_2),
             ]))
         )
         self.assertEqual(
@@ -372,7 +371,7 @@ class TestTlsHandshakeServerHello(unittest.TestCase):
         self.server_hello_minimal_bytes = b''.join(self.server_hello_minimal_dict.values())
 
         self.server_hello_minimal = TlsHandshakeServerHello(
-            TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+            TlsProtocolVersion(TlsVersion.TLS1_2),
             TlsHandshakeHelloRandom(
                 datetime.datetime(2018, 8, 10, tzinfo=None),
                 TlsHandshakeHelloRandomBytes(bytearray(
@@ -416,7 +415,7 @@ class TestTlsHandshakeServerHello(unittest.TestCase):
 
         self.assertEqual(
             server_hello_minimal.protocol_version,
-            TlsProtocolVersionFinal(TlsVersion.TLS1_2)
+            TlsProtocolVersion(TlsVersion.TLS1_2)
         )
         self.assertEqual(
             server_hello_minimal.random,
@@ -439,7 +438,7 @@ class TestTlsHandshakeServerHello(unittest.TestCase):
         self.assertEqual(len(server_hello_extension.extensions), 2)
         self.assertEqual(
             server_hello_extension.extensions.get_item_by_type(TlsExtensionType.SUPPORTED_VERSIONS),
-            TlsExtensionSupportedVersionsServer(TlsProtocolVersionFinal(TlsVersion.TLS1_2))
+            TlsExtensionSupportedVersionsServer(TlsProtocolVersion(TlsVersion.TLS1_2))
         )
         self.assertEqual(
             server_hello_extension.extensions[1],
@@ -475,7 +474,7 @@ class TestTlsHandshakeHelloRetryRequest(unittest.TestCase):
 
         self.hello_retry_request_minimal = TlsHandshakeHelloRetryRequest(
             TlsCipherSuite.TLS_RSA_WITH_NULL_MD5,
-            TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+            TlsProtocolVersion(TlsVersion.TLS1_2),
             TlsHandshakeHelloRandom(
                 datetime.datetime(2018, 8, 10, tzinfo=None),
                 TlsHandshakeHelloRandomBytes(bytearray(
@@ -500,7 +499,7 @@ class TestTlsHandshakeHelloRetryRequest(unittest.TestCase):
 
         self.assertEqual(
             hello_retry_request_minimal.protocol_version,
-            TlsProtocolVersionFinal(TlsVersion.TLS1_2)
+            TlsProtocolVersion(TlsVersion.TLS1_2)
         )
         self.assertEqual(
             hello_retry_request_minimal.random_bytes,

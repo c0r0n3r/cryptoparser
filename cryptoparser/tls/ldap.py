@@ -9,7 +9,9 @@ import attr
 
 import asn1crypto.core
 
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptodatahub.common.exception import InvalidValue
+
+from cryptoparser.common.exception import NotEnoughData
 from cryptoparser.common.parse import ParsableBase
 
 

@@ -11,11 +11,13 @@ from collections import OrderedDict
 
 import dateutil.tz
 
-from cryptoparser.common.algorithm import Hash, Authentication
+from cryptodatahub.common.algorithm import Hash, Authentication
+from cryptodatahub.common.exception import InvalidValue
 
-from cryptoparser.common.exception import InvalidValue, NotEnoughData
+from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm
 
-from cryptoparser.ssh.ciphersuite import SshHostKeyAlgorithm
+from cryptoparser.common.exception import NotEnoughData
+
 from cryptoparser.ssh.key import (
     SshCertType,
     SshCertExtensionVector,
@@ -54,8 +56,8 @@ class TestPublicKeyBase(unittest.TestCase):
         self.assertEqual(context_manager.exception.bytes_needed, 4)
 
         with self.assertRaises(InvalidValue) as context_manager:
-            SshHostKeyRSA.parse_exact_size(b'\x00\x00\x00\x18' + b'non-existing-type-name')
-        self.assertEqual(context_manager.exception.value, b'non-existing-type-name')
+            SshHostKeyRSA.parse_exact_size(b'\x00\x00\x00\x16' + b'non-existing-type-name')
+        self.assertEqual(context_manager.exception.value, 'non-existing-type-name')
 
         with self.assertRaises(NotImplementedError):
             SshHostKeyRSA.get_digest(Hash.MD4, b'')

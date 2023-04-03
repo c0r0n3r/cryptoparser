@@ -9,23 +9,25 @@ import random
 import attr
 import six
 
-from cryptoparser.common.base import (
-    VariantParsable,
-    VectorParamString,
-    VectorString,
-)
-from cryptoparser.common.classes import LanguageTag
-from cryptoparser.common.exception import InvalidValue, InvalidType, TooMuchData
-from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ParserText, ComposerText
-from cryptoparser.common.utils import bytes_to_hex_string
-
-from cryptoparser.ssh.ciphersuite import (
+from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.ssh.algorithm import (
     SshKexAlgorithm,
     SshHostKeyAlgorithm,
     SshEncryptionAlgorithm,
     SshMacAlgorithm,
     SshCompressionAlgorithm,
 )
+
+from cryptoparser.common.base import (
+    VariantParsable,
+    VectorParamString,
+    VectorString,
+)
+from cryptoparser.common.classes import LanguageTag
+from cryptoparser.common.exception import InvalidType, TooMuchData
+from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ParserText, ComposerText
+from cryptoparser.common.utils import bytes_to_hex_string
+
 from cryptoparser.ssh.key import SshPublicKeyBase, SshHostPublicKeyVariant
 from cryptoparser.ssh.version import (
     SshProtocolVersion,

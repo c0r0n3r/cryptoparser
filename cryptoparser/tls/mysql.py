@@ -6,9 +6,11 @@ import six
 
 import attr
 
+from cryptodatahub.common.exception import InvalidValue
+
 from cryptoparser.common.base import Serializable, OneByteEnumComposer, OneByteEnumParsable
 from cryptoparser.common.parse import ByteOrder, ComposerBinary, ParsableBase, ParserBinary
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptoparser.common.exception import NotEnoughData
 
 
 class MySQLVersion(enum.IntEnum):

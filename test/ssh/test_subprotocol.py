@@ -6,16 +6,18 @@ import unittest
 
 import six
 
-from cryptoparser.common.classes import LanguageTag
-from cryptoparser.common.exception import TooMuchData, InvalidValue
-
-from cryptoparser.ssh.ciphersuite import (
+from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.ssh.algorithm import (
     SshCompressionAlgorithm,
     SshEncryptionAlgorithm,
     SshHostKeyAlgorithm,
     SshKexAlgorithm,
     SshMacAlgorithm,
 )
+
+from cryptoparser.common.classes import LanguageTag
+from cryptoparser.common.exception import TooMuchData
+
 from cryptoparser.ssh.key import SshHostKeyRSA
 from cryptoparser.ssh.subprotocol import (
     SshDHGroupExchangeInit,

@@ -2,7 +2,9 @@
 
 import unittest
 
-from cryptoparser.common.exception import InvalidValue, NotEnoughData
+from cryptodatahub.common.exception import InvalidValue
+
+from cryptoparser.common.exception import NotEnoughData
 
 from cryptoparser.tls.mysql import (
     MySQLRecord,

@@ -4,7 +4,9 @@ import unittest
 
 import six
 
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptodatahub.common.exception import InvalidValue
+
+from cryptoparser.common.exception import NotEnoughData
 
 from cryptoparser.tls.subprotocol import TlsAlertMessage, TlsAlertLevel, TlsAlertDescription
 

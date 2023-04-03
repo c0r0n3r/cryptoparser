@@ -16,7 +16,9 @@ import attr
 import six
 
 
-from cryptoparser.common.algorithm import Hash
+from cryptodatahub.common.algorithm import Hash
+from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm
+
 from cryptoparser.common.base import (
     FourByteEnumComposer,
     FourByteEnumParsable,
@@ -32,8 +34,6 @@ from cryptoparser.common.base import (
 from cryptoparser.common.exception import InvalidType, NotEnoughData
 from cryptoparser.common.key import PublicKey
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ComposerText
-
-from cryptoparser.ssh.ciphersuite import SshHostKeyAlgorithm
 
 
 @attr.s
@@ -104,8 +104,7 @@ class SshPublicKeyBase(PublicKey):
             raise NotEnoughData(cls._HEADER_SIZE - len(parsable))
 
         parser = ParserBinary(parsable)
-
-        parser.parse_parsable('host_key_algorithm', SshHostKeyAlgorithm, 4)
+        parser.parse_string('host_key_algorithm', 4, 'ascii', SshHostKeyAlgorithm.from_code)
 
         if parser['host_key_algorithm'] not in cls.get_host_key_algorithms():
             raise InvalidType()
@@ -115,7 +114,7 @@ class SshPublicKeyBase(PublicKey):
     def _compose_host_key_algorithm(self):
         composer = ComposerBinary()
 
-        host_key_algorithm_bytes = self.host_key_algorithm.compose()
+        host_key_algorithm_bytes = self.host_key_algorithm.value.code.encode('ascii')
         composer.compose_bytes(host_key_algorithm_bytes, 4)
 
         return composer
@@ -386,7 +385,7 @@ class SshCertSignature(ParsableBase):
     def _parse(cls, parsable):
         parser = ParserBinary(parsable)
 
-        parser.parse_parsable('signature_type', SshHostKeyAlgorithm, 4)
+        parser.parse_string('signature_type', 4, 'ascii', SshHostKeyAlgorithm.from_code)
         parser.parse_bytes('signature_data', 4)
 
         return cls(**parser), parser.parsed_length
@@ -394,7 +393,7 @@ class SshCertSignature(ParsableBase):
     def compose(self):
         composer = ComposerBinary()
 
-        composer.compose_parsable(self.signature_type, 4)
+        composer.compose_string(self.signature_type.value.code, 'ascii', 4)
         composer.compose_bytes(self.signature_data, 4)
 
         return composer.composed

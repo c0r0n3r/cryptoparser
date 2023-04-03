@@ -8,6 +8,8 @@ import unittest
 import datetime
 import dateutil
 
+from cryptodatahub.common.exception import InvalidValue
+
 from cryptoparser.httpx.header import (
     HttpHeaderFields,
     HttpHeaderFieldAge,
@@ -40,8 +42,6 @@ from cryptoparser.httpx.header import (
     HttpHeaderXContentTypeOptions,
     HttpHeaderXFrameOptions,
 )
-
-from cryptoparser.common.exception import InvalidValue
 
 from .classes import TestCasesBasesHttpHeader
 

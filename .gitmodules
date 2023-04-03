@@ -1,0 +1,3 @@
+[submodule "submodules/cryptodatahub"]
+	path = submodules/cryptodatahub
+	url = https://gitlab.com/coroner/cryptodatahub.git

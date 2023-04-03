@@ -5,7 +5,8 @@ import hashlib
 
 import six
 
-from cryptoparser.common.algorithm import Hash
+from cryptodatahub.common.algorithm import Hash
+
 from cryptoparser.common.base import Serializable
 
 

@@ -4,11 +4,13 @@ import unittest
 
 import six
 
-from cryptoparser.common.exception import NotEnoughData, InvalidValue
+from cryptodatahub.common.exception import InvalidValue
+
+from cryptoparser.common.exception import NotEnoughData
 
 from cryptoparser.tls.record import TlsRecord
 from cryptoparser.tls.subprotocol import TlsChangeCipherSpecMessage, TlsChangeCipherSpecType, TlsContentType
-from cryptoparser.tls.version import TlsProtocolVersionFinal, TlsVersion
+from cryptoparser.tls.version import TlsProtocolVersion, TlsVersion
 
 
 class TestRecord(unittest.TestCase):
@@ -39,7 +41,7 @@ class TestRecord(unittest.TestCase):
             b'\x14\x03\x03\x00\x01\x01',
             TlsRecord(
                 TlsChangeCipherSpecMessage().compose(),
-                TlsProtocolVersionFinal(TlsVersion.TLS1_2),
+                TlsProtocolVersion(TlsVersion.TLS1_2),
                 TlsContentType.CHANGE_CIPHER_SPEC,
             ).compose()
         )

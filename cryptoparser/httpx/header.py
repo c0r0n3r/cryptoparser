@@ -9,6 +9,8 @@ import six
 
 import attr
 
+from cryptodatahub.common.exception import InvalidValue
+
 from cryptoparser.common.base import (
     ListParamParsable,
     ListParsable,
@@ -16,7 +18,7 @@ from cryptoparser.common.base import (
     StringEnumCaseInsensitiveParsable,
     VariantParsable,
 )
-from cryptoparser.common.exception import InvalidType, InvalidValue
+from cryptoparser.common.exception import InvalidType
 from cryptoparser.common.parse import ParserText, ParsableBase, ParserCRLF, ComposerText
 from cryptoparser.common.utils import get_leaf_classes
 

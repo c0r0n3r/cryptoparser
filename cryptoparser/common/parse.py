@@ -14,7 +14,10 @@ import dateutil
 import dateutil.parser
 import dateutil.tz
 
-from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidType, InvalidValue
+from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.types import CryptoDataEnumBase, CryptoDataEnumCodedBase
+
+from cryptoparser.common.exception import InvalidType, NotEnoughData, TooMuchData
 import cryptoparser.common.utils
 
 
@@ -276,6 +279,8 @@ class ParserText(ParserBase):
         try:
             if not isinstance(item_class, type):
                 item = item_class(six.ensure_text(self._parsable[item_offset:item_end], self._encoding))
+            elif issubclass(item_class, CryptoDataEnumCodedBase):
+                item = item_class.from_code(six.ensure_text(self._parsable[item_offset:item_end], self._encoding))
             elif issubclass(item_class, ParsableBaseNoABC):
                 item, parsed_length = item_class.parse_immutable(self._parsable[item_offset:item_end])
                 item_end = item_offset + parsed_length
@@ -738,8 +743,12 @@ class ComposerText(ComposerBase):
     def compose_string_array(self, value, separator=','):
         self._compose_string_array(value, encoding=self._encoding, separator=separator)
 
+    @staticmethod
+    def _compose_parsable(value):
+        return value.compose()
+
     def compose_parsable(self, value):
-        self._composed += value.compose()
+        self._composed += self._compose_parsable(value)
 
     def compose_parsable_array(self, values, separator=',', fallback_class=None):
         separator = six.ensure_binary(separator, self._encoding)
@@ -747,7 +756,9 @@ class ComposerText(ComposerBase):
         composed_items = []
         for item in values:
             if isinstance(item, (ComposerBase, ParsableBase, ParsableBaseNoABC)):
-                composed_item = item.compose()
+                composed_item = self._compose_parsable(item)
+            elif isinstance(item, CryptoDataEnumBase):
+                composed_item = six.ensure_binary(item.value.code, self._encoding)
             elif fallback_class is not None and isinstance(item, fallback_class):
                 composed_item = six.ensure_binary(item, self._encoding)
             else:
@@ -804,8 +815,17 @@ class ComposerBinary(ComposerBase):
     def compose_numeric(self, value, size):
         self._compose_numeric_array([value, ], size)
 
+    def compose_numeric_enum_coded(self, value):
+        self.compose_numeric_array_enum_coded([value, ])
+
     def compose_numeric_array(self, values, item_size):
         self._compose_numeric_array(values, item_size)
+
+    def compose_numeric_array_enum_coded(self, values):
+        if not values:
+            return
+
+        self._compose_numeric_array(map(lambda value: value.value.code, values), values[0].value.get_code_size())
 
     def compose_numeric_flags(self, values, item_size, shift_right=0):
         flag = 0
@@ -874,6 +894,9 @@ class ComposerBinary(ComposerBase):
 
         self.compose_raw(value)
         self.compose_raw(b'\x00')
+
+    def compose_string_enum_coded(self, value, item_size):
+        self.compose_string(value.value.code, 'ascii', item_size)
 
     @property
     def composed_bytes(self):
