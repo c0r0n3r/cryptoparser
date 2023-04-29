@@ -58,29 +58,29 @@ Only features that cannot be or difficultly implemented by some of the most popu
 
 -  generic
 
-  1. supports
-     `Generate Random Extensions And Sustain Extensibility <https://tools.ietf.org/html/draft-ietf-tls-grease-04>`__
-     (GREASE) values for
+   1. supports
+      `Generate Random Extensions And Sustain Extensibility <https://tools.ietf.org/html/draft-ietf-tls-grease-04>`__
+      (GREASE) values for
 
-    -  protocol version
-    -  extension type
-    -  ciphers suite
-    -  signature algorithms
-    -  named group
+      -  protocol version
+      -  extension type
+      -  ciphers suite
+      -  signature algorithms
+      -  named group
 
-  2. supports easy
-     `JA3 fingerprint <https://engineering.salesforce.com/tls-fingerprinting-with-ja3-and-ja3s-247362855967>`__
-     generation
+   2. supports easy
+      `JA3 fingerprint <https://engineering.salesforce.com/tls-fingerprinting-with-ja3-and-ja3s-247362855967>`__
+      generation
 
 -  protocol versions
 
-  1. support not only the final, but also draft versions
+   1. support not only the final, but also draft versions
 
 -  cipher suites
 
-  1. supports each cipher suites discussed on `ciphersuite.info <https://ciphersuite.info>`__
-  2. supports `GOST <https://en.wikipedia.org/wiki/GOST>`__ (national standards of the Russian Federation and CIS
-     countries) cipher suites
+   1. supports each cipher suites discussed on `ciphersuite.info <https://ciphersuite.info>`__
+   2. supports `GOST <https://en.wikipedia.org/wiki/GOST>`__ (national standards of the Russian Federation and CIS
+      countries) cipher suites
 
 -  application layer
 
@@ -91,11 +91,11 @@ Secure Shell (SSH)
 
 -  cipher suites
 
-  1. identifies as much encryption algorithms as possible (more than 200, compared to 70+ currently supported by
-     OpenSSH)
-  2. supports `HASSH fingerprint <https://engineering.salesforce.com/open-sourcing-hassh-abed3ae5044c/>`__ calculation
-     (#96)
+   1. identifies as much encryption algorithms as possible (more than 200, compared to 70+ currently supported by
+      OpenSSH)
+   2. supports `HASSH fingerprint <https://engineering.salesforce.com/open-sourcing-hassh-abed3ae5044c/>`__ calculation
+      (#96)
 
 -  public keys
 
-  1. supports host keys and cretificates (both ``V00`` and ``V01``)
+   1. supports host keys and cretificates (both ``V00`` and ``V01``)
