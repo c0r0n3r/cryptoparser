@@ -82,6 +82,10 @@ Only features that cannot be or difficultly implemented by some of the most popu
   2. supports `GOST <https://en.wikipedia.org/wiki/GOST>`__ (national standards of the Russian Federation and CIS
      countries) cipher suites
 
+-  application layer
+
+   - supports TLS handshake-related `OpenVPN <https://en.wikipedia.org/wiki/OpenVPN>`__ messages
+
 Secure Shell (SSH)
 """"""""""""""""""
 
