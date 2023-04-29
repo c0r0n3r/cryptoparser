@@ -94,7 +94,6 @@ Secure Shell (SSH)
    1. identifies as much encryption algorithms as possible (more than 200, compared to 70+ currently supported by
       OpenSSH)
    2. supports `HASSH fingerprint <https://engineering.salesforce.com/open-sourcing-hassh-abed3ae5044c/>`__ calculation
-      (#96)
 
 -  public keys
 
