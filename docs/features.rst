@@ -84,7 +84,10 @@ Only features that cannot be or difficultly implemented by some of the most popu
 
 -  application layer
 
+   - supports TLS handshake-related `MySQL <https://en.wikipedia.org/wiki/MySQL>`__ messages
    - supports TLS handshake-related `OpenVPN <https://en.wikipedia.org/wiki/OpenVPN>`__ messages
+   - supports TLS handshake-related `PostgreSQL <https://en.wikipedia.org/wiki/PostgreSQL>`__ messages
+   - supports TLS handshake-related `RDP <https://en.wikipedia.org/wiki/Remote_Desktop_Protocol`__ messages
 
 Secure Shell (SSH)
 """"""""""""""""""
