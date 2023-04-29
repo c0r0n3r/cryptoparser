@@ -78,7 +78,7 @@ Other
 
 -  TLS (``tls``)
 
-   -  protocol item classes for RDP support (#44)
+   -  protocol item classes for PostgreSQL support (#44)
 
 0.7.0 - 2021-09-02
 ------------------
