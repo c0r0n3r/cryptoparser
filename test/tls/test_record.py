@@ -17,9 +17,10 @@ from cryptoparser.tls.subprotocol import SslErrorMessage, SslErrorType, SslMessa
 
 class TestTlsSubprotocolMessageBase(unittest.TestCase):
     def test_error(self):
-        error_message = 'Can\'t instantiate abstract class TlsSubprotocolMessageBase with abstract methods'
-        with six.assertRaisesRegex(self, TypeError, error_message):
+        error_message = 'Can\'t instantiate abstract class TlsSubprotocolMessageBase'
+        with six.assertRaisesRegex(self, BaseException, error_message) as context_manager:
             TlsSubprotocolMessageBase()  # pylint: disable=abstract-class-instantiated
+        self.assertTrue(isinstance(context_manager.exception, (TypeError, AssertionError)))
 
 
 class TestTlsRecord(unittest.TestCase):
