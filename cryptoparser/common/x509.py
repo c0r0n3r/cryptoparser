@@ -1,18 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import collections
 import datetime
 import enum
 
-from collections import OrderedDict
-
 import attr
 
-from cryptodatahub.common.stores import (
-    CertificateTransparencyLog,
-    CertificateTransparencyLogParamsBase,
-    CertificateTransparencyLogUnknown,
-)
+from cryptodatahub.common.stores import CertificateTransparencyLog, CertificateTransparencyLogParamsBase
 
 from cryptoparser.common.base import (
     Opaque,
@@ -60,7 +53,11 @@ class SignedCertificateTimestamp(ParsableBase, Serializable):
         validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(CtExtensions))
     )
     signature_algorithm = attr.ib(validator=attr.validators.in_(TlsSignatureAndHashAlgorithm))
-    signature = attr.ib(converter=CtSignature, validator=attr.validators.instance_of(CtSignature))
+    signature = attr.ib(
+        converter=CtSignature,
+        validator=attr.validators.instance_of(CtSignature),
+        metadata={'human_friendly': False},
+    )
 
     @classmethod
     def _parse(cls, parsable):
@@ -92,19 +89,6 @@ class SignedCertificateTimestamp(ParsableBase, Serializable):
         header_composer.compose_numeric(len(body_composer.composed_bytes), 2)
 
         return header_composer.composed_bytes + body_composer.composed_bytes
-
-    def _as_markdown(self, level):
-        ct_log = [('ID', self.log.log_id)]
-        if not isinstance(self.log, CertificateTransparencyLogUnknown):
-            ct_log = [('Description', self.log.description)] + ct_log
-
-        return self._markdown_result(OrderedDict([
-            ('version', self.version.name),
-            ('log', collections.OrderedDict(ct_log)),
-            ('timestamp', self.timestamp),
-            ('extensions', self.extensions),
-            ('signature_algorithm', self.signature_algorithm),
-        ]), level)
 
 
 class SignedCertificateTimestampList(VectorParsable):

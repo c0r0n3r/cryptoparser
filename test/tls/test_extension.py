@@ -451,8 +451,11 @@ class TestExtensionSignedCertificateTimestampServer(unittest.TestCase):
         self.assertEqual(scts[1].as_markdown(), '\n'.join([
             '* Version: V1',
             '* Log:',
-            '    * Description: Akamai CT Log',
             '    * ID: lgbALGkAM6odFF9ZxuJkjQVJ8N+WqrjbkVpw2OzzkKU=',
+            '    * Description: Akamai CT Log',
+            '    * Log State:',
+            '        * State Type: REJECTED',
+            '        * Timestamp: 2015-11-27 15:37:00+00:00',
             '* Timestamp: 1970-01-01 00:00:00.001000+00:00',
             '* Extensions: -',
             '* Signature Algorithm: none with no encryption',
