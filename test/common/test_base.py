@@ -557,7 +557,6 @@ class TestSerializable(unittest.TestCase):
         self.assertEqual(
             SerializableSimpleTypes().as_json(),
             '{' +
-            '"UPPER": "upper", ' +
             '"bool_value": false, ' +
             '"bytearray_value": "00:01:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D:0E:0F", ' +
             '"float_value": 1.0, ' +
@@ -568,7 +567,22 @@ class TestSerializable(unittest.TestCase):
         )
         self.assertEqual(
             SerializableIterables().as_json(),
-            '{"dict_value": {"value": 1}, "list_value": ["value"], "tuple_value": ["value"]}'
+            '{' +
+            '"dict_key": ' +
+            '{' +
+            '"1": "int", ' +
+            '"str": "string", ' +
+            '"FIRST": "enum"' +
+            '}, ' +
+            '"dict_value": ' +
+            '{' +
+            '"int": 1, ' +
+            '"string": "str", ' +
+            '"enum": {"FIRST": "1"}' +
+            '}, ' +
+            '"list_value": ["value"], ' +
+            '"tuple_value": ["value"]' +
+            '}'
         )
         self.assertEqual(
             SerializableEnums().as_json(),
@@ -619,7 +633,6 @@ class TestSerializable(unittest.TestCase):
         self.assertEqual(
             SerializableSimpleTypes().as_markdown(),
             '\n'.join([
-                '* UPPER: upper',
                 '* Bool Value: no',
                 '* Bytearray Value: 00:01:01:02:03:04:05:06:07:08:09:0A:0B:0C:0D:0E:0F',
                 '* Float Value: 1.0',
@@ -632,8 +645,14 @@ class TestSerializable(unittest.TestCase):
         self.assertEqual(
             SerializableIterables().as_markdown(),
             '\n'.join([
+                '* Dict Key:',
+                '    * 1: int',
+                '    * Str: string',
+                '    * FIRST: enum',
                 '* Dict Value:',
-                '    * Value: 1',
+                '    * Int: 1',
+                '    * String: str',
+                '    * Enum: FIRST',
                 '* List Value:',
                 '    1. value',
                 '* Tuple Value:',

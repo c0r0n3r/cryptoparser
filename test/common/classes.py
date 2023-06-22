@@ -231,7 +231,6 @@ class TestObject(object):
 
 class SerializableSimpleTypes(Serializable):  # pylint: disable=too-many-instance-attributes
     def __init__(self):
-        self.UPPER = six.u('upper')  # pylint: disable=invalid-name
         self.int_value = 1
         self.float_value = 1.0
         self.bool_value = False
@@ -242,7 +241,16 @@ class SerializableSimpleTypes(Serializable):  # pylint: disable=too-many-instanc
 
 class SerializableIterables(Serializable):
     def __init__(self):
-        self.dict_value = dict({'value': 1})
+        self.dict_key = collections.OrderedDict([
+            (1, 'int'),
+            ('str', 'string'),
+            (SerializableStringEnum.FIRST, 'enum'),
+        ])
+        self.dict_value = collections.OrderedDict([
+            ('int', 1),
+            ('string', 'str'),
+            ('enum', SerializableStringEnum.FIRST),
+        ])
         self.list_value = list(['value', ])
         self.tuple_value = tuple(['value', ])
 

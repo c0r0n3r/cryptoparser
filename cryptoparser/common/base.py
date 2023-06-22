@@ -81,7 +81,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             keys = sorted(filter(lambda key: not key.startswith('_'), dict_value.keys()))
 
         result = OrderedDict([
-            (str(key), dict_value[key])
+            (key, dict_value[key])
             for key in keys
         ])
 
@@ -135,12 +135,13 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         name_dict = {}
         fields_dict = attr.fields_dict(type(obj)) if attr.has(type(obj)) else {}
         for name in dict_value:
-            if name in fields_dict and 'human_readable_name' in fields_dict[name].metadata:
-                human_readable_name = fields_dict[name].metadata['human_readable_name']
+            if isinstance(name, six.string_types):
+                if name in fields_dict and 'human_readable_name' in fields_dict[name].metadata:
+                    human_readable_name = fields_dict[name].metadata['human_readable_name']
+                else:
+                    human_readable_name = ' '.join(name.split('_')).title()
             else:
                 _, human_readable_name = cls._markdown_result(name)
-                if not human_readable_name.isupper():
-                    human_readable_name = ' '.join(name.split('_')).title()
             name_dict[name] = human_readable_name
 
         return name_dict
@@ -192,7 +193,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
 
     @staticmethod
     def _markdown_is_directly_printable(obj):
-        return isinstance(obj, six.string_types + six.integer_types + (float, ))
+        return not isinstance(obj, enum.Enum) and isinstance(obj, six.string_types + six.integer_types + (float, ))
 
     @classmethod
     def _markdown_result(cls, obj, level=0):
