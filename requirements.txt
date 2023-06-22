@@ -1,4 +1,5 @@
 asn1crypto
+attrs>=19.1,<22.0.1
 cryptodatahub>=0.8.5
 python-dateutil
 py2-ipaddress;python_version<"3.4"

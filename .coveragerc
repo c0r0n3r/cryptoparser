@@ -1,5 +1,6 @@
 [run]
 source = cryptoparser
+omit = cryptoparser/__setup__.py
 
 [report]
 exclude_lines =
