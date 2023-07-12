@@ -196,7 +196,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         return not isinstance(obj, enum.Enum) and isinstance(obj, six.string_types + six.integer_types + (float, ))
 
     @classmethod
-    def _markdown_result(cls, obj, level=0):
+    def _markdown_result(cls, obj, level=0):  # pylint: disable=too-many-branches
         if obj is None:
             result = False, 'n/a'
         elif isinstance(obj, bool):
@@ -212,6 +212,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
                 return False, str(obj.value)
 
             return False, obj.name
+        elif attr.has(type(obj)):
+            result = cls._markdown_result_complex(obj, level)
         elif hasattr(obj, '_asdict'):
             result = cls._markdown_result(obj._asdict(), level)
         elif hasattr(obj, '__dict__') or isinstance(obj, dict):
