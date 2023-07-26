@@ -16,8 +16,15 @@ import attr
 import six
 
 
-from cryptodatahub.common.algorithm import Hash
-from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm
+from cryptodatahub.common.algorithm import Authentication, Hash
+from cryptodatahub.common.key import (
+    PublicKey,
+    PublicKeyParamsDsa,
+    PublicKeyParamsEcdsa,
+    PublicKeyParamsEddsa,
+    PublicKeyParamsRsa,
+)
+from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm, SshEllipticCurveIdentifier
 
 from cryptoparser.common.base import (
     FourByteEnumComposer,
@@ -32,15 +39,17 @@ from cryptoparser.common.base import (
     VectorString,
 )
 from cryptoparser.common.exception import InvalidType, NotEnoughData
-from cryptoparser.common.key import PublicKey
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ComposerText
 
 
 @attr.s
-class SshPublicKeyBase(PublicKey):
+class SshPublicKeyBase(object):
     host_key_algorithm = attr.ib(
         converter=SshHostKeyAlgorithm,
         validator=attr.validators.instance_of(SshHostKeyAlgorithm)
+    )
+    public_key = attr.ib(
+        validator=attr.validators.instance_of(PublicKey)
     )
 
     _HEADER_SIZE = 4
@@ -50,22 +59,13 @@ class SshPublicKeyBase(PublicKey):
         raise NotImplementedError()
 
     @property
-    def key_type(self):
-        return self.host_key_algorithm.value.authentication
-
-    @property
-    @abc.abstractmethod
-    def key_size(self):
-        raise NotImplementedError()
-
-    @property
     @abc.abstractmethod
     def key_bytes(self):
         raise NotImplementedError()
 
     @classmethod
     def _fingerprint(cls, hash_type, key_bytes, prefix):
-        digest = cls.get_digest(hash_type, key_bytes)
+        digest = PublicKey.get_digest(hash_type, key_bytes)
 
         if hash_type == Hash.MD5:
             fingerprint = ':'.join(textwrap.wrap(six.ensure_text(binascii.hexlify(digest), 'ascii'), 2))
@@ -86,9 +86,9 @@ class SshPublicKeyBase(PublicKey):
         known_hosts = six.ensure_text(base64.b64encode(self.key_bytes), 'ascii')
 
         key_dict = OrderedDict([
-            ('key_type', self.key_type),
+            ('key_type', self.public_key.key_type),
             ('key_name', self.host_key_algorithm),
-            ('key_size', self.key_size),
+            ('key_size', self.public_key.key_size),
             ('fingerprints', self.fingerprints),
             ('known_hosts', known_hosts),
         ])
@@ -126,11 +126,6 @@ class SshHostKeyBase(SshPublicKeyBase):
     def get_host_key_algorithms(cls):
         raise NotImplementedError()
 
-    @property
-    @abc.abstractmethod
-    def key_size(self):
-        raise NotImplementedError()
-
 
 class SshHostKeyParserBase(ParsableBase):
     @classmethod
@@ -144,7 +139,7 @@ class SshHostKeyParserBase(ParsableBase):
 
     @classmethod
     @abc.abstractmethod
-    def _parse_host_key_params(cls, parser):
+    def _parse_host_key(cls, parser):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -154,10 +149,9 @@ class SshHostKeyParserBase(ParsableBase):
     @classmethod
     def _parse(cls, parsable):
         parser = cls._parse_host_key_algorithm(parsable)
+        host_key = cls._parse_host_key(parser)
 
-        cls._parse_host_key_params(parser)
-
-        return cls(**parser), parser.parsed_length
+        return cls(parser['host_key_algorithm'], host_key), parser.parsed_length
 
     def compose(self):
         composer = self._compose_host_key_algorithm()
@@ -169,23 +163,6 @@ class SshHostKeyParserBase(ParsableBase):
 
 @attr.s
 class SshHostKeyDSSBase(SshHostKeyBase):
-    p = attr.ib(
-        validator=attr.validators.instance_of(six.integer_types),
-        metadata={'human_readable_name': 'p', 'human_friendly': False},
-    )
-    g = attr.ib(
-        validator=attr.validators.instance_of(six.integer_types),
-        metadata={'human_readable_name': 'g', 'human_friendly': False},
-    )
-    q = attr.ib(
-        validator=attr.validators.instance_of(six.integer_types),
-        metadata={'human_readable_name': 'q', 'human_friendly': False},
-    )
-    y = attr.ib(
-        validator=attr.validators.instance_of(six.integer_types),
-        metadata={'human_readable_name': 'y', 'human_friendly': False},
-    )
-
     @property
     @abc.abstractmethod
     def key_bytes(self):
@@ -201,18 +178,27 @@ class SshHostKeyDSSBase(SshHostKeyBase):
             SshHostKeyAlgorithm.SSH_DSS_SHA512_SSH_COM,
         ]
 
-    @property
-    def key_size(self):
-        return (self.p.bit_length() + 7) // 8 * 8
-
     @classmethod
-    def _parse_host_key_params(cls, parser):
+    def _parse_host_key(cls, parser):
         for param_name in ['p', 'q', 'g', 'y']:
             parser.parse_ssh_mpint(param_name)
 
-    def _compose_host_key_params(self, composer):
+        public_key = PublicKey.from_params(PublicKeyParamsDsa(
+            prime=parser['p'],
+            generator=parser['g'],
+            order=parser['q'],
+            public_key_value=parser['y'],
+        ))
+
         for param_name in ['p', 'q', 'g', 'y']:
-            value = getattr(self, param_name)
+            del parser[param_name]
+
+        return public_key
+
+    def _compose_host_key_params(self, composer):
+        params = self.public_key.params
+        for param_name in ['prime', 'order', 'generator', 'public_key_value']:
+            value = getattr(params, param_name)
             composer.compose_ssh_mpint(value)
 
     def host_key_asdict(self):
@@ -236,15 +222,6 @@ class SshHostKeyDSS(SshHostKeyDSSBase, SshHostKeyParserBase):
 
 @attr.s
 class SshHostKeyRSABase(SshHostKeyBase):
-    e = attr.ib(
-        validator=attr.validators.instance_of(six.integer_types),
-        metadata={'human_readable_name': 'e', 'human_friendly': False},
-    )
-    n = attr.ib(
-        validator=attr.validators.instance_of(six.integer_types),
-        metadata={'human_readable_name': 'n', 'human_friendly': False},
-    )
-
     @property
     @abc.abstractmethod
     def key_bytes(self):
@@ -260,18 +237,26 @@ class SshHostKeyRSABase(SshHostKeyBase):
             SshHostKeyAlgorithm.SSH_RSA_SHA512_SSH_COM,
         ]
 
-    @property
-    def key_size(self):
-        return (self.n.bit_length() + 7) // 8 * 8
-
     @classmethod
-    def _parse_host_key_params(cls, parser):
+    def _parse_host_key(cls, parser):
         parser.parse_ssh_mpint('e')
         parser.parse_ssh_mpint('n')
 
+        public_key = PublicKey.from_params(PublicKeyParamsRsa(
+            modulus=parser['n'],
+            public_exponent=parser['e'],
+        ))
+
+        del parser['e']
+        del parser['n']
+
+        return public_key
+
     def _compose_host_key_params(self, composer):
-        composer.compose_ssh_mpint(self.e)
-        composer.compose_ssh_mpint(self.n)
+        params = self.public_key.params
+
+        composer.compose_ssh_mpint(params.public_exponent)
+        composer.compose_ssh_mpint(params.modulus)
 
 
 @attr.s
@@ -283,9 +268,6 @@ class SshHostKeyRSA(SshHostKeyRSABase, SshHostKeyParserBase):
 
 @attr.s
 class SshHostKeyECDSABase(SshHostKeyBase):
-    curve_name = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    curve_data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
-
     @property
     @abc.abstractmethod
     def key_bytes(self):
@@ -299,18 +281,31 @@ class SshHostKeyECDSABase(SshHostKeyBase):
             SshHostKeyAlgorithm.ECDSA_SHA2_NISTP521,
         ]
 
-    @property
-    def key_size(self):
-        return int(self.curve_name[len('nistp'):])
-
     @classmethod
-    def _parse_host_key_params(cls, parser):
-        parser.parse_string('curve_name', 4, 'ascii')
+    def _parse_host_key(cls, parser):
+        parser.parse_string('curve_identifier', 4, 'ascii', SshEllipticCurveIdentifier.from_code)
         parser.parse_bytes('curve_data', 4)
 
+        public_key = PublicKey.from_params(PublicKeyParamsEcdsa.from_octet_bit_string(
+            parser['curve_identifier'].value.named_group,
+            parser['curve_data'],
+        ))
+
+        del parser['curve_identifier']
+        del parser['curve_data']
+
+        return public_key
+
     def _compose_host_key_params(self, composer):
-        composer.compose_string(self.curve_name, 'ascii', 4)
-        composer.compose_bytes(self.curve_data, 4)
+        named_group = self.public_key.params.named_group
+        for elliptic_curve_identifier in SshEllipticCurveIdentifier:
+            if elliptic_curve_identifier.value.named_group == named_group:
+                composer.compose_string(elliptic_curve_identifier.value.code, 'ascii', 4)
+                break
+        else:
+            raise NotImplementedError(named_group)
+
+        composer.compose_bytes(self.public_key.params.octet_bit_string, 4)
 
 
 @attr.s
@@ -322,8 +317,6 @@ class SshHostKeyECDSA(SshHostKeyECDSABase, SshHostKeyParserBase):
 
 @attr.s
 class SshHostKeyEDDSABase(SshHostKeyBase):
-    key_data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
-
     @property
     @abc.abstractmethod
     def key_bytes(self):
@@ -333,16 +326,21 @@ class SshHostKeyEDDSABase(SshHostKeyBase):
     def get_host_key_algorithms(cls):
         return [SshHostKeyAlgorithm.SSH_ED25519, ]
 
-    @property
-    def key_size(self):
-        return len(self.key_data) * 8
-
     @classmethod
-    def _parse_host_key_params(cls, parser):
+    def _parse_host_key(cls, parser):
         parser.parse_bytes('key_data', 4)
 
+        public_key = PublicKey.from_params(PublicKeyParamsEddsa(
+            key_type=Authentication.ED25519,
+            key_data=parser['key_data'],
+        ))
+
+        del parser['key_data']
+
+        return public_key
+
     def _compose_host_key_params(self, composer):
-        composer.compose_bytes(self.key_data, 4)
+        composer.compose_bytes(self.public_key.params.key_data, 4)
 
 
 @attr.s
@@ -725,7 +723,7 @@ class SshCertificateBase(object):
 
     @classmethod
     @abc.abstractmethod
-    def _parse_host_key_params(cls, parser):
+    def _parse_host_key(cls, parser):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -769,7 +767,7 @@ class SshHostCertificateV00Base(ParsableBase, SshCertificateBase):  # pylint: di
 
     @classmethod
     @abc.abstractmethod
-    def _parse_host_key_params(cls, parser):
+    def _parse_host_key(cls, parser):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -809,10 +807,11 @@ class SshHostCertificateV00Base(ParsableBase, SshCertificateBase):  # pylint: di
     def _parse(cls, parsable):
         parser = cls._parse_host_key_algorithm(parsable)
 
-        cls._parse_host_key_params(parser)
+        public_key = cls._parse_host_key(parser)
+
         cls._parse_host_cert_params(parser)
 
-        return cls(**parser), parser.parsed_length
+        return cls(public_key=public_key, **parser), parser.parsed_length
 
     def compose(self):
         composer = self._compose_host_key_algorithm()
@@ -938,7 +937,7 @@ class SshHostCertificateV01Base(ParsableBase, SshCertificateBase):  # pylint: di
 
     @classmethod
     @abc.abstractmethod
-    def _parse_host_key_params(cls, parser):
+    def _parse_host_key(cls, parser):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -982,10 +981,11 @@ class SshHostCertificateV01Base(ParsableBase, SshCertificateBase):  # pylint: di
 
         parser.parse_bytes('nonce', 4)
 
-        cls._parse_host_key_params(parser)
+        public_key = cls._parse_host_key(parser)
+
         cls._parse_host_cert_params(parser)
 
-        return cls(**parser), parser.parsed_length
+        return cls(public_key=public_key, **parser), parser.parsed_length
 
     def compose(self):
         composer = self._compose_host_key_algorithm()

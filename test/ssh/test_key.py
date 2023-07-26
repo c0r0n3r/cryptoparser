@@ -11,7 +11,14 @@ from collections import OrderedDict
 
 import dateutil.tz
 
-from cryptodatahub.common.algorithm import Hash, Authentication
+from cryptodatahub.common.algorithm import Authentication, Hash, NamedGroup
+from cryptodatahub.common.key import (
+    PublicKey,
+    PublicKeyParamsDsa,
+    PublicKeyParamsEcdsa,
+    PublicKeyParamsEddsa,
+    PublicKeyParamsRsa,
+)
 from cryptodatahub.common.exception import InvalidValue
 
 from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm
@@ -59,9 +66,6 @@ class TestPublicKeyBase(unittest.TestCase):
             SshHostKeyRSA.parse_exact_size(b'\x00\x00\x00\x16' + b'non-existing-type-name')
         self.assertEqual(context_manager.exception.value, 'non-existing-type-name')
 
-        with self.assertRaises(NotImplementedError):
-            SshHostKeyRSA.get_digest(Hash.MD4, b'')
-
 
 class TestString(unittest.TestCase):
     def setUp(self):
@@ -97,19 +101,21 @@ class TestHostKeyDSS(unittest.TestCase):
         )
         self.host_key = SshHostKeyDSS(
             host_key_algorithm=SshHostKeyAlgorithm.SSH_DSS,
-            p=0x01010203,
-            q=0x04050607,
-            g=0x08090a0b,
-            y=0x0c0d0e0f,
+            public_key=PublicKey.from_params(PublicKeyParamsDsa(
+                prime=0x01010203,
+                order=0x04050607,
+                generator=0x08090a0b,
+                public_key_value=0x0c0d0e0f,
+            )),
         )
 
     def test_parse(self):
         host_key = SshHostPublicKeyVariant.parse_exact_size(self.host_key_bytes)
-        self.assertEqual(host_key.p, 0x01010203)
-        self.assertEqual(host_key.q, 0x04050607)
-        self.assertEqual(host_key.g, 0x08090a0b)
-        self.assertEqual(host_key.y, 0x0c0d0e0f)
-        self.assertEqual(host_key.key_size, 32)
+        self.assertEqual(host_key.public_key.params.prime, 0x01010203)
+        self.assertEqual(host_key.public_key.params.order, 0x04050607)
+        self.assertEqual(host_key.public_key.params.generator, 0x08090a0b)
+        self.assertEqual(host_key.public_key.params.public_key_value, 0x0c0d0e0f)
+        self.assertEqual(host_key.public_key.key_size, 32)
 
     def test_compose(self):
         self.assertEqual(self.host_key.compose(), self.host_key_bytes)
@@ -126,10 +132,12 @@ class TestHostKeyDSS(unittest.TestCase):
             ])),
             ('known_hosts', 'AAAAB3NzaC1kc3MAAAAEAQECAwAAAAQEBQYHAAAABAgJCgsAAAAEDA0ODw=='),
             ('host_key_algorithm', SshHostKeyAlgorithm.SSH_DSS),
-            ('p', 0x01010203),
-            ('g', 0x08090a0b),
-            ('q', 0x04050607),
-            ('y', 0x0c0d0e0f),
+            ('public_key', PublicKey.from_params(PublicKeyParamsDsa(
+                prime=0x01010203,
+                generator=0x08090a0b,
+                order=0x04050607,
+                public_key_value=0x0c0d0e0f,
+            ))),
         ]))
 
 
@@ -146,15 +154,18 @@ class TestHostKeyRSA(unittest.TestCase):
         )
         self.host_key = SshHostKeyRSA(
             host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA,
-            e=0x01010203,
-            n=0x04050607,
+            public_key=PublicKey.from_params(PublicKeyParamsRsa(
+                modulus=0x04050607,
+                public_exponent=0x01010203,
+            )),
         )
 
     def test_parse(self):
         host_key = SshHostPublicKeyVariant.parse_exact_size(self.host_key_bytes)
-        self.assertEqual(host_key.e, 0x01010203)
-        self.assertEqual(host_key.n, 0x04050607)
-        self.assertEqual(host_key.key_size, 32)
+        public_key_params = host_key.public_key.params
+        self.assertEqual(public_key_params.public_exponent, 0x01010203)
+        self.assertEqual(public_key_params.modulus, 0x04050607)
+        self.assertEqual(host_key.public_key.key_size, 32)
 
     def test_compose(self):
         self.assertEqual(self.host_key.compose(), self.host_key_bytes)
@@ -175,26 +186,34 @@ class TestHostKeyRSA(unittest.TestCase):
 
 class TestHostKeyECDSA(unittest.TestCase):
     def setUp(self):
+        self.point_x_bytes = b'\x80' + (256 // 8 - 1) * b'\x00'
+        self.point_y_bytes = b'\x40' + (256 // 8 - 1) * b'\x00'
         self.host_key_bytes = bytes(
-            b'\x00\x00\x00\x13' +               # host_key_algorithm_length
-            b'ecdsa-sha2-nistp256' +            # host_key_algorithm
-            b'\x00\x00\x00\x08' +               # curve_name_length
-            b'nistp256' +                       # curve_name
-            b'\x00\x00\x00\x04' +               # curve_data_length
-            b'\x00\x01\x02\x03' +               # curve_data
+            b'\x00\x00\x00\x13' +                  # host_key_algorithm_length
+            b'ecdsa-sha2-nistp256' +               # host_key_algorithm
+            b'\x00\x00\x00\x08' +                  # curve_name_length
+            b'nistp256' +                          # curve_name
+            b'\x00\x00\x00\x41' +                  # curve_data_length
+            b'\04' +                               # curve_data
+            self.point_x_bytes +
+            self.point_y_bytes +
             b''
         )
         self.host_key = SshHostKeyECDSA(
             host_key_algorithm=SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256,
-            curve_name='nistp256',
-            curve_data=b'\x00\x01\x02\x03',
+            public_key=PublicKey.from_params(PublicKeyParamsEcdsa(
+                named_group=NamedGroup.PRIME256V1,
+                point_x=2 ** 255,
+                point_y=2 ** 254,
+            )),
         )
 
     def test_parse(self):
         host_key = SshHostPublicKeyVariant.parse_exact_size(self.host_key_bytes)
-        self.assertEqual(host_key.curve_name, 'nistp256')
-        self.assertEqual(host_key.curve_data, b'\x00\x01\x02\x03')
-        self.assertEqual(host_key.key_size, 256)
+        self.assertEqual(host_key.public_key.params.named_group, NamedGroup.PRIME256V1)
+        self.assertEqual(host_key.public_key.params.point_x, 2 ** 255)
+        self.assertEqual(host_key.public_key.params.point_y, 2 ** 254)
+        self.assertEqual(host_key.public_key.key_size, 256)
 
     def test_compose(self):
         self.assertEqual(self.host_key.compose(), self.host_key_bytes)
@@ -205,11 +224,15 @@ class TestHostKeyECDSA(unittest.TestCase):
             ('key_name', SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256),
             ('key_size', 256),
             ('fingerprints', OrderedDict([
-                (Hash.SHA2_256, 'SHA256:W1agtTnzki6Rcqu/dMFfzswy99uD8TsO11b5Fk6RDUo='),
-                (Hash.SHA1, 'SHA1:02+/4xDo1z/zl1l1QRTb5uBxnGg='),
-                (Hash.MD5, 'MD5:2f:b0:36:9d:54:d5:56:ce:a7:be:84:da:8c:08:f9:dc'),
+                (Hash.SHA2_256, 'SHA256:+baTTAvJKIn0rfi1HVlDxDb/lIzi41H9UoCkFPyyO4I='),
+                (Hash.SHA1, 'SHA1:WiBKhHvCyV8LpdXgJWrJr9WAhqw='),
+                (Hash.MD5, 'MD5:86:c6:d5:ca:3e:5e:82:95:31:80:8a:30:b3:a3:6e:80'),
             ])),
-            ('known_hosts', 'AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAAAEAAECAw=='),
+            ('known_hosts', (
+                'AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIAAAAAAAAAA'
+                'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+                'AAAAAAAAAAA='
+            )),
         ]))
 
 
@@ -218,34 +241,37 @@ class TestHostKeyEDDSA(unittest.TestCase):
         self.host_key_bytes = bytes(
             b'\x00\x00\x00\x0b' +               # host_key_algorithm_length
             b'ssh-ed25519' +                    # host_key_algorithm
-            b'\x00\x00\x00\x04' +               # key_data_length
-            b'\x00\x01\x02\x03' +               # key_data
+            b'\x00\x00\x00\x20' +               # key_data_length
+            b'\x00\x01\x02\x03' * 8 +           # key_data
             b''
         )
         self.host_key = SshHostKeyEDDSA(
             host_key_algorithm=SshHostKeyAlgorithm.SSH_ED25519,
-            key_data=b'\x00\x01\x02\x03',
+            public_key=PublicKey.from_params(PublicKeyParamsEddsa(
+                key_type=Authentication.ED25519,
+                key_data=b'\x00\x01\x02\x03' * 8,
+            )),
         )
 
     def test_parse(self):
         host_key = SshHostPublicKeyVariant.parse_exact_size(self.host_key_bytes)
-        self.assertEqual(host_key.key_data, b'\x00\x01\x02\x03')
-        self.assertEqual(host_key.key_size, 32)
+        self.assertEqual(host_key.public_key.params.key_data, b'\x00\x01\x02\x03' * 8)
+        self.assertEqual(host_key.public_key.key_size, 256)
 
     def test_compose(self):
         self.assertEqual(self.host_key.compose(), self.host_key_bytes)
 
     def test_asdict(self):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
-            ('key_type', Authentication.EDDSA),
+            ('key_type', Authentication.ED25519),
             ('key_name', SshHostKeyAlgorithm.SSH_ED25519),
-            ('key_size', 32),
+            ('key_size', 256),
             ('fingerprints', OrderedDict([
-                (Hash.SHA2_256, 'SHA256:tisjNupmcCLFV3HIx3sTEZMsjE8wuPrxRta6wD7P2qE='),
-                (Hash.SHA1, 'SHA1:LnkkIzv+iqBzToK/hB/Ou2vjbQw='),
-                (Hash.MD5, 'MD5:90:d1:22:82:5e:7e:e0:cc:dc:1a:74:aa:14:c8:51:b3'),
+                (Hash.SHA2_256, 'SHA256:tE7ReEqO7s6dpo8PFRQXhAe4Vdy9HkT0UawUx+NfClk='),
+                (Hash.SHA1, 'SHA1:0ql0OFSSY06SHsZhtEAJ1Wx2AUo='),
+                (Hash.MD5, 'MD5:5c:83:5d:46:c1:7e:b0:47:70:6c:2c:30:a1:28:87:c0'),
             ])),
-            ('known_hosts', 'AAAAC3NzaC1lZDI1NTE5AAAABAABAgM='),
+            ('known_hosts', 'AAAAC3NzaC1lZDI1NTE5AAAAIAABAgMAAQIDAAECAwABAgMAAQIDAAECAwABAgMAAQID'),
         ]))
 
 
@@ -436,10 +462,12 @@ class TestHostCertificateV00DSS(TestHostCertificateDSSBase):
         self.host_cert = SshHostCertificateV00DSS(
             host_key_algorithm=SshHostKeyAlgorithm.SSH_DSS_CERT_V00_OPENSSH_COM,
             nonce=b'\x00\x01\x02\x03',
-            p=0x01010203,
-            q=0x04050607,
-            g=0x08090a0b,
-            y=0x0c0d0e0f,
+            public_key=PublicKey.from_params(PublicKeyParamsDsa(
+                prime=0x01010203,
+                generator=0x08090a0b,
+                order=0x04050607,
+                public_key_value=0x0c0d0e0f,
+            )),
             certificate_type=SshCertType.SSH_CERT_TYPE_HOST,
             key_id='\x00\x01\x02\x03\x04\x05\x06\x07',
             valid_principals=SshCertValidPrincipals([]),
@@ -449,10 +477,12 @@ class TestHostCertificateV00DSS(TestHostCertificateDSSBase):
             reserved=b'',
             signature_key=SshHostKeyDSS(
                 SshHostKeyAlgorithm.SSH_DSS,
-                p=0x01010203,
-                q=0x04050607,
-                g=0x08090a0b,
-                y=0x0c0d0e0f,
+                PublicKey.from_params(PublicKeyParamsDsa(
+                    prime=0x01010203,
+                    generator=0x08090a0b,
+                    order=0x04050607,
+                    public_key_value=0x0c0d0e0f,
+                ))
             ),
             signature=SshCertSignature(
                 SshHostKeyAlgorithm.SSH_DSS,
@@ -465,10 +495,18 @@ class TestHostCertificateV00DSS(TestHostCertificateDSSBase):
 
         self.assertEqual(host_cert.host_key_algorithm, self.host_cert.host_key_algorithm)
         self.assertEqual(host_cert.nonce, self.host_cert.nonce)
-        self.assertEqual(host_cert.p, self.host_cert.p)
-        self.assertEqual(host_cert.q, self.host_cert.q)
-        self.assertEqual(host_cert.g, self.host_cert.g)
-        self.assertEqual(host_cert.y, self.host_cert.y)
+        self.assertEqual(
+            host_cert.public_key.params.prime, self.host_cert.public_key.params.prime
+        )
+        self.assertEqual(
+            host_cert.public_key.params.order, self.host_cert.public_key.params.order
+        )
+        self.assertEqual(
+            host_cert.public_key.params.generator, self.host_cert.public_key.params.generator
+        )
+        self.assertEqual(
+            host_cert.public_key.params.public_key_value, self.host_cert.public_key.params.public_key_value
+        )
         self.assertEqual(host_cert.certificate_type, self.host_cert.certificate_type)
         self.assertEqual(host_cert.key_id, self.host_cert.key_id)
         self.assertEqual(host_cert.valid_principals, self.host_cert.valid_principals)
@@ -500,10 +538,12 @@ class TestHostCertificateV00DSS(TestHostCertificateDSSBase):
                 'BQYHAAAABAgJCgsAAAAEDA0ODwAAABMAAAAHc3NoLWRzcwAAAAQAAQID'
             )),
             ('host_key_algorithm', SshHostKeyAlgorithm.SSH_DSS_CERT_V00_OPENSSH_COM),
-            ('p', 0x01010203),
-            ('g', 0x08090a0b),
-            ('q', 0x04050607),
-            ('y', 0x0c0d0e0f),
+            ('public_key', PublicKey.from_params(PublicKeyParamsDsa(
+                prime=0x01010203,
+                generator=0x08090a0b,
+                order=0x04050607,
+                public_key_value=0x0c0d0e0f,
+            ))),
             ('certificate_type', SshCertType.SSH_CERT_TYPE_HOST),
             ('key_id', '\x00\x01\x02\x03\x04\x05\x06\x07'),
             ('valid_principals', SshCertValidPrincipals([])),
@@ -514,10 +554,12 @@ class TestHostCertificateV00DSS(TestHostCertificateDSSBase):
             ('reserved', b''),
             ('signature_key', SshHostKeyDSS(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_DSS,
-                p=0x01010203,
-                g=0x08090a0b,
-                q=0x04050607,
-                y=0x0c0d0e0f,
+                public_key=PublicKey.from_params(PublicKeyParamsDsa(
+                    prime=0x01010203,
+                    generator=0x08090a0b,
+                    order=0x04050607,
+                    public_key_value=0x0c0d0e0f,
+                )),
             )),
             ('signature', SshCertSignature(
                 signature_type=SshHostKeyAlgorithm.SSH_DSS,
@@ -559,10 +601,12 @@ class TestHostCertificateV01DSS(TestHostCertificateDSSBase):
         self.host_cert = SshHostCertificateV01DSS(
             host_key_algorithm=SshHostKeyAlgorithm.SSH_DSS_CERT_V01_OPENSSH_COM,
             nonce=b'\x00\x01\x02\x03',
-            p=0x01010203,
-            q=0x04050607,
-            g=0x08090a0b,
-            y=0x0c0d0e0f,
+            public_key=PublicKey.from_params(PublicKeyParamsDsa(
+                prime=0x01010203,
+                generator=0x08090a0b,
+                order=0x04050607,
+                public_key_value=0x0c0d0e0f,
+            )),
             serial=0x0102030405060708,
             certificate_type=SshCertType.SSH_CERT_TYPE_HOST,
             key_id='\x00\x01\x02\x03\x04\x05\x06\x07',
@@ -574,10 +618,12 @@ class TestHostCertificateV01DSS(TestHostCertificateDSSBase):
             reserved=b'',
             signature_key=SshHostKeyDSS(
                 SshHostKeyAlgorithm.SSH_DSS,
-                p=0x01010203,
-                q=0x04050607,
-                g=0x08090a0b,
-                y=0x0c0d0e0f,
+                PublicKey.from_params(PublicKeyParamsDsa(
+                    prime=0x01010203,
+                    generator=0x08090a0b,
+                    order=0x04050607,
+                    public_key_value=0x0c0d0e0f,
+                )),
             ),
             signature=SshCertSignature(
                 SshHostKeyAlgorithm.SSH_DSS,
@@ -590,10 +636,18 @@ class TestHostCertificateV01DSS(TestHostCertificateDSSBase):
 
         self.assertEqual(host_cert.host_key_algorithm, self.host_cert.host_key_algorithm)
         self.assertEqual(host_cert.nonce, self.host_cert.nonce)
-        self.assertEqual(host_cert.p, self.host_cert.p)
-        self.assertEqual(host_cert.q, self.host_cert.q)
-        self.assertEqual(host_cert.g, self.host_cert.g)
-        self.assertEqual(host_cert.y, self.host_cert.y)
+        self.assertEqual(
+            host_cert.public_key.params.prime, self.host_cert.public_key.params.prime
+        )
+        self.assertEqual(
+            host_cert.public_key.params.order, self.host_cert.public_key.params.order
+        )
+        self.assertEqual(
+            host_cert.public_key.params.generator, self.host_cert.public_key.params.generator
+        )
+        self.assertEqual(
+            host_cert.public_key.params.public_key_value, self.host_cert.public_key.params.public_key_value
+        )
         self.assertEqual(host_cert.certificate_type, self.host_cert.certificate_type)
         self.assertEqual(host_cert.key_id, self.host_cert.key_id)
         self.assertEqual(host_cert.valid_principals, self.host_cert.valid_principals)
@@ -627,10 +681,12 @@ class TestHostCertificateV01DSS(TestHostCertificateDSSBase):
                 'AAQAAQID'
             )),
             ('host_key_algorithm', SshHostKeyAlgorithm.SSH_DSS_CERT_V01_OPENSSH_COM),
-            ('p', 0x01010203),
-            ('g', 0x08090a0b),
-            ('q', 0x04050607),
-            ('y', 0x0c0d0e0f),
+            ('public_key', PublicKey.from_params(PublicKeyParamsDsa(
+                prime=0x01010203,
+                generator=0x08090a0b,
+                order=0x04050607,
+                public_key_value=0x0c0d0e0f,
+            ))),
             ('nonce', b'\x00\x01\x02\x03'),
             ('serial', 0x0102030405060708),
             ('certificate_type', SshCertType.SSH_CERT_TYPE_HOST),
@@ -643,10 +699,12 @@ class TestHostCertificateV01DSS(TestHostCertificateDSSBase):
             ('reserved', b''),
             ('signature_key', SshHostKeyDSS(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_DSS,
-                p=0x01010203,
-                q=0x04050607,
-                g=0x08090a0b,
-                y=0x0c0d0e0f,
+                public_key=PublicKey.from_params(PublicKeyParamsDsa(
+                    prime=0x01010203,
+                    generator=0x08090a0b,
+                    order=0x04050607,
+                    public_key_value=0x0c0d0e0f,
+                )),
             )),
             ('signature', SshCertSignature(
                 signature_type=SshHostKeyAlgorithm.SSH_DSS,
@@ -700,8 +758,10 @@ class TestHostCertificateV00RSA(TestHostCertificateRSABase):
         self.host_cert = SshHostCertificateV00RSA(
             host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA_CERT_V00_OPENSSH_COM,
             nonce=b'\x00\x01\x02\x03',
-            e=0x03,
-            n=0x01010203,
+            public_key=PublicKey.from_params(PublicKeyParamsRsa(
+                public_exponent=0x03,
+                modulus=0x01010203,
+            )),
             certificate_type=SshCertType.SSH_CERT_TYPE_HOST,
             key_id='\x00\x01\x02\x03\x04\x05\x06\x07',
             valid_principals=SshCertValidPrincipals([]),
@@ -711,8 +771,10 @@ class TestHostCertificateV00RSA(TestHostCertificateRSABase):
             reserved=b'',
             signature_key=SshHostKeyRSA(
                 SshHostKeyAlgorithm.SSH_RSA,
-                e=0x010001,
-                n=0x01010203,
+                PublicKey.from_params(PublicKeyParamsRsa(
+                    public_exponent=0x010001,
+                    modulus=0x01010203,
+                )),
             ),
             signature=SshCertSignature(
                 SshHostKeyAlgorithm.SSH_RSA,
@@ -725,8 +787,8 @@ class TestHostCertificateV00RSA(TestHostCertificateRSABase):
 
         self.assertEqual(host_cert.host_key_algorithm, self.host_cert.host_key_algorithm)
         self.assertEqual(host_cert.nonce, self.host_cert.nonce)
-        self.assertEqual(host_cert.e, self.host_cert.e)
-        self.assertEqual(host_cert.n, self.host_cert.n)
+        self.assertEqual(host_cert.public_key.params.public_exponent, self.host_cert.public_key.params.public_exponent)
+        self.assertEqual(host_cert.public_key.params.modulus, self.host_cert.public_key.params.modulus)
         self.assertEqual(host_cert.certificate_type, self.host_cert.certificate_type)
         self.assertEqual(host_cert.key_id, self.host_cert.key_id)
         self.assertEqual(host_cert.valid_principals, self.host_cert.valid_principals)
@@ -758,8 +820,10 @@ class TestHostCertificateV00RSA(TestHostCertificateRSABase):
                 'AAQAAQID'
             )),
             ('host_key_algorithm', SshHostKeyAlgorithm.SSH_RSA_CERT_V00_OPENSSH_COM),
-            ('e', 0x03),
-            ('n', 0x01010203),
+            ('public_key', PublicKey.from_params(PublicKeyParamsRsa(
+                public_exponent=0x03,
+                modulus=0x01010203,
+            ))),
             ('certificate_type', SshCertType.SSH_CERT_TYPE_HOST),
             ('key_id', '\x00\x01\x02\x03\x04\x05\x06\x07'),
             ('valid_principals', SshCertValidPrincipals([])),
@@ -770,8 +834,10 @@ class TestHostCertificateV00RSA(TestHostCertificateRSABase):
             ('reserved', b''),
             ('signature_key', SshHostKeyRSA(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA,
-                e=0x010001,
-                n=0x01010203,
+                public_key=PublicKey.from_params(PublicKeyParamsRsa(
+                    public_exponent=0x010001,
+                    modulus=0x01010203,
+                )),
             )),
             ('signature', SshCertSignature(
                 signature_type=SshHostKeyAlgorithm.SSH_RSA,
@@ -809,8 +875,10 @@ class TestHostCertificateV01RSA(TestHostCertificateRSABase):
         self.host_cert = SshHostCertificateV01RSA(
             host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA_CERT_V01_OPENSSH_COM,
             nonce=b'\x00\x01\x02\x03',
-            e=0x03,
-            n=0x01010203,
+            public_key=PublicKey.from_params(PublicKeyParamsRsa(
+                public_exponent=0x03,
+                modulus=0x01010203,
+            )),
             serial=0x0102030405060708,
             certificate_type=SshCertType.SSH_CERT_TYPE_HOST,
             key_id='\x00\x01\x02\x03\x04\x05\x06\x07',
@@ -822,8 +890,10 @@ class TestHostCertificateV01RSA(TestHostCertificateRSABase):
             reserved=b'',
             signature_key=SshHostKeyRSA(
                 SshHostKeyAlgorithm.SSH_RSA,
-                e=0x010001,
-                n=0x01010203,
+                PublicKey.from_params(PublicKeyParamsRsa(
+                    public_exponent=0x010001,
+                    modulus=0x01010203,
+                ))
             ),
             signature=SshCertSignature(
                 SshHostKeyAlgorithm.SSH_RSA,
@@ -836,8 +906,8 @@ class TestHostCertificateV01RSA(TestHostCertificateRSABase):
 
         self.assertEqual(host_cert.host_key_algorithm, self.host_cert.host_key_algorithm)
         self.assertEqual(host_cert.nonce, self.host_cert.nonce)
-        self.assertEqual(host_cert.e, self.host_cert.e)
-        self.assertEqual(host_cert.n, self.host_cert.n)
+        self.assertEqual(host_cert.public_key.params.public_exponent, self.host_cert.public_key.params.public_exponent)
+        self.assertEqual(host_cert.public_key.params.modulus, self.host_cert.public_key.params.modulus)
         self.assertEqual(host_cert.serial, self.host_cert.serial)
         self.assertEqual(host_cert.certificate_type, self.host_cert.certificate_type)
         self.assertEqual(host_cert.key_id, self.host_cert.key_id)
@@ -871,8 +941,10 @@ class TestHostCertificateV01RSA(TestHostCertificateRSABase):
                 'AAAHc3NoLXJzYQAAAAQAAQID'
             )),
             ('host_key_algorithm', SshHostKeyAlgorithm.SSH_RSA_CERT_V01_OPENSSH_COM),
-            ('e', 0x03),
-            ('n', 0x01010203),
+            ('public_key', PublicKey.from_params(PublicKeyParamsRsa(
+                public_exponent=0x03,
+                modulus=0x01010203,
+            ))),
             ('nonce', b'\x00\x01\x02\x03'),
             ('serial', 0x0102030405060708),
             ('certificate_type', SshCertType.SSH_CERT_TYPE_HOST),
@@ -885,8 +957,10 @@ class TestHostCertificateV01RSA(TestHostCertificateRSABase):
             ('reserved', b''),
             ('signature_key', SshHostKeyRSA(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA,
-                e=0x010001,
-                n=0x01010203,
+                public_key=PublicKey.from_params(PublicKeyParamsRsa(
+                    public_exponent=0x010001,
+                    modulus=0x01010203,
+                )),
             )),
             ('signature', SshCertSignature(
                 signature_type=SshHostKeyAlgorithm.SSH_RSA,
@@ -897,13 +971,17 @@ class TestHostCertificateV01RSA(TestHostCertificateRSABase):
 
 class TestHostCertificateECDSABase(unittest.TestCase):
     def setUp(self):
+        self.point_x_bytes = b'\x80' + (256 // 8 - 1) * b'\x00'
+        self.point_y_bytes = b'\x40' + (256 // 8 - 1) * b'\x00'
         self.host_key_bytes = bytes(
             b'\x00\x00\x00\x13' +  # certificate_type
             b'ecdsa-sha2-nistp256' +
             b'\x00\x00\x00\x08' +     # curve_name_length
             b'nistp256' +             # curve_name
-            b'\x00\x00\x00\x04' +     # curve_data_length
-            b'\x00\x01\x02\x03' +     # curve_data
+            b'\x00\x00\x00\x41' +     # curve_data_length
+            b'\x04' +                 # curve_data
+            self.point_x_bytes +
+            self.point_y_bytes +
             b'\x00\x00\x00\x1f' +
             b'\x00\x00\x00\x13' +  # signature_type
             b'ecdsa-sha2-nistp256' +
@@ -916,6 +994,8 @@ class TestHostCertificateECDSABase(unittest.TestCase):
 class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
     def setUp(self):
         super(TestHostCertificateV01ECDSA, self).setUp()
+        self.point_x_bytes = b'\x80' + (256 // 8 - 1) * b'\x00'
+        self.point_y_bytes = b'\x40' + (256 // 8 - 1) * b'\x00'
         self.host_cert_bytes = bytes(
             b'\x00\x00\x00\x28' +
             b'ecdsa-sha2-nistp256-cert-v01@openssh.com' +
@@ -923,8 +1003,10 @@ class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
             b'\x00\x01\x02\x03' +
             b'\x00\x00\x00\x08' +     # curve_name_length
             b'nistp256' +             # curve_name
-            b'\x00\x00\x00\x04' +     # curve_data_length
-            b'\x00\x01\x02\x03' +     # curve_data
+            b'\x00\x00\x00\x41' +     # curve_data_length
+            b'\x04' +                 # curve_data
+            self.point_x_bytes +
+            self.point_y_bytes +
             b'\x01\x02\x03\x04\x05\x06\x07\x08' +  # serial
             b'\x00\x00\x00\x02' +  # certificate_type (SshCertType.SSH_CERT_TYPE_HOST)
             b'\x00\x00\x00\x08' +  # key_id
@@ -935,15 +1017,18 @@ class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
             b'\x00\x00\x00\x00' +  # critical_options
             b'\x00\x00\x00\x00' +  # extensions
             b'\x00\x00\x00\x00' +  # reserved
-            b'\x00\x00\x00\x2b' +  # signature_key
+            b'\x00\x00\x00\x68' +  # signature_key
             self.host_key_bytes +
             b''
         )
         self.host_cert = SshHostCertificateV01ECDSA(
             host_key_algorithm=SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256_CERT_V01_OPENSSH_COM,
             nonce=b'\x00\x01\x02\x03',
-            curve_name='nistp256',
-            curve_data=b'\x00\x01\x02\x03',
+            public_key=PublicKey.from_params(PublicKeyParamsEcdsa(
+                named_group=NamedGroup.PRIME256V1,
+                point_x=2 ** 255,
+                point_y=2 ** 254,
+            )),
             serial=0x0102030405060708,
             certificate_type=SshCertType.SSH_CERT_TYPE_HOST,
             key_id='\x00\x01\x02\x03\x04\x05\x06\x07',
@@ -955,8 +1040,11 @@ class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
             reserved=b'',
             signature_key=SshHostKeyECDSA(
                 host_key_algorithm=SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256,
-                curve_name='nistp256',
-                curve_data=b'\x00\x01\x02\x03',
+                public_key=PublicKey.from_params(PublicKeyParamsEcdsa(
+                    named_group=NamedGroup.PRIME256V1,
+                    point_x=2 ** 255,
+                    point_y=2 ** 254,
+                )),
             ),
             signature=SshCertSignature(
                 SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256,
@@ -969,8 +1057,9 @@ class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
 
         self.assertEqual(host_cert.host_key_algorithm, self.host_cert.host_key_algorithm)
         self.assertEqual(host_cert.nonce, self.host_cert.nonce)
-        self.assertEqual(host_cert.curve_name, 'nistp256')
-        self.assertEqual(host_cert.curve_data, b'\x00\x01\x02\x03')
+        self.assertEqual(host_cert.public_key.params.named_group, NamedGroup.PRIME256V1)
+        self.assertEqual(host_cert.public_key.params.point_x, 2 ** 255)
+        self.assertEqual(host_cert.public_key.params.point_y, 2 ** 254)
         self.assertEqual(host_cert.serial, self.host_cert.serial)
         self.assertEqual(host_cert.certificate_type, self.host_cert.certificate_type)
         self.assertEqual(host_cert.key_id, self.host_cert.key_id)
@@ -993,20 +1082,26 @@ class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
             ('key_name', SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256_CERT_V01_OPENSSH_COM),
             ('key_size', 256),
             ('fingerprints', OrderedDict([
-                (Hash.SHA2_256, 'SHA256:nkIe7wYOgpTlPC6ZHpHX5z/EGJap9XwDfpYDKAyUGxc='),
-                (Hash.SHA1, 'SHA1:lNN9i6zcuV9XaMtsK6aqc03P6KU='),
-                (Hash.MD5, 'MD5:3d:bb:bd:3d:ff:8b:09:7e:ae:77:24:d4:0f:3a:44:75')
+                (Hash.SHA2_256, 'SHA256:aRBBmsAqpnH3wrOh35fa//LB/JGcuTUAPuRPEj9RWRQ='),
+                (Hash.SHA1, 'SHA1:9E5qN+JPZBX4ZBfKEou/WNWtWR8='),
+                (Hash.MD5, 'MD5:e9:dd:20:42:a4:36:6b:90:60:29:f8:69:5f:be:e7:13')
             ])),
             ('known_hosts', (
                 'AAAAKGVjZHNhLXNoYTItbmlzdHAyNTYtY2VydC12MDFAb3BlbnNzaC5jb20AAAAE'
-                'AAECAwAAAAhuaXN0cDI1NgAAAAQAAQIDAQIDBAUGBwgAAAACAAAACAABAgMEBQYH'
-                'AAAAAAAAAAAAAAAA//////////8AAAAAAAAAAAAAAAAAAAArAAAAE2VjZHNhLXNo'
-                'YTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAAAEAAECAwAAAB8AAAATZWNkc2Etc2hh'
-                'Mi1uaXN0cDI1NgAAAAQAAQID'
+                'AAECAwAAAAhuaXN0cDI1NgAAAEEEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+                'AAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAECAwQFBgcIAAAA'
+                'AgAAAAgAAQIDBAUGBwAAAAAAAAAAAAAAAP//////////AAAAAAAAAAAAAAAAAAAA'
+                'aAAAABNlY2RzYS1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQSAAAAAAAAA'
+                'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+                'AAAAAAAAAAAAAAAAHwAAABNlY2RzYS1zaGEyLW5pc3RwMjU2AAAABAABAgM='
             )),
             ('host_key_algorithm', SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256_CERT_V01_OPENSSH_COM),
-            ('curve_name', 'nistp256'),
-            ('curve_data', b'\x00\x01\x02\x03'),
+
+            ('public_key', PublicKey.from_params(PublicKeyParamsEcdsa(
+                named_group=NamedGroup.PRIME256V1,
+                point_x=2 ** 255,
+                point_y=2 ** 254,
+            ))),
             ('nonce', b'\x00\x01\x02\x03'),
             ('serial', 0x0102030405060708),
             ('certificate_type', SshCertType.SSH_CERT_TYPE_HOST),
@@ -1019,8 +1114,11 @@ class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
             ('reserved', b''),
             ('signature_key', SshHostKeyECDSA(
                 host_key_algorithm=SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256,
-                curve_name='nistp256',
-                curve_data=b'\x00\x01\x02\x03',
+                public_key=PublicKey.from_params(PublicKeyParamsEcdsa(
+                    named_group=NamedGroup.PRIME256V1,
+                    point_x=2 ** 255,
+                    point_y=2 ** 254,
+                )),
             )),
             ('signature', SshCertSignature(
                 signature_type=SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256,
@@ -1072,7 +1170,10 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
         self.host_cert = SshHostCertificateV01EDDSA(
             host_key_algorithm=SshHostKeyAlgorithm.SSH_ED25519_CERT_V01_OPENSSH_COM,
             nonce=b'\x00\x01\x02\x03',
-            key_data=b'\x00\x01\x02\x03',
+            public_key=PublicKey.from_params(PublicKeyParamsEddsa(
+                key_type=Authentication.ED25519,
+                key_data=b'\x00\x01\x02\x03',
+            )),
             serial=0x0102030405060708,
             certificate_type=SshCertType.SSH_CERT_TYPE_HOST,
             key_id='\x00\x01\x02\x03\x04\x05\x06\x07',
@@ -1084,7 +1185,10 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
             reserved=b'',
             signature_key=SshHostKeyEDDSA(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_ED25519,
-                key_data=b'\x00\x01\x02\x03',
+                public_key=PublicKey.from_params(PublicKeyParamsEddsa(
+                    key_type=Authentication.ED25519,
+                    key_data=b'\x00\x01\x02\x03',
+                )),
             ),
             signature=SshCertSignature(
                 SshHostKeyAlgorithm.SSH_ED25519,
@@ -1097,7 +1201,7 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
 
         self.assertEqual(host_cert.host_key_algorithm, self.host_cert.host_key_algorithm)
         self.assertEqual(host_cert.nonce, self.host_cert.nonce)
-        self.assertEqual(host_cert.key_data, b'\x00\x01\x02\x03')
+        self.assertEqual(host_cert.public_key.params.key_data, b'\x00\x01\x02\x03')
         self.assertEqual(host_cert.serial, self.host_cert.serial)
         self.assertEqual(host_cert.certificate_type, self.host_cert.certificate_type)
         self.assertEqual(host_cert.key_id, self.host_cert.key_id)
@@ -1116,9 +1220,9 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
 
     def test_asdict(self):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
-            ('key_type', Authentication.EDDSA),
+            ('key_type', Authentication.ED25519),
             ('key_name', SshHostKeyAlgorithm.SSH_ED25519_CERT_V01_OPENSSH_COM),
-            ('key_size', 32),
+            ('key_size', 256),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:IDjjwI5W2lkjfR/gnU0pvSw6E340LushvP/N9A1HrWg='),
                 (Hash.SHA1, 'SHA1:EXpev7tY2XCP2R0G6eqcqNgBpOc='),
@@ -1131,7 +1235,10 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
                 'c2gtZWQyNTUxOQAAAAQAAQID'
             )),
             ('host_key_algorithm', SshHostKeyAlgorithm.SSH_ED25519_CERT_V01_OPENSSH_COM),
-            ('key_data', b'\x00\x01\x02\x03'),
+            ('public_key', PublicKey.from_params(PublicKeyParamsEddsa(
+                key_type=Authentication.ED25519,
+                key_data=b'\x00\x01\x02\x03',
+            ))),
             ('nonce', b'\x00\x01\x02\x03'),
             ('serial', 0x0102030405060708),
             ('certificate_type', SshCertType.SSH_CERT_TYPE_HOST),
@@ -1144,7 +1251,10 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
             ('reserved', b''),
             ('signature_key', SshHostKeyEDDSA(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_ED25519,
-                key_data=b'\x00\x01\x02\x03',
+                public_key=PublicKey.from_params(PublicKeyParamsEddsa(
+                    key_type=Authentication.ED25519,
+                    key_data=b'\x00\x01\x02\x03',
+                )),
             )),
             ('signature', SshCertSignature(
                 signature_type=SshHostKeyAlgorithm.SSH_ED25519,
