@@ -523,22 +523,14 @@ class ParserBinary(ParserBase):
         self._parsed_length += parsed_length
         self._parsed_values[name] = value
 
-    def parse_ssh_mpint(self, name):
-        if self.unparsed_length < 4:
-            raise NotEnoughData(bytes_needed=4 - self.unparsed_length)
-
-        mpint_length, parsed_length = self._parse_numeric_array(name, 1, 4, int)
-        mpint_length = mpint_length[0]
-
-        negative = (mpint_length and (six.indexbytes(self._parsable, self._parsed_length + 4) >= 0x80))
-
+    def _parse_mpint(self, mpint_length, mpint_offset, negative):
         if mpint_length % 4:
             pad_byte = six.int2byte(0xff) if negative else six.int2byte(0x00)
             pad_bytes = (4 - (mpint_length % 4)) * pad_byte
         else:
             pad_bytes = b''
 
-        parsable = pad_bytes + self._parsable[self._parsed_length + 4:]
+        parsable = pad_bytes + self._parsable[self._parsed_length + mpint_offset:]
         parser = ParserBinary(parsable)
         parser.parse_numeric_array('mpint_part_array', (mpint_length + len(pad_bytes)) // 4, 4, int)
 
@@ -548,6 +540,25 @@ class ParserBinary(ParserBase):
         if negative:
             complement = 1 << (8 * (mpint_length + len(pad_bytes)))
             value -= complement
+
+        return value
+
+    def parse_mpint(self, name, mpint_length):
+        value = self._parse_mpint(mpint_length, 0, False)
+
+        self._parsed_values[name] = value
+        self._parsed_length += mpint_length
+
+    def parse_ssh_mpint(self, name):
+        if self.unparsed_length < 4:
+            raise NotEnoughData(bytes_needed=4 - self.unparsed_length)
+
+        mpint_length, parsed_length = self._parse_numeric_array(name, 1, 4, int)
+        mpint_length = mpint_length[0]
+
+        negative = (mpint_length and (six.indexbytes(self._parsable, self._parsed_length + 4) >= 0x80))
+
+        value = self._parse_mpint(mpint_length, 4, negative)
 
         self._parsed_values[name] = value
         self._parsed_length += parsed_length + mpint_length
@@ -842,33 +853,57 @@ class ComposerBinary(ComposerBase):
             flag |= value >> shift_right
         self._compose_numeric_array([flag, ], item_size)
 
-    def compose_ssh_mpint(self, value):
+    @staticmethod
+    def _compose_mpint(value, length, byte_order):
         negative = value < 0
-        array_length = value.bit_length() // 32
 
-        if value.bit_length() % 32:
-            array_length += 1
         if negative:
             positive_value = (1 << ((value.bit_length() // 8 * 8) + 8)) + value
         else:
             positive_value = value
 
         value_numeric_array = []
-        for mpint_offset in range(0, array_length * 32, 32):
+        for mpint_offset in range(0, length * 32, 32):
             value_numeric_array.append(positive_value >> mpint_offset & 0xffffffff)
 
-        composer = ComposerBinary()
+        composer = ComposerBinary(byte_order=byte_order)
         composer.compose_numeric_array(reversed(value_numeric_array), 4)
-        value_bytes = composer.composed_bytes.lstrip(b'\x00')
 
-        if value_bytes and bool(value_bytes[0] & 0x80) != negative:
+        mpint_bytes = composer.composed_bytes.lstrip(b'\x00')
+        if byte_order in [ByteOrder.LITTLE_ENDIAN, ByteOrder.NATIVE]:
+            mpint_bytes = mpint_bytes.rstrip(b'\x00')
+
+        return mpint_bytes
+
+    def compose_mpint(self, value, length):
+        mpint_bytes = self._compose_mpint(value, length, self.byte_order)
+        if length < len(mpint_bytes):
+            raise InvalidValue(length, type(self), 'mpint_length')
+
+        pad_byte = b'\xff' if value < 0 else b'\x00'
+        if self.byte_order in [ByteOrder.BIG_ENDIAN, ByteOrder.NETWORK]:
+            self.compose_raw((length - len(mpint_bytes)) * pad_byte)
+            self.compose_raw(mpint_bytes)
+        else:
+            self.compose_raw(mpint_bytes)
+            self.compose_raw((length - len(mpint_bytes)) * pad_byte)
+
+    def compose_ssh_mpint(self, value):
+        negative = value < 0
+        length = value.bit_length() // 32
+        if value.bit_length() % 32:
+            length += 1
+
+        mpint_bytes = self._compose_mpint(value, length, self.byte_order)
+
+        if mpint_bytes and bool(mpint_bytes[0] & 0x80) != negative:
             pad_byte = b'\xff' if negative else b'\x00'
         else:
             pad_byte = b''
 
-        self.compose_numeric(len(pad_byte) + len(value_bytes), 4)
-
-        self._composed += pad_byte + value_bytes
+        self.compose_numeric(len(pad_byte) + len(mpint_bytes), 4)
+        self.compose_raw(pad_byte)
+        self.compose_raw(mpint_bytes)
 
     def compose_parsable(self, value, item_size=None):
         composed = value.compose()
