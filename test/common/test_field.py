@@ -10,6 +10,7 @@ from collections import OrderedDict
 import attr
 import dateutil
 import six
+import urllib3
 
 from cryptodatahub.common.exception import InvalidValue
 
@@ -27,9 +28,10 @@ from .classes import (
     FieldValueStringEnumTest,
     FieldValueComponentNumberTest,
     FieldValueComponentOptionTest,
+    FieldValueComponentQuotedStringTest,
     FieldValueComponentStringTest,
     FieldValueComponentTimeDeltaTest,
-    FieldValueComponentQuotedStringTest,
+    FieldValueComponentUrlTest,
     FieldValueTimeDeltaTest,
 )
 
@@ -130,6 +132,43 @@ class TestFieldValueComponentString(unittest.TestCase):
 
     def test_as_markdown(self):
         self.assertEqual(FieldValueComponentStringTest('value').as_markdown(), 'value')
+
+
+class TestFieldValueComponentUrl(unittest.TestCase):
+    _component_url_https = FieldValueComponentUrlTest('https://example.com')
+    _component_url_https_bytes = b'testUrl=https://example.com'
+    _component_url_mailto = FieldValueComponentUrlTest('mailto:user@example.com')
+    _component_url_mailto_bytes = b'testUrl=mailto:user@example.com'
+
+    def test_error_invalid_value(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueComponentUrlTest.parse_exact_size(b'testUrl=https://example.com:port')
+        self.assertEqual(context_manager.exception.value, 'https://example.com:port')
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueComponentUrlTest(None)
+        self.assertEqual(context_manager.exception.value, None)
+
+    def test_parse(self):
+        component = FieldValueComponentUrlTest.parse_exact_size(b'testUrl=https://example.com')
+        self.assertEqual(component.value, urllib3.util.parse_url('https://example.com'))
+
+        component = FieldValueComponentUrlTest.parse_exact_size(b'testUrl=mailto:user@example.com')
+        self.assertEqual(component.value, urllib3.util.parse_url('mailto:user@example.com'))
+
+    def test_compose(self):
+        self.assertEqual(
+            FieldValueComponentUrlTest('https://example.com').compose(),
+            b'testUrl=https://example.com'
+        )
+        self.assertEqual(
+            FieldValueComponentUrlTest('mailto:user@example.com').compose(),
+            b'testUrl=mailto:user@example.com'
+        )
+
+    def test_as_markdown(self):
+        self.assertEqual(self._component_url_https.as_markdown(), 'https://example.com')
+        self.assertEqual(self._component_url_mailto.as_markdown(), 'mailto:user@example.com')
 
 
 class TestFieldValueComponentQuotedString(unittest.TestCase):
@@ -271,10 +310,27 @@ class TestFieldValueMultiple(unittest.TestCase):
 
     def test_compose(self):
         header_field = FieldValueMultipleTest(datetime.timedelta(seconds=1))
-        self.assertEqual(header_field.compose(), b'testTimeDelta=1; testString=default; testNumber=0')
+        self.assertEqual(
+            header_field.compose(),
+            b'; '.join([
+                b'testTimeDelta=1',
+                b'testString=default',
+                b'testUrl=https://example.com',
+                b'testNumber=0',
+            ])
+        )
 
         header_field.option.value = True
-        self.assertEqual(header_field.compose(), b'testTimeDelta=1; testOption; testString=default; testNumber=0')
+        self.assertEqual(
+            header_field.compose(),
+            b'; '.join([
+                b'testTimeDelta=1',
+                b'testOption',
+                b'testString=default',
+                b'testUrl=https://example.com',
+                b'testNumber=0',
+            ])
+        )
 
 
 class TestFieldValueComponentKeyValue(unittest.TestCase):

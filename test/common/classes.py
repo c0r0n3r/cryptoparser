@@ -36,12 +36,13 @@ from cryptoparser.common.exception import TooMuchData, InvalidType
 from cryptoparser.common.field import (
     FieldsSemicolonSeparated,
     FieldValueStringEnum,
-    FieldValueStringEnumParams,
     FieldValueComponentNumber,
     FieldValueComponentOption,
-    FieldValueComponentString,
     FieldValueComponentQuotedString,
+    FieldValueComponentString,
     FieldValueComponentTimeDelta,
+    FieldValueComponentUrl,
+    FieldValueStringEnumParams,
     FieldValueTimeDelta,
 )
 from cryptoparser.common.parse import ParserCRLF
@@ -555,6 +556,12 @@ class FieldValueComponentStringTest(FieldValueComponentString):
         return 'testString'
 
 
+class FieldValueComponentUrlTest(FieldValueComponentUrl):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testUrl'
+
+
 class FieldValueComponentOptionalStringTest(FieldValueComponentQuotedString):
     @classmethod
     def get_canonical_name(cls):
@@ -594,6 +601,11 @@ class FieldValueMultipleTest(FieldsSemicolonSeparated):
         converter=FieldValueComponentStringTest.convert,
         validator=attr.validators.instance_of(FieldValueComponentStringTest),
         default='default'
+    )
+    url = attr.ib(
+        converter=FieldValueComponentUrlTest.convert,
+        validator=attr.validators.instance_of(FieldValueComponentUrlTest),
+        default='https://example.com'
     )
     optional_string = attr.ib(
         converter=attr.converters.optional(FieldValueComponentOptionalStringTest.convert),

@@ -6,8 +6,10 @@ import datetime
 
 import attr
 import six
+import urllib3
 
 from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.types import convert_url
 
 from cryptoparser.common.base import Serializable
 from cryptoparser.common.exception import InvalidType, NotEnoughData
@@ -373,6 +375,40 @@ class FieldValueComponentNumber(FieldValueComponentKeyValueBase):
     @classmethod
     def _parse_value(cls, parser):
         parser.parse_numeric('value')
+
+
+@attr.s
+class FieldValueComponentUrl(FieldValueComponentKeyValueBase):
+    value = attr.ib()
+
+    @value.validator
+    def _value_validate(self, _, value):
+        self.value = convert_url()(value)
+
+        if isinstance(self.value, urllib3.util.Url):
+            return
+
+        raise InvalidValue(self.value, type(self), 'value')
+
+    @classmethod
+    @abc.abstractmethod
+    def get_canonical_name(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse_value(cls, parser):
+        parser.parse_string_by_length('value', item_class=convert_url())
+
+    def _get_value_as_str(self):
+        if self.value.scheme == 'mailto':
+            value = 'mailto:' + self.value.path[1:]
+        else:
+            value = str(self.value)
+
+        return value
+
+    def _as_markdown(self, level):
+        return self._markdown_result(self._get_value_as_str(), level)
 
 
 class FieldValueBase(ParsableBase, Serializable):
