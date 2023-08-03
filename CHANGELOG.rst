@@ -4,6 +4,9 @@ Changelog
 0.9.1 - 2022-06-22
 ------------------
 
+Features
+~~~~~~~~
+
 -  TLS (``tls``)
 
    -  Generic
@@ -14,6 +17,9 @@ Changelog
 0.9.0 - 2023-04-29
 ------------------
 
+Features
+~~~~~~~~
+
 -  TLS (``tls``)
 
    -  Generic
@@ -23,12 +29,18 @@ Changelog
 0.8.5 - 2023-04-02
 ------------------
 
-   -  Generic
+Features
+~~~~~~~~
 
-      -  move data classes to `CryptoDataHub repository <https://gitlab.com/coroner/cryptodatahub>`__ (#67)
+-  Generic
+
+   -  move data classes to `CryptoDataHub repository <https://gitlab.com/coroner/cryptodatahub>`__ (#67)
 
 0.8.4 - 2023-01-22
 ------------------
+
+Features
+~~~~~~~~
 
 -  TLS (``tls``)
 
@@ -38,6 +50,9 @@ Changelog
 
 0.8.2 - 2022-10-10
 ------------------
+
+Features
+~~~~~~~~
 
 -  TLS (``tls``)
 
@@ -57,6 +72,9 @@ Changelog
 0.8.0 - 2022-01-18
 ------------------
 
+Features
+~~~~~~~~
+
 -  SSH (``ssh``)
 
    -  Public Keys (``pubkeys``)
@@ -69,6 +87,9 @@ Changelog
 
 0.7.3 - 2021-12-26
 ------------------
+
+Notable fixes
+~~~~~~~~~~~~~
 
 -  Generic
 
@@ -86,12 +107,18 @@ Other
 0.7.1 - 2021-09-20
 ------------------
 
+Features
+~~~~~~~~
+
 -  TLS (``tls``)
 
    -  protocol item classes for PostgreSQL support (#44)
 
 0.7.0 - 2021-09-02
 ------------------
+
+Features
+~~~~~~~~
 
 -  TLS (``tls``)
 
@@ -262,8 +289,8 @@ Features
    -  `JA3 fingerprint <https://engineering.salesforce.com/tls-fingerprinting-with-ja3-and-ja3s-247362855967>`__
       calculation for TLS client hello (#2)
 
-Bugs
-^^^^
+Notable fixes
+~~~~~~~~~~~~~
 
 -  TLS (``tls``)
 
