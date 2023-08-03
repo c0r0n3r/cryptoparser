@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.10.0 - 2023-08-03
+-------------------
+
+Notable fixes
+~~~~~~~~~~~~~
+
+-  Generic
+
+   -  Markdown output of attr-based classes
+
 0.9.1 - 2022-06-22
 ------------------
 
