@@ -15,10 +15,10 @@ from cryptodatahub.common.key import (
     PublicKeyParamsRsa,
 )
 
-from cryptodatahub.dnssec.algorithm import DnsSecAlgorithm
+from cryptodatahub.dnssec.algorithm import DnsSecAlgorithm, DnsSecDigestType
 
 from cryptoparser.common.exception import NotEnoughData
-from cryptoparser.dnsrec.record import DnsRecordDnskey, DnsSecFlag, DnsSecProtocol
+from cryptoparser.dnsrec.record import DnsRecordDnskey, DnsRecordDs, DnsSecFlag, DnsSecProtocol
 
 
 class TestDnsRecordDnskey(unittest.TestCase):
@@ -330,3 +330,35 @@ class TestDnsRecordDnskey(unittest.TestCase):
             protocol=DnsSecProtocol.V3,
         )
         self.assertEqual(dns_record.key_tag, 59732)
+
+
+class TestDnsRecordDs(unittest.TestCase):
+    def setUp(self):
+        self.record_bytes = bytes(
+            b'\x00\x01' +        # key_tag: 1
+            b'\x01' +            # algorithm: RSAMD5
+            b'\x02' +            # digest_type: SHA_256
+            32 * b'\xff' +       # digest
+            b''
+        )
+        self.record = DnsRecordDs(
+            key_tag=1,
+            algorithm=DnsSecAlgorithm.RSAMD5,
+            digest_type=DnsSecDigestType.SHA_256,
+            digest=32 * b'\xff',
+        )
+
+    def test_error_not_enough_data(self):
+        with self.assertRaises(NotEnoughData) as context_manager:
+            DnsRecordDs.parse_exact_size(b'\x00')
+
+        self.assertEqual(
+            context_manager.exception.bytes_needed,
+            DnsRecordDs.HEADER_SIZE - 1
+        )
+
+    def test_parse(self):
+        self.assertEqual(DnsRecordDs.parse_exact_size(self.record_bytes), self.record)
+
+    def test_compose(self):
+        self.assertEqual(self.record.compose(), self.record_bytes)

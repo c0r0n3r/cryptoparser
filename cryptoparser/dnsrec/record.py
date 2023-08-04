@@ -5,6 +5,7 @@ import collections
 import enum
 
 import attr
+import six
 
 from cryptodatahub.common.algorithm import Authentication, NamedGroup, Signature
 from cryptodatahub.common.exception import InvalidValue
@@ -15,11 +16,12 @@ from cryptodatahub.common.key import (
     PublicKeyParamsEddsa,
     PublicKeyParamsRsa,
 )
-from cryptodatahub.dnssec.algorithm import DnsSecAlgorithm
+
+from cryptodatahub.dnssec.algorithm import DnsSecAlgorithm, DnsSecDigestType
 
 from cryptoparser.common.base import OneByteEnumParsable, Serializable
 from cryptoparser.common.exception import NotEnoughData
-from cryptoparser.common.parse import ByteOrder, ParsableBase, ParserBinary, ComposerBinary
+from cryptoparser.common.parse import ByteOrder, ComposerBinary, ParsableBase, ParserBinary
 
 
 class DnsSecProtocol(enum.Enum):
@@ -257,3 +259,47 @@ class DnsRecordDnskey(ParsableBase, Serializable):
         key_bytes = self.compose_key(self.key)
 
         return composer.composed_bytes + key_bytes
+
+
+class DnsSecDigestTypeFactory(OneByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return DnsSecDigestType
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+@attr.s
+class DnsRecordDs(ParsableBase):
+    HEADER_SIZE = 4
+
+    key_tag = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    algorithm = attr.ib(validator=attr.validators.instance_of(DnsSecAlgorithm))
+    digest_type = attr.ib(validator=attr.validators.instance_of(DnsSecDigestType))
+    digest = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    def _parse(cls, parsable):
+        if len(parsable) < cls.HEADER_SIZE:
+            raise NotEnoughData(cls.HEADER_SIZE - len(parsable))
+
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('key_tag', 2)
+        parser.parse_parsable('algorithm', DnsSecAlgorithmFactory)
+        parser.parse_parsable('digest_type', DnsSecDigestTypeFactory)
+        parser.parse_raw('digest', parser.unparsed_length)
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric(self.key_tag, 2)
+        composer.compose_numeric_enum_coded(self.algorithm)
+        composer.compose_numeric_enum_coded(self.digest_type)
+        composer.compose_raw(self.digest)
+
+        return composer.composed_bytes
