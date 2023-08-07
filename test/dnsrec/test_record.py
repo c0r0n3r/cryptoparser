@@ -3,7 +3,10 @@
 
 import base64
 import collections
+import datetime
 import unittest
+
+import dateutil
 
 from cryptodatahub.common.algorithm import Authentication, KeyExchange, NamedGroup
 from cryptodatahub.common.exception import InvalidValue
@@ -15,10 +18,17 @@ from cryptodatahub.common.key import (
     PublicKeyParamsRsa,
 )
 
-from cryptodatahub.dnssec.algorithm import DnsSecAlgorithm, DnsSecDigestType
+from cryptodatahub.dnssec.algorithm import DnsSecAlgorithm, DnsSecDigestType, DnsRrType
 
 from cryptoparser.common.exception import NotEnoughData
-from cryptoparser.dnsrec.record import DnsRecordDnskey, DnsRecordDs, DnsSecFlag, DnsSecProtocol
+from cryptoparser.dnsrec.record import (
+    DnsNameUncompressed,
+    DnsRecordDnskey,
+    DnsRecordDs,
+    DnsRecordRrsig,
+    DnsSecFlag,
+    DnsSecProtocol,
+)
 
 
 class TestDnsRecordDnskey(unittest.TestCase):
@@ -359,6 +369,93 @@ class TestDnsRecordDs(unittest.TestCase):
 
     def test_parse(self):
         self.assertEqual(DnsRecordDs.parse_exact_size(self.record_bytes), self.record)
+
+    def test_compose(self):
+        self.assertEqual(self.record.compose(), self.record_bytes)
+
+
+class TestDnsNameUncompressed(unittest.TestCase):
+    def setUp(self):
+        self.label_empty_bytes = b'\x00'
+        self.label_empty_name = DnsNameUncompressed([])
+        self.label_single_bytes = b'\x01a\x00'
+        self.label_single_name = DnsNameUncompressed(['a'])
+        self.label_multiple_bytes = b'\x01a\x02bb\x03ccc\x00'
+        self.label_multiple_name = DnsNameUncompressed(['a', 'bb', 'ccc'])
+
+    def test_error_convert_invalid_value(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            DnsNameUncompressed.convert(None)
+
+        self.assertEqual(context_manager.exception.value, None)
+
+    def test_parse(self):
+        self.assertEqual(DnsNameUncompressed.parse_exact_size(self.label_empty_bytes), self.label_empty_name)
+        self.assertEqual(DnsNameUncompressed.parse_exact_size(self.label_single_bytes), self.label_single_name)
+        self.assertEqual(DnsNameUncompressed.parse_exact_size(self.label_multiple_bytes), self.label_multiple_name)
+
+    def test_compose(self):
+        self.assertEqual(self.label_empty_name.compose(), self.label_empty_bytes)
+        self.assertEqual(self.label_single_name.compose(), self.label_single_bytes)
+        self.assertEqual(self.label_multiple_name.compose(), self.label_multiple_bytes)
+
+    def test_convert(self):
+        self.assertEqual(DnsNameUncompressed.convert(self.label_empty_name), self.label_empty_name)
+        self.assertEqual(DnsNameUncompressed.convert(self.label_single_name), self.label_single_name)
+        self.assertEqual(DnsNameUncompressed.convert(self.label_multiple_name), self.label_multiple_name)
+
+        self.assertEqual(DnsNameUncompressed.convert(''), self.label_empty_name)
+        self.assertEqual(DnsNameUncompressed.convert('a'), self.label_single_name)
+        self.assertEqual(DnsNameUncompressed.convert('a.bb.ccc'), self.label_multiple_name)
+
+    def test_str(self):
+        self.assertEqual(str(self.label_empty_name), '')
+        self.assertEqual(str(self.label_single_name), 'a')
+        self.assertEqual(str(self.label_multiple_name), 'a.bb.ccc')
+
+    def test_as_markdown(self):
+        self.assertEqual(self.label_empty_name.as_markdown(), '')
+        self.assertEqual(self.label_single_name.as_markdown(), 'a')
+        self.assertEqual(self.label_multiple_name.as_markdown(), 'a.bb.ccc')
+
+
+class TestDnsRecordRrsig(unittest.TestCase):
+    def setUp(self):
+        self.record_bytes = bytes(
+            b'\x00\x01' +          # type_covered: A
+            b'\x01' +              # algorithm: RSAMD5
+            b'\x03' +              # labels
+            b'\x00\x00\x0e\x10' +  # original_ttl: 3600
+            b'\x00\x00\x00\x01' +  # signature_expiration
+            b'\x00\x00\x00\x02' +  # signature_inception
+            b'\xab\xcd' +          # key_tag
+            b'\x06signer\x00' +    # signers_name
+            32 * b'\xff' +         # signature
+            b''
+        )
+        self.record = DnsRecordRrsig(
+            type_covered=DnsRrType.A,
+            algorithm=DnsSecAlgorithm.RSAMD5,
+            labels=3,
+            original_ttl=3600,
+            signature_expiration=datetime.datetime(1970, 1, 1, 0, 0, 1, tzinfo=dateutil.tz.UTC),
+            signature_inception=datetime.datetime(1970, 1, 1, 0, 0, 2, tzinfo=dateutil.tz.UTC),
+            key_tag=0xabcd,
+            signers_name='signer',
+            signature=32 * b'\xff',
+        )
+
+    def test_error_not_enough_data(self):
+        with self.assertRaises(NotEnoughData) as context_manager:
+            DnsRecordRrsig.parse_exact_size(b'\x00')
+
+        self.assertEqual(
+            context_manager.exception.bytes_needed,
+            DnsRecordRrsig.HEADER_SIZE - 1
+        )
+
+    def test_parse(self):
+        self.assertEqual(DnsRecordRrsig.parse_exact_size(self.record_bytes), self.record)
 
     def test_compose(self):
         self.assertEqual(self.record.compose(), self.record_bytes)

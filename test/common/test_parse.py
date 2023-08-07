@@ -400,8 +400,19 @@ class TestParserBinary(TestParsableBase):
         parser.parse_timestamp('timestamp')
         self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0, dateutil.tz.UTC))
 
+        parser = ParserBinary(b'\x00\x00\x00\x00')
+        parser.parse_timestamp('timestamp', item_size=4)
+        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0, dateutil.tz.UTC))
+
         parser = ParserBinary(b'\x00\x00\x00\x00\x00\x00\x00\xff')
         parser.parse_timestamp('timestamp', milliseconds=True)
+        self.assertEqual(
+            parser['timestamp'],
+            datetime.datetime.fromtimestamp(0, dateutil.tz.UTC) + datetime.timedelta(microseconds=255000)
+        )
+
+        parser = ParserBinary(b'\x00\x00\x00\xff')
+        parser.parse_timestamp('timestamp', milliseconds=True, item_size=4)
         self.assertEqual(
             parser['timestamp'],
             datetime.datetime.fromtimestamp(0, dateutil.tz.UTC) + datetime.timedelta(microseconds=255000)
@@ -411,9 +422,17 @@ class TestParserBinary(TestParsableBase):
         parser.parse_timestamp('timestamp')
         self.assertEqual(parser['timestamp'], None)
 
+        parser = ParserBinary(b'\xff\xff\xff\xff')
+        parser.parse_timestamp('timestamp', item_size=4)
+        self.assertEqual(parser['timestamp'], None)
+
         parser = ParserBinary(b'\x00\x00\x00\x00\xff\xff\xff\xff')
         parser.parse_timestamp('timestamp')
         self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0xffffffff, dateutil.tz.UTC))
+
+        parser = ParserBinary(b'\x00\x00\xff\xff')
+        parser.parse_timestamp('timestamp', item_size=4)
+        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0x0000ffff, dateutil.tz.UTC))
 
 
 class TestParserText(TestParsableBase):

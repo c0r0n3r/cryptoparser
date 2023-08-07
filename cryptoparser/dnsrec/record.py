@@ -2,6 +2,7 @@
 
 import abc
 import collections
+import datetime
 import enum
 
 import attr
@@ -17,9 +18,9 @@ from cryptodatahub.common.key import (
     PublicKeyParamsRsa,
 )
 
-from cryptodatahub.dnssec.algorithm import DnsSecAlgorithm, DnsSecDigestType
+from cryptodatahub.dnssec.algorithm import DnsRrType, DnsSecAlgorithm, DnsSecDigestType
 
-from cryptoparser.common.base import OneByteEnumParsable, Serializable
+from cryptoparser.common.base import OneByteEnumParsable, Serializable, TwoByteEnumParsable
 from cryptoparser.common.exception import NotEnoughData
 from cryptoparser.common.parse import ByteOrder, ComposerBinary, ParsableBase, ParserBinary
 
@@ -301,5 +302,121 @@ class DnsRecordDs(ParsableBase):
         composer.compose_numeric_enum_coded(self.algorithm)
         composer.compose_numeric_enum_coded(self.digest_type)
         composer.compose_raw(self.digest)
+
+        return composer.composed_bytes
+
+
+class DnsRrTypeFactory(TwoByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return DnsRrType
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+@attr.s
+class DnsNameUncompressed(ParsableBase, Serializable):
+    labels = attr.ib(
+        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(six.string_types))
+    )
+
+    def __str__(self):
+        return six.u('.').join(self.labels)
+
+    def _as_markdown(self, level):
+        return self._markdown_result(str(self), level)
+
+    @classmethod
+    def convert(cls, value):
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, six.string_types):
+            if not value:
+                return cls([])
+
+            return cls(value.split('.'))
+
+        raise InvalidValue(value, cls, 'labels')
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        labels = []
+        while True:
+            parser.parse_string('label', 1, encoding='idna')
+            label = parser['label']
+
+            if not label:
+                break
+
+            labels.append(label)
+
+        return cls(labels), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        for label in self.labels:
+            composer.compose_string(label, 'idna', 1)
+
+        composer.compose_numeric(0, 1)
+
+        return composer.composed_bytes
+
+
+@attr.s
+class DnsRecordRrsig(ParsableBase):  # pylint: disable=too-many-instance-attributes
+    HEADER_SIZE = 24
+
+    type_covered = attr.ib(validator=attr.validators.instance_of(DnsRrType))
+    algorithm = attr.ib(validator=attr.validators.instance_of(DnsSecAlgorithm))
+    labels = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    original_ttl = attr.ib(
+        validator=attr.validators.instance_of(six.integer_types),
+        metadata={'human_readable_name': 'Original TTL'}
+    )
+    signature_expiration = attr.ib(validator=attr.validators.instance_of(datetime.datetime))
+    signature_inception = attr.ib(validator=attr.validators.instance_of(datetime.datetime))
+    key_tag = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    signers_name = attr.ib(
+        converter=DnsNameUncompressed.convert,
+        validator=attr.validators.instance_of(DnsNameUncompressed)
+    )
+    signature = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    def _parse(cls, parsable):
+        if len(parsable) < cls.HEADER_SIZE:
+            raise NotEnoughData(cls.HEADER_SIZE - len(parsable))
+
+        parser = ParserBinary(parsable)
+
+        parser.parse_parsable('type_covered', DnsRrTypeFactory)
+        parser.parse_parsable('algorithm', DnsSecAlgorithmFactory)
+        parser.parse_numeric('labels', 1)
+        parser.parse_numeric('original_ttl', 4)
+        parser.parse_timestamp('signature_expiration', item_size=4)
+        parser.parse_timestamp('signature_inception', item_size=4)
+        parser.parse_numeric('key_tag', 2)
+        parser.parse_parsable('signers_name', DnsNameUncompressed)
+        parser.parse_raw('signature', parser.unparsed_length)
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric_enum_coded(self.type_covered)
+        composer.compose_numeric_enum_coded(self.algorithm)
+        composer.compose_numeric(self.labels, 1)
+        composer.compose_numeric(self.original_ttl, 4)
+        composer.compose_timestamp(self.signature_expiration, item_size=4)
+        composer.compose_timestamp(self.signature_inception, item_size=4)
+        composer.compose_numeric(self.key_tag, 2)
+        composer.compose_parsable(self.signers_name)
+        composer.compose_raw(self.signature)
 
         return composer.composed_bytes

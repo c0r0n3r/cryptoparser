@@ -457,11 +457,11 @@ class ParserText(ParserBase):
 class ParserBinary(ParserBase):
     byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
-    def parse_timestamp(self, name, milliseconds=False):
-        value, parsed_length = self._parse_numeric_array(name, 1, 8, int)
+    def parse_timestamp(self, name, milliseconds=False, item_size=8):
+        value, parsed_length = self._parse_numeric_array(name, 1, item_size, int)
 
         self._parsed_length += parsed_length
-        if value[0] == 0xffffffffffffffff:
+        if value[0] == (2 ** (8 * item_size) - 1):
             self._parsed_values[name] = None
         else:
             value = value[0]
@@ -798,7 +798,7 @@ class ComposerText(ComposerBase):
 class ComposerBinary(ComposerBase):
     byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
-    def compose_timestamp(self, value, milliseconds=False):
+    def compose_timestamp(self, value, milliseconds=False, item_size=8):
         if value is None:
             timestamp = 0xffffffffffffffff
         else:
@@ -808,7 +808,7 @@ class ComposerBinary(ComposerBase):
                 timestamp *= 1000
                 timestamp += value.microsecond // 1000
 
-        return self._compose_numeric_array([timestamp, ], 8)
+        return self._compose_numeric_array([timestamp, ], item_size)
 
     def _compose_numeric_array(self, values, item_size):
         composed_bytes = bytearray()
