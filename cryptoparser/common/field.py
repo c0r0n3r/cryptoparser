@@ -13,7 +13,7 @@ from cryptodatahub.common.types import convert_url
 
 from cryptoparser.common.base import Serializable
 from cryptoparser.common.exception import InvalidType, NotEnoughData
-from cryptoparser.common.parse import ParserText, ParsableBase, ComposerText
+from cryptoparser.common.parse import ParserText, ParsableBase, ParsableBaseNoABC, ComposerText
 
 
 class FieldParsableBase(ParsableBase):
@@ -279,6 +279,10 @@ class FieldValueComponentKeyValueBase(FieldValueComponentBase):
         raise NotImplementedError()
 
     def _get_value_as_str(self):
+        # neccessary only because PY2 handles multiple inheritance differently than PY3
+        if isinstance(self.value, ParsableBaseNoABC):
+            return self.value.compose().decode('ascii')
+
         return str(self.value)
 
     @classmethod
@@ -310,8 +314,13 @@ class FieldValueComponentKeyValueBase(FieldValueComponentBase):
 
 
 @attr.s
-class FieldValueComponentString(FieldValueComponentKeyValueBase):
-    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)))
+class FieldValueComponentParsableBase(FieldValueComponentKeyValueBase):
+    value = attr.ib()
+
+    def __attrs_post_init__(self):
+        value_class = self._get_value_class()
+        if not isinstance(self.value, value_class):
+            self.value = value_class(self.value)
 
     @classmethod
     @abc.abstractmethod
@@ -319,8 +328,41 @@ class FieldValueComponentString(FieldValueComponentKeyValueBase):
         raise NotImplementedError()
 
     @classmethod
+    @abc.abstractmethod
+    def _get_value_class(cls):
+        raise NotImplementedError()
+
+    @classmethod
     def _parse_value(cls, parser):
-        parser.parse_string_by_length('value')
+        parser.parse_parsable('value', cls._get_value_class())
+
+
+class FieldValueComponentParsable(FieldValueComponentParsableBase):
+    @classmethod
+    @abc.abstractmethod
+    def get_canonical_name(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_value_class(cls):
+        raise NotImplementedError()
+
+
+class FieldValueComponentParsableOptional(FieldValueComponentParsableBase):
+    def __attrs_post_init__(self):
+        if self.value is not None:
+            super(FieldValueComponentParsableOptional, self).__attrs_post_init__()
+
+    @classmethod
+    @abc.abstractmethod
+    def get_canonical_name(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_value_class(cls):
+        raise NotImplementedError()
 
 
 @attr.s
@@ -375,6 +417,32 @@ class FieldValueComponentNumber(FieldValueComponentKeyValueBase):
     @classmethod
     def _parse_value(cls, parser):
         parser.parse_numeric('value')
+
+
+@attr.s
+class FieldValueComponentPercent(FieldValueComponentNumber):
+    def __attrs_post_init__(self):
+        if self.value < 0 or self.value > 100:
+            raise InvalidValue(self.value, type(self), 'value')
+
+    @classmethod
+    @abc.abstractmethod
+    def get_canonical_name(cls):
+        raise NotImplementedError()
+
+
+@attr.s
+class FieldValueComponentString(FieldValueComponentKeyValueBase):
+    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)))
+
+    @classmethod
+    @abc.abstractmethod
+    def get_canonical_name(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse_value(cls, parser):
+        parser.parse_string_by_length('value')
 
 
 @attr.s

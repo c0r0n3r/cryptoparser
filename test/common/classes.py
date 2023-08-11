@@ -38,6 +38,7 @@ from cryptoparser.common.field import (
     FieldValueStringEnum,
     FieldValueComponentNumber,
     FieldValueComponentOption,
+    FieldValueComponentPercent,
     FieldValueComponentQuotedString,
     FieldValueComponentString,
     FieldValueComponentTimeDelta,
@@ -580,6 +581,12 @@ class FieldValueComponentNumberTest(FieldValueComponentNumber):
         return 'testNumber'
 
 
+class FieldValueComponentPercentTest(FieldValueComponentPercent):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testPercent'
+
+
 class FieldValueComponentTimeDeltaTest(FieldValueComponentTimeDelta):
     @classmethod
     def get_canonical_name(cls):
@@ -618,4 +625,9 @@ class FieldValueMultipleTest(FieldsSemicolonSeparated):
         converter=FieldValueComponentNumberTest.convert,
         validator=attr.validators.instance_of(FieldValueComponentNumberTest),
         default=0
+    )
+    percent = attr.ib(
+        converter=FieldValueComponentPercentTest.convert,
+        validator=attr.validators.instance_of(FieldValueComponentPercentTest),
+        default=100
     )

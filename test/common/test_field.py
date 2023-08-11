@@ -29,6 +29,7 @@ from .classes import (
     FieldValueComponentNumberTest,
     FieldValueComponentOptionTest,
     FieldValueComponentQuotedStringTest,
+    FieldValueComponentPercentTest,
     FieldValueComponentStringTest,
     FieldValueComponentTimeDeltaTest,
     FieldValueComponentUrlTest,
@@ -216,6 +217,13 @@ class TestFieldValueComponentNumber(unittest.TestCase):
         self.assertEqual(FieldValueComponentNumberTest(1234).as_markdown(), '1234')
 
 
+class TestFieldValueComponentPercent(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueComponentPercentTest.parse_exact_size(b'testPercent=101')
+        self.assertEqual(context_manager.exception.value, 101)
+
+
 class TestFieldValueComponentTimeDelta(unittest.TestCase):
     def test_error(self):
         with self.assertRaises(InvalidValue) as context_manager:
@@ -317,6 +325,7 @@ class TestFieldValueMultiple(unittest.TestCase):
                 b'testString=default',
                 b'testUrl=https://example.com',
                 b'testNumber=0',
+                b'testPercent=100',
             ])
         )
 
@@ -329,6 +338,7 @@ class TestFieldValueMultiple(unittest.TestCase):
                 b'testString=default',
                 b'testUrl=https://example.com',
                 b'testNumber=0',
+                b'testPercent=100',
             ])
         )
 
