@@ -535,17 +535,30 @@ class FieldValueMultiple(FieldValueBase):
                 params[name] = attribute.default
 
     @classmethod
+    def _parse_extensions(cls, attr_to_component_name_dict, extension, components, params):
+        if extension and components:
+            name, _ = extension
+            params[name] = attr_to_component_name_dict[name](components)
+
+    @classmethod
     def _parse(cls, parsable):
         params = {}
+        extension = None
         attr_fields_dict_basic = {}
         attr_fields_dict = attr.fields_dict(cls)
         for name, attribute in attr_fields_dict.items():
-            attr_fields_dict_basic[name] = attribute
+            if not attribute.metadata.get('extension', False):
+                attr_fields_dict_basic[name] = attribute
+            elif extension is None:
+                extension = (name, attribute)
+            else:
+                raise NotImplementedError()
         attr_to_component_name_dict = cls._get_attr_to_component_name_dict(attr_fields_dict)
 
         components = cls._get_header_value_list_class().parse_exact_size(parsable).value
 
         cls._parse_basic_params(attr_to_component_name_dict, attr_fields_dict_basic, components, params)
+        cls._parse_extensions(attr_to_component_name_dict, extension, components, params)
 
         return cls(**params), len(parsable)
 

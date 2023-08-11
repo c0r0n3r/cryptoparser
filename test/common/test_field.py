@@ -24,6 +24,7 @@ from cryptoparser.common.field import (
 
 from .classes import (
     FieldValueMultipleTest,
+    FieldValueMultipleExtendableTest,
     FieldValueEnumTest,
     FieldValueStringEnumTest,
     FieldValueComponentNumberTest,
@@ -339,6 +340,40 @@ class TestFieldValueMultiple(unittest.TestCase):
                 b'testUrl=https://example.com',
                 b'testNumber=0',
                 b'testPercent=100',
+            ])
+        )
+
+
+class TestFieldValueMultipleExtendable(unittest.TestCase):
+    def test_parse(self):
+        parsed_header_field = FieldValueMultipleExtendableTest.parse_exact_size(
+            b'testTimeDelta=1; testExtension1=value1; testExtension2=value2'
+        )
+        header_field = FieldValueMultipleExtendableTest(
+            time_delta=datetime.timedelta(seconds=1),
+            extensions=NameValuePairListSemicolonSeparated(
+                OrderedDict([('testExtension1', 'value1'), ('testExtension2', 'value2')])
+            )
+        )
+        self.assertEqual(parsed_header_field, header_field)
+
+    def test_compose(self):
+        header_field = FieldValueMultipleExtendableTest(
+            datetime.timedelta(seconds=1),
+            extensions=NameValuePairListSemicolonSeparated(
+                OrderedDict([('testExtension1', 'value1'), ('testExtension2', 'value2')])
+            )
+        )
+        self.assertEqual(
+            header_field.compose(),
+            b'; '.join([
+                b'testTimeDelta=1',
+                b'testString=default',
+                b'testUrl=https://example.com',
+                b'testNumber=0',
+                b'testPercent=100',
+                b'testExtension1=value1',
+                b'testExtension2=value2',
             ])
         )
 

@@ -45,6 +45,7 @@ from cryptoparser.common.field import (
     FieldValueComponentUrl,
     FieldValueStringEnumParams,
     FieldValueTimeDelta,
+    NameValuePairListSemicolonSeparated,
 )
 from cryptoparser.common.parse import ParserCRLF
 
@@ -630,4 +631,13 @@ class FieldValueMultipleTest(FieldsSemicolonSeparated):
         converter=FieldValueComponentPercentTest.convert,
         validator=attr.validators.instance_of(FieldValueComponentPercentTest),
         default=100
+    )
+
+
+@attr.s
+class FieldValueMultipleExtendableTest(FieldValueMultipleTest):
+    extensions = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(NameValuePairListSemicolonSeparated)),
+        metadata={'extension': True},
     )
