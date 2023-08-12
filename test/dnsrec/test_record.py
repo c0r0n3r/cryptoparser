@@ -27,6 +27,7 @@ from cryptoparser.dnsrec.record import (
     DnsRecordDs,
     DnsRecordMx,
     DnsRecordRrsig,
+    DnsRecordTxt,
     DnsSecFlag,
     DnsSecProtocol,
 )
@@ -485,6 +486,31 @@ class TestDnsRecordMx(unittest.TestCase):
 
     def test_parse(self):
         self.assertEqual(DnsRecordMx.parse_exact_size(self.record_bytes), self.record)
+
+    def test_compose(self):
+        self.assertEqual(self.record.compose(), self.record_bytes)
+
+
+class TestDnsRecordTxt(unittest.TestCase):
+    def setUp(self):
+        self.record_bytes = bytes(
+            b'\x05' +              # length: 5
+            b'value' +
+            b''
+        )
+        self.record = DnsRecordTxt(value='value')
+
+    def test_error_not_enough_data(self):
+        with self.assertRaises(NotEnoughData) as context_manager:
+            DnsRecordTxt.parse_exact_size(b'')
+
+        self.assertEqual(
+            context_manager.exception.bytes_needed,
+            DnsRecordTxt.HEADER_SIZE
+        )
+
+    def test_parse(self):
+        self.assertEqual(DnsRecordTxt.parse_exact_size(self.record_bytes), self.record)
 
     def test_compose(self):
         self.assertEqual(self.record.compose(), self.record_bytes)
