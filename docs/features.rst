@@ -23,6 +23,11 @@ Transport Layer Security (TLS)
 -  `TLS 1.2 <https://tools.ietf.org/html/rfc5246>`__
 -  `TLS 1.3 <https://tools.ietf.org/html/rfc8446>`__
 
+Domain Name System (DNS)
+""""""""""""""""""""""""
+
+-  `DNSSEC <https://www.rfc-editor.org/rfc/rfc4034>`__ (Domain Name System Security Extensions)
+
 Protocol Specific Features
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -101,3 +106,12 @@ Secure Shell (SSH)
 -  public keys
 
    1. supports host keys and cretificates (both ``V00`` and ``V01``)
+
+Domain Name System (DNS)
+""""""""""""""""""""""""
+
+-  DNSSEC (Domain Name System Security Extensions)
+
+   -  `DNSKEY <https://www.rfc-editor.org/rfc/rfc4034#section-2>`__
+   -  `DS <https://www.rfc-editor.org/rfc/rfc4034#section-5>`__
+   -  `RRSIG <https://www.rfc-editor.org/rfc/rfc4034#section-3>`__
