@@ -1,6 +1,17 @@
 Changelog
 =========
 
+0.10.1
+------
+
+-  DNS
+
+   -  add parser for DNSSEC-related records (#72)
+
+      -  `DNSKEY <https://www.rfc-editor.org/rfc/rfc4034#section-2>`__
+      -  `DS <https://www.rfc-editor.org/rfc/rfc4034#section-5>`__
+      -  `RRSIG <https://www.rfc-editor.org/rfc/rfc4034#section-3>`__
+
 0.10.0 - 2023-08-03
 -------------------
 

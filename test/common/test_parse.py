@@ -206,6 +206,27 @@ class TestParserBinary(TestParsableBase):
         parser.parse_numeric_flags('flags', 1, FlagEnum)
         self.assertEqual(parser['flags'], {FlagEnum.ONE, FlagEnum.TWO})
 
+    def test_parse_mpint(self):
+        parser = ParserBinary(b'\x00\x00\x00\x00')
+        parser.parse_mpint('mpint', 4)
+        self.assertEqual(parser['mpint'], 0)
+
+        parser = ParserBinary(b'\x09\xa3\x78\xf9\xb2\xe3\x32\xa7')
+        parser.parse_mpint('mpint', 8)
+        self.assertEqual(parser['mpint'], 0x9a378f9b2e332a7)
+
+        parser = ParserBinary(b'\x00\x80')
+        parser.parse_mpint('mpint', 2)
+        self.assertEqual(parser['mpint'], 0x80)
+
+        parser = ParserBinary(b'\xed\xcc')
+        parser.parse_mpint('mpint', 2)
+        self.assertEqual(parser['mpint'], 0xedcc)
+
+        parser = ParserBinary(b'\xff\x21\x52\x41\x11')
+        parser.parse_mpint('mpint', 5)
+        self.assertEqual(parser['mpint'], 0xff21524111)
+
     def test_parse_ssh_mpint(self):
         parser = ParserBinary(b'\x00')
         with self.assertRaises(NotEnoughData) as context_manager:
@@ -379,8 +400,19 @@ class TestParserBinary(TestParsableBase):
         parser.parse_timestamp('timestamp')
         self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0, dateutil.tz.UTC))
 
+        parser = ParserBinary(b'\x00\x00\x00\x00')
+        parser.parse_timestamp('timestamp', item_size=4)
+        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0, dateutil.tz.UTC))
+
         parser = ParserBinary(b'\x00\x00\x00\x00\x00\x00\x00\xff')
         parser.parse_timestamp('timestamp', milliseconds=True)
+        self.assertEqual(
+            parser['timestamp'],
+            datetime.datetime.fromtimestamp(0, dateutil.tz.UTC) + datetime.timedelta(microseconds=255000)
+        )
+
+        parser = ParserBinary(b'\x00\x00\x00\xff')
+        parser.parse_timestamp('timestamp', milliseconds=True, item_size=4)
         self.assertEqual(
             parser['timestamp'],
             datetime.datetime.fromtimestamp(0, dateutil.tz.UTC) + datetime.timedelta(microseconds=255000)
@@ -390,9 +422,17 @@ class TestParserBinary(TestParsableBase):
         parser.parse_timestamp('timestamp')
         self.assertEqual(parser['timestamp'], None)
 
+        parser = ParserBinary(b'\xff\xff\xff\xff')
+        parser.parse_timestamp('timestamp', item_size=4)
+        self.assertEqual(parser['timestamp'], None)
+
         parser = ParserBinary(b'\x00\x00\x00\x00\xff\xff\xff\xff')
         parser.parse_timestamp('timestamp')
         self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0xffffffff, dateutil.tz.UTC))
+
+        parser = ParserBinary(b'\x00\x00\xff\xff')
+        parser.parse_timestamp('timestamp', item_size=4)
+        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0x0000ffff, dateutil.tz.UTC))
 
 
 class TestParserText(TestParsableBase):
@@ -805,6 +845,36 @@ class TestComposerBinary(TestParsableBase):
         composer = ComposerBinary()
         composer.compose_numeric_flags([FlagEnum.ONE, FlagEnum.TWO, ], 1)
         self.assertEqual(composer.composed_bytes, b'\x03')
+
+    def test_compose_mpint(self):
+        composer = ComposerBinary()
+        with self.assertRaises(InvalidValue) as context_manager:
+            composer.compose_mpint(1024, 1)
+        self.assertEqual(context_manager.exception.value, 1)
+
+        composer = ComposerBinary()
+        composer.compose_mpint(1024, 2)
+        self.assertEqual(composer.composed_bytes, b'\x04\x00')
+
+        composer = ComposerBinary()
+        composer.compose_mpint(1024, 10)
+        self.assertEqual(composer.composed_bytes, b'\x00\x00\x00\x00\x00\x00\x00\x00\x04\x00')
+
+        composer = ComposerBinary()
+        composer.compose_mpint(-1024, 10)
+        self.assertEqual(composer.composed_bytes, b'\xff\xff\xff\xff\xff\xff\xff\xff\xfc\x00')
+
+        composer = ComposerBinary(byte_order=ByteOrder.LITTLE_ENDIAN)
+        composer.compose_mpint(1000, 2)
+        self.assertEqual(composer.composed_bytes, b'\xe8\x03')
+
+        composer = ComposerBinary(byte_order=ByteOrder.LITTLE_ENDIAN)
+        composer.compose_mpint(1000, 10)
+        self.assertEqual(composer.composed_bytes, b'\xe8\x03\x00\x00\x00\x00\x00\x00\x00\x00')
+
+        composer = ComposerBinary(byte_order=ByteOrder.LITTLE_ENDIAN)
+        composer.compose_mpint(-1000, 10)
+        self.assertEqual(composer.composed_bytes, b'\x18\xfc\xff\xff\xff\xff\xff\xff\xff\xff')
 
     def test_compose_ssh_mpint(self):
         composer = ComposerBinary()

@@ -7,6 +7,7 @@ import unittest
 import six
 
 from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.key import PublicKey, PublicKeyParamsRsa
 from cryptodatahub.ssh.algorithm import (
     SshCompressionAlgorithm,
     SshEncryptionAlgorithm,
@@ -310,8 +311,10 @@ class TestDHKeyExchangeReply(unittest.TestCase):
         self.dh_key_exchange_reply = SshDHKeyExchangeReply(
             host_public_key=SshHostKeyRSA(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA,
-                e=0x0101020304050607,
-                n=0x08090a0b0c0d0e0f,
+                public_key=PublicKey.from_params(PublicKeyParamsRsa(
+                    modulus=0x08090a0b0c0d0e0f,
+                    public_exponent=0x0101020304050607,
+                )),
             ),
             ephemeral_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
             signature=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
@@ -356,8 +359,10 @@ class TestDHGroupExchangeReply(unittest.TestCase):
         self.dh_group_exchange_reply = SshDHGroupExchangeReply(
             host_public_key=SshHostKeyRSA(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_RSA,
-                e=0x0101020304050607,
-                n=0x08090a0b0c0d0e0f,
+                public_key=PublicKey.from_params(PublicKeyParamsRsa(
+                    modulus=0x08090a0b0c0d0e0f,
+                    public_exponent=0x0101020304050607,
+                )),
             ),
             ephemeral_public_key=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
             signature=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
