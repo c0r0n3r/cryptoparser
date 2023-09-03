@@ -29,6 +29,12 @@ Operating systems
 -  macOS
 -  Windows
 
+Documentation
+-------------
+
+Detailed `documentation <https://cryptoparser.readthedocs.io>`__ is available on the project's
+`Read the Docs <https://readthedocs.com>`__ site.
+
 License
 -------
 
