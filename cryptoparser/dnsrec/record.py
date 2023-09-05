@@ -420,3 +420,34 @@ class DnsRecordRrsig(ParsableBase):  # pylint: disable=too-many-instance-attribu
         composer.compose_raw(self.signature)
 
         return composer.composed_bytes
+
+
+@attr.s
+class DnsRecordMx(ParsableBase):
+    HEADER_SIZE = 2
+
+    priority = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    exchange = attr.ib(
+        converter=DnsNameUncompressed.convert,
+        validator=attr.validators.instance_of(DnsNameUncompressed)
+    )
+
+    @classmethod
+    def _parse(cls, parsable):
+        if len(parsable) < cls.HEADER_SIZE:
+            raise NotEnoughData(cls.HEADER_SIZE - len(parsable))
+
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('priority', 2)
+        parser.parse_parsable('exchange', DnsNameUncompressed)
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric(self.priority, 2)
+        composer.compose_parsable(self.exchange)
+
+        return composer.composed_bytes
