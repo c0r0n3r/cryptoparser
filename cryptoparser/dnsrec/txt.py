@@ -2,14 +2,23 @@
 # pylint: disable=too-many-lines
 
 import abc
+import collections
 import enum
+import ipaddress
 
 import attr
+import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.types import convert_url, convert_value_to_object
 
-from cryptoparser.common.base import StringEnumCaseInsensitiveParsable, StringEnumParsable
+from cryptoparser.common.base import (
+    Serializable,
+    StringEnumCaseInsensitiveParsable,
+    StringEnumParsable,
+    VariantParsable
+)
+from cryptoparser.common.exception import InvalidType
 
 from cryptoparser.common.field import (
     FieldValueComponentParsable,
@@ -18,10 +27,13 @@ from cryptoparser.common.field import (
     FieldValueComponentPercent,
     FieldValueComponentString,
     FieldValueComponentUrl,
+    FieldValueSingleBase,
     FieldValueStringEnumParams,
     FieldsSemicolonSeparated,
     NameValuePairListSemicolonSeparated,
+    NameValuePair,
 )
+from cryptoparser.common.parse import ComposerText, ParsableBase, ParserText
 
 
 class DmarcAlignment(StringEnumCaseInsensitiveParsable, enum.Enum):
@@ -326,3 +338,574 @@ class DnsRecordTxtValueTlsRpt(FieldsSemicolonSeparated):
         validator=attr.validators.optional(attr.validators.instance_of(NameValuePairListSemicolonSeparated)),
         metadata={'extension': True},
     )
+
+
+class SpfVersion(StringEnumParsable, enum.Enum):
+    SPF1 = FieldValueStringEnumParams(
+        code='spf1',
+        human_readable_name='SPF1',
+    )
+
+
+class DnsRecordTxtValueSpfVersion(FieldValueComponentParsable):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'v'
+
+    @classmethod
+    def _get_value_class(cls):
+        return SpfVersion
+
+
+class SpfQualifier(StringEnumParsable, enum.Enum):
+    PASS = FieldValueStringEnumParams(
+        code='+',
+        human_readable_name='Pass',
+    )
+    FAIL = FieldValueStringEnumParams(
+        code='-',
+        human_readable_name='Fail',
+    )
+    SOFTFAIL = FieldValueStringEnumParams(
+        code='~',
+        human_readable_name='Softfail',
+    )
+    NEUTRAL = FieldValueStringEnumParams(
+        code='?',
+        human_readable_name='Neutral',
+    )
+
+
+class SpfMechanism(StringEnumParsable, enum.Enum):
+    ALL = FieldValueStringEnumParams(
+        code='all',
+        human_readable_name='All',
+    )
+    INCLUDE = FieldValueStringEnumParams(
+        code='include',
+        human_readable_name='Include',
+    )
+    A = FieldValueStringEnumParams(
+        code='a',
+        human_readable_name='A/AAAA records',
+    )
+    MX = FieldValueStringEnumParams(
+        code='mx',
+        human_readable_name='MX records',
+    )
+    PTR = FieldValueStringEnumParams(
+        code='ptr',
+        human_readable_name='PTR records',
+    )
+    IP4 = FieldValueStringEnumParams(
+        code='ip4',
+        human_readable_name='IPv4 records',
+    )
+    IP6 = FieldValueStringEnumParams(
+        code='ip6',
+        human_readable_name='IPv6 records',
+    )
+    EXISTS = FieldValueStringEnumParams(
+        code='exists',
+        human_readable_name='Exists',
+    )
+
+
+class SpfModifier(StringEnumParsable, enum.Enum):
+    REDIRECT = FieldValueStringEnumParams(
+        code='redirect',
+        human_readable_name='Redirect',
+    )
+    EXP = FieldValueStringEnumParams(
+        code='exp',
+        human_readable_name='Explanation',
+    )
+
+
+@attr.s
+class SpfDomainSpec(FieldValueSingleBase):
+    @classmethod
+    def _get_value_type(cls):
+        return six.string_types
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_string_until_separator_or_end('value', separators=' ')
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_string(self.value)
+
+        return composer.composed
+
+
+class DnsRecordTxtValueSpfModifierKnownBase(FieldValueComponentParsable):
+    @classmethod
+    @abc.abstractmethod
+    def get_modifier(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def get_canonical_name(cls):
+        return cls.get_modifier().value.code
+
+    @classmethod
+    def _get_value_class(cls):
+        return SpfDomainSpec
+
+
+class DnsRecordTxtValueSpfModifierRedirect(DnsRecordTxtValueSpfModifierKnownBase):
+    @classmethod
+    def get_modifier(cls):
+        return SpfModifier.REDIRECT
+
+
+class DnsRecordTxtValueSpfModifierExplanation(DnsRecordTxtValueSpfModifierKnownBase):
+    @classmethod
+    def get_modifier(cls):
+        return SpfModifier.EXP
+
+
+class DnsRecordTxtValueSpfModifierUnknown(NameValuePair):
+    pass
+
+
+class DnsRecordTxtValueSpfDirectiveBase(ParsableBase, Serializable):
+    @classmethod
+    @abc.abstractmethod
+    def get_mechanism(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse_qualifier_and_mechanism_name(cls, parsable):
+        parser = ParserText(parsable)
+
+        try:
+            parser.parse_parsable('qualifier', SpfQualifier)
+        except InvalidValue:
+            pass
+
+        mechanism = cls.get_mechanism()
+        try:
+            parser.parse_string('mechanism', mechanism.value.code)
+        except InvalidValue as e:
+            six.raise_from(InvalidType, e)
+
+        return parser
+
+    @classmethod
+    def _parse_domain(cls, parser, optional, extra_separators=''):
+        has_separator = True
+        if optional:
+            try:
+                parser.parse_separator(':', min_length=1, max_length=1)
+            except InvalidValue:
+                has_separator = False
+        else:
+            parser.parse_separator(':', min_length=1, max_length=1)
+
+        if has_separator:
+            parser.parse_string_until_separator_or_end('domain', separators=' ' + extra_separators)
+
+        return parser.get('domain', None)
+
+    @classmethod
+    def _compose_domain(cls, composer, domain):
+        if domain is None:
+            return
+
+        composer.compose_separator(':')
+        composer.compose_string(domain)
+
+    @classmethod
+    def _parse_ip_network(cls, parser):
+        parser.parse_string('separator', ':')
+        parser.parse_string_until_separator_or_end('ip_network', ' ')
+
+        return parser['ip_network']
+
+    @classmethod
+    def _compose_ip_network(cls, composer, ip_network):
+        composer.compose_separator(':')
+        composer.compose_string(str(ip_network.network_address))
+        if ip_network.prefixlen != ip_network.max_prefixlen:
+            composer.compose_separator('/')
+            composer.compose_numeric(ip_network.prefixlen)
+
+    @classmethod
+    def _parse_ip_cidr_length(cls, parser):
+        has_separator = True
+        try:
+            parser.parse_separator('/', min_length=1, max_length=1)
+        except InvalidValue:
+            has_separator = False
+
+        if has_separator:
+            parser.parse_numeric('ip_cidr_length')
+            ip_cidr_length = parser['ip_cidr_length']
+            del parser['ip_cidr_length']
+        else:
+            ip_cidr_length = None
+
+        return ip_cidr_length
+
+    @classmethod
+    def _compose_ip_cidr_length(cls, composer, ip_cidr_length):
+        if ip_cidr_length is None:
+            return
+
+        composer.compose_separator('/')
+        composer.compose_numeric(ip_cidr_length)
+
+    def _compose_qualifier_and_mechanism_name(self, qualifier):
+        composer = ComposerText()
+
+        if qualifier is not None:
+            composer.compose_string(qualifier.value.code)
+
+        composer.compose_string(self.get_mechanism().value.code)
+
+        return composer
+
+
+@attr.s
+class DnsRecordTxtValueSpfDirectiveAll(DnsRecordTxtValueSpfDirectiveBase):
+    qualifier = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.in_(SpfQualifier))
+    )
+
+    @classmethod
+    def get_mechanism(cls):
+        return SpfMechanism.ALL
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_qualifier_and_mechanism_name(parsable)
+
+        return cls(qualifier=parser.get('qualifier', None)), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_qualifier_and_mechanism_name(self.qualifier)
+
+        return composer.composed
+
+
+@attr.s
+class DnsRecordTxtValueSpfDirectiveDomain(DnsRecordTxtValueSpfDirectiveBase):
+    domain = attr.ib(
+        converter=SpfDomainSpec.convert,
+        validator=attr.validators.instance_of(SpfDomainSpec)
+    )
+    qualifier = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.in_(SpfQualifier))
+    )
+
+    @classmethod
+    @abc.abstractmethod
+    def get_mechanism(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_qualifier_and_mechanism_name(parsable)
+
+        qualifier = parser.get('qualifier', None)
+        domain = cls._parse_domain(parser, False)
+
+        return cls(qualifier=qualifier, domain=domain), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_qualifier_and_mechanism_name(self.qualifier)
+
+        self._compose_domain(composer, self.domain)
+
+        return composer.composed
+
+
+@attr.s
+class DnsRecordTxtValueSpfDirectivePtr(DnsRecordTxtValueSpfDirectiveBase):
+    domain = attr.ib(
+        default=None,
+        converter=SpfDomainSpec.convert,
+        validator=attr.validators.optional(attr.validators.instance_of(SpfDomainSpec)),
+    )
+    qualifier = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.in_(SpfQualifier)),
+    )
+
+    @classmethod
+    def get_mechanism(cls):
+        return SpfMechanism.PTR
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_qualifier_and_mechanism_name(parsable)
+
+        qualifier = parser.get('qualifier', None)
+        domain = cls._parse_domain(parser, True)
+
+        return cls(qualifier=qualifier, domain=domain), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_qualifier_and_mechanism_name(self.qualifier)
+
+        self._compose_domain(composer, self.domain)
+
+        return composer.composed
+
+
+@attr.s
+class DnsRecordTxtValueSpfDirectiveDomainCidr(DnsRecordTxtValueSpfDirectiveBase):
+    domain = attr.ib(
+        default=None,
+        converter=SpfDomainSpec.convert,
+        validator=attr.validators.optional(attr.validators.instance_of(SpfDomainSpec)),
+    )
+    ipv4_cidr_length = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(six.integer_types)),
+    )
+    ipv6_cidr_length = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(six.integer_types)),
+    )
+    qualifier = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.in_(SpfQualifier)),
+    )
+
+    @classmethod
+    @abc.abstractmethod
+    def get_mechanism(cls):
+        raise NotImplementedError()
+
+    @ipv4_cidr_length.validator
+    def _validator_ipv4_cidr_length(self, attribute, value):  # pylint: disable=unused-argument
+        if value is None:
+            return
+
+        if value < 0 or value > 32:
+            raise InvalidValue(value, type(self), 'ipv4_cidr_length')
+
+    @ipv6_cidr_length.validator
+    def _validator_ipv6_cidr_length(self, attribute, value):  # pylint: disable=unused-argument
+        if value is None:
+            return
+
+        if value < 0 or value > 128:
+            raise InvalidValue(value, type(self), 'ipv6_cidr_length')
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_qualifier_and_mechanism_name(parsable)
+
+        qualifier = parser.get('qualifier', None)
+        domain = cls._parse_domain(parser, True, extra_separators='/')
+        ipv4_cidr_length = cls._parse_ip_cidr_length(parser)
+        ipv6_cidr_length = cls._parse_ip_cidr_length(parser)
+
+        return cls(
+            qualifier=qualifier,
+            domain=domain,
+            ipv4_cidr_length=ipv4_cidr_length,
+            ipv6_cidr_length=ipv6_cidr_length
+        ), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_qualifier_and_mechanism_name(self.qualifier)
+
+        self._compose_domain(composer, self.domain)
+        self._compose_ip_cidr_length(composer, self.ipv4_cidr_length)
+        self._compose_ip_cidr_length(composer, self.ipv6_cidr_length)
+
+        return composer.composed
+
+
+class DnsRecordTxtValueSpfDirectiveInclude(DnsRecordTxtValueSpfDirectiveDomain):
+    @classmethod
+    def get_mechanism(cls):
+        return SpfMechanism.INCLUDE
+
+
+class DnsRecordTxtValueSpfDirectiveA(DnsRecordTxtValueSpfDirectiveDomainCidr):
+    @classmethod
+    def get_mechanism(cls):
+        return SpfMechanism.A
+
+
+class DnsRecordTxtValueSpfDirectiveMx(DnsRecordTxtValueSpfDirectiveDomainCidr):
+    @classmethod
+    def get_mechanism(cls):
+        return SpfMechanism.MX
+
+
+@attr.s
+class DnsRecordTxtValueSpfDirectiveIp4(DnsRecordTxtValueSpfDirectiveBase):
+    ipv4_network = attr.ib(
+        converter=ipaddress.ip_network,
+        validator=attr.validators.instance_of(ipaddress.IPv4Network)
+    )
+    qualifier = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.in_(SpfQualifier)),
+    )
+
+    @classmethod
+    def get_mechanism(cls):
+        return SpfMechanism.IP4
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_qualifier_and_mechanism_name(parsable)
+
+        qualifier = parser.get('qualifier', None)
+        ipv4_network = cls._parse_ip_network(parser)
+
+        return cls(
+            qualifier=qualifier,
+            ipv4_network=ipv4_network,
+        ), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_qualifier_and_mechanism_name(self.qualifier)
+
+        self._compose_ip_network(composer, self.ipv4_network)
+
+        return composer.composed
+
+
+@attr.s
+class DnsRecordTxtValueSpfDirectiveIp6(DnsRecordTxtValueSpfDirectiveBase):
+    ipv6_network = attr.ib(
+        converter=ipaddress.ip_network,
+        validator=attr.validators.instance_of(ipaddress.IPv6Network)
+    )
+    qualifier = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.in_(SpfQualifier)),
+    )
+
+    @classmethod
+    def get_mechanism(cls):
+        return SpfMechanism.IP6
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_qualifier_and_mechanism_name(parsable)
+
+        qualifier = parser.get('qualifier', None)
+        ipv6_network = cls._parse_ip_network(parser)
+
+        return cls(
+            qualifier=qualifier,
+            ipv6_network=ipv6_network,
+        ), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_qualifier_and_mechanism_name(self.qualifier)
+
+        self._compose_ip_network(composer, self.ipv6_network)
+
+        return composer.composed
+
+
+class DnsRecordTxtValueSpfDirectiveExists(DnsRecordTxtValueSpfDirectiveDomain):
+    @classmethod
+    def get_mechanism(cls):
+        return SpfMechanism.EXISTS
+
+
+class DnsRecordTxtValueSpfVariantParsable(VariantParsable):
+    @classmethod
+    def _get_variants(cls):
+        return collections.OrderedDict([
+            (SpfMechanism.ALL, [DnsRecordTxtValueSpfDirectiveAll, ]),
+            (SpfMechanism.INCLUDE, [DnsRecordTxtValueSpfDirectiveInclude, ]),
+            (SpfMechanism.A, [DnsRecordTxtValueSpfDirectiveA, ]),
+            (SpfMechanism.MX, [DnsRecordTxtValueSpfDirectiveMx, ]),
+            (SpfMechanism.PTR, [DnsRecordTxtValueSpfDirectivePtr, ]),
+            (SpfMechanism.IP4, [DnsRecordTxtValueSpfDirectiveIp4, ]),
+            (SpfMechanism.IP6, [DnsRecordTxtValueSpfDirectiveIp6, ]),
+            (SpfMechanism.EXISTS, [DnsRecordTxtValueSpfDirectiveExists, ]),
+            (SpfModifier.REDIRECT, [DnsRecordTxtValueSpfModifierRedirect, ]),
+            (SpfModifier.EXP, [DnsRecordTxtValueSpfModifierExplanation, ]),
+        ])
+
+
+@attr.s
+class DnsRecordTxtValueSpf(ParsableBase, Serializable):
+    terms = attr.ib(
+        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of((
+            DnsRecordTxtValueSpfDirectiveBase,
+            DnsRecordTxtValueSpfModifierKnownBase,
+            DnsRecordTxtValueSpfModifierUnknown,
+        )))
+    )
+    version = attr.ib(
+        default=DnsRecordTxtValueSpfVersion(SpfVersion.SPF1),
+        converter=DnsRecordTxtValueSpfVersion.convert,
+        validator=attr.validators.instance_of(DnsRecordTxtValueSpfVersion)
+    )
+
+    def _asdict(self):
+        terms = []
+        for term in self.terms:
+            if isinstance(term, DnsRecordTxtValueSpfModifierKnownBase):
+                terms.append((term.get_modifier(), term.value.value))
+            elif isinstance(term, DnsRecordTxtValueSpfDirectiveBase):
+                terms.append((term.get_mechanism(), term._asdict()))
+            elif isinstance(term, DnsRecordTxtValueSpfModifierUnknown):
+                terms.append((term.name, term.value))
+            else:
+                raise NotImplementedError()
+
+        return collections.OrderedDict([
+            ('Version', self.version),
+            ('Terms', collections.OrderedDict(terms)),
+        ])
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        try:
+            parser.parse_parsable('version', DnsRecordTxtValueSpfVersion)
+        except InvalidValue as e:
+            six.raise_from(InvalidType, e)
+
+        terms = []
+        while parser.unparsed_length:
+            parser.parse_separator(' ')
+
+            try:
+                parser.parse_parsable('term', DnsRecordTxtValueSpfVariantParsable)
+                term = parser['term']
+            except InvalidValue:
+                parser.parse_string_until_separator_or_end('term', ' ')
+                term_parser = ParserText(parser['term'].encode('ascii'))
+                term_parser.parse_parsable('value', DnsRecordTxtValueSpfModifierUnknown)
+                term = term_parser['value']
+
+            terms.append(term)
+            del parser['term']
+
+        return cls(version=parser['version'], terms=terms), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_parsable(self.version)
+
+        for term in self.terms:
+            composer.compose_separator(' ')
+            composer.compose_parsable(term)
+
+        return composer.composed

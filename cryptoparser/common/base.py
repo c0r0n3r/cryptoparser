@@ -6,6 +6,8 @@ import json
 import math
 import types
 
+import ipaddress
+
 try:
     from collections.abc import MutableSequence  # only works on python 3.3+
 except ImportError:  # pragma: no cover
@@ -212,6 +214,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
                 return False, str(obj.value)
 
             return False, obj.name
+        elif isinstance(obj, (ipaddress.IPv4Network, ipaddress.IPv6Network)):
+            return False, str(obj)
         elif attr.has(type(obj)):
             result = cls._markdown_result_complex(obj, level)
         elif hasattr(obj, '_asdict'):
