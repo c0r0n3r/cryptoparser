@@ -283,3 +283,46 @@ class DnsRecordTxtValueMtaSts(FieldsSemicolonSeparated):
         validator=attr.validators.optional(attr.validators.instance_of(NameValuePairListSemicolonSeparated)),
         metadata={'extension': True},
     )
+
+
+class TlsRptVersion(StringEnumParsable, enum.Enum):
+    TLSRPTV1 = FieldValueStringEnumParams(
+        code='TLSRPTv1',
+        human_readable_name='TLSRPTv1',
+    )
+
+
+class DnsRecordTxtValueTlsRptValueVersion(FieldValueComponentParsable):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'v'
+
+    @classmethod
+    def _get_value_class(cls):
+        return TlsRptVersion
+
+
+class DnsRecordTxtValueTlsRptValueReportingUrlAggregated(FieldValueComponentUrl):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'rua'
+
+
+@attr.s
+class DnsRecordTxtValueTlsRpt(FieldsSemicolonSeparated):
+    version = attr.ib(
+        converter=DnsRecordTxtValueTlsRptValueVersion.convert,
+        validator=attr.validators.instance_of(DnsRecordTxtValueTlsRptValueVersion)
+    )
+    reporting_url_aggregated = attr.ib(
+        default=None,
+        converter=DnsRecordTxtValueTlsRptValueReportingUrlAggregated.convert,
+        validator=attr.validators.optional(
+            attr.validators.instance_of(DnsRecordTxtValueTlsRptValueReportingUrlAggregated)
+        ),
+    )
+    extensions = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(NameValuePairListSemicolonSeparated)),
+        metadata={'extension': True},
+    )

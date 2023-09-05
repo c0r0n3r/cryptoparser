@@ -18,7 +18,9 @@ from cryptoparser.dnsrec.txt import (
     DmarcReportingInterval,
     DnsRecordTxtValueDmarc,
     DnsRecordTxtValueMtaSts,
+    DnsRecordTxtValueTlsRpt,
     MtaStsPolicyVersion,
+    TlsRptVersion,
 )
 
 
@@ -83,6 +85,27 @@ class TestDnsRecordMtaSts(unittest.TestCase):
     def test_parse(self):
         self.assertEqual(DnsRecordTxtValueMtaSts.parse_exact_size(self._record_minimal_bytes), self._record_minimal)
         self.assertEqual(DnsRecordTxtValueMtaSts.parse_exact_size(self._record_full_bytes), self._record_full)
+
+    def test_compose(self):
+        self.assertEqual(self._record_minimal.compose(), self._record_minimal_bytes)
+        self.assertEqual(self._record_full.compose(), self._record_full_bytes)
+
+
+class TestDnsRecordTxtValueTlsRpt(unittest.TestCase):
+    _record_minimal = DnsRecordTxtValueTlsRpt(TlsRptVersion.TLSRPTV1, 'https://example.com/tlsrpt/report/failure')
+    _record_minimal_bytes = b'v=TLSRPTv1; rua=https://example.com/tlsrpt/report/failure'
+    _record_full = DnsRecordTxtValueTlsRpt(
+        version=TlsRptVersion.TLSRPTV1,
+        reporting_url_aggregated='mailto:tls-report@example.com',
+        extensions=NameValuePairListSemicolonSeparated(
+            collections.OrderedDict([('extension_name', 'extension_value')])
+        ),
+    )
+    _record_full_bytes = b'v=TLSRPTv1; rua=mailto:tls-report@example.com; extension_name=extension_value'
+
+    def test_parse(self):
+        self.assertEqual(DnsRecordTxtValueTlsRpt.parse_exact_size(self._record_minimal_bytes), self._record_minimal)
+        self.assertEqual(DnsRecordTxtValueTlsRpt.parse_exact_size(self._record_full_bytes), self._record_full)
 
     def test_compose(self):
         self.assertEqual(self._record_minimal.compose(), self._record_minimal_bytes)
