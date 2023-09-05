@@ -16,9 +16,11 @@ from cryptoparser.common.field import (
     FieldValueComponentParsableOptional,
     FieldValueComponentNumber,
     FieldValueComponentPercent,
+    FieldValueComponentString,
     FieldValueComponentUrl,
     FieldValueStringEnumParams,
     FieldsSemicolonSeparated,
+    NameValuePairListSemicolonSeparated,
 )
 
 
@@ -240,4 +242,44 @@ class DnsRecordTxtValueDmarc(FieldsSemicolonSeparated):  # pylint: disable=too-m
         default=None,
         converter=DnsRecordTxtValueDmarcValueSubdomainPolicy.convert,
         validator=attr.validators.optional(attr.validators.instance_of(DnsRecordTxtValueDmarcValueSubdomainPolicy))
+    )
+
+
+class MtaStsPolicyVersion(StringEnumParsable, enum.Enum):
+    STSV1 = FieldValueStringEnumParams(
+        code='STSv1',
+        human_readable_name='STSv1',
+    )
+
+
+class DnsRecordMtaStsValueVersion(FieldValueComponentParsable):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'v'
+
+    @classmethod
+    def _get_value_class(cls):
+        return MtaStsPolicyVersion
+
+
+class DnsRecordMtaStsValueId(FieldValueComponentString):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'id'
+
+
+@attr.s
+class DnsRecordTxtValueMtaSts(FieldsSemicolonSeparated):
+    version = attr.ib(
+        converter=DnsRecordMtaStsValueVersion.convert,
+        validator=attr.validators.instance_of(DnsRecordMtaStsValueVersion)
+    )
+    identifier = attr.ib(
+        converter=DnsRecordMtaStsValueId.convert,
+        validator=attr.validators.instance_of(DnsRecordMtaStsValueId)
+    )
+    extensions = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(NameValuePairListSemicolonSeparated)),
+        metadata={'extension': True},
     )

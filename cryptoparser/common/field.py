@@ -497,8 +497,7 @@ class FieldValueMultiple(FieldValueBase):
         raise NotImplementedError()
 
     @classmethod
-    def _from_field_values(cls, components):
-        attr_fields_dict = attr.fields_dict(cls)
+    def _get_attr_to_component_name_dict(cls, attr_fields_dict):
         attr_to_component_name_dict = {}
 
         for attribute in attr_fields_dict.values():
@@ -508,7 +507,10 @@ class FieldValueMultiple(FieldValueBase):
 
             attr_to_component_name_dict[attribute.name] = validator.type
 
-        params = {}
+        return attr_to_component_name_dict
+
+    @classmethod
+    def _parse_basic_params(cls, attr_to_component_name_dict, attr_fields_dict, components, params):
         for name, attribute in attr_fields_dict.items():
             for component in components:
                 try:
@@ -523,7 +525,7 @@ class FieldValueMultiple(FieldValueBase):
                     raise InvalidValue(None, cls, name)
 
             if attr_to_component_name_dict[name].get_canonical_name() in components:
-                parsable = components[attr_to_component_name_dict[name].get_canonical_name()]
+                parsable = components.pop(attr_to_component_name_dict[name].get_canonical_name())
                 if parsable is None:  # value is None in  case of optional values
                     parsable = attr_to_component_name_dict[name].get_canonical_name()
                 else:
@@ -532,12 +534,33 @@ class FieldValueMultiple(FieldValueBase):
             else:
                 params[name] = attribute.default
 
-        return cls(**params)
+    @classmethod
+    def _parse_extensions(cls, attr_to_component_name_dict, extension, components, params):
+        if extension and components:
+            name, _ = extension
+            params[name] = attr_to_component_name_dict[name](components)
 
     @classmethod
     def _parse(cls, parsable):
-        header_field_value = cls._get_header_value_list_class().parse_exact_size(parsable)
-        return cls._from_field_values(header_field_value.value), len(parsable)
+        params = {}
+        extension = None
+        attr_fields_dict_basic = {}
+        attr_fields_dict = attr.fields_dict(cls)
+        for name, attribute in attr_fields_dict.items():
+            if not attribute.metadata.get('extension', False):
+                attr_fields_dict_basic[name] = attribute
+            elif extension is None:
+                extension = (name, attribute)
+            else:
+                raise NotImplementedError()
+        attr_to_component_name_dict = cls._get_attr_to_component_name_dict(attr_fields_dict)
+
+        components = cls._get_header_value_list_class().parse_exact_size(parsable).value
+
+        cls._parse_basic_params(attr_to_component_name_dict, attr_fields_dict_basic, components, params)
+        cls._parse_extensions(attr_to_component_name_dict, extension, components, params)
+
+        return cls(**params), len(parsable)
 
     def compose(self):
         composer = ComposerText()

@@ -1,18 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import collections
+
 import unittest
 
 from cryptodatahub.common.exception import InvalidValue
+
+from cryptoparser.common.field import NameValuePairListSemicolonSeparated
 
 from cryptoparser.dnsrec.txt import (
     DmarcAlignment,
     DmarcFailureReportingFormat,
     DmarcFailureReportingOption,
-    DmarcPolicyVersion,
     DmarcPolicyOption,
-    DnsRecordTxtValueDmarc,
+    DmarcPolicyVersion,
     DmarcReportingInterval,
+    DnsRecordTxtValueDmarc,
+    DnsRecordTxtValueMtaSts,
+    MtaStsPolicyVersion,
 )
 
 
@@ -59,4 +65,25 @@ class TestDnsRecordDmarc(unittest.TestCase):
         self.assertEqual(DnsRecordTxtValueDmarc.parse_exact_size(self._record_full_bytes), self._record_full)
 
     def test_compose(self):
+        self.assertEqual(self._record_full.compose(), self._record_full_bytes)
+
+
+class TestDnsRecordMtaSts(unittest.TestCase):
+    _record_minimal = DnsRecordTxtValueMtaSts(MtaStsPolicyVersion.STSV1, '20160831085700Z')
+    _record_minimal_bytes = b'v=STSv1; id=20160831085700Z'
+    _record_full = DnsRecordTxtValueMtaSts(
+        version=MtaStsPolicyVersion.STSV1,
+        identifier='20160831085700Z',
+        extensions=NameValuePairListSemicolonSeparated(
+            collections.OrderedDict([('extension_name', 'extension_value')])
+        ),
+    )
+    _record_full_bytes = b'v=STSv1; id=20160831085700Z; extension_name=extension_value'
+
+    def test_parse(self):
+        self.assertEqual(DnsRecordTxtValueMtaSts.parse_exact_size(self._record_minimal_bytes), self._record_minimal)
+        self.assertEqual(DnsRecordTxtValueMtaSts.parse_exact_size(self._record_full_bytes), self._record_full)
+
+    def test_compose(self):
+        self.assertEqual(self._record_minimal.compose(), self._record_minimal_bytes)
         self.assertEqual(self._record_full.compose(), self._record_full_bytes)
