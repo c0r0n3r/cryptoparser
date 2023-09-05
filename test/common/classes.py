@@ -24,6 +24,7 @@ from cryptoparser.common.base import (
     ParsableBase,
     ParserBinary,
     Serializable,
+    StringEnumCaseInsensitiveParsable,
     StringEnumParsable,
     ThreeByteEnumComposer,
     ThreeByteEnumParsable,
@@ -32,6 +33,19 @@ from cryptoparser.common.base import (
     VariantParsable
 )
 from cryptoparser.common.exception import TooMuchData, InvalidType
+from cryptoparser.common.field import (
+    FieldsSemicolonSeparated,
+    FieldValueStringEnum,
+    FieldValueComponentNumber,
+    FieldValueComponentOption,
+    FieldValueComponentPercent,
+    FieldValueComponentQuotedString,
+    FieldValueComponentString,
+    FieldValueComponentTimeDelta,
+    FieldValueComponentUrl,
+    FieldValueStringEnumParams,
+    FieldValueTimeDelta,
+)
 from cryptoparser.common.parse import ParserCRLF
 
 
@@ -512,3 +526,108 @@ class FourByteEnumComposerTest(FourByteEnumComposer, enum.Enum):
     TWO = NByteEnumParam(code=2)
     THREE = NByteEnumParam(code=3)
     FOUR = NByteEnumParam(code=4)
+
+
+class FieldValueTimeDeltaTest(FieldValueTimeDelta):
+    @classmethod
+    def get_name(cls):
+        return 'testTimeDelta'
+
+
+class FieldValueEnumTest(StringEnumCaseInsensitiveParsable, enum.Enum):
+    FIRST = FieldValueStringEnumParams(code='first', human_readable_name='FiRsT')
+    SECOND = FieldValueStringEnumParams(code='second')
+
+
+class FieldValueStringEnumTest(FieldValueStringEnum):
+    @classmethod
+    def _get_value_type(cls):
+        return FieldValueEnumTest
+
+
+class FieldValueComponentOptionTest(FieldValueComponentOption):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testOption'
+
+
+class FieldValueComponentStringTest(FieldValueComponentString):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testString'
+
+
+class FieldValueComponentUrlTest(FieldValueComponentUrl):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testUrl'
+
+
+class FieldValueComponentOptionalStringTest(FieldValueComponentQuotedString):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testOptionalString'
+
+
+class FieldValueComponentQuotedStringTest(FieldValueComponentQuotedString):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testQuotedString'
+
+
+class FieldValueComponentNumberTest(FieldValueComponentNumber):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testNumber'
+
+
+class FieldValueComponentPercentTest(FieldValueComponentPercent):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testPercent'
+
+
+class FieldValueComponentTimeDeltaTest(FieldValueComponentTimeDelta):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testTimeDelta'
+
+
+@attr.s
+class FieldValueMultipleTest(FieldsSemicolonSeparated):
+    time_delta = attr.ib(
+        converter=FieldValueComponentTimeDeltaTest.convert,
+        validator=attr.validators.instance_of(FieldValueComponentTimeDeltaTest)
+    )
+    option = attr.ib(
+        converter=FieldValueComponentOptionTest.convert,
+        validator=attr.validators.instance_of(FieldValueComponentOptionTest),
+        default=False
+    )
+    string = attr.ib(
+        converter=FieldValueComponentStringTest.convert,
+        validator=attr.validators.instance_of(FieldValueComponentStringTest),
+        default='default'
+    )
+    url = attr.ib(
+        converter=FieldValueComponentUrlTest.convert,
+        validator=attr.validators.instance_of(FieldValueComponentUrlTest),
+        default='https://example.com'
+    )
+    optional_string = attr.ib(
+        converter=attr.converters.optional(FieldValueComponentOptionalStringTest.convert),
+        validator=attr.validators.optional(
+            attr.validators.instance_of(FieldValueComponentOptionalStringTest)
+        ),
+        default=None
+    )
+    number = attr.ib(
+        converter=FieldValueComponentNumberTest.convert,
+        validator=attr.validators.instance_of(FieldValueComponentNumberTest),
+        default=0
+    )
+    percent = attr.ib(
+        converter=FieldValueComponentPercentTest.convert,
+        validator=attr.validators.instance_of(FieldValueComponentPercentTest),
+        default=100
+    )

@@ -451,3 +451,28 @@ class DnsRecordMx(ParsableBase):
         composer.compose_parsable(self.exchange)
 
         return composer.composed_bytes
+
+
+@attr.s
+class DnsRecordTxt(ParsableBase):
+    HEADER_SIZE = 1
+
+    value = attr.ib(validator=attr.validators.instance_of(six.string_types))
+
+    @classmethod
+    def _parse(cls, parsable):
+        if len(parsable) < cls.HEADER_SIZE:
+            raise NotEnoughData(cls.HEADER_SIZE - len(parsable))
+
+        parser = ParserBinary(parsable)
+
+        parser.parse_string('value', 1, encoding='ascii')
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_string(self.value, 'ascii', 1)
+
+        return composer.composed_bytes

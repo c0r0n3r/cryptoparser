@@ -18,41 +18,44 @@ from cryptoparser.common.base import (
     StringEnumCaseInsensitiveParsable,
     VariantParsable,
 )
-from cryptoparser.common.exception import InvalidType
-from cryptoparser.common.parse import ParserText, ParsableBase, ParserCRLF, ComposerText
+from cryptoparser.common.field import (
+    FieldParsableBase,
+    FieldValueComponentOption,
+    FieldValueDateTime,
+    FieldValueString,
+    FieldValueStringEnum,
+    FieldValueStringEnumParams,
+    FieldValueTimeDelta,
+    FieldsCommaSeparated,
+    FieldsSemicolonSeparated,
+    NameValueVariantBase,
+)
+from cryptoparser.common.parse import ParserCRLF, ComposerText
 from cryptoparser.common.utils import get_leaf_classes
 
 from .parse import (
-    HttpHeaderFieldsCommaSeparated,
-    HttpHeaderFieldsSemicolonSeparated,
-    HttpHeaderFieldValueString,
-    HttpHeaderFieldValueStringEnum,
-    HttpHeaderFieldValueStringEnumParams,
     HttpHeaderFieldValueComponentMaxAge,
-    HttpHeaderFieldValueComponentOption,
     HttpHeaderFieldValueComponentReportURI,
-    HttpHeaderFieldValueTimeDelta,
-    HttpHeaderFieldValueDateTime,
 )
 
 
-class HttpHeaderFieldValueETag(HttpHeaderFieldValueString):
+class HttpHeaderFieldValueETag(FieldValueString):
     pass
 
 
-class HttpHeaderFieldValueAge(HttpHeaderFieldValueTimeDelta):
+class HttpHeaderFieldValueAge(FieldValueTimeDelta):
     pass
 
 
-class HttpHeaderFieldValueDate(HttpHeaderFieldValueDateTime):
+class HttpHeaderFieldValueDate(FieldValueDateTime):
     pass
 
 
-class HttpHeaderFieldValueExpires(HttpHeaderFieldValueDateTime):
+class HttpHeaderFieldValueExpires(FieldValueDateTime):
     pass
 
 
-class HttpHeaderFieldValueLastModified(HttpHeaderFieldValueDateTime):
+class HttpHeaderFieldValueLastModified(FieldValueDateTime):
     pass
 
 
@@ -68,43 +71,43 @@ class HttpHeaderFieldValueCacheControlSMaxAge(HttpHeaderFieldValueComponentMaxAg
         return 's-maxage'
 
 
-class HttpHeaderFieldValueCacheControlNoCache(HttpHeaderFieldValueComponentOption):
+class HttpHeaderFieldValueCacheControlNoCache(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'no-cache'
 
 
-class HttpHeaderFieldValueCacheControlNoStore(HttpHeaderFieldValueComponentOption):
+class HttpHeaderFieldValueCacheControlNoStore(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'no-store'
 
 
-class HttpHeaderFieldValueCacheControlMustRevalidate(HttpHeaderFieldValueComponentOption):
+class HttpHeaderFieldValueCacheControlMustRevalidate(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'must-revalidate'
 
 
-class HttpHeaderFieldValueCacheControlProxyRevalidate(HttpHeaderFieldValueComponentOption):
+class HttpHeaderFieldValueCacheControlProxyRevalidate(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'proxy-revalidate'
 
 
-class HttpHeaderFieldValueCacheControlPublic(HttpHeaderFieldValueComponentOption):
+class HttpHeaderFieldValueCacheControlPublic(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'public'
 
 
-class HttpHeaderFieldValueCacheControlPrivate(HttpHeaderFieldValueComponentOption):
+class HttpHeaderFieldValueCacheControlPrivate(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'private'
 
 
-class HttpHeaderFieldValueCacheControlNoTransform(HttpHeaderFieldValueComponentOption):
+class HttpHeaderFieldValueCacheControlNoTransform(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'no-transform'
@@ -112,7 +115,7 @@ class HttpHeaderFieldValueCacheControlNoTransform(HttpHeaderFieldValueComponentO
 
 @attr.s
 class HttpHeaderFieldValueCacheControlResponse(  # pylint: disable=too-many-instance-attributes
-        HttpHeaderFieldsCommaSeparated
+        FieldsCommaSeparated
 ):
     max_age = attr.ib(
         converter=attr.converters.optional(HttpHeaderFieldValueCacheControlMaxAge.convert),
@@ -161,20 +164,20 @@ class HttpHeaderFieldValueCacheControlResponse(  # pylint: disable=too-many-inst
     )
 
 
-class HttpHeaderFieldValueComponentIncludeSubDomains(HttpHeaderFieldValueComponentOption):
+class HttpHeaderFieldValueComponentIncludeSubDomains(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'includeSubDomains'
 
 
-class HttpHeaderFieldValueComponentPreload(HttpHeaderFieldValueComponentOption):
+class HttpHeaderFieldValueComponentPreload(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'preload'
 
 
 @attr.s
-class HttpHeaderFieldValueSTS(HttpHeaderFieldsSemicolonSeparated):
+class HttpHeaderFieldValueSTS(FieldsSemicolonSeparated):
     max_age = attr.ib(
         converter=HttpHeaderFieldValueComponentMaxAge.convert,
         validator=attr.validators.instance_of(HttpHeaderFieldValueComponentMaxAge)
@@ -192,7 +195,7 @@ class HttpHeaderFieldValueSTS(HttpHeaderFieldsSemicolonSeparated):
 
 
 @attr.s
-class HttpHeaderFieldValueExpectStaple(HttpHeaderFieldsSemicolonSeparated):
+class HttpHeaderFieldValueExpectStaple(FieldsSemicolonSeparated):
     max_age = attr.ib(
         converter=HttpHeaderFieldValueComponentMaxAge.convert,
         validator=attr.validators.instance_of(HttpHeaderFieldValueComponentMaxAge)
@@ -214,14 +217,14 @@ class HttpHeaderFieldValueExpectStaple(HttpHeaderFieldsSemicolonSeparated):
     )
 
 
-class HttpHeaderFieldValueExpectCTComponentEnforce(HttpHeaderFieldValueComponentOption):
+class HttpHeaderFieldValueExpectCTComponentEnforce(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'enforce'
 
 
 @attr.s
-class HttpHeaderFieldValueExpectCT(HttpHeaderFieldsCommaSeparated):
+class HttpHeaderFieldValueExpectCT(FieldsCommaSeparated):
     max_age = attr.ib(
         converter=HttpHeaderFieldValueComponentMaxAge.convert,
         validator=attr.validators.instance_of(HttpHeaderFieldValueComponentMaxAge)
@@ -238,81 +241,81 @@ class HttpHeaderFieldValueExpectCT(HttpHeaderFieldsCommaSeparated):
     )
 
 
-class HttpHeaderFieldValueContentType(HttpHeaderFieldValueString):
+class HttpHeaderFieldValueContentType(FieldValueString):
     pass
 
 
 class HttpHeaderXContentTypeOptions(StringEnumCaseInsensitiveParsable, enum.Enum):
-    NOSNIFF = HttpHeaderFieldValueStringEnumParams(
+    NOSNIFF = FieldValueStringEnumParams(
         code='nosniff'
     )
 
 
-class HttpHeaderFieldValueXContentTypeOptions(HttpHeaderFieldValueStringEnum):
+class HttpHeaderFieldValueXContentTypeOptions(FieldValueStringEnum):
     @classmethod
     def _get_value_type(cls):
         return HttpHeaderXContentTypeOptions
 
 
 class HttpHeaderPragma(StringEnumCaseInsensitiveParsable, enum.Enum):
-    NO_CACHE = HttpHeaderFieldValueStringEnumParams(
+    NO_CACHE = FieldValueStringEnumParams(
         code='no-cache'
     )
 
 
-class HttpHeaderFieldValuePragma(HttpHeaderFieldValueStringEnum):
+class HttpHeaderFieldValuePragma(FieldValueStringEnum):
     @classmethod
     def _get_value_type(cls):
         return HttpHeaderPragma
 
 
-class HttpHeaderFieldValueServer(HttpHeaderFieldValueString):
+class HttpHeaderFieldValueServer(FieldValueString):
     pass
 
 
 class HttpHeaderXFrameOptions(StringEnumCaseInsensitiveParsable, enum.Enum):
-    DENY = HttpHeaderFieldValueStringEnumParams(
+    DENY = FieldValueStringEnumParams(
         code='DENY'
     )
-    SAMEORIGIN = HttpHeaderFieldValueStringEnumParams(
+    SAMEORIGIN = FieldValueStringEnumParams(
         code='SAMEORIGIN'
     )
 
 
-class HttpHeaderFieldValueXFrameOptions(HttpHeaderFieldValueStringEnum):
+class HttpHeaderFieldValueXFrameOptions(FieldValueStringEnum):
     @classmethod
     def _get_value_type(cls):
         return HttpHeaderXFrameOptions
 
 
 class HttpHeaderReferrerPolicy(StringEnumCaseInsensitiveParsable, enum.Enum):
-    NO_REFERRER = HttpHeaderFieldValueStringEnumParams(
+    NO_REFERRER = FieldValueStringEnumParams(
         code='no-referrer'
     )
-    NO_REFERRER_WHEN_DOWNGRADE = HttpHeaderFieldValueStringEnumParams(
+    NO_REFERRER_WHEN_DOWNGRADE = FieldValueStringEnumParams(
         code='no-referrer-when-downgrade'
     )
-    ORIGIN = HttpHeaderFieldValueStringEnumParams(
+    ORIGIN = FieldValueStringEnumParams(
         code='origin'
     )
-    ORIGIN_WHEN_CROSS_ORIGIN = HttpHeaderFieldValueStringEnumParams(
+    ORIGIN_WHEN_CROSS_ORIGIN = FieldValueStringEnumParams(
         code='origin-when-cross-origin'
     )
-    SAME_ORIGIN = HttpHeaderFieldValueStringEnumParams(
+    SAME_ORIGIN = FieldValueStringEnumParams(
         code='same-origin'
     )
-    STRICT_ORIGIN = HttpHeaderFieldValueStringEnumParams(
+    STRICT_ORIGIN = FieldValueStringEnumParams(
         code='strict-origin'
     )
-    STRICT_ORIGIN_WHEN_CROSS_ORIGIN = HttpHeaderFieldValueStringEnumParams(
+    STRICT_ORIGIN_WHEN_CROSS_ORIGIN = FieldValueStringEnumParams(
         code='strict-origin-when-cross-origin'
     )
-    UNSAFE_URL = HttpHeaderFieldValueStringEnumParams(
+    UNSAFE_URL = FieldValueStringEnumParams(
         code='unsafe-url'
     )
 
 
-class HttpHeaderFieldValueReferrerPolicy(HttpHeaderFieldValueStringEnum):
+class HttpHeaderFieldValueReferrerPolicy(FieldValueStringEnum):
     @classmethod
     def _get_value_type(cls):
         return HttpHeaderReferrerPolicy
@@ -403,48 +406,42 @@ class HttpHeaderFieldName(StringEnumCaseInsensitiveParsable, enum.Enum):
         return found_items[0]
 
 
-class HttpHeaderFieldBase(ParsableBase):
-    _SEPARATOR = ': '
-
+class HttpHeaderFieldBase(NameValueVariantBase):
     @classmethod
+    @abc.abstractmethod
     def _parse(cls, parsable):
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def compose(self):
         raise NotImplementedError()
 
     @classmethod
-    def _parse_name_and_separators(cls, parsable):
-        parser = ParserText(parsable)
+    def get_separator(cls):
+        return ':'
 
-        parser.parse_string_until_separator('name', ':')
-        parser.parse_separator(':')
-        parser.parse_separator(' ', min_length=0, max_length=None)
+    @classmethod
+    def _compose_name_and_separator(cls, name):
+        composer = cls._compose_name(name)
 
-        return parser
+        composer.compose_separator(cls.get_separator())
 
-    @staticmethod
-    def _compose_name_and_value(name, value):
-        composer = ComposerText()
+        return composer
 
-        composer.compose_string_array([name, value], HttpHeaderFieldBase._SEPARATOR)
+    def _compose_name_and_value(self, name, value):
+        composer = self._compose_name_and_separator(name)
+
+        composer.compose_separator(' ')
+        composer.compose_string(value)
 
         return composer.composed
 
 
 @attr.s
 class HttpHeaderFieldParsedBase(HttpHeaderFieldBase):
-    value = attr.ib()
-
-    @value.validator
-    def _x_validator(self, attribute, value):  # pylint: disable=unused-argument
-        value_class = self._get_value_class()
-        if not isinstance(value, value_class):
-            self.value = value_class(value)
-
     @classmethod
     @abc.abstractmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         raise NotImplementedError()
 
     @classmethod
@@ -453,12 +450,15 @@ class HttpHeaderFieldParsedBase(HttpHeaderFieldBase):
         raise NotImplementedError()
 
     @classmethod
-    def _parse(cls, parsable):
-        parser = cls._parse_name_and_separators(parsable)
-        parser.parse_string_until_separator('value', ['\r\n', ])
+    def get_canonical_name(cls):
+        return cls.get_header_field_name().value.code
 
-        if parser['name'].lower() != cls.get_canonical_name().value.code:
-            raise InvalidType()
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_name_and_separator(parsable)
+
+        parser.parse_separator(' ', min_length=0, max_length=None)
+        parser.parse_string_until_separator('value', ['\r\n', ])
 
         value = cls._get_value_class().parse_exact_size(six.ensure_binary(parser['value'], 'ascii'))
 
@@ -466,20 +466,20 @@ class HttpHeaderFieldParsedBase(HttpHeaderFieldBase):
 
     def compose(self):
         return self._compose_name_and_value(
-            self.get_canonical_name().value.normalized_name,
+            self.get_header_field_name().value.normalized_name,
             six.ensure_text(bytes(self.value.compose()), 'ascii')
         )
 
     def _asdict(self):
         return collections.OrderedDict([
-            ('name', self.get_canonical_name()),
+            ('name', self.get_header_field_name().value.normalized_name),
             ('value', self.value)
         ])
 
 
 class HttpHeaderFieldETag(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.ETAG
 
     @classmethod
@@ -489,7 +489,7 @@ class HttpHeaderFieldETag(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldAge(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.AGE
 
     @classmethod
@@ -499,7 +499,7 @@ class HttpHeaderFieldAge(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldContentType(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.CONTENT_TYPE
 
     @classmethod
@@ -509,7 +509,7 @@ class HttpHeaderFieldContentType(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldCacheControlResponse(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.CACHE_CONTROL
 
     @classmethod
@@ -519,7 +519,7 @@ class HttpHeaderFieldCacheControlResponse(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldDate(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.DATE
 
     @classmethod
@@ -529,7 +529,7 @@ class HttpHeaderFieldDate(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldExpires(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.EXPIRES
 
     @classmethod
@@ -539,7 +539,7 @@ class HttpHeaderFieldExpires(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldLastModified(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.LAST_MODIFIED
 
     @classmethod
@@ -549,7 +549,7 @@ class HttpHeaderFieldLastModified(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldSTS(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.STRICT_TRANSPORT_SECURITY
 
     @classmethod
@@ -559,7 +559,7 @@ class HttpHeaderFieldSTS(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldExpectCT(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.EXPECT_CT
 
     @classmethod
@@ -569,7 +569,7 @@ class HttpHeaderFieldExpectCT(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldExpectStaple(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.EXPECT_STAPLE
 
     @classmethod
@@ -579,7 +579,7 @@ class HttpHeaderFieldExpectStaple(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldPragma(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.PRAGMA
 
     @classmethod
@@ -589,7 +589,7 @@ class HttpHeaderFieldPragma(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldReferrerPolicy(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.REFERRER_POLICY
 
     @classmethod
@@ -599,7 +599,7 @@ class HttpHeaderFieldReferrerPolicy(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldServer(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.SERVER
 
     @classmethod
@@ -609,7 +609,7 @@ class HttpHeaderFieldServer(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldXContentTypeOptions(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.X_CONTENT_TYPE_OPTIONS
 
     @classmethod
@@ -619,7 +619,7 @@ class HttpHeaderFieldXContentTypeOptions(HttpHeaderFieldParsedBase):
 
 class HttpHeaderFieldXFrameOptions(HttpHeaderFieldParsedBase):
     @classmethod
-    def get_canonical_name(cls):
+    def get_header_field_name(cls):
         return HttpHeaderFieldName.X_FRAME_OPTIONS
 
     @classmethod
@@ -631,25 +631,35 @@ class HttpHeaderFieldParsedVariant(VariantParsable):
     @classmethod
     def _get_variants(cls):
         return collections.OrderedDict([
-            (header_class.get_canonical_name(), [header_class, ])
+            (header_class.get_header_field_name(), [header_class, ])
             for header_class in get_leaf_classes(HttpHeaderFieldParsedBase)
         ])
 
 
 @attr.s
-class HttpHeaderFieldUnparsed(HttpHeaderFieldBase, Serializable):
+class HttpHeaderFieldUnparsed(FieldParsableBase, Serializable):
     name = attr.ib(validator=attr.validators.instance_of(six.string_types))
     value = attr.ib(validator=attr.validators.instance_of(six.string_types))
 
     @classmethod
+    def get_separator(cls):
+        return ':'
+
+    @classmethod
     def _parse(cls, parsable):
-        parser = cls._parse_name_and_separators(parsable)
+        parser = cls._parse_name(parsable)
+        parser.parse_separator(cls.get_separator())
+        parser.parse_separator(' ', min_length=0, max_length=None)
         parser.parse_string_until_separator('value', '\r\n')
 
-        return HttpHeaderFieldUnparsed(parser['name'], parser['value']), parser.parsed_length
+        return cls(parser['name'], parser['value']), parser.parsed_length
 
     def compose(self):
-        return self._compose_name_and_value(self.name, self.value)
+        composer = ComposerText()
+
+        composer.compose_string_array([self.name, self.value], self.get_separator() + ' ')
+
+        return composer.composed
 
 
 class HttpHeaderFields(ListParsable):
