@@ -248,7 +248,7 @@ class TestHostKeyEDDSA(unittest.TestCase):
         self.host_key = SshHostKeyEDDSA(
             host_key_algorithm=SshHostKeyAlgorithm.SSH_ED25519,
             public_key=PublicKey.from_params(PublicKeyParamsEddsa(
-                key_type=Authentication.ED25519,
+                curve_type=NamedGroup.CURVE25519,
                 key_data=b'\x00\x01\x02\x03' * 8,
             )),
         )
@@ -263,7 +263,7 @@ class TestHostKeyEDDSA(unittest.TestCase):
 
     def test_asdict(self):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
-            ('key_type', Authentication.ED25519),
+            ('key_type', Authentication.EDDSA),
             ('key_name', SshHostKeyAlgorithm.SSH_ED25519),
             ('key_size', 256),
             ('fingerprints', OrderedDict([
@@ -1171,7 +1171,7 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
             host_key_algorithm=SshHostKeyAlgorithm.SSH_ED25519_CERT_V01_OPENSSH_COM,
             nonce=b'\x00\x01\x02\x03',
             public_key=PublicKey.from_params(PublicKeyParamsEddsa(
-                key_type=Authentication.ED25519,
+                curve_type=NamedGroup.CURVE25519,
                 key_data=b'\x00\x01\x02\x03',
             )),
             serial=0x0102030405060708,
@@ -1186,7 +1186,7 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
             signature_key=SshHostKeyEDDSA(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_ED25519,
                 public_key=PublicKey.from_params(PublicKeyParamsEddsa(
-                    key_type=Authentication.ED25519,
+                    curve_type=NamedGroup.CURVE25519,
                     key_data=b'\x00\x01\x02\x03',
                 )),
             ),
@@ -1220,7 +1220,7 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
 
     def test_asdict(self):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
-            ('key_type', Authentication.ED25519),
+            ('key_type', Authentication.EDDSA),
             ('key_name', SshHostKeyAlgorithm.SSH_ED25519_CERT_V01_OPENSSH_COM),
             ('key_size', 256),
             ('fingerprints', OrderedDict([
@@ -1236,7 +1236,7 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
             )),
             ('host_key_algorithm', SshHostKeyAlgorithm.SSH_ED25519_CERT_V01_OPENSSH_COM),
             ('public_key', PublicKey.from_params(PublicKeyParamsEddsa(
-                key_type=Authentication.ED25519,
+                curve_type=NamedGroup.CURVE25519,
                 key_data=b'\x00\x01\x02\x03',
             ))),
             ('nonce', b'\x00\x01\x02\x03'),
@@ -1252,7 +1252,7 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
             ('signature_key', SshHostKeyEDDSA(
                 host_key_algorithm=SshHostKeyAlgorithm.SSH_ED25519,
                 public_key=PublicKey.from_params(PublicKeyParamsEddsa(
-                    key_type=Authentication.ED25519,
+                    curve_type=NamedGroup.CURVE25519,
                     key_data=b'\x00\x01\x02\x03',
                 )),
             )),

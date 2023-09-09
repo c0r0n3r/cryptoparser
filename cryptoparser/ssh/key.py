@@ -16,7 +16,7 @@ import attr
 import six
 
 
-from cryptodatahub.common.algorithm import Authentication, Hash
+from cryptodatahub.common.algorithm import Hash, NamedGroup
 from cryptodatahub.common.key import (
     PublicKey,
     PublicKeyParamsDsa,
@@ -331,7 +331,7 @@ class SshHostKeyEDDSABase(SshHostKeyBase):
         parser.parse_bytes('key_data', 4)
 
         public_key = PublicKey.from_params(PublicKeyParamsEddsa(
-            key_type=Authentication.ED25519,
+            curve_type=NamedGroup.CURVE25519,
             key_data=parser['key_data'],
         ))
 
