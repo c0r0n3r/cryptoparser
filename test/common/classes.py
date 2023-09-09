@@ -24,6 +24,7 @@ from cryptoparser.common.base import (
     ParsableBase,
     ParserBinary,
     Serializable,
+    SerializableTextEncoder,
     StringEnumCaseInsensitiveParsable,
     StringEnumParsable,
     ThreeByteEnumComposer,
@@ -641,3 +642,10 @@ class FieldValueMultipleExtendableTest(FieldValueMultipleTest):
         validator=attr.validators.optional(attr.validators.instance_of(NameValuePairListSemicolonSeparated)),
         metadata={'extension': True},
     )
+
+
+class SerializableUpperCaseEncoder(SerializableTextEncoder):
+    def __call__(self, obj, level):
+        _, string_result = super(SerializableUpperCaseEncoder, self).__call__(obj, level)
+
+        return False, string_result.upper()

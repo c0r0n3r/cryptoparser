@@ -13,6 +13,8 @@ from cryptoparser.common.base import (
     OpaqueEnumParsable,
     OpaqueParam,
     ProtocolVersionMajorMinorBase,
+    Serializable,
+    SerializableTextEncoder,
     Vector,
     VectorEnumCodeString,
     VectorParamEnumCodeString,
@@ -50,6 +52,7 @@ from .classes import (
     SerializableSimpleTypes,
     SerializableSingle,
     SerializableUnhandled,
+    SerializableUpperCaseEncoder,
     StringEnum,
     TestObject,
     ThreeByteEnumComposerTest,
@@ -737,6 +740,43 @@ class TestSerializable(unittest.TestCase):
                 '',
             ])
         )
+
+        Serializable.post_text_encoder = SerializableUpperCaseEncoder()
+        self.assertEqual(
+            SerializableRecursive().as_markdown(),
+            '\n'.join([
+                '* Json Asdict Object:',
+                '    * Attr B: B',
+                '    * Attr A: A',
+                '* Json Attr As Dict:',
+                '    * Attr B: B',
+                '    * Attr A: A',
+                '* Json Attr Object:',
+                '    * Attr B: B',
+                '    * Attr A: A',
+                '* Json Crypto Data Hub Enum: ONE',
+                '* Json Object:',
+                '    * Attr A: A',
+                '    * Attr B: B',
+                '* Json Serializable Hidden:',
+                '    * Visible Value: VALUE',
+                '* Json Serializable In Dict:',
+                '    * Key1:',
+                '        * Visible Value: VALUE',
+                '    * Key2: SINGLE',
+                '* Json Serializable In List:',
+                '    1.',
+                '        * Visible Value: VALUE',
+                '    2. SINGLE',
+                '* Json Serializable In Tuple:',
+                '    1.',
+                '        * Visible Value: VALUE',
+                '    2. SINGLE',
+                '* Json Serializable Single: SINGLE',
+                '',
+            ])
+        )
+        Serializable.post_text_encoder = SerializableTextEncoder()
 
 
 class TestListParsable(unittest.TestCase):
