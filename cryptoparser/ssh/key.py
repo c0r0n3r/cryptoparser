@@ -23,6 +23,7 @@ from cryptodatahub.common.key import (
     PublicKeyParamsEcdsa,
     PublicKeyParamsEddsa,
     PublicKeyParamsRsa,
+    PublicKeySize,
 )
 from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm, SshEllipticCurveIdentifier
 
@@ -88,7 +89,7 @@ class SshPublicKeyBase(object):
         key_dict = OrderedDict([
             ('key_type', self.public_key.key_type),
             ('key_name', self.host_key_algorithm),
-            ('key_size', self.public_key.key_size),
+            ('key_size', PublicKeySize(self.public_key.key_type, self.public_key.key_size)),
             ('fingerprints', self.fingerprints),
             ('known_hosts', known_hosts),
         ])

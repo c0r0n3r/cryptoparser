@@ -618,6 +618,7 @@ class TestSerializable(unittest.TestCase):
             '"json_attr_as_dict": {"attr_b": "b", "attr_a": "a"}, ' +
             '"json_attr_object": {"attr_b": "b", "attr_a": "a"}, ' +
             '"json_crypto_data_hub_enum": "ONE", ' +
+            '"json_gradeable": {"vulnerabilities": [{"attack_type": "MITM", "grade": "INSECURE", "named": "NOFS"}]}, ' +
             '"json_object": {"attr_a": "a", "attr_b": "b"}, ' +
             '"json_serializable_hidden": {"visible_value": "value"}, ' +
             '"json_serializable_in_dict": {"key1": {"visible_value": "value"}, "key2": "single"}, ' +
@@ -719,6 +720,7 @@ class TestSerializable(unittest.TestCase):
                 '    * Attr B: b',
                 '    * Attr A: a',
                 '* Json Crypto Data Hub Enum: one',
+                '* Json Gradeable: value',
                 '* Json Object:',
                 '    * Attr A: a',
                 '    * Attr B: b',
@@ -755,6 +757,7 @@ class TestSerializable(unittest.TestCase):
                 '    * Attr B: B',
                 '    * Attr A: A',
                 '* Json Crypto Data Hub Enum: ONE',
+                '* Json Gradeable: VALUE',
                 '* Json Object:',
                 '    * Attr A: A',
                 '    * Attr B: B',

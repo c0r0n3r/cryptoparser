@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import abc
 import enum
@@ -19,6 +20,7 @@ import attr
 import six
 
 from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.grade import Gradeable
 from cryptodatahub.common.types import CryptoDataEnumCodedBase, CryptoDataParamsBase
 
 from cryptoparser.common.parse import (
@@ -220,6 +222,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         elif isinstance(obj, bool):
             result = cls.post_text_encoder('yes' if obj else 'no', level)
         elif Serializable._markdown_is_directly_printable(obj):
+            result = cls.post_text_encoder(obj, level)
+        elif isinstance(obj, Gradeable):
             result = cls.post_text_encoder(obj, level)
         elif isinstance(obj, Serializable):
             result = obj._as_markdown(level)  # pylint: disable=protected-access
