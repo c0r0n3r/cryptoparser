@@ -14,6 +14,7 @@ import dateutil.tz
 from cryptodatahub.common.algorithm import Authentication, Hash, NamedGroup
 from cryptodatahub.common.key import (
     PublicKey,
+    PublicKeySize,
     PublicKeyParamsDsa,
     PublicKeyParamsEcdsa,
     PublicKeyParamsEddsa,
@@ -84,7 +85,7 @@ class TestString(unittest.TestCase):
         self.assertEqual(self.string.compose(), self.string_bytes)
 
 
-class TestHostKeyDSS(unittest.TestCase):
+class TestHostKeyDSS(TestPublicKeyBase):
     def setUp(self):
         self.host_key_bytes = bytes(
             b'\x00\x00\x00\x07' +               # host_key_algorithm_length
@@ -124,7 +125,7 @@ class TestHostKeyDSS(unittest.TestCase):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
             ('key_type', Authentication.DSS),
             ('key_name', SshHostKeyAlgorithm.SSH_DSS),
-            ('key_size', 32),
+            ('key_size', PublicKeySize(Authentication.DSS, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:wdClb94C9Lyi38P1o/SEG38glOh3ea5CJl84bZVx2yM='),
                 (Hash.SHA1, 'SHA1:fOmDMlRkSkplVc2vGTmkRY65j/c='),
@@ -141,7 +142,7 @@ class TestHostKeyDSS(unittest.TestCase):
         ]))
 
 
-class TestHostKeyRSA(unittest.TestCase):
+class TestHostKeyRSA(TestPublicKeyBase):
     def setUp(self):
         self.host_key_bytes = bytes(
             b'\x00\x00\x00\x07' +               # host_key_algorithm_length
@@ -174,7 +175,7 @@ class TestHostKeyRSA(unittest.TestCase):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
             ('key_type', Authentication.RSA),
             ('key_name', SshHostKeyAlgorithm.SSH_RSA),
-            ('key_size', 32),
+            ('key_size', PublicKeySize(Authentication.RSA, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:ZuSq5GtQTjPj8LAwY4UE4gGILhIAh5kDaDkkEYLaRU0='),
                 (Hash.SHA1, 'SHA1:KAG3KmsLUs4OClEUj62npdXcJTg='),
@@ -184,7 +185,7 @@ class TestHostKeyRSA(unittest.TestCase):
         ]))
 
 
-class TestHostKeyECDSA(unittest.TestCase):
+class TestHostKeyECDSA(TestPublicKeyBase):
     def setUp(self):
         self.point_x_bytes = b'\x80' + (256 // 8 - 1) * b'\x00'
         self.point_y_bytes = b'\x40' + (256 // 8 - 1) * b'\x00'
@@ -222,7 +223,7 @@ class TestHostKeyECDSA(unittest.TestCase):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
             ('key_type', Authentication.ECDSA),
             ('key_name', SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256),
-            ('key_size', 256),
+            ('key_size', PublicKeySize(Authentication.ECDSA, 256)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:+baTTAvJKIn0rfi1HVlDxDb/lIzi41H9UoCkFPyyO4I='),
                 (Hash.SHA1, 'SHA1:WiBKhHvCyV8LpdXgJWrJr9WAhqw='),
@@ -236,7 +237,7 @@ class TestHostKeyECDSA(unittest.TestCase):
         ]))
 
 
-class TestHostKeyEDDSA(unittest.TestCase):
+class TestHostKeyEDDSA(TestPublicKeyBase):
     def setUp(self):
         self.host_key_bytes = bytes(
             b'\x00\x00\x00\x0b' +               # host_key_algorithm_length
@@ -265,7 +266,7 @@ class TestHostKeyEDDSA(unittest.TestCase):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
             ('key_type', Authentication.EDDSA),
             ('key_name', SshHostKeyAlgorithm.SSH_ED25519),
-            ('key_size', 256),
+            ('key_size', PublicKeySize(Authentication.EDDSA, 256)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:tE7ReEqO7s6dpo8PFRQXhAe4Vdy9HkT0UawUx+NfClk='),
                 (Hash.SHA1, 'SHA1:0ql0OFSSY06SHsZhtEAJ1Wx2AUo='),
@@ -409,7 +410,7 @@ class TestHostCertExtensionsWithData(unittest.TestCase):
         self.assertEqual(self.extensions.compose(), self.extensions_bytes)
 
 
-class TestHostCertificateDSSBase(unittest.TestCase):
+class TestHostCertificateDSSBase(TestPublicKeyBase):
     def setUp(self):
         self.host_key_bytes = bytes(
             b'\x00\x00\x00\x07' +  # certificate_type
@@ -525,7 +526,7 @@ class TestHostCertificateV00DSS(TestHostCertificateDSSBase):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
             ('key_type', Authentication.DSS),
             ('key_name', SshHostKeyAlgorithm.SSH_DSS_CERT_V00_OPENSSH_COM),
-            ('key_size', 32),
+            ('key_size', PublicKeySize(Authentication.DSS, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:JLbl6U9Dd3zrR/pS86OLLJUsL6NU7NOnSd554vL1md0='),
                 (Hash.SHA1, 'SHA1:eGd4yAwFTXy+Wdi5xsuEJUNsj0M='),
@@ -667,7 +668,7 @@ class TestHostCertificateV01DSS(TestHostCertificateDSSBase):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
             ('key_type', Authentication.DSS),
             ('key_name', SshHostKeyAlgorithm.SSH_DSS_CERT_V01_OPENSSH_COM),
-            ('key_size', 32),
+            ('key_size', PublicKeySize(Authentication.DSS, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:81ny5W3AQivvf/ffzLM0b13/eAG82/GsSFNaBnVOF4A='),
                 (Hash.SHA1, 'SHA1:Kx6Nzq+MWzKiT4q0lxdQbZzecSo='),
@@ -713,7 +714,7 @@ class TestHostCertificateV01DSS(TestHostCertificateDSSBase):
         ]))
 
 
-class TestHostCertificateRSABase(unittest.TestCase):
+class TestHostCertificateRSABase(TestPublicKeyBase):
     def setUp(self):
         self.host_key_bytes = bytes(
             b'\x00\x00\x00\x07' +  # certificate_type
@@ -807,7 +808,7 @@ class TestHostCertificateV00RSA(TestHostCertificateRSABase):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
             ('key_type', Authentication.RSA),
             ('key_name', SshHostKeyAlgorithm.SSH_RSA_CERT_V00_OPENSSH_COM),
-            ('key_size', 32),
+            ('key_size', PublicKeySize(Authentication.RSA, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:YJVpL0zTCstfPryV5C1tD3boAzBrzRlAMjrAosxw4pA='),
                 (Hash.SHA1, 'SHA1:zNRNUIcyRZvu8MuhAmtALdUNCMM='),
@@ -928,7 +929,7 @@ class TestHostCertificateV01RSA(TestHostCertificateRSABase):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
             ('key_type', Authentication.RSA),
             ('key_name', SshHostKeyAlgorithm.SSH_RSA_CERT_V01_OPENSSH_COM),
-            ('key_size', 32),
+            ('key_size', PublicKeySize(Authentication.RSA, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:vqtvWzklbsElMSGXE0G7Gk7WDHuXzd83KOC0y0Rv9TY='),
                 (Hash.SHA1, 'SHA1:9Iem7KW/rAvahTzVMTmDFg93MBk='),
@@ -969,7 +970,7 @@ class TestHostCertificateV01RSA(TestHostCertificateRSABase):
         ]))
 
 
-class TestHostCertificateECDSABase(unittest.TestCase):
+class TestHostCertificateECDSABase(TestPublicKeyBase):
     def setUp(self):
         self.point_x_bytes = b'\x80' + (256 // 8 - 1) * b'\x00'
         self.point_y_bytes = b'\x40' + (256 // 8 - 1) * b'\x00'
@@ -1080,7 +1081,7 @@ class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
             ('key_type', Authentication.ECDSA),
             ('key_name', SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256_CERT_V01_OPENSSH_COM),
-            ('key_size', 256),
+            ('key_size', PublicKeySize(Authentication.ECDSA, 256)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:aRBBmsAqpnH3wrOh35fa//LB/JGcuTUAPuRPEj9RWRQ='),
                 (Hash.SHA1, 'SHA1:9E5qN+JPZBX4ZBfKEou/WNWtWR8='),
@@ -1127,7 +1128,7 @@ class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
         ]))
 
 
-class TestHostCertificateEDDSABase(unittest.TestCase):
+class TestHostCertificateEDDSABase(TestPublicKeyBase):
     def setUp(self):
         self.host_key_bytes = bytes(
             b'\x00\x00\x00\x17' +  # certificate_type
@@ -1222,7 +1223,7 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
             ('key_type', Authentication.EDDSA),
             ('key_name', SshHostKeyAlgorithm.SSH_ED25519_CERT_V01_OPENSSH_COM),
-            ('key_size', 256),
+            ('key_size', PublicKeySize(Authentication.EDDSA, 256)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:IDjjwI5W2lkjfR/gnU0pvSw6E340LushvP/N9A1HrWg='),
                 (Hash.SHA1, 'SHA1:EXpev7tY2XCP2R0G6eqcqNgBpOc='),
