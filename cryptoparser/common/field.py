@@ -386,6 +386,23 @@ class FieldValueComponentQuotedString(FieldValueComponentKeyValueBase):
 
 
 @attr.s
+class FieldValueComponentDateTime(FieldValueComponentKeyValueBase):
+    value = attr.ib(validator=attr.validators.instance_of(datetime.datetime))
+
+    @classmethod
+    @abc.abstractmethod
+    def get_canonical_name(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse_value(cls, parser):
+        parser.parse_date_time('value')
+
+    def _get_value_as_str(self):
+        return self.value.strftime('%a, %d %b %Y %H:%M:%S GMT')
+
+
+@attr.s
 class FieldValueComponentTimeDelta(FieldValueComponentKeyValueBase):
     value = attr.ib(validator=attr.validators.instance_of(datetime.timedelta))
 
@@ -429,6 +446,41 @@ class FieldValueComponentPercent(FieldValueComponentNumber):
     @abc.abstractmethod
     def get_canonical_name(cls):
         raise NotImplementedError()
+
+
+@attr.s
+class FieldValueComponentStringEnumParams(object):
+    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
+
+
+@attr.s
+class FieldValueComponentStringEnum(FieldValueComponentKeyValueBase):
+    value = attr.ib()
+
+    @classmethod
+    @abc.abstractmethod
+    def get_canonical_name(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_value_type(cls):
+        raise NotImplementedError()
+
+    @value.validator
+    def _validator_value(self, _, value):
+        if not isinstance(value, self._get_value_type()):
+            raise InvalidValue(value, type(self), 'value')
+
+    @classmethod
+    def _parse_value(cls, parser):
+        try:
+            parser.parse_parsable('value', cls._get_value_type())
+        except InvalidValue as e:
+            six.raise_from(InvalidValue(e.value.decode('ascii'), cls, 'value'), e)
+
+    def _get_value_as_str(self):
+        return self.value.value.code
 
 
 @attr.s

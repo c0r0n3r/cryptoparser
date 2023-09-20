@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from cryptoparser.common.field import (
+    FieldValueComponentDateTime,
     FieldValueComponentQuotedString,
     FieldValueComponentTimeDelta,
     NameValuePair,
@@ -10,6 +11,12 @@ from cryptoparser.common.field import (
 
 class HttpHeaderFieldValueComponent(NameValuePair):
     pass
+
+
+class HttpHeaderFieldValueComponentExpires(FieldValueComponentDateTime):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'expires'
 
 
 class HttpHeaderFieldValueComponentMaxAge(FieldValueComponentTimeDelta):

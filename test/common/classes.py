@@ -56,6 +56,8 @@ from cryptoparser.common.field import (
     FieldValueComponentPercent,
     FieldValueComponentQuotedString,
     FieldValueComponentString,
+    FieldValueComponentStringEnum,
+    FieldValueComponentStringEnumParams,
     FieldValueComponentTimeDelta,
     FieldValueComponentUrl,
     FieldValueStringEnumParams,
@@ -590,6 +592,28 @@ class FieldValueComponentUrlTest(FieldValueComponentUrl):
     @classmethod
     def get_canonical_name(cls):
         return 'testUrl'
+
+
+class ComponentStringEnumTest(StringEnumParsable, enum.Enum):
+    ONE = FieldValueComponentStringEnumParams(
+        code='one'
+    )
+    TWO = FieldValueComponentStringEnumParams(
+        code='two'
+    )
+    THREE = FieldValueComponentStringEnumParams(
+        code='three'
+    )
+
+
+class FieldValueComponentStringEnumTest(FieldValueComponentStringEnum):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testStringEnum'
+
+    @classmethod
+    def _get_value_type(cls):
+        return ComponentStringEnumTest
 
 
 class FieldValueComponentOptionalStringTest(FieldValueComponentQuotedString):

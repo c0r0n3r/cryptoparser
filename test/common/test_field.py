@@ -23,6 +23,7 @@ from cryptoparser.common.field import (
 )
 
 from .classes import (
+    ComponentStringEnumTest,
     FieldValueMultipleTest,
     FieldValueMultipleExtendableTest,
     FieldValueEnumTest,
@@ -31,6 +32,7 @@ from .classes import (
     FieldValueComponentOptionTest,
     FieldValueComponentQuotedStringTest,
     FieldValueComponentPercentTest,
+    FieldValueComponentStringEnumTest,
     FieldValueComponentStringTest,
     FieldValueComponentTimeDeltaTest,
     FieldValueComponentUrlTest,
@@ -171,6 +173,31 @@ class TestFieldValueComponentUrl(unittest.TestCase):
     def test_as_markdown(self):
         self.assertEqual(self._component_url_https.as_markdown(), 'https://example.com')
         self.assertEqual(self._component_url_mailto.as_markdown(), 'mailto:user@example.com')
+
+
+class TestFieldValueComponentStringEnum(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueComponentStringEnumTest.parse_exact_size(  # pylint: disable=expression-not-assigned
+                b'testStringEnum=non-existing-value'
+            )
+        self.assertEqual(context_manager.exception.value, 'non-existing-value')
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueComponentStringEnumTest('non-existing-value')
+        self.assertEqual(context_manager.exception.value, 'non-existing-value')
+
+    def test_parse(self):
+        self.assertEqual(
+            FieldValueComponentStringEnumTest.parse_exact_size(b'testStringEnum=one'),
+            FieldValueComponentStringEnumTest(ComponentStringEnumTest.ONE)
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            FieldValueComponentStringEnumTest(ComponentStringEnumTest.TWO).compose(),
+            b'testStringEnum=two'
+        )
 
 
 class TestFieldValueComponentQuotedString(unittest.TestCase):
