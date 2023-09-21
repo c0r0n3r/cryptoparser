@@ -4,6 +4,7 @@
 from cryptoparser.common.field import (
     FieldValueComponentDateTime,
     FieldValueComponentQuotedString,
+    FieldValueComponentString,
     FieldValueComponentTimeDelta,
     NameValuePair,
 )
@@ -23,6 +24,16 @@ class HttpHeaderFieldValueComponentMaxAge(FieldValueComponentTimeDelta):
     @classmethod
     def get_canonical_name(cls):
         return 'max-age'
+
+    @classmethod
+    def _check_name(cls, name):
+        cls._check_name_insensitive(name)
+
+
+class HttpHeaderFieldValueComponentReport(FieldValueComponentString):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'report'
 
     @classmethod
     def _check_name(cls, name):
