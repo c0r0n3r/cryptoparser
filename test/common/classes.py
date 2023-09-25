@@ -1,11 +1,24 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import codecs
 import collections
 import enum
 import json
 import attr
 import six
+
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
+try:
+    import pathlib
+except ImportError:  # pragma: no cover
+    import pathlib2 as pathlib  # pragma: no cover
+
+import pyfakefs.fake_filesystem_unittest
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.grade import AttackNamed, AttackType, Grade, GradeableVulnerabilities, Vulnerability
@@ -663,3 +676,21 @@ class SerializableUpperCaseEncoder(SerializableTextEncoder):
         _, string_result = super(SerializableUpperCaseEncoder, self).__call__(obj, level)
 
         return False, string_result.upper()
+
+
+class TestKeyBase(pyfakefs.fake_filesystem_unittest.TestCase, unittest.TestCase):
+    def setUp(self):
+        self.setUpPyfakefs()
+
+        self.__certs_dir = pathlib.PurePath(__file__).parent.parent / 'common' / 'certs'
+        self.fs.add_real_directory(str(self.__certs_dir))
+        self.fs.add_real_directory('/etc/')
+        self.fs.add_real_directory('/usr/')
+
+    def _get_pem_str(self, public_key_file_name):
+        public_key_path = self.__certs_dir / public_key_file_name
+        with codecs.open(str(public_key_path), 'r', encoding='ascii') as pem_file:
+            return pem_file.read()
+
+    def _get_public_key_x509(self, public_key_file_name):
+        return PublicKeyX509.from_pem(self._get_pem_str(public_key_file_name))
