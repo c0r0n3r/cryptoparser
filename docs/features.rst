@@ -110,6 +110,14 @@ Secure Shell (SSH)
 Domain Name System (DNS)
 """"""""""""""""""""""""
 
+-  e-mail authentication, reporting
+
+   -  `Domain-based Message Authentication, Reporting, and Conformance <https://www.rfc-editor.org/rfc/rfc7489>`__
+      (DMARC)
+   -  `Sender Policy Framework <https://www.rfc-editor.org/rfc/rfc7208>`__ (SPF)
+   -  `SMTP MTA Strict Transport Security <https://www.rfc-editor.org/rfc/rfc8461>`__ (MTA-STS)
+   -  `SMTP TLS Reporting <https://www.rfc-editor.org/rfc/rfc8460>`__ (TLSRPT)
+
 -  DNSSEC (Domain Name System Security Extensions)
 
    -  `DNSKEY <https://www.rfc-editor.org/rfc/rfc4034#section-2>`__

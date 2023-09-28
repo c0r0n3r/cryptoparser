@@ -1,6 +1,23 @@
 Changelog
 =========
 
+0.10.2 - 2023-08-28
+-------------------
+
+Features
+~~~~~~~~
+
+-  DNS
+
+   -  add parser for e-mail authentication and reporting related records (#74, #35, #36, #37, #38)
+
+      -  `mail exchange <https://www.rfc-editor.org/rfc/rfc1035>`__ (MX)
+      -  `Domain-based Message Authentication, Reporting, and Conformance <https://www.rfc-editor.org/rfc/rfc7489>`__
+         (DMARC)
+      -  `Sender Policy Framework <https://www.rfc-editor.org/rfc/rfc7208>`__ (SPF)
+      -  `SMTP MTA Strict Transport Security <https://www.rfc-editor.org/rfc/rfc8461>`__ (MTA-STS)
+      -  `SMTP TLS Reporting <https://www.rfc-editor.org/rfc/rfc8460>`__ (TLSRPT)
+
 0.10.1 - 2023-08-29
 -------------------
 
