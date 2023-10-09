@@ -31,5 +31,4 @@ html_sidebars = {
 html_theme_options = {
     'description': 'Cryptographic protocol and security-related protocol piece parser',
     'fixed_sidebar': True,
-    'collapse_navigation': False,
 }
