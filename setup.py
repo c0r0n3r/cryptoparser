@@ -43,7 +43,7 @@ setup(
         'Issues': __setup__.__url__ + '/-/issues',
         'Source': __setup__.__url__,
     },
-    keywords='ssl tls gost ja3 ldap rdp ssh hsts',
+    keywords='ssl tls gost ja3 ldap rdp ssh hsts dns',
 
     install_requires=install_requirements,
     extras_require={
@@ -61,6 +61,7 @@ setup(
     packages=[
         'cryptoparser',
         'cryptoparser.common',
+        'cryptoparser.dnsrec',
         'cryptoparser.httpx',
         'cryptoparser.ssh',
         'cryptoparser.tls',
