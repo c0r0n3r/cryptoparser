@@ -18,7 +18,7 @@ from cryptodatahub.common.key import (
     PublicKeyParamsRsa,
 )
 
-from cryptodatahub.dnssec.algorithm import DnsRrType, DnsSecAlgorithm, DnsSecDigestType
+from cryptodatahub.dnsrec.algorithm import DnsRrType, DnsSecAlgorithm, DnsSecDigestType
 
 from cryptoparser.common.base import OneByteEnumParsable, Serializable, TwoByteEnumParsable
 from cryptoparser.common.exception import NotEnoughData
