@@ -7,6 +7,8 @@ import unittest
 import six
 
 from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.grade import Grade
+
 from cryptoparser.common.parse import ParserText
 
 from cryptoparser.ssh.version import (
@@ -100,6 +102,11 @@ class TestSshVersion(unittest.TestCase):
         self.assertEqual(str(SshProtocolVersion(SshVersion.SSH1, 1)), 'SSH 1.1')
         self.assertEqual(str(SshProtocolVersion(SshVersion.SSH2, 0)), 'SSH 2.0')
         self.assertEqual(str(SshProtocolVersion(SshVersion.SSH2, 1)), 'SSH 2.1')
+
+    def test_grade(self):
+        self.assertEqual(SshProtocolVersion(SshVersion.SSH2).grade, Grade.SECURE)
+        self.assertEqual(SshProtocolVersion(SshVersion.SSH1).grade, Grade.INSECURE)
+        self.assertEqual(SshProtocolVersion(SshVersion.SSH1, 99).grade, Grade.INSECURE)
 
 
 class TestSshSoftwareVersion(unittest.TestCase):

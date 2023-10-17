@@ -9,6 +9,7 @@ import six
 import attr
 
 from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.grade import Grade, GradeableSimple
 
 from cryptoparser.common.base import ProtocolVersionBase, Serializable, VariantParsable
 from cryptoparser.common.exception import InvalidType
@@ -21,9 +22,16 @@ class SshVersion(enum.IntEnum):
 
 
 @attr.s(hash=True)
-class SshProtocolVersion(ProtocolVersionBase):
+class SshProtocolVersion(ProtocolVersionBase, GradeableSimple):
     major = attr.ib(converter=SshVersion, validator=attr.validators.instance_of(SshVersion))
     minor = attr.ib(validator=attr.validators.instance_of(int), default=0)
+
+    @property
+    def grade(self):
+        if self.major == SshVersion.SSH1:
+            return Grade.INSECURE
+
+        return Grade.SECURE
 
     def __str__(self):
         return 'SSH {}.{}'.format(self.major, self.minor)
