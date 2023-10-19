@@ -50,6 +50,7 @@ from cryptoparser.common.field import (
     NameValuePairListSemicolonSeparated,
 )
 from cryptoparser.common.parse import ParserCRLF
+from cryptoparser.common.x509 import PublicKeyX509
 
 
 class NByteParsable(ParsableBase):

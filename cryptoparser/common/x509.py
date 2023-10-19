@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import collections
 import datetime
 import enum
 
 import attr
 
+import asn1crypto
+
+from cryptodatahub.common.key import PublicKeyX509Base
 from cryptodatahub.common.stores import CertificateTransparencyLog, CertificateTransparencyLogParamsBase
 
 from cryptoparser.common.base import (
@@ -99,3 +103,21 @@ class SignedCertificateTimestampList(VectorParsable):
             fallback_class=None,
             min_byte_num=0, max_byte_num=2 ** 16 - 1
         )
+
+
+class PublicKeyX509(PublicKeyX509Base):
+    @property
+    def signed_certificate_timestamps(self):
+        for extension in self._certificate['tbs_certificate']['extensions']:
+            if extension['extn_id'].dotted == '1.3.6.1.4.1.11129.2.4.2':
+                asn1_value = asn1crypto.core.load(bytes(extension['extn_value']))
+                return SignedCertificateTimestampList.parse_exact_size(bytes(asn1_value))
+
+        return SignedCertificateTimestampList([])
+
+    def _asdict(self):
+        dict_value = super(PublicKeyX509, self)._asdict()
+
+        return collections.OrderedDict(list(dict_value.items()) + [
+            ('signed_certificate_timestamps', self.signed_certificate_timestamps),
+        ])
