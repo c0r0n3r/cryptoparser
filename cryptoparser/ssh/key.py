@@ -23,7 +23,6 @@ from cryptodatahub.common.key import (
     PublicKeyParamsEcdsa,
     PublicKeyParamsEddsa,
     PublicKeyParamsRsa,
-    PublicKeySize,
 )
 from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm, SshEllipticCurveIdentifier
 
@@ -41,6 +40,7 @@ from cryptoparser.common.base import (
 )
 from cryptoparser.common.exception import InvalidType, NotEnoughData
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ComposerText
+from cryptoparser.common.x509 import PublicKeyX509
 
 
 @attr.s
@@ -86,15 +86,16 @@ class SshPublicKeyBase(object):
     def host_key_asdict(self):
         known_hosts = six.ensure_text(base64.b64encode(self.key_bytes), 'ascii')
 
-        key_dict = OrderedDict([
-            ('key_type', self.public_key.key_type),
-            ('key_name', self.host_key_algorithm),
-            ('key_size', PublicKeySize(self.public_key.key_type, self.public_key.key_size)),
-            ('fingerprints', self.fingerprints),
-            ('known_hosts', known_hosts),
-        ])
+        public_key_dict = (
+            [('key_type', self.host_key_algorithm.value.key_type.value)] +
+            list(self.public_key._asdict().items()) +
+            [('known_hosts', known_hosts)]
+        )
 
-        return key_dict
+        public_key_dict = OrderedDict(public_key_dict)
+        public_key_dict['fingerprints'] = self.fingerprints
+
+        return public_key_dict
 
     def _asdict(self):
         return self.host_key_asdict()
