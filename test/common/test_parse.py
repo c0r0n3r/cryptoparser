@@ -7,6 +7,8 @@ import unittest
 import six
 import dateutil.tz
 
+import asn1crypto.x509
+
 try:
     from unittest import mock
 except ImportError:
@@ -274,6 +276,11 @@ class TestParserBinary(TestParsableBase):
         parser = ParserBinary(b'\x01\x02')
         parser.parse_raw('two_byte_array', size=2)
         self.assertEqual(parser['two_byte_array'], b'\x01\x02')
+
+        parser = ParserBinary(b'not X.509 certificate')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_raw('name', 21, asn1crypto.x509.Certificate.load)
+        self.assertEqual(context_manager.exception.value, b'not X.509 certificate')
 
     def test_parse_string(self):
         parser = ParserBinary(b'\x02\xff\xff')

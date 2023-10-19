@@ -586,10 +586,14 @@ class ParserBinary(ParserBase):
             six.raise_from(InvalidValue(value, converter, name), e)
         self._parsed_length += len(parsed_bytes)
 
-    def parse_raw(self, name, size):
+    def parse_raw(self, name, size, converter=bytearray):
         parsed_bytes = self._parse_bytes(size)
 
-        self._parsed_values[name] = bytearray(parsed_bytes)
+        try:
+            self._parsed_values[name] = converter(parsed_bytes)
+        except ValueError as e:
+            six.raise_from(InvalidValue(parsed_bytes, converter, name), e)
+
         self._parsed_length += size
 
     def parse_string(self, name, item_size, encoding, converter=str):
