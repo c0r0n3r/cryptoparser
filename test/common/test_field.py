@@ -28,6 +28,8 @@ from .classes import (
     FieldValueMultipleExtendableTest,
     FieldValueEnumTest,
     FieldValueStringEnumTest,
+    FieldValueComponentBoolTest,
+    FieldValueComponentFloatTest,
     FieldValueComponentNumberTest,
     FieldValueComponentOptionTest,
     FieldValueComponentQuotedStringTest,
@@ -226,6 +228,50 @@ class TestFieldValueComponentQuotedString(unittest.TestCase):
 
     def test_markdown(self):
         self.assertEqual(FieldValueComponentQuotedStringTest('value').as_markdown(), 'value')
+
+
+class TestFieldValueComponentBool(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueComponentBoolTest.parse_exact_size(b'testBool=str')
+        self.assertEqual(context_manager.exception.value, b'str')
+
+    def test_parse(self):
+        component = FieldValueComponentBoolTest.parse_exact_size(b'testBool=yes')
+        self.assertTrue(component.value)
+
+        component = FieldValueComponentBoolTest.parse_exact_size(b'testBool=no')
+        self.assertFalse(component.value)
+
+    def test_compose(self):
+        self.assertEqual(FieldValueComponentBoolTest(True).compose(), b'testBool=yes')
+        self.assertEqual(FieldValueComponentBoolTest(False).compose(), b'testBool=no')
+
+    def test_as_markdown(self):
+        self.assertEqual(FieldValueComponentBoolTest(True).as_markdown(), 'yes')
+        self.assertEqual(FieldValueComponentBoolTest(False).as_markdown(), 'no')
+
+
+class TestFieldValueComponentFloat(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueComponentFloatTest.parse_exact_size(b'testFloat=str')
+        self.assertEqual(context_manager.exception.value, b'str')
+
+    def test_parse(self):
+        component = FieldValueComponentFloatTest.parse_exact_size(b'testFloat=1')
+        self.assertEqual(component.value, 1.0)
+
+        component = FieldValueComponentFloatTest.parse_exact_size(b'testFloat=1.0')
+        self.assertEqual(component.value, 1.0)
+
+    def test_compose(self):
+        self.assertEqual(FieldValueComponentFloatTest(1).compose(), b'testFloat=1.0')
+        self.assertEqual(FieldValueComponentFloatTest(1.0).compose(), b'testFloat=1.0')
+
+    def test_as_markdown(self):
+        self.assertEqual(FieldValueComponentFloatTest(1).as_markdown(), '1.0')
+        self.assertEqual(FieldValueComponentFloatTest(1.0).as_markdown(), '1.0')
 
 
 class TestFieldValueComponentNumber(unittest.TestCase):

@@ -52,6 +52,8 @@ from cryptoparser.common.exception import TooMuchData, InvalidType
 from cryptoparser.common.field import (
     FieldsSemicolonSeparated,
     FieldValueStringEnum,
+    FieldValueComponentBool,
+    FieldValueComponentFloat,
     FieldValueComponentNumber,
     FieldValueComponentOption,
     FieldValueComponentPercent,
@@ -612,6 +614,18 @@ class FieldValueComponentStringBase64Test(FieldValueComponentStringBase64):
     @classmethod
     def get_canonical_name(cls):
         return 'testStringBase64'
+
+
+class FieldValueComponentBoolTest(FieldValueComponentBool):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testBool'
+
+
+class FieldValueComponentFloatTest(FieldValueComponentFloat):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testFloat'
 
 
 class FieldValueComponentStringEnumTest(FieldValueComponentStringEnum):

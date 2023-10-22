@@ -463,6 +463,26 @@ class FieldValueComponentStringBase64(FieldValueComponentQuotedString):
 
 
 @attr.s
+class FieldValueComponentBool(FieldValueComponentKeyValueBase):
+    value = attr.ib(validator=attr.validators.instance_of(bool))
+
+    @classmethod
+    @abc.abstractmethod
+    def get_canonical_name(cls):
+        raise NotImplementedError()
+
+    def _get_value_as_str(self):
+        return 'yes' if self.value else 'no'
+
+    def _get_value_as_simple_type(self):
+        return self.value
+
+    @classmethod
+    def _parse_value(cls, parser):
+        parser.parse_bool('value')
+
+
+@attr.s
 class FieldValueComponentNumber(FieldValueComponentKeyValueBase):
     value = attr.ib(validator=attr.validators.instance_of(int))
 
@@ -474,6 +494,26 @@ class FieldValueComponentNumber(FieldValueComponentKeyValueBase):
     @classmethod
     def _parse_value(cls, parser):
         parser.parse_numeric('value')
+
+
+@attr.s
+class FieldValueComponentFloat(FieldValueComponentNumber):
+    value = attr.ib(
+        converter=float,
+        validator=attr.validators.instance_of(float)
+    )
+
+    @classmethod
+    @abc.abstractmethod
+    def get_canonical_name(cls):
+        raise NotImplementedError()
+
+    def _get_value_as_simple_type(self):
+        return self.value
+
+    @classmethod
+    def _parse_value(cls, parser):
+        parser.parse_float('value')
 
 
 @attr.s
