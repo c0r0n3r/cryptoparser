@@ -24,6 +24,7 @@ from cryptoparser.common.field import (
 
 from .classes import (
     ComponentStringEnumTest,
+    FieldValueJsonTest,
     FieldValueMultipleTest,
     FieldValueMultipleExtendableTest,
     FieldValueEnumTest,
@@ -327,6 +328,66 @@ class TestFieldValueComponentTimeDelta(unittest.TestCase):
         )
 
 
+class TestFieldJson(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueJsonTest.parse_exact_size(b'not-a-valid-json')
+        self.assertEqual(context_manager.exception.value, 'not-a-valid-json')
+
+    def test_parse(self):
+        header_field = FieldValueJsonTest.parse_exact_size(b'{"testTimeDelta": 1}')
+        self.assertEqual(
+            header_field,
+            FieldValueJsonTest(datetime.timedelta(seconds=1))
+        )
+        self.assertEqual(
+            header_field.string.value,  # pylint: disable=no-member
+            attr.fields_dict(FieldValueJsonTest)['string'].default
+        )
+        self.assertEqual(
+            header_field.number.value,  # pylint: disable=no-member
+            attr.fields_dict(FieldValueJsonTest)['number'].default
+        )
+
+        parsed_header_field = FieldValueJsonTest.parse_exact_size(
+            b'{"testTimeDelta": 1, "testString": "string", "testNumber": 1}'
+        )
+        header_field = FieldValueJsonTest(
+            time_delta=datetime.timedelta(seconds=1),
+            string='string',
+            number=1
+        )
+        self.assertEqual(parsed_header_field, header_field)
+
+        parsed_header_field = FieldValueJsonTest.parse_exact_size(b'{' + b', '.join([
+            b'"testTimeDelta": 1',
+            b'"testString": "string"',
+            b'"testStringBase64": "ZGVmYXVsdA=="',
+            b'"optional_string": "optional_string"',
+            b'"testNumber": 1',
+        ]) + b'}')
+        header_field = FieldValueJsonTest(
+            time_delta=datetime.timedelta(seconds=1),
+            string='string',
+            number=1
+        )
+        self.assertEqual(parsed_header_field, header_field)
+
+    def test_compose(self):
+        header_field = FieldValueJsonTest(datetime.timedelta(seconds=1))
+        self.assertEqual(
+            header_field.compose(),
+            b'{' + b', '.join([
+                b'"testTimeDelta": 1',
+                b'"testString": "default"',
+                b'"testUrl": "https://example.com"',
+                b'"testStringBase64": "ZGVmYXVsdA=="',
+                b'"testNumber": 0',
+                b'"testPercent": 100',
+            ]) + b'}'
+        )
+
+
 class TestFieldValueMultiple(unittest.TestCase):
     def test_error(self):
         with self.assertRaises(InvalidValue) as context_manager:
@@ -414,12 +475,12 @@ class TestFieldValueMultiple(unittest.TestCase):
             header_field.compose(),
             b'; '.join([
                 b'testTimeDelta=1',
-                b'testOption',
                 b'testString=default',
                 b'testUrl=https://example.com',
                 b'testStringBase64="ZGVmYXVsdA=="',
                 b'testNumber=0',
                 b'testPercent=100',
+                b'testOption',
             ])
         )
 

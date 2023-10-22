@@ -50,6 +50,7 @@ from cryptoparser.common.base import (
 )
 from cryptoparser.common.exception import TooMuchData, InvalidType
 from cryptoparser.common.field import (
+    FieldsJson,
     FieldsSemicolonSeparated,
     FieldValueStringEnum,
     FieldValueComponentBool,
@@ -669,15 +670,10 @@ class FieldValueComponentTimeDeltaTest(FieldValueComponentTimeDelta):
 
 
 @attr.s
-class FieldValueMultipleTest(FieldsSemicolonSeparated):  # pylint: disable=too-many-instance-attributes
+class FieldValueComplexTestBase(object):  # pylint: disable=too-many-instance-attributes
     time_delta = attr.ib(
         converter=FieldValueComponentTimeDeltaTest.convert,
         validator=attr.validators.instance_of(FieldValueComponentTimeDeltaTest)
-    )
-    option = attr.ib(
-        converter=FieldValueComponentOptionTest.convert,
-        validator=attr.validators.instance_of(FieldValueComponentOptionTest),
-        default=False
     )
     string = attr.ib(
         converter=FieldValueComponentStringTest.convert,
@@ -694,13 +690,6 @@ class FieldValueMultipleTest(FieldsSemicolonSeparated):  # pylint: disable=too-m
         validator=attr.validators.instance_of(FieldValueComponentStringBase64Test),
         default=base64.b64encode('default'.encode('ascii')).decode('ascii')
     )
-    optional_string = attr.ib(
-        converter=attr.converters.optional(FieldValueComponentOptionalStringTest.convert),
-        validator=attr.validators.optional(
-            attr.validators.instance_of(FieldValueComponentOptionalStringTest)
-        ),
-        default=None
-    )
     number = attr.ib(
         converter=FieldValueComponentNumberTest.convert,
         validator=attr.validators.instance_of(FieldValueComponentNumberTest),
@@ -711,6 +700,28 @@ class FieldValueMultipleTest(FieldsSemicolonSeparated):  # pylint: disable=too-m
         validator=attr.validators.instance_of(FieldValueComponentPercentTest),
         default=100
     )
+
+
+@attr.s
+class FieldValueMultipleTest(  # pylint: disable=too-many-instance-attributes
+        FieldsSemicolonSeparated, FieldValueComplexTestBase):
+    option = attr.ib(
+        converter=FieldValueComponentOptionTest.convert,
+        validator=attr.validators.instance_of(FieldValueComponentOptionTest),
+        default=False
+    )
+    optional_string = attr.ib(
+        converter=attr.converters.optional(FieldValueComponentOptionalStringTest.convert),
+        validator=attr.validators.optional(
+            attr.validators.instance_of(FieldValueComponentOptionalStringTest)
+        ),
+        default=None
+    )
+
+
+class FieldValueJsonTest(  # pylint: disable=too-many-instance-attributes
+        FieldsJson, FieldValueComplexTestBase):
+    pass
 
 
 @attr.s

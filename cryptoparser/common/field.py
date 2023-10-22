@@ -3,13 +3,14 @@
 import abc
 import collections
 import datetime
+import json
 
 import attr
 import six
 import urllib3
 
 from cryptodatahub.common.exception import InvalidValue
-from cryptodatahub.common.types import Base64Data, convert_base64_data, convert_url
+from cryptodatahub.common.types import Base64Data, convert_base64_data, convert_value_to_object, convert_url
 
 from cryptoparser.common.base import Serializable
 from cryptoparser.common.exception import InvalidType, NotEnoughData
@@ -278,12 +279,15 @@ class FieldValueComponentKeyValueBase(FieldValueComponentBase):
     def _parse_value(cls, parser):
         raise NotImplementedError()
 
-    def _get_value_as_str(self):
+    def _get_value_as_simple_type(self):
         # neccessary only because PY2 handles multiple inheritance differently than PY3
         if isinstance(self.value, ParsableBaseNoABC):
             return self.value.compose().decode('ascii')
 
-        return str(self.value)
+        return self.value
+
+    def _get_value_as_str(self):
+        return str(self._get_value_as_simple_type())
 
     @classmethod
     def _parse(cls, parsable):
@@ -384,6 +388,9 @@ class FieldValueComponentQuotedString(FieldValueComponentKeyValueBase):
     def _get_value_as_str(self):
         return '"{}"'.format(self.value)
 
+    def _get_value_as_simple_type(self):
+        return self.value
+
     @classmethod
     def _parse_value(cls, parser):
 
@@ -405,7 +412,7 @@ class FieldValueComponentDateTime(FieldValueComponentKeyValueBase):
     def _parse_value(cls, parser):
         parser.parse_date_time('value')
 
-    def _get_value_as_str(self):
+    def _get_value_as_simple_type(self):
         return self.value.strftime('%a, %d %b %Y %H:%M:%S GMT')
 
 
@@ -434,8 +441,8 @@ class FieldValueComponentTimeDelta(FieldValueComponentKeyValueBase):
     def _parse_value(cls, parser):
         parser.parse_time_delta('value')
 
-    def _get_value_as_str(self):
-        return str(int(self.value.total_seconds()))
+    def _get_value_as_simple_type(self):
+        return int(self.value.total_seconds())
 
     def _as_markdown(self, level):
         return self._markdown_result(str(self.value), level)
@@ -559,7 +566,7 @@ class FieldValueComponentStringEnum(FieldValueComponentKeyValueBase):
         except InvalidValue as e:
             six.raise_from(InvalidValue(e.value.decode('ascii'), cls, 'value'), e)
 
-    def _get_value_as_str(self):
+    def _get_value_as_simple_type(self):
         return self.value.value.code
 
 
@@ -615,7 +622,7 @@ class FieldValueComponentUrl(FieldValueComponentKeyValueBase):
     def _parse_value(cls, parser):
         parser.parse_string_by_length('value', item_class=convert_url())
 
-    def _get_value_as_str(self):
+    def _get_value_as_simple_type(self):
         if self.value.scheme == 'mailto':
             value = 'mailto:' + self.value.path[1:]
         else:
@@ -624,7 +631,7 @@ class FieldValueComponentUrl(FieldValueComponentKeyValueBase):
         return value
 
     def _as_markdown(self, level):
-        return self._markdown_result(self._get_value_as_str(), level)
+        return self._markdown_result(self._get_value_as_simple_type(), level)
 
 
 class FieldValueBase(ParsableBase, Serializable):
@@ -637,25 +644,54 @@ class FieldValueBase(ParsableBase, Serializable):
     def compose(self):
         raise NotImplementedError()
 
-
-class FieldValueMultiple(FieldValueBase):
     @classmethod
-    @abc.abstractmethod
-    def _get_header_value_list_class(cls):
-        raise NotImplementedError()
-
-    @classmethod
-    def _get_attr_to_component_name_dict(cls, attr_fields_dict):
-        attr_to_component_name_dict = {}
+    def _get_attr_to_validator_type_dict(cls, attr_fields_dict):
+        attr_to_component_name_dict = []
 
         for attribute in attr_fields_dict.values():
             validator = attribute.validator
             if is_validator_optional(validator):
                 validator = validator.validator
 
-            attr_to_component_name_dict[attribute.name] = validator.type
+            attr_to_component_name_dict.append((attribute.name, validator.type))
 
-        return attr_to_component_name_dict
+        return collections.OrderedDict(attr_to_component_name_dict)
+
+
+class FieldsJson(FieldValueBase):
+    @classmethod
+    def _parse(cls, parsable):
+        try:
+            raw_values = json.loads(parsable, object_pairs_hook=collections.OrderedDict)
+        except ValueError as e:  # json.decoder.JSONDecodeError is derived from ValueError
+            six.raise_from(InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value'), e)
+
+        attr_fields_dict = attr.fields_dict(cls)
+
+        return cls(**{
+            attribute_name: raw_values[validator_class.get_canonical_name()]
+            for attribute_name, validator_class in cls._get_attr_to_validator_type_dict(attr_fields_dict).items()
+            if validator_class.get_canonical_name() in raw_values
+        }), len(parsable)
+
+    def compose(self):
+        attr_fields_dict = attr.fields_dict(type(self))
+
+        return json.dumps(collections.OrderedDict([
+            (
+                validator_class.get_canonical_name(),
+                getattr(self, attribute_name)._get_value_as_simple_type()  # pylint: disable=protected-access
+            )
+            for attribute_name, validator_class in self._get_attr_to_validator_type_dict(attr_fields_dict).items()
+            if getattr(self, attribute_name) is not None
+        ])).encode('ascii')
+
+
+class FieldValueMultiple(FieldValueBase):
+    @classmethod
+    @abc.abstractmethod
+    def _get_header_value_list_class(cls):
+        raise NotImplementedError()
 
     @classmethod
     def _parse_basic_params(cls, attr_to_component_name_dict, attr_fields_dict, components, params):
@@ -703,7 +739,7 @@ class FieldValueMultiple(FieldValueBase):
                 extension = (name, attribute)
             else:
                 raise NotImplementedError()
-        attr_to_component_name_dict = cls._get_attr_to_component_name_dict(attr_fields_dict)
+        attr_to_component_name_dict = cls._get_attr_to_validator_type_dict(attr_fields_dict)
 
         components = cls._get_header_value_list_class().parse_exact_size(parsable).value
 
