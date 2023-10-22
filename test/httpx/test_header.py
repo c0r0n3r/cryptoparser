@@ -31,6 +31,8 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldSTS,
     HttpHeaderFieldUnparsed,
     HttpHeaderFieldValueCacheControlResponse,
+    HttpHeaderFieldValueContentType,
+    HttpHeaderFieldValueContentTypeMimeType,
     HttpHeaderFieldValueExpectCT,
     HttpHeaderFieldValueExpectStaple,
     HttpHeaderFieldValueNetworkErrorLogging,
@@ -52,6 +54,7 @@ from cryptoparser.httpx.header import (
     HttpHeaderXFrameOptions,
     HttpHeaderXXSSProtectionMode,
     HttpHeaderXXSSProtectionState,
+    MimeTypeRegistry,
 )
 
 from .classes import TestCasesBasesHttpHeader
@@ -109,6 +112,45 @@ class TestHttpHeaderFieldValueCacheControlResponse(
         '* No Transform: no',
         '',
     ])
+
+
+class TestHttpHeaderFieldValueContentType(
+        TestCasesBasesHttpHeader.MinimalHeader,
+        TestCasesBasesHttpHeader.FullHeader):
+
+    _header_minimal = HttpHeaderFieldValueContentType(
+        HttpHeaderFieldValueContentTypeMimeType('html', MimeTypeRegistry.TEXT)
+     )
+    _header_minimal_bytes = b'text/html'
+    _header_minimal_markdown = os.linesep.join([
+        '* MIME type:',
+        '    * Type: html',
+        '    * Registry: TEXT',
+        '* Charset: n/a',
+        '* Boundary: n/a',
+        '',
+    ])
+
+    _header_full = HttpHeaderFieldValueContentType(
+        HttpHeaderFieldValueContentTypeMimeType('bhttp', MimeTypeRegistry.MESSAGE),
+        charset='utf-8',
+        boundary='boundary_pattern',
+    )
+    _header_full_bytes = b'message/bhttp; charset=utf-8; boundary=boundary_pattern'
+
+    def test_error_invalid_parameter(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            HttpHeaderFieldValueContentType(
+                HttpHeaderFieldValueContentTypeMimeType('html', MimeTypeRegistry.TEXT),
+                boundary='pattern',
+            )
+        self.assertEqual(context_manager.exception.value, 'pattern')
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            HttpHeaderFieldValueContentType(
+                HttpHeaderFieldValueContentTypeMimeType('bhttp', MimeTypeRegistry.MESSAGE),
+            )
+        self.assertEqual(context_manager.exception.value, None)
 
 
 class TestHttpHeaderFieldValueNetworkErrorLogging(
@@ -382,7 +424,7 @@ class TestHttpHeaderFields(unittest.TestCase):
         self.headers = HttpHeaderFields([
             HttpHeaderFieldAge(datetime.timedelta(seconds=1)),
             HttpHeaderFieldCacheControlResponse(HttpHeaderFieldValueCacheControlResponse(no_cache=True)),
-            HttpHeaderFieldContentType('text/html'),
+            HttpHeaderFieldContentType(HttpHeaderFieldValueContentTypeMimeType('html', MimeTypeRegistry.TEXT)),
             HttpHeaderFieldDate(datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC)),
             HttpHeaderFieldETag('12345678'),
             HttpHeaderFieldExpectCT(HttpHeaderFieldValueExpectCT(datetime.timedelta(seconds=1))),
@@ -435,7 +477,12 @@ class TestHttpHeaderFields(unittest.TestCase):
             '        * No Transform: no',
             '3.',
             '    * Name: Content-Type',
-            '    * Value: text/html',
+            '    * Value:',
+            '        * MIME type:',
+            '            * Type: html',
+            '            * Registry: TEXT',
+            '        * Charset: n/a',
+            '        * Boundary: n/a',
             '4.',
             '    * Name: Date',
             '    * Value: 1970-01-01 00:00:00+00:00',
