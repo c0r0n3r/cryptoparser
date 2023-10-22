@@ -411,12 +411,24 @@ class FieldValueComponentDateTime(FieldValueComponentKeyValueBase):
 
 @attr.s
 class FieldValueComponentTimeDelta(FieldValueComponentKeyValueBase):
-    value = attr.ib(validator=attr.validators.instance_of(datetime.timedelta))
+    value = attr.ib(
+        converter=convert_value_to_object(datetime.timedelta),
+        validator=attr.validators.instance_of(datetime.timedelta)
+    )
 
     @classmethod
     @abc.abstractmethod
     def get_canonical_name(cls):
         raise NotImplementedError()
+
+    @classmethod
+    def convert(cls, value):
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, datetime.timedelta):
+            return cls(value)
+
+        return cls(datetime.timedelta(seconds=value))
 
     @classmethod
     def _parse_value(cls, parser):
