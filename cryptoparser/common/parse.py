@@ -258,6 +258,18 @@ class ParserText(ParserBase):
         self._parsed_values[name] = value
         self._parsed_length += parsed_length
 
+    def parse_bool(self, name):
+        for string_value, bool_value in (('yes', True), ('no', False)):
+            try:
+                self.parse_string(name, string_value)
+            except InvalidValue:
+                pass
+            else:
+                self._parsed_values[name] = bool_value
+                break
+        else:
+            raise InvalidValue(self._parsable[self._parsed_length:], type(self), name)
+
     def parse_string(self, name, value):
         min_length = len(value)
         max_length = min_length
@@ -770,6 +782,9 @@ class ComposerText(ComposerBase):
 
     def compose_numeric_array(self, values, separator):
         self._compose_numeric_array(values, separator)
+
+    def compose_bool(self, value):
+        self.compose_string('yes' if value else 'no')
 
     def compose_string(self, value):
         self._compose_string_array([value, ], encoding=self._encoding, separator='')

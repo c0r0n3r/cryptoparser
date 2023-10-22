@@ -619,6 +619,22 @@ class TestParserText(TestParsableBase):
             parser.parse_string_by_length('alphabet')
         self.assertEqual(context_manager.exception.value, self._ALPHA_BETA_GAMMA_HASHMARK_BYTES)
 
+    def test_parse_bool(self):
+        parser = ParserText(b'yes')
+        parser.parse_bool('bool')
+        self.assertEqual(parser['bool'], True)
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'no')
+        parser.parse_bool('bool')
+        self.assertEqual(parser['bool'], False)
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'abcd')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_bool('bool')
+        self.assertEqual(context_manager.exception.value, b'abcd')
+
 
 class TestParserTextStringArray(TestParsableBase):
     def test_empty(self):
@@ -1142,3 +1158,12 @@ class TestComposerText(TestParsableBase):
         composer = ComposerText()
         composer.compose_time_delta(datetime.timedelta(1))
         self.assertEqual(composer.composed, b'86400')
+
+    def test_compose_bool(self):
+        composer = ComposerText()
+        composer.compose_bool(True)
+        self.assertEqual(composer.composed, b'yes')
+
+        composer = ComposerText()
+        composer.compose_bool(False)
+        self.assertEqual(composer.composed, b'no')
