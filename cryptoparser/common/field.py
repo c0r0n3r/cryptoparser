@@ -202,9 +202,11 @@ class FieldValueComponentBase(ParsableBase, Serializable):
         raise NotImplementedError()
 
     @classmethod
+    @abc.abstractmethod
     def _parse(cls, parsable):
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def compose(self):
         raise NotImplementedError()
 
