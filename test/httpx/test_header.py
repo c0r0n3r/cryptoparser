@@ -22,6 +22,7 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldExpires,
     HttpHeaderFieldLastModified,
     HttpHeaderFieldName,
+    HttpHeaderFieldNetworkErrorLogging,
     HttpHeaderFieldPragma,
     HttpHeaderFieldPublicKeyPinning,
     HttpHeaderFieldReferrerPolicy,
@@ -32,6 +33,7 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldValueCacheControlResponse,
     HttpHeaderFieldValueExpectCT,
     HttpHeaderFieldValueExpectStaple,
+    HttpHeaderFieldValueNetworkErrorLogging,
     HttpHeaderFieldValuePragma,
     HttpHeaderFieldValuePublicKeyPinning,
     HttpHeaderFieldValueReferrerPolicy,
@@ -106,6 +108,41 @@ class TestHttpHeaderFieldValueCacheControlResponse(
         '* Private: no',
         '* No Transform: no',
         '',
+    ])
+
+
+class TestHttpHeaderFieldValueNetworkErrorLogging(
+        TestCasesBasesHttpHeader.MinimalHeader,
+        TestCasesBasesHttpHeader.FullHeader):
+    _header_minimal = HttpHeaderFieldValueNetworkErrorLogging(
+        report_to="network-errors",
+        max_age=1,
+    )
+    _header_minimal_bytes = b'{"report_to": "network-errors", "max_age": 1}'
+    _header_minimal_markdown = os.linesep.join([
+        '* Report To: network-errors',
+        '* Max Age: 0:00:01',
+        '* Include Subdomains: n/a',
+        '* Success Fraction: n/a',
+        '* Failure Fraction: n/a',
+        '',
+    ])
+
+    _header_full = HttpHeaderFieldValueNetworkErrorLogging(
+        report_to="network-errors",
+        max_age=datetime.timedelta(1),
+        include_subdomains=True,
+        success_fraction=0.1,
+        failure_fraction=0.9,
+    )
+    _header_full_bytes = b''.join([
+        b'{',
+        b'"report_to": "network-errors", ',
+        b'"max_age": 86400, ',
+        b'"include_subdomains": true, ',
+        b'"success_fraction": 0.1, ',
+        b'"failure_fraction": 0.9',
+        b'}',
     ])
 
 
@@ -328,6 +365,7 @@ class TestHttpHeaderFields(unittest.TestCase):
             b'Expect-Staple: max-age=1',
             b'Expires: Thu, 01 Jan 1970 00:00:00 GMT',
             b'Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT',
+            b'NEL: {"report_to": "network-errors", "max_age": 1}',
             b'Pragma: no-cache',
             b'Public-Key-Pinning: pin-sha256="cGluLXNoYTI1Ng=="; max-age=1',
             b'Referrer-Policy: origin',
@@ -351,6 +389,9 @@ class TestHttpHeaderFields(unittest.TestCase):
             HttpHeaderFieldExpectStaple(HttpHeaderFieldValueExpectStaple(datetime.timedelta(seconds=1))),
             HttpHeaderFieldExpires(datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC)),
             HttpHeaderFieldLastModified(datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC)),
+            HttpHeaderFieldNetworkErrorLogging(HttpHeaderFieldValueNetworkErrorLogging(
+                report_to="network-errors", max_age=1
+            )),
             HttpHeaderFieldPragma(HttpHeaderPragma.NO_CACHE),
             HttpHeaderFieldPublicKeyPinning(HttpHeaderFieldValuePublicKeyPinning(
                 pin_sha256='cGluLXNoYTI1Ng==',
@@ -379,7 +420,7 @@ class TestHttpHeaderFields(unittest.TestCase):
         self.assertEqual(self.headers.as_markdown(), os.linesep.join([
             '1.',
             '    * Name: Age',
-            '    * Value: 0:00:01',
+            '    * Value: 1',
             '2.',
             '    * Name: Cache-Control',
             '    * Value:',
@@ -421,22 +462,30 @@ class TestHttpHeaderFields(unittest.TestCase):
             '    * Name: Last-Modified',
             '    * Value: 1970-01-01 00:00:00+00:00',
             '10.',
+            '    * Name: NEL',
+            '    * Value:',
+            '        * Report To: network-errors',
+            '        * Max Age: 0:00:01',
+            '        * Include Subdomains: n/a',
+            '        * Success Fraction: n/a',
+            '        * Failure Fraction: n/a',
+            '11.',
             '    * Name: Pragma',
             '    * Value: no-cache',
-            '11.',
+            '12.',
             '    * Name: Public-Key-Pinning',
             '    * Value:',
             '        * Pin (SHA-256): cGluLXNoYTI1Ng==',
             '        * Max Age: 0:00:01',
             '        * Include Subdomains: no',
             '        * Report Uri: n/a',
-            '12.',
+            '13.',
             '    * Name: Referrer-Policy',
             '    * Value: origin',
-            '13.',
+            '14.',
             '    * Name: Server',
             '    * Value: server',
-            '14.',
+            '15.',
             '    * Name: Set-Cookie',
             '    * Value:',
             '        * Name: name',
@@ -448,22 +497,22 @@ class TestHttpHeaderFields(unittest.TestCase):
             '        * Secure: no',
             '        * Http Only: no',
             '        * Same Site: n/a',
-            '15.',
+            '16.',
             '    * Name: Strict-Transport-Security',
             '    * Value:',
             '        * Max Age: 0:00:01',
             '        * Include Subdomains: no',
             '        * Preload: no',
-            '16.',
+            '17.',
             '    * Name: X-Unparsed',
             '    * Value: Value',
-            '17.',
+            '18.',
             '    * Name: X-Content-Type-Options',
             '    * Value: nosniff',
-            '18.',
+            '19.',
             '    * Name: X-Frame-Options',
             '    * Value: SAMEORIGIN',
-            '19.',
+            '20.',
             '    * Name: X-XSS-Protection',
             '    * Value:',
             '        * State: enabled',
