@@ -16,13 +16,14 @@ import attr
 import six
 
 
-from cryptodatahub.common.algorithm import Authentication, Hash
+from cryptodatahub.common.algorithm import Hash, NamedGroup
 from cryptodatahub.common.key import (
     PublicKey,
     PublicKeyParamsDsa,
     PublicKeyParamsEcdsa,
     PublicKeyParamsEddsa,
     PublicKeyParamsRsa,
+    PublicKeySize,
 )
 from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm, SshEllipticCurveIdentifier
 
@@ -88,7 +89,7 @@ class SshPublicKeyBase(object):
         key_dict = OrderedDict([
             ('key_type', self.public_key.key_type),
             ('key_name', self.host_key_algorithm),
-            ('key_size', self.public_key.key_size),
+            ('key_size', PublicKeySize(self.public_key.key_type, self.public_key.key_size)),
             ('fingerprints', self.fingerprints),
             ('known_hosts', known_hosts),
         ])
@@ -331,7 +332,7 @@ class SshHostKeyEDDSABase(SshHostKeyBase):
         parser.parse_bytes('key_data', 4)
 
         public_key = PublicKey.from_params(PublicKeyParamsEddsa(
-            key_type=Authentication.ED25519,
+            curve_type=NamedGroup.CURVE25519,
             key_data=parser['key_data'],
         ))
 

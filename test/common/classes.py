@@ -8,6 +8,7 @@ import attr
 import six
 
 from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.grade import AttackNamed, AttackType, Grade, GradeableVulnerabilities, Vulnerability
 from cryptodatahub.common.types import CryptoDataEnumBase, CryptoDataParamsNamed
 
 from cryptoparser.common.base import (
@@ -24,6 +25,7 @@ from cryptoparser.common.base import (
     ParsableBase,
     ParserBinary,
     Serializable,
+    SerializableTextEncoder,
     StringEnumCaseInsensitiveParsable,
     StringEnumParsable,
     ThreeByteEnumComposer,
@@ -375,6 +377,15 @@ class ClassCryptoDataEnum(CryptoDataEnumBase):
     ONE = CryptoDataParamsNamed('one', 'long one')
 
 
+class ClassGradeable(GradeableVulnerabilities):
+    @classmethod
+    def get_gradeable_name(cls):
+        return 'gradeable'
+
+    def __str__(self):
+        return 'value'
+
+
 class SerializableRecursive(Serializable):  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         self.json_object = Class()
@@ -382,6 +393,9 @@ class SerializableRecursive(Serializable):  # pylint: disable=too-many-instance-
         self.json_attr_as_dict = ClassAttrAsDict()
         self.json_asdict_object = ClassAsDict()
         self.json_crypto_data_hub_enum = ClassCryptoDataEnum.ONE
+        self.json_gradeable = ClassGradeable([
+            Vulnerability(AttackType.MITM, Grade.INSECURE, AttackNamed.NOFS)
+        ])
         self.json_serializable_hidden = SerializableHidden()
         self.json_serializable_single = 'single'
         self.json_serializable_in_list = list([SerializableHidden(), 'single'])
@@ -641,3 +655,10 @@ class FieldValueMultipleExtendableTest(FieldValueMultipleTest):
         validator=attr.validators.optional(attr.validators.instance_of(NameValuePairListSemicolonSeparated)),
         metadata={'extension': True},
     )
+
+
+class SerializableUpperCaseEncoder(SerializableTextEncoder):
+    def __call__(self, obj, level):
+        _, string_result = super(SerializableUpperCaseEncoder, self).__call__(obj, level)
+
+        return False, string_result.upper()

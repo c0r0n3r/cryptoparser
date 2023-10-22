@@ -5,6 +5,7 @@ import functools
 
 import attr
 
+from cryptodatahub.common.grade import Grade, GradeableSimple
 from cryptodatahub.tls.version import TlsVersion
 
 from cryptoparser.common.base import TwoByteEnumParsable, ProtocolVersionBase
@@ -23,8 +24,19 @@ class TlsVersionFactory(TwoByteEnumParsable):
 
 @attr.s(order=False, eq=False, hash=True)
 @functools.total_ordering
-class TlsProtocolVersion(ProtocolVersionBase):
+class TlsProtocolVersion(ProtocolVersionBase, GradeableSimple):
     version = attr.ib(validator=attr.validators.instance_of(TlsVersion))
+
+    @property
+    def grade(self):
+        if self.version in (TlsVersion.TLS1_3, TlsVersion.TLS1_2):
+            return Grade.SECURE
+        if self.version in (TlsVersion.TLS1, TlsVersion.TLS1_1) or self.is_draft or self.is_google_experimental:
+            return Grade.DEPRECATED
+        if self.version in (TlsVersion.SSL2, TlsVersion.SSL3):
+            return Grade.INSECURE
+
+        raise NotImplementedError(self.version)
 
     @classmethod
     def _parse(cls, parsable):

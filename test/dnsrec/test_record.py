@@ -229,7 +229,7 @@ class TestDnsRecordDnskey(unittest.TestCase):
         dns_record = DnsRecordDnskey.parse_exact_size(record_bytes)
         self.assertEqual(dns_record.algorithm, DnsSecAlgorithm.ED25519)
         self.assertEqual(dns_record.key, PublicKey.from_params(PublicKeyParamsEddsa(
-            key_type=Authentication.ED25519,
+            curve_type=NamedGroup.CURVE25519,
             key_data=32 * b'\xff',
         )))
         self.assertEqual(dns_record.compose(), record_bytes)
@@ -242,7 +242,7 @@ class TestDnsRecordDnskey(unittest.TestCase):
         dns_record = DnsRecordDnskey.parse_exact_size(record_bytes)
         self.assertEqual(dns_record.algorithm, DnsSecAlgorithm.ED448)
         self.assertEqual(dns_record.key, PublicKey.from_params(PublicKeyParamsEddsa(
-            key_type=Authentication.ED448,
+            curve_type=NamedGroup.CURVE448,
             key_data=56 * b'\xff',
         )))
         self.assertEqual(dns_record.compose(), record_bytes)

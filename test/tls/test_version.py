@@ -5,6 +5,7 @@ import unittest
 import six
 
 from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.grade import Grade
 
 from cryptoparser.common.exception import NotEnoughData
 
@@ -138,3 +139,12 @@ class TestTlsProtocolVersion(unittest.TestCase):
         self.assertEqual(str(TlsProtocolVersion(TlsVersion.TLS1_2)), 'TLS 1.2')
         self.assertEqual(str(TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_24)), 'TLS 1.3 Draft 24')
         self.assertEqual(str(TlsProtocolVersion(TlsVersion.TLS1_3_GOOGLE_EXPERIMENT_2)), 'TLS 1.3 Google Experiment 2')
+
+    def test_grade(self):
+        self.assertEqual(TlsProtocolVersion(TlsVersion.SSL2).grade, Grade.INSECURE)
+        self.assertEqual(TlsProtocolVersion(TlsVersion.SSL3).grade, Grade.INSECURE)
+        self.assertEqual(TlsProtocolVersion(TlsVersion.TLS1).grade, Grade.DEPRECATED)
+        self.assertEqual(TlsProtocolVersion(TlsVersion.TLS1_1).grade, Grade.DEPRECATED)
+        self.assertEqual(TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_28).grade, Grade.DEPRECATED)
+        self.assertEqual(TlsProtocolVersion(TlsVersion.TLS1_2).grade, Grade.SECURE)
+        self.assertEqual(TlsProtocolVersion(TlsVersion.TLS1_3).grade, Grade.SECURE)

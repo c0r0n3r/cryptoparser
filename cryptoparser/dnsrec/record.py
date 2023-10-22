@@ -125,16 +125,18 @@ class DnsRecordDnskey(ParsableBase, Serializable):
         ))
 
     @classmethod
-    def _parse_public_key_eddsa(cls, public_key_type, key_parser):
-        if public_key_type == Authentication.ED25519:
+    def _parse_public_key_eddsa(cls, dnssec_algorithm, key_parser):
+        if dnssec_algorithm == DnsSecAlgorithm.ED25519:
+            curve_type = NamedGroup.CURVE25519
             key_parser.parse_raw('public_key', 256 // 8)
-        elif public_key_type == Authentication.ED448:
+        elif dnssec_algorithm == DnsSecAlgorithm.ED448:
+            curve_type = NamedGroup.CURVE448
             key_parser.parse_raw('public_key', 448 // 8)
         else:
-            raise NotImplementedError(public_key_type)
+            raise NotImplementedError(dnssec_algorithm)
 
         return PublicKey.from_params(PublicKeyParamsEddsa(
-            key_data=key_parser['public_key'], key_type=public_key_type,
+            curve_type=curve_type, key_data=key_parser['public_key']
         ))
 
     @classmethod
@@ -163,8 +165,8 @@ class DnsRecordDnskey(ParsableBase, Serializable):
             public_key = cls._parse_public_key_rsa(key_parser)
         elif public_key_type in [Authentication.ECDSA, Authentication.GOST_R3410_01]:
             public_key = cls._parse_public_key_ecdsa(dnssec_algorithm, key_parser)
-        elif public_key_type in [Authentication.ED25519, Authentication.ED448]:
-            public_key = cls._parse_public_key_eddsa(public_key_type, key_parser)
+        elif public_key_type == Authentication.EDDSA:
+            public_key = cls._parse_public_key_eddsa(dnssec_algorithm, key_parser)
         elif public_key_type == Authentication.DSS:
             public_key = cls._parse_public_key_dss(key_parser)
         else:
@@ -240,7 +242,7 @@ class DnsRecordDnskey(ParsableBase, Serializable):
             DnsRecordDnskey._compose_public_key_rsa(key_composer, key)
         elif public_key_type in [Authentication.ECDSA, Authentication.GOST_R3410_01]:
             DnsRecordDnskey._compose_public_key_ecdsa(key_composer, key)
-        elif public_key_type in [Authentication.ED25519, Authentication.ED448]:
+        elif public_key_type == Authentication.EDDSA:
             DnsRecordDnskey._compose_public_key_eddsa(key_composer, key)
         elif public_key_type == Authentication.DSS:
             DnsRecordDnskey._compose_public_key_dss(key_composer, key)

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import abc
 import enum
@@ -19,6 +20,7 @@ import attr
 import six
 
 from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.grade import Gradeable
 from cryptodatahub.common.types import CryptoDataEnumCodedBase, CryptoDataParamsBase
 
 from cryptoparser.common.parse import (
@@ -45,7 +47,19 @@ _default.default = json.JSONEncoder().default
 json.JSONEncoder.default = _default
 
 
+class SerializableTextEncoder(object):
+    def __call__(self, obj, level):
+        if isinstance(obj, six.string_types):
+            string_result = obj
+        else:
+            string_result = str(obj)
+
+        return False, string_result
+
+
 class Serializable(object):  # pylint: disable=too-few-public-methods
+    post_text_encoder = SerializableTextEncoder()
+
     @staticmethod
     def _filter_out_non_human_friendly(obj, dict_value, human_friendly_only):
         if not attr.has(type(obj)) or not human_friendly_only:
@@ -143,7 +157,11 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
                 else:
                     human_readable_name = ' '.join(name.split('_')).title()
             else:
+                post_text_encoder = cls.post_text_encoder
+                cls.post_text_encoder = SerializableTextEncoder()
                 _, human_readable_name = cls._markdown_result(name)
+                cls.post_text_encoder = post_text_encoder
+
             name_dict[name] = human_readable_name
 
         return name_dict
@@ -200,20 +218,22 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
     @classmethod
     def _markdown_result(cls, obj, level=0):  # pylint: disable=too-many-branches
         if obj is None:
-            result = False, 'n/a'
+            result = cls.post_text_encoder('n/a', level)
         elif isinstance(obj, bool):
-            result = False, 'yes' if obj else 'no'
+            result = cls.post_text_encoder('yes' if obj else 'no', level)
         elif Serializable._markdown_is_directly_printable(obj):
-            result = False, str(obj)
+            result = cls.post_text_encoder(obj, level)
+        elif isinstance(obj, Gradeable):
+            result = cls.post_text_encoder(obj, level)
         elif isinstance(obj, Serializable):
             result = obj._as_markdown(level)  # pylint: disable=protected-access
         elif isinstance(obj, enum.Enum):
             if isinstance(obj.value, Serializable):
                 return obj.value._as_markdown(level)  # pylint: disable=protected-access
             if isinstance(obj.value, CryptoDataParamsBase):
-                return False, str(obj.value)
+                return cls.post_text_encoder(obj.value, level)
 
-            return False, obj.name
+            return cls.post_text_encoder(obj.name, level)
         elif isinstance(obj, (ipaddress.IPv4Network, ipaddress.IPv6Network)):
             return False, str(obj)
         elif attr.has(type(obj)):
@@ -225,9 +245,9 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         elif isinstance(obj, (list, tuple, set, ArrayBase)):
             result = cls._markdown_result_list(obj, level)
         elif isinstance(obj, (bytes, bytearray)):
-            result = False, bytes_to_hex_string(obj, separator=':', lowercase=False)
+            result = cls.post_text_encoder(bytes_to_hex_string(obj, separator=':', lowercase=False), level)
         else:
-            result = False, str(obj)
+            result = cls.post_text_encoder(obj, level)
 
         return result
 
