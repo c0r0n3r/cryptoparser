@@ -3,6 +3,18 @@ Changelog
 =========
 
 -------------------
+0.11.0 - 2023-10-28
+-------------------
+
+Features
+========
+
+-  Generic
+
+   - add post processing capability to Markdown output (#73)
+   - use class give grade for public keys (#73)
+
+-------------------
 0.10.3 - 2023-10-12
 -------------------
 
