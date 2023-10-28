@@ -1,22 +1,23 @@
+--------
 Features
 --------
 
 Supported Protocols
-^^^^^^^^^^^^^^^^^^^
+===================
 
 Secure Shell (SSH)
-""""""""""""""""""
+------------------
 
 -  `SSH 2.0 <https://tools.ietf.org/html/rfc4253>`__
 
 Secure Socket Layer (SSL)
-"""""""""""""""""""""""""
+-------------------------
 
 -  `SSL 2.0 <https://tools.ietf.org/html/draft-hickman-netscape-ssl-00>`__
 -  `SSL 3.0 <https://tools.ietf.org/html/rfc6101>`__
 
 Transport Layer Security (TLS)
-""""""""""""""""""""""""""""""
+------------------------------
 
 -  `TLS 1.0 <https://tools.ietf.org/html/rfc2246>`__
 -  `TLS 1.1 <https://tools.ietf.org/html/rfc4346>`__
@@ -24,15 +25,15 @@ Transport Layer Security (TLS)
 -  `TLS 1.3 <https://tools.ietf.org/html/rfc8446>`__
 
 Domain Name System (DNS)
-""""""""""""""""""""""""
+------------------------
 
 -  `DNSSEC <https://www.rfc-editor.org/rfc/rfc4034>`__ (Domain Name System Security Extensions)
 
 Protocol Specific Features
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+==========================
 
 Hypertext Transfer Protocol (HTTP)
-""""""""""""""""""""""""""""""""""
+----------------------------------
 
 1. supports header wire format parsing
 2. supports detailed parsing of generic headers
@@ -55,7 +56,7 @@ Hypertext Transfer Protocol (HTTP)
    `X-Frame-Options <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options>`__)
 
 Transport Layer Security (TLS)
-""""""""""""""""""""""""""""""
+------------------------------
 
 Only features that cannot be or difficultly implemented by some of the most popular SSL/TLS implementations (eg:
 `GnuTls <https://www.gnutls.org/>`__, `LibreSSL <https://www.libressl.org/>`__, `OpenSSL <https://www.openssl.org/>`__,
@@ -95,7 +96,7 @@ Only features that cannot be or difficultly implemented by some of the most popu
    - supports TLS handshake-related `RDP <https://en.wikipedia.org/wiki/Remote_Desktop_Protocol`__ messages
 
 Secure Shell (SSH)
-""""""""""""""""""
+------------------
 
 -  cipher suites
 
@@ -108,7 +109,7 @@ Secure Shell (SSH)
    1. supports host keys and cretificates (both ``V00`` and ``V01``)
 
 Domain Name System (DNS)
-""""""""""""""""""""""""
+------------------------
 
 -  e-mail authentication, reporting
 

@@ -1,21 +1,24 @@
+=========
 Changelog
 =========
 
+-------------------
 0.10.3 - 2023-10-12
 -------------------
 
 Notable fixes
-~~~~~~~~~~~~~
+=============
 
 -  Generic
 
    -  add missing dnsrec module to the packaging (#75)
 
+-------------------
 0.10.2 - 2023-08-28
 -------------------
 
 Features
-~~~~~~~~
+========
 
 -  DNS
 
@@ -28,11 +31,12 @@ Features
       -  `SMTP MTA Strict Transport Security <https://www.rfc-editor.org/rfc/rfc8461>`__ (MTA-STS)
       -  `SMTP TLS Reporting <https://www.rfc-editor.org/rfc/rfc8460>`__ (TLSRPT)
 
+-------------------
 0.10.1 - 2023-08-29
 -------------------
 
 Features
-~~~~~~~~
+========
 
 -  DNS
 
@@ -42,21 +46,23 @@ Features
       -  `DS <https://www.rfc-editor.org/rfc/rfc4034#section-5>`__
       -  `RRSIG <https://www.rfc-editor.org/rfc/rfc4034#section-3>`__
 
+-------------------
 0.10.0 - 2023-08-03
 -------------------
 
 Notable fixes
-~~~~~~~~~~~~~
+=============
 
 -  Generic
 
    -  Markdown output of attr-based classes
 
+------------------
 0.9.1 - 2022-06-22
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  TLS (``tls``)
 
@@ -65,11 +71,12 @@ Features
       -  add parser for `signed certificate timestamp <https://www.rfc-editor.org/rfc/rfc6962.html#section-3.3.1>`__
          entries (#52)
 
+------------------
 0.9.0 - 2023-04-29
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  TLS (``tls``)
 
@@ -77,21 +84,23 @@ Features
 
       -  protocol item classes for `OpenVPN <https://en.wikipedia.org/wiki/OpenVPN>`__ support (#62)
 
+------------------
 0.8.5 - 2023-04-02
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  Generic
 
    -  move data classes to `CryptoDataHub repository <https://gitlab.com/coroner/cryptodatahub>`__ (#67)
 
+------------------
 0.8.4 - 2023-01-22
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  TLS (``tls``)
 
@@ -99,11 +108,12 @@ Features
 
       -  protocol item classes for MySQL support (#61)
 
+------------------
 0.8.2 - 2022-10-10
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  TLS (``tls``)
 
@@ -120,11 +130,12 @@ Features
       -  add `host certificate <https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys>`__ related
          classes (#53)
 
+------------------
 0.8.0 - 2022-01-18
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  SSH (``ssh``)
 
@@ -136,40 +147,44 @@ Features
 
       -  add `software version <https://tools.ietf.org/html/rfc4253#section-4.2>`__ related classes (#46)
 
+------------------
 0.7.3 - 2021-12-26
 ------------------
 
 Notable fixes
-~~~~~~~~~~~~~
+=============
 
 -  Generic
 
    -  Fix time zone handlind in datetime parser
 
+------------------
 0.7.2 - 2021-10-07
 ------------------
 
 Other
-~~~~~
+=====
 
 -  switch to Markdown format in changelog, readme and contributing
 -  update contributing to the latest version from contribution-guide.org
 
+------------------
 0.7.1 - 2021-09-20
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  TLS (``tls``)
 
    -  protocol item classes for PostgreSQL support (#44)
 
+------------------
 0.7.0 - 2021-09-02
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  TLS (``tls``)
 
@@ -184,11 +199,12 @@ Features
       -  add `renegotiation indication <https://www.rfc-editor.org/rfc/rfc5746.html>`__ extension related messages (#40)
       -  add `session ticket <https://www.rfc-editor.org/rfc/rfc5077.html>`__ extension related messages (#40)
 
+------------------
 0.6.0 - 2021-05-27
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  HTTP(S) (``http``)
 
@@ -235,11 +251,12 @@ Features
 
       -  add `signature algorithms <https://tools.ietf.org/html/rfc8446#section-4.2.3>`__ relate to version 1.3 (#20)
 
+------------------
 0.5.0 - 2021-04-08
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  Generic
 
@@ -258,7 +275,7 @@ Features
       -  add `algorithm negotiation <https://tools.ietf.org/html/rfc4253#section-7.1>`__ related messages (#21)
 
 Usability
-~~~~~~~~~
+=========
 
 -  Generic
 
@@ -266,11 +283,12 @@ Usability
    -  use human readable algorithms names in Markdown output (#32)
    -  add human readable descriptions for exceptions (#33)
 
+------------------
 0.4.0 - 2021-01-30
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  TLS (``tls``)
 
@@ -283,24 +301,25 @@ Features
       -  add `client public key request <https://tools.ietf.org/html/rfc2246#section-7.4.4>`__ related messages (#24)
 
 Improvements
-~~~~~~~~~~~~
+============
 
 -  Generic
 
    -  add `OID <https://en.wikipedia.org/wiki/Object_identifier>`__ to algorithms
 
+------------------
 0.3.1 - 2020-09-15
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  Generic
 
    -  `Markdown <https://en.wikipedia.org/wiki/Markdown>`__ serializable format (#19)
 
 Improvements
-~~~~~~~~~~~~
+============
 
 -  TLS (``tls``)
 
@@ -316,7 +335,7 @@ Improvements
       -  add missing SSLv3 cipher suites (#15)
 
 Notable fixes
-~~~~~~~~~~~~~
+=============
 
 -  Generic
 
@@ -328,11 +347,12 @@ Notable fixes
 
       -  fix some cipher suite names and parameters (#7, #10)
 
+------------------
 0.3.0 - 2020-04-30
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  TLS (``tls``)
 
@@ -341,31 +361,33 @@ Features
       calculation for TLS client hello (#2)
 
 Notable fixes
-~~~~~~~~~~~~~
+=============
 
 -  TLS (``tls``)
 
    -  compose all the messages in case of a TLS record (#1)
 
 Refactor
-~~~~~~~~
+========
 
 -  use attrs to avoid boilerplates (#3)
 
+------------------
 0.2.0 - 2019-12-02
 ------------------
 
 Notable fixes
-~~~~~~~~~~~~~
+=============
 
 -  clarify TLS related parameter names
 -  several packaging fixes
 
+------------------
 0.1.0 - 2019-03-20
 ------------------
 
 Features
-~~~~~~~~
+========
 
 -  added TLS record protocol support
 -  added TLS ChangeCipherSpec message support
@@ -375,7 +397,7 @@ Features
 -  added SSL support
 
 Improvements
-~~~~~~~~~~~~
+============
 
 -  added serialization support for classes
 -  added elliptic-curve related descriptive classes

@@ -1,8 +1,10 @@
+=======
 Summary
 =======
 
 .. include:: ../README.rst
 
+=======
 Details
 =======
 
@@ -24,6 +26,7 @@ implementations for Python (eg: M2Crypto, pyOpenSSL, Paramiko, ...).
     features
     development
 
+=======
 History
 =======
 
