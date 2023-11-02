@@ -9,6 +9,8 @@ import unittest
 
 from collections import OrderedDict
 
+from test.common.classes import TestKeyBase
+
 import dateutil.tz
 
 from cryptodatahub.common.algorithm import Authentication, Hash, NamedGroup
@@ -24,7 +26,7 @@ from cryptodatahub.common.exception import InvalidValue
 
 from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm
 
-from cryptoparser.common.exception import NotEnoughData
+from cryptoparser.common.exception import InvalidType, NotEnoughData
 
 from cryptoparser.ssh.key import (
     SshCertType,
@@ -54,6 +56,8 @@ from cryptoparser.ssh.key import (
     SshHostKeyEDDSA,
     SshHostKeyRSA,
     SshString,
+    SshX509Certificate,
+    SshX509CertificateChain,
 )
 
 
@@ -123,9 +127,9 @@ class TestHostKeyDSS(TestPublicKeyBase):
 
     def test_asdict(self):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
-            ('key_type', Authentication.DSS),
-            ('key_name', SshHostKeyAlgorithm.SSH_DSS),
-            ('key_size', PublicKeySize(Authentication.DSS, 32)),
+            ('key_type', 'host key'),
+            ('algorithm', Authentication.DSS),
+            ('size', PublicKeySize(Authentication.DSS, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:wdClb94C9Lyi38P1o/SEG38glOh3ea5CJl84bZVx2yM='),
                 (Hash.SHA1, 'SHA1:fOmDMlRkSkplVc2vGTmkRY65j/c='),
@@ -173,9 +177,9 @@ class TestHostKeyRSA(TestPublicKeyBase):
 
     def test_asdict(self):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
-            ('key_type', Authentication.RSA),
-            ('key_name', SshHostKeyAlgorithm.SSH_RSA),
-            ('key_size', PublicKeySize(Authentication.RSA, 32)),
+            ('key_type', 'host key'),
+            ('algorithm', Authentication.RSA),
+            ('size', PublicKeySize(Authentication.RSA, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:ZuSq5GtQTjPj8LAwY4UE4gGILhIAh5kDaDkkEYLaRU0='),
                 (Hash.SHA1, 'SHA1:KAG3KmsLUs4OClEUj62npdXcJTg='),
@@ -221,9 +225,9 @@ class TestHostKeyECDSA(TestPublicKeyBase):
 
     def test_asdict(self):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
-            ('key_type', Authentication.ECDSA),
-            ('key_name', SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256),
-            ('key_size', PublicKeySize(Authentication.ECDSA, 256)),
+            ('key_type', 'host key'),
+            ('algorithm', Authentication.ECDSA),
+            ('size', PublicKeySize(Authentication.ECDSA, 256)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:+baTTAvJKIn0rfi1HVlDxDb/lIzi41H9UoCkFPyyO4I='),
                 (Hash.SHA1, 'SHA1:WiBKhHvCyV8LpdXgJWrJr9WAhqw='),
@@ -264,9 +268,9 @@ class TestHostKeyEDDSA(TestPublicKeyBase):
 
     def test_asdict(self):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
-            ('key_type', Authentication.EDDSA),
-            ('key_name', SshHostKeyAlgorithm.SSH_ED25519),
-            ('key_size', PublicKeySize(Authentication.EDDSA, 256)),
+            ('key_type', 'host key'),
+            ('algorithm', Authentication.EDDSA),
+            ('size', PublicKeySize(Authentication.EDDSA, 256)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:tE7ReEqO7s6dpo8PFRQXhAe4Vdy9HkT0UawUx+NfClk='),
                 (Hash.SHA1, 'SHA1:0ql0OFSSY06SHsZhtEAJ1Wx2AUo='),
@@ -524,9 +528,9 @@ class TestHostCertificateV00DSS(TestHostCertificateDSSBase):
 
     def test_asdict(self):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
-            ('key_type', Authentication.DSS),
-            ('key_name', SshHostKeyAlgorithm.SSH_DSS_CERT_V00_OPENSSH_COM),
-            ('key_size', PublicKeySize(Authentication.DSS, 32)),
+            ('key_type', 'host certificate'),
+            ('algorithm', Authentication.DSS),
+            ('size', PublicKeySize(Authentication.DSS, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:JLbl6U9Dd3zrR/pS86OLLJUsL6NU7NOnSd554vL1md0='),
                 (Hash.SHA1, 'SHA1:eGd4yAwFTXy+Wdi5xsuEJUNsj0M='),
@@ -666,9 +670,9 @@ class TestHostCertificateV01DSS(TestHostCertificateDSSBase):
 
     def test_asdict(self):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
-            ('key_type', Authentication.DSS),
-            ('key_name', SshHostKeyAlgorithm.SSH_DSS_CERT_V01_OPENSSH_COM),
-            ('key_size', PublicKeySize(Authentication.DSS, 32)),
+            ('key_type', 'host certificate'),
+            ('algorithm', Authentication.DSS),
+            ('size', PublicKeySize(Authentication.DSS, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:81ny5W3AQivvf/ffzLM0b13/eAG82/GsSFNaBnVOF4A='),
                 (Hash.SHA1, 'SHA1:Kx6Nzq+MWzKiT4q0lxdQbZzecSo='),
@@ -806,9 +810,9 @@ class TestHostCertificateV00RSA(TestHostCertificateRSABase):
 
     def test_asdict(self):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
-            ('key_type', Authentication.RSA),
-            ('key_name', SshHostKeyAlgorithm.SSH_RSA_CERT_V00_OPENSSH_COM),
-            ('key_size', PublicKeySize(Authentication.RSA, 32)),
+            ('key_type', 'host certificate'),
+            ('algorithm', Authentication.RSA),
+            ('size', PublicKeySize(Authentication.RSA, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:YJVpL0zTCstfPryV5C1tD3boAzBrzRlAMjrAosxw4pA='),
                 (Hash.SHA1, 'SHA1:zNRNUIcyRZvu8MuhAmtALdUNCMM='),
@@ -927,9 +931,9 @@ class TestHostCertificateV01RSA(TestHostCertificateRSABase):
 
     def test_asdict(self):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
-            ('key_type', Authentication.RSA),
-            ('key_name', SshHostKeyAlgorithm.SSH_RSA_CERT_V01_OPENSSH_COM),
-            ('key_size', PublicKeySize(Authentication.RSA, 32)),
+            ('key_type', 'host certificate'),
+            ('algorithm', Authentication.RSA),
+            ('size', PublicKeySize(Authentication.RSA, 32)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:vqtvWzklbsElMSGXE0G7Gk7WDHuXzd83KOC0y0Rv9TY='),
                 (Hash.SHA1, 'SHA1:9Iem7KW/rAvahTzVMTmDFg93MBk='),
@@ -1079,9 +1083,9 @@ class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
 
     def test_asdict(self):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
-            ('key_type', Authentication.ECDSA),
-            ('key_name', SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256_CERT_V01_OPENSSH_COM),
-            ('key_size', PublicKeySize(Authentication.ECDSA, 256)),
+            ('key_type', 'host certificate'),
+            ('algorithm', Authentication.ECDSA),
+            ('size', PublicKeySize(Authentication.ECDSA, 256)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:aRBBmsAqpnH3wrOh35fa//LB/JGcuTUAPuRPEj9RWRQ='),
                 (Hash.SHA1, 'SHA1:9E5qN+JPZBX4ZBfKEou/WNWtWR8='),
@@ -1221,9 +1225,9 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
 
     def test_asdict(self):
         self.assertEqual(self.host_cert._asdict(), OrderedDict([
-            ('key_type', Authentication.EDDSA),
-            ('key_name', SshHostKeyAlgorithm.SSH_ED25519_CERT_V01_OPENSSH_COM),
-            ('key_size', PublicKeySize(Authentication.EDDSA, 256)),
+            ('key_type', 'host certificate'),
+            ('algorithm', Authentication.EDDSA),
+            ('size', PublicKeySize(Authentication.EDDSA, 256)),
             ('fingerprints', OrderedDict([
                 (Hash.SHA2_256, 'SHA256:IDjjwI5W2lkjfR/gnU0pvSw6E340LushvP/N9A1HrWg='),
                 (Hash.SHA1, 'SHA1:EXpev7tY2XCP2R0G6eqcqNgBpOc='),
@@ -1262,3 +1266,105 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
                 signature_data=b'\x00\x01\x02\x03'
             ))
         ]))
+
+
+class TestX509CertificateChain(TestKeyBase):
+    def setUp(self):
+        super(TestX509CertificateChain, self).setUp()
+
+        x509_certificate = self._get_public_key_x509('snakeoil_cert.pem')
+        self.x509_certificate_bytes = x509_certificate.der
+
+        self.x509v3_ssh_rsa_certificate_bytes = bytes(
+            b'\x00\x00\x00\x0e' +  # host_key_algorithm
+            b'x509v3-ssh-rsa' +
+            b'\x00\x00\x00\x01' +  # certificate_count
+            b'\x00\x00\x03\xc4' +  # certificate_length
+            self.x509_certificate_bytes +
+            b'\x00\x00\x00\x01' +  # ocsp_response_count
+            b'\x00\x00\x00\x04' +  # ocsp_response_length
+            b'\x00\x01\x02\x03' +
+            b''
+        )
+
+        self.x509v3_ssh_rsa_certificate = SshX509CertificateChain(
+            SshHostKeyAlgorithm.X509V3_SSH_RSA, x509_certificate, [], [b'\x00\x01\x02\x03']
+        )
+
+    def test_key_bytes(self):
+        self.assertEqual(
+            self.x509v3_ssh_rsa_certificate.key_bytes,
+            self.x509v3_ssh_rsa_certificate.public_key.key_bytes
+        )
+
+    def test_asdict(self):
+        dict_result = self.x509v3_ssh_rsa_certificate._asdict()
+        self.assertEqual(list(dict_result.keys())[-2:], ['key_type', 'certificate_chain'])
+        self.assertEqual(dict_result.pop('key_type'), 'X.509 certificate chain')
+        self.assertEqual(dict_result.pop('certificate_chain'), [self.x509v3_ssh_rsa_certificate.public_key])
+
+    def test_parse(self):
+        x509_certificate = SshX509CertificateChain.parse_exact_size(self.x509v3_ssh_rsa_certificate_bytes)
+        self.assertEqual(x509_certificate.host_key_algorithm, SshHostKeyAlgorithm.X509V3_SSH_RSA)
+        self.assertEqual(x509_certificate.public_key, self.x509v3_ssh_rsa_certificate.public_key)
+        self.assertEqual(x509_certificate.issuer_certificates, [])
+        self.assertEqual(x509_certificate.ocsp_responses, [b'\x00\x01\x02\x03'])
+
+    def test_compose(self):
+        self.assertEqual(self.x509v3_ssh_rsa_certificate.compose(), self.x509v3_ssh_rsa_certificate_bytes)
+
+
+class TestX509Certificate(TestKeyBase):
+    def setUp(self):
+        super(TestX509Certificate, self).setUp()
+
+        self.x509v3_sign_rsa_header = bytes(
+            b'\x00\x00\x00\x14' +  # host_key_algorithm
+            b'x509v3-sign-rsa-sha1' +
+            b'\x00\x00\x03\xc4' +  # public_key_length
+            b''
+        )
+
+        self.x509_certificate = self._get_public_key_x509('snakeoil_cert.pem')
+        self.x509_certificate_bytes = self.x509_certificate.der
+
+        self.x509v3_sign_rsa_certificate = SshX509Certificate(
+            SshHostKeyAlgorithm.X509V3_SIGN_RSA, self.x509_certificate
+        )
+        self.x509v3_sign_rsa_sha1_certificate = SshX509Certificate(
+            SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA1, self.x509_certificate
+        )
+
+    def test_error_invalid_type(self):
+        x509_certificate_bytes = self._get_public_key_x509('ecc256.badssl.com.pem').der
+        with self.assertRaises(InvalidType):
+            SshX509Certificate.parse_exact_size(x509_certificate_bytes)
+
+    def test_error_invalid_certificate_value(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            SshX509Certificate.parse_exact_size(self.x509v3_sign_rsa_header)
+        self.assertEqual(context_manager.exception.value, b'')
+
+    def test_parse_with_host_key_type(self):
+        x509_certificate = SshX509Certificate.parse_exact_size(
+            self.x509v3_sign_rsa_header + self.x509_certificate_bytes
+        )
+        self.assertEqual(x509_certificate.host_key_algorithm, SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA1)
+        self.assertEqual(x509_certificate.public_key, self.x509v3_sign_rsa_certificate.public_key)
+
+    def test_parse_without_host_key_type(self):
+        x509_certificate = SshX509Certificate.parse_exact_size(self.x509_certificate_bytes)
+        self.assertEqual(x509_certificate.host_key_algorithm, SshHostKeyAlgorithm.X509V3_SIGN_RSA)
+        self.assertEqual(x509_certificate.public_key, self.x509v3_sign_rsa_certificate.public_key)
+
+    def test_key_bytes(self):
+        self.assertEqual(self.x509v3_sign_rsa_certificate.key_bytes, self.x509_certificate.public_key.key_bytes)
+
+    def test_compose_with_host_key_type(self):
+        self.assertEqual(
+            self.x509v3_sign_rsa_sha1_certificate.compose(),
+            self.x509v3_sign_rsa_header + self.x509_certificate_bytes
+        )
+
+    def test_compose_without_host_key_type(self):
+        self.assertEqual(self.x509v3_sign_rsa_certificate.compose(), self.x509_certificate_bytes)
