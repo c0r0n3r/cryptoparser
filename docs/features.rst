@@ -106,7 +106,7 @@ Secure Shell (SSH)
 
 -  public keys
 
-   1. supports host keys and cretificates (both ``V00`` and ``V01``)
+   1. supports host keys, cretificates (both ``V00`` and ``V01``), X.509 certificates and chains
 
 Domain Name System (DNS)
 ------------------------

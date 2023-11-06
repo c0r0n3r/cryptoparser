@@ -3,6 +3,19 @@ Changelog
 =========
 
 -------------------
+0.11.1 - 2023-11-06
+-------------------
+
+Features
+========
+
+-  SSH (``ssh``)
+
+   -  Public Keys (``pubkeys``)
+
+      -  add X.509 certificate and certificate chain related classes (#63)
+
+-------------------
 0.11.0 - 2023-10-28
 -------------------
 
