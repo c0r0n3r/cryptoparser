@@ -25,6 +25,7 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldPragma,
     HttpHeaderFieldReferrerPolicy,
     HttpHeaderFieldServer,
+    HttpHeaderFieldSetCookie,
     HttpHeaderFieldSTS,
     HttpHeaderFieldUnparsed,
     HttpHeaderFieldValueCacheControlResponse,
@@ -32,6 +33,7 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldValueExpectStaple,
     HttpHeaderFieldValuePragma,
     HttpHeaderFieldValueReferrerPolicy,
+    HttpHeaderFieldValueSetCookie,
     HttpHeaderFieldValueSTS,
     HttpHeaderFieldValueXContentTypeOptions,
     HttpHeaderFieldValueXFrameOptions,
@@ -39,6 +41,7 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldXFrameOptions,
     HttpHeaderReferrerPolicy,
     HttpHeaderPragma,
+    HttpHeaderSetCookieComponentSameSite,
     HttpHeaderXContentTypeOptions,
     HttpHeaderXFrameOptions,
 )
@@ -176,6 +179,44 @@ class TestHttpHeaderFieldValueExpectCT(
     _header_full_lower_case_bytes = b'max-age=1, enforce, report-uri="http://example.com"'
 
 
+class TestHttpHeaderFieldValueSetCookie(TestCasesBasesHttpHeader.MinimalHeader, TestCasesBasesHttpHeader.FullHeader):
+    _header_minimal = HttpHeaderFieldValueSetCookie('name', 'value')
+    _header_minimal_bytes = b'name=value'
+    _header_minimal_markdown = os.linesep.join([
+        '* Name: name',
+        '* Value: value',
+        '* Expires: n/a',
+        '* Max Age: n/a',
+        '* Domain: n/a',
+        '* Path: n/a',
+        '* Secure: no',
+        '* Http Only: no',
+        '* Same Site: n/a',
+        ''
+    ])
+
+    _header_full = HttpHeaderFieldValueSetCookie(
+        name='name', value='value',
+        expires=datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC),
+        max_age=datetime.timedelta(seconds=1),
+        domain='example.com',
+        path='/',
+        secure=True,
+        http_only=True,
+        same_site=HttpHeaderSetCookieComponentSameSite.LAX,
+    )
+    _header_full_bytes = b'; '.join([
+        b'name=value',
+        b'expires=Thu, 01 Jan 1970 00:00:00 GMT',
+        b'max-age=1',
+        b'Domain=example.com',
+        b'Path=/',
+        b'Secure',
+        b'HttpOnly',
+        b'SameSite=Lax',
+    ])
+
+
 class TestHttpHeaderFieldValueXContentTypeOptions(TestCasesBasesHttpHeader.FullHeader):
     _header_full = HttpHeaderFieldValueXContentTypeOptions(HttpHeaderXContentTypeOptions.NOSNIFF)
     _header_full_bytes = b'nosniff'
@@ -232,6 +273,7 @@ class TestHttpHeaderFields(unittest.TestCase):
             b'Pragma: no-cache',
             b'Referrer-Policy: origin',
             b'Server: server',
+            b'Set-Cookie: name=value',
             b'Strict-Transport-Security: max-age=1',
             b'X-Unparsed: Value',
             b'X-Content-Type-Options: nosniff',
@@ -252,6 +294,7 @@ class TestHttpHeaderFields(unittest.TestCase):
             HttpHeaderFieldPragma(HttpHeaderPragma.NO_CACHE),
             HttpHeaderFieldReferrerPolicy(HttpHeaderReferrerPolicy.ORIGIN),
             HttpHeaderFieldServer('server'),
+            HttpHeaderFieldSetCookie(HttpHeaderFieldValueSetCookie('name', 'value')),
             HttpHeaderFieldSTS(HttpHeaderFieldValueSTS(datetime.timedelta(seconds=1))),
             HttpHeaderFieldUnparsed('X-Unparsed', 'Value'),
             HttpHeaderFieldXContentTypeOptions(HttpHeaderXContentTypeOptions.NOSNIFF),
@@ -322,18 +365,30 @@ class TestHttpHeaderFields(unittest.TestCase):
             '    * Name: Server',
             '    * Value: server',
             '13.',
+            '    * Name: Set-Cookie',
+            '    * Value:',
+            '        * Name: name',
+            '        * Value: value',
+            '        * Expires: n/a',
+            '        * Max Age: n/a',
+            '        * Domain: n/a',
+            '        * Path: n/a',
+            '        * Secure: no',
+            '        * Http Only: no',
+            '        * Same Site: n/a',
+            '14.',
             '    * Name: Strict-Transport-Security',
             '    * Value:',
             '        * Max Age: 0:00:01',
             '        * Include Subdomains: no',
             '        * Preload: no',
-            '14.',
+            '15.',
             '    * Name: X-Unparsed',
             '    * Value: Value',
-            '15.',
+            '16.',
             '    * Name: X-Content-Type-Options',
             '    * Value: nosniff',
-            '16.',
+            '17.',
             '    * Name: X-Frame-Options',
             '    * Value: SAMEORIGIN',
             '',

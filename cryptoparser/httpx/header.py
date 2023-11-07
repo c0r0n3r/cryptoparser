@@ -20,7 +20,10 @@ from cryptoparser.common.base import (
 )
 from cryptoparser.common.field import (
     FieldParsableBase,
+    FieldValueBase,
     FieldValueComponentOption,
+    FieldValueComponentString,
+    FieldValueComponentStringEnum,
     FieldValueDateTime,
     FieldValueString,
     FieldValueStringEnum,
@@ -30,10 +33,12 @@ from cryptoparser.common.field import (
     FieldsSemicolonSeparated,
     NameValueVariantBase,
 )
-from cryptoparser.common.parse import ParserCRLF, ComposerText
+from cryptoparser.common.parse import ParserCRLF, ParserText, ComposerText
 from cryptoparser.common.utils import get_leaf_classes
 
 from .parse import (
+    HttpHeaderFieldValueComponent,
+    HttpHeaderFieldValueComponentExpires,
     HttpHeaderFieldValueComponentMaxAge,
     HttpHeaderFieldValueComponentReportURI,
 )
@@ -273,6 +278,176 @@ class HttpHeaderFieldValueServer(FieldValueString):
     pass
 
 
+class HttpHeaderFieldValueSetCookieParamDomain(FieldValueComponentString):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'Domain'
+
+
+class HttpHeaderFieldValueSetCookieParamPath(FieldValueComponentString):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'Path'
+
+
+class HttpHeaderFieldValueSetCookieParamSecure(FieldValueComponentOption):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'Secure'
+
+
+class HttpHeaderFieldValueSetCookieParamHttpOnly(FieldValueComponentOption):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'HttpOnly'
+
+
+class HttpHeaderSetCookieComponentSameSite(StringEnumCaseInsensitiveParsable, enum.Enum):
+    STRICT = FieldValueStringEnumParams(
+        code='STRICT'
+    )
+    LAX = FieldValueStringEnumParams(
+        code='Lax'
+    )
+    NONE = FieldValueStringEnumParams(
+        code='None'
+    )
+
+
+class HttpHeaderFieldValueSetCookieParamSameSite(FieldValueComponentStringEnum):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'SameSite'
+
+    @classmethod
+    def _get_value_type(cls):
+        return HttpHeaderSetCookieComponentSameSite
+
+
+@attr.s
+class HttpHeaderFieldValueSetCookieParams(FieldsSemicolonSeparated):
+    expires = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueComponentExpires.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueComponentExpires)),
+        default=None
+    )
+    max_age = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueComponentMaxAge.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueComponentMaxAge)),
+        default=None
+    )
+    domain = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueSetCookieParamDomain.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueSetCookieParamDomain)),
+        default=None
+    )
+    path = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueSetCookieParamPath.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueSetCookieParamPath)),
+        default=None
+    )
+    secure = attr.ib(
+        converter=HttpHeaderFieldValueSetCookieParamSecure.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueSetCookieParamSecure),
+        default=HttpHeaderFieldValueSetCookieParamSecure(False)
+    )
+    http_only = attr.ib(
+        converter=HttpHeaderFieldValueSetCookieParamHttpOnly.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueSetCookieParamHttpOnly),
+        default=HttpHeaderFieldValueSetCookieParamHttpOnly(False)
+    )
+    same_site = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueSetCookieParamSameSite.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueSetCookieParamSameSite)),
+        default=None
+    )
+
+
+@attr.s
+class HttpHeaderFieldValueSetCookie(FieldValueBase):  # pylint: disable=too-many-instance-attributes
+    name = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    value = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    expires = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueComponentExpires.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueComponentExpires)),
+        default=None
+    )
+    max_age = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueComponentMaxAge.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueComponentMaxAge)),
+        default=None
+    )
+    domain = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueSetCookieParamDomain.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueSetCookieParamDomain)),
+        default=None
+    )
+    path = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueSetCookieParamPath.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueSetCookieParamPath)),
+        default=None
+    )
+    secure = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueSetCookieParamSecure.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueSetCookieParamSecure)),
+        default=HttpHeaderFieldValueSetCookieParamSecure(False)
+    )
+    http_only = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueSetCookieParamHttpOnly.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueSetCookieParamHttpOnly)),
+        default=HttpHeaderFieldValueSetCookieParamHttpOnly(False)
+    )
+    same_site = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueSetCookieParamSameSite.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueSetCookieParamSameSite)),
+        default=None
+    )
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_string_until_separator('name', '=')
+        parser.parse_separator('=')
+        parser.parse_string_until_separator_or_end('value', '; ')
+
+        parser.parse_separator(' ', min_length=0)
+        if parser.unparsed:
+            parser.parse_separator(';')
+        parser.parse_separator(' ', min_length=0)
+
+        parser.parse_parsable('params', HttpHeaderFieldValueSetCookieParams)
+
+        attributes = {
+            'name': parser['name'],
+            'value': parser['value'],
+        }
+        params = parser['params']
+        attributes.update({
+            name: getattr(params, name)
+            for name in attr.fields_dict(type(params))
+        })
+
+        return cls(**attributes), len(parsable)
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_parsable(HttpHeaderFieldValueComponent(self.name, self.value))
+
+        params = {}
+        for name, attribute in attr.fields_dict(type(self)).items():
+            value = getattr(self, name)
+            if value != attribute.default and attribute.name not in ['name', 'value', ]:
+                params[name] = getattr(self, name)
+
+        if params:
+            composer.compose_separator('; ')
+            composer.compose_parsable(HttpHeaderFieldValueSetCookieParams(**params))
+
+        return composer.composed
+
+
 class HttpHeaderXFrameOptions(StringEnumCaseInsensitiveParsable, enum.Enum):
     DENY = FieldValueStringEnumParams(
         code='DENY'
@@ -374,6 +549,10 @@ class HttpHeaderFieldName(StringEnumCaseInsensitiveParsable, enum.Enum):
     SERVER = HttpHeaderFieldNameParams(
         code='server',
         normalized_name='Server'
+    )
+    SET_COOKIE = HttpHeaderFieldNameParams(
+        code='set-cookie',
+        normalized_name='Set-Cookie'
     )
     REFERRER_POLICY = HttpHeaderFieldNameParams(
         code='referrer-policy',
@@ -595,6 +774,16 @@ class HttpHeaderFieldReferrerPolicy(HttpHeaderFieldParsedBase):
     @classmethod
     def _get_value_class(cls):
         return HttpHeaderFieldValueReferrerPolicy
+
+
+class HttpHeaderFieldSetCookie(HttpHeaderFieldParsedBase):
+    @classmethod
+    def get_header_field_name(cls):
+        return HttpHeaderFieldName.SET_COOKIE
+
+    @classmethod
+    def _get_value_class(cls):
+        return HttpHeaderFieldValueSetCookie
 
 
 class HttpHeaderFieldServer(HttpHeaderFieldParsedBase):
