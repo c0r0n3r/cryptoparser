@@ -24,6 +24,7 @@ from cryptoparser.common.field import (
     FieldValueBase,
     FieldValueComponentOption,
     FieldValueComponentString,
+    FieldValueComponentStringBase64,
     FieldValueComponentStringEnum,
     FieldValueComponentStringEnumOption,
     FieldValueDateTime,
@@ -275,6 +276,36 @@ class HttpHeaderFieldValuePragma(FieldValueStringEnum):
     @classmethod
     def _get_value_type(cls):
         return HttpHeaderPragma
+
+
+class HttpHeaderFieldValuePublicKeyPinningPin(FieldValueComponentStringBase64):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'pin-sha256'
+
+
+@attr.s
+class HttpHeaderFieldValuePublicKeyPinning(FieldsSemicolonSeparated):
+    pin_sha256 = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValuePublicKeyPinningPin.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValuePublicKeyPinningPin)),
+        metadata={'human_readable_name': 'Pin (SHA-256)'}
+    )
+    max_age = attr.ib(
+        converter=HttpHeaderFieldValueComponentMaxAge.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueComponentMaxAge),
+        default=None
+    )
+    include_subdomains = attr.ib(
+        converter=HttpHeaderFieldValueComponentIncludeSubDomains.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueComponentIncludeSubDomains),
+        default=False
+    )
+    report_uri = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueComponentReportURI.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueComponentReportURI)),
+        default=None
+    )
 
 
 class HttpHeaderFieldValueServer(FieldValueString):
@@ -600,6 +631,10 @@ class HttpHeaderFieldName(StringEnumCaseInsensitiveParsable, enum.Enum):
         code='pragma',
         normalized_name='Pragma'
     )
+    PUBLIC_KEY_PINNING = HttpHeaderFieldNameParams(
+        code='public-key-pinning',
+        normalized_name='Public-Key-Pinning'
+    )
     SERVER = HttpHeaderFieldNameParams(
         code='server',
         normalized_name='Server'
@@ -822,6 +857,16 @@ class HttpHeaderFieldPragma(HttpHeaderFieldParsedBase):
     @classmethod
     def _get_value_class(cls):
         return HttpHeaderFieldValuePragma
+
+
+class HttpHeaderFieldPublicKeyPinning(HttpHeaderFieldParsedBase):
+    @classmethod
+    def get_header_field_name(cls):
+        return HttpHeaderFieldName.PUBLIC_KEY_PINNING
+
+    @classmethod
+    def _get_value_class(cls):
+        return HttpHeaderFieldValuePublicKeyPinning
 
 
 class HttpHeaderFieldReferrerPolicy(HttpHeaderFieldParsedBase):

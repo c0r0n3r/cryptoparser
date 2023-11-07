@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import base64
 import codecs
 import collections
 import enum
@@ -56,6 +57,7 @@ from cryptoparser.common.field import (
     FieldValueComponentPercent,
     FieldValueComponentQuotedString,
     FieldValueComponentString,
+    FieldValueComponentStringBase64,
     FieldValueComponentStringEnum,
     FieldValueComponentStringEnumParams,
     FieldValueComponentTimeDelta,
@@ -606,6 +608,12 @@ class ComponentStringEnumTest(StringEnumParsable, enum.Enum):
     )
 
 
+class FieldValueComponentStringBase64Test(FieldValueComponentStringBase64):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'testStringBase64'
+
+
 class FieldValueComponentStringEnumTest(FieldValueComponentStringEnum):
     @classmethod
     def get_canonical_name(cls):
@@ -647,7 +655,7 @@ class FieldValueComponentTimeDeltaTest(FieldValueComponentTimeDelta):
 
 
 @attr.s
-class FieldValueMultipleTest(FieldsSemicolonSeparated):
+class FieldValueMultipleTest(FieldsSemicolonSeparated):  # pylint: disable=too-many-instance-attributes
     time_delta = attr.ib(
         converter=FieldValueComponentTimeDeltaTest.convert,
         validator=attr.validators.instance_of(FieldValueComponentTimeDeltaTest)
@@ -666,6 +674,11 @@ class FieldValueMultipleTest(FieldsSemicolonSeparated):
         converter=FieldValueComponentUrlTest.convert,
         validator=attr.validators.instance_of(FieldValueComponentUrlTest),
         default='https://example.com'
+    )
+    base64_string = attr.ib(
+        converter=FieldValueComponentStringBase64Test.convert,
+        validator=attr.validators.instance_of(FieldValueComponentStringBase64Test),
+        default=base64.b64encode('default'.encode('ascii')).decode('ascii')
     )
     optional_string = attr.ib(
         converter=attr.converters.optional(FieldValueComponentOptionalStringTest.convert),

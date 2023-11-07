@@ -332,9 +332,14 @@ class TestFieldValueMultiple(unittest.TestCase):
         )
         self.assertEqual(parsed_header_field, header_field)
 
-        parsed_header_field = FieldValueMultipleTest.parse_exact_size(
-            b'testTimeDelta=1; testOption; testString=string; testOptionalString=optional_string; testNumber=1'
-        )
+        parsed_header_field = FieldValueMultipleTest.parse_exact_size(b'; '.join([
+            b'testTimeDelta=1',
+            b'testOption',
+            b'testString=string',
+            b'testStringBase64="ZGVmYXVsdA=="',
+            b'testOptionalString=optional_string',
+            b'testNumber=1',
+        ]))
         header_field = FieldValueMultipleTest(
             time_delta=datetime.timedelta(seconds=1),
             option=True,
@@ -352,6 +357,7 @@ class TestFieldValueMultiple(unittest.TestCase):
                 b'testTimeDelta=1',
                 b'testString=default',
                 b'testUrl=https://example.com',
+                b'testStringBase64="ZGVmYXVsdA=="',
                 b'testNumber=0',
                 b'testPercent=100',
             ])
@@ -365,6 +371,7 @@ class TestFieldValueMultiple(unittest.TestCase):
                 b'testOption',
                 b'testString=default',
                 b'testUrl=https://example.com',
+                b'testStringBase64="ZGVmYXVsdA=="',
                 b'testNumber=0',
                 b'testPercent=100',
             ])
@@ -397,6 +404,7 @@ class TestFieldValueMultipleExtendable(unittest.TestCase):
                 b'testTimeDelta=1',
                 b'testString=default',
                 b'testUrl=https://example.com',
+                b'testStringBase64="ZGVmYXVsdA=="',
                 b'testNumber=0',
                 b'testPercent=100',
                 b'testExtension1=value1',

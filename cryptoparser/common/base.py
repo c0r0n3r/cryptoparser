@@ -172,6 +172,9 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
 
         if hasattr(obj, '_asdict'):
             dict_value = obj._asdict()
+            if not isinstance(dict_value, dict):
+                return False, dict_value
+
             dict_value = Serializable._filter_out_non_human_friendly(obj, dict_value, human_friendly_only=True)
         else:
             dict_value = Serializable._get_ordered_dict(obj, human_friendly_only=True)
