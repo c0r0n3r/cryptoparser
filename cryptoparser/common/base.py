@@ -19,6 +19,7 @@ from collections import OrderedDict
 
 import attr
 import six
+import urllib3
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.grade import Gradeable
@@ -238,7 +239,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
                 return cls.post_text_encoder(obj.value, level)
 
             return cls.post_text_encoder(obj.name, level)
-        elif isinstance(obj, (ipaddress.IPv4Network, ipaddress.IPv6Network)):
+        elif isinstance(obj, (ipaddress.IPv4Network, ipaddress.IPv6Network, urllib3.util.url.Url)):
             return False, str(obj)
         elif isinstance(obj, datetime.timedelta):
             return False, str(obj.seconds)
