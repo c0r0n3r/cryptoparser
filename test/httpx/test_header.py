@@ -37,13 +37,17 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldValueSTS,
     HttpHeaderFieldValueXContentTypeOptions,
     HttpHeaderFieldValueXFrameOptions,
+    HttpHeaderFieldValueXXSSProtection,
     HttpHeaderFieldXContentTypeOptions,
     HttpHeaderFieldXFrameOptions,
+    HttpHeaderFieldXXSSProtection,
     HttpHeaderReferrerPolicy,
     HttpHeaderPragma,
     HttpHeaderSetCookieComponentSameSite,
     HttpHeaderXContentTypeOptions,
     HttpHeaderXFrameOptions,
+    HttpHeaderXXSSProtectionMode,
+    HttpHeaderXXSSProtectionState,
 )
 
 from .classes import TestCasesBasesHttpHeader
@@ -227,6 +231,15 @@ class TestHttpHeaderFieldValueXFrameOptions(TestCasesBasesHttpHeader.FullHeader)
     _header_full_bytes = b'SAMEORIGIN'
 
 
+class TestHttpHeaderFieldValueXXSSProtection(TestCasesBasesHttpHeader.FullHeader):
+    _header_full = HttpHeaderFieldValueXXSSProtection(
+        HttpHeaderXXSSProtectionState.ENABLED,
+        HttpHeaderXXSSProtectionMode.BLOCK,
+        'http://example.com'
+    )
+    _header_full_bytes = b'1; mode=block; report=http://example.com'
+
+
 class TestHttpHeaderFieldValueReferrerPolicy(TestCasesBasesHttpHeader.FullHeader):
     _header_full = HttpHeaderFieldValueReferrerPolicy(HttpHeaderReferrerPolicy.SAME_ORIGIN)
     _header_full_bytes = b'same-origin'
@@ -278,6 +291,7 @@ class TestHttpHeaderFields(unittest.TestCase):
             b'X-Unparsed: Value',
             b'X-Content-Type-Options: nosniff',
             b'X-Frame-Options: SAMEORIGIN',
+            b'X-XSS-Protection: 1',
             b'',
             b'',
         ])
@@ -299,6 +313,7 @@ class TestHttpHeaderFields(unittest.TestCase):
             HttpHeaderFieldUnparsed('X-Unparsed', 'Value'),
             HttpHeaderFieldXContentTypeOptions(HttpHeaderXContentTypeOptions.NOSNIFF),
             HttpHeaderFieldXFrameOptions(HttpHeaderXFrameOptions.SAMEORIGIN),
+            HttpHeaderFieldXXSSProtection(HttpHeaderXXSSProtectionState.ENABLED),
         ])
 
     def test_parse(self):
@@ -391,6 +406,12 @@ class TestHttpHeaderFields(unittest.TestCase):
             '17.',
             '    * Name: X-Frame-Options',
             '    * Value: SAMEORIGIN',
+            '18.',
+            '    * Name: X-XSS-Protection',
+            '    * Value:',
+            '        * State: enabled',
+            '        * Mode: n/a',
+            '        * Report: n/a',
             '',
         ]))
 

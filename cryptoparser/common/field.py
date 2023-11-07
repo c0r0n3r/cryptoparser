@@ -297,15 +297,22 @@ class FieldValueComponentKeyValueBase(FieldValueComponentBase):
 
         cls._check_name(parser['name'])
 
-        parser.parse_separator('=')
+        if cls.get_canonical_name():
+            parser.parse_separator('=')
         cls._parse_value(parser)
+        parsed_value = parser['value']
+        if cls.get_canonical_name():
+            parsed_value = cls(parsed_value)
 
-        return cls(parser['value']), parser.parsed_length
+        return parsed_value, parser.parsed_length
 
     def compose(self):
         composer = ComposerText()
 
-        composer.compose_string_array([self.get_canonical_name(), self._get_value_as_str()], '=')
+        if self.get_canonical_name():
+            composer.compose_string_array([self.get_canonical_name(), self._get_value_as_str()], '=')
+        else:
+            composer.compose_string(self._get_value_as_str())
 
         return composer.composed
 
@@ -484,6 +491,22 @@ class FieldValueComponentStringEnum(FieldValueComponentKeyValueBase):
 
 
 @attr.s
+class FieldValueComponentStringEnumOption(FieldValueComponentStringEnum):
+    @classmethod
+    @abc.abstractmethod
+    def _get_value_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def get_canonical_name(cls):
+        return ''
+
+    @classmethod
+    def _check_name(cls, name):
+        pass
+
+
+@attr.s
 class FieldValueComponentString(FieldValueComponentKeyValueBase):
     value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)))
 
@@ -576,10 +599,12 @@ class FieldValueMultiple(FieldValueBase):
                 if attribute.default == attr.NOTHING:
                     raise InvalidValue(None, cls, name)
 
+                component = attribute.default
+
             if attr_to_component_name_dict[name].get_canonical_name() in components:
                 parsable = components.pop(attr_to_component_name_dict[name].get_canonical_name())
-                if parsable is None:  # value is None in  case of optional values
-                    parsable = attr_to_component_name_dict[name].get_canonical_name()
+                if parsable is None:  # value is None in case of optional values
+                    parsable = component
                 else:
                     parsable = '='.join([attr_to_component_name_dict[name].get_canonical_name(), parsable])
                 params[name] = attr_to_component_name_dict[name].parse_exact_size(six.ensure_binary(parsable, 'ascii'))

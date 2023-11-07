@@ -16,6 +16,7 @@ from cryptoparser.common.base import (
     ListParsable,
     Serializable,
     StringEnumCaseInsensitiveParsable,
+    StringEnumParsable,
     VariantParsable,
 )
 from cryptoparser.common.field import (
@@ -24,6 +25,7 @@ from cryptoparser.common.field import (
     FieldValueComponentOption,
     FieldValueComponentString,
     FieldValueComponentStringEnum,
+    FieldValueComponentStringEnumOption,
     FieldValueDateTime,
     FieldValueString,
     FieldValueStringEnum,
@@ -40,6 +42,7 @@ from .parse import (
     HttpHeaderFieldValueComponent,
     HttpHeaderFieldValueComponentExpires,
     HttpHeaderFieldValueComponentMaxAge,
+    HttpHeaderFieldValueComponentReport,
     HttpHeaderFieldValueComponentReportURI,
 )
 
@@ -463,6 +466,57 @@ class HttpHeaderFieldValueXFrameOptions(FieldValueStringEnum):
         return HttpHeaderXFrameOptions
 
 
+class HttpHeaderXXSSProtectionState(StringEnumParsable, enum.Enum):
+    ENABLED = FieldValueStringEnumParams(
+        code='1',
+        human_readable_name='enabled'
+    )
+    DISABLED = FieldValueStringEnumParams(
+        code='0',
+        human_readable_name='disabled'
+    )
+
+
+class HttpHeaderFieldValueXXSSProtectionState(FieldValueComponentStringEnumOption):
+    @classmethod
+    def _get_value_type(cls):
+        return HttpHeaderXXSSProtectionState
+
+
+class HttpHeaderXXSSProtectionMode(StringEnumParsable, enum.Enum):
+    BLOCK = FieldValueStringEnumParams(
+        code='block'
+    )
+
+
+class HttpHeaderFieldValueXXSSProtectionMode(FieldValueComponentStringEnum):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'mode'
+
+    @classmethod
+    def _get_value_type(cls):
+        return HttpHeaderXXSSProtectionMode
+
+
+@attr.s
+class HttpHeaderFieldValueXXSSProtection(FieldsSemicolonSeparated):
+    state = attr.ib(
+        converter=HttpHeaderFieldValueXXSSProtectionState,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueXXSSProtectionState),
+    )
+    mode = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueXXSSProtectionMode.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueXXSSProtectionMode)),
+        default=None
+    )
+    report = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueComponentReport.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueComponentReport)),
+        default=None
+    )
+
+
 class HttpHeaderReferrerPolicy(StringEnumCaseInsensitiveParsable, enum.Enum):
     NO_REFERRER = FieldValueStringEnumParams(
         code='no-referrer'
@@ -569,6 +623,10 @@ class HttpHeaderFieldName(StringEnumCaseInsensitiveParsable, enum.Enum):
     X_FRAME_OPTIONS = HttpHeaderFieldNameParams(
         code='x-frame-options',
         normalized_name='X-Frame-Options'
+    )
+    X_XSS_PROTECTION = HttpHeaderFieldNameParams(
+        code='x-xss-protection',
+        normalized_name='X-XSS-Protection'
     )
 
     @classmethod
@@ -814,6 +872,16 @@ class HttpHeaderFieldXFrameOptions(HttpHeaderFieldParsedBase):
     @classmethod
     def _get_value_class(cls):
         return HttpHeaderFieldValueXFrameOptions
+
+
+class HttpHeaderFieldXXSSProtection(HttpHeaderFieldParsedBase):
+    @classmethod
+    def get_header_field_name(cls):
+        return HttpHeaderFieldName.X_XSS_PROTECTION
+
+    @classmethod
+    def _get_value_class(cls):
+        return HttpHeaderFieldValueXXSSProtection
 
 
 class HttpHeaderFieldParsedVariant(VariantParsable):
