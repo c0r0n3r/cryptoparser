@@ -25,6 +25,7 @@ from cryptodatahub.common.key import (
     PublicKeyParamsEddsa,
     PublicKeyParamsRsa,
 )
+from cryptodatahub.common.utils import hash_bytes
 from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm, SshEllipticCurveIdentifier
 
 from cryptoparser.common.base import (
@@ -67,7 +68,7 @@ class SshPublicKeyBase(object):
 
     @classmethod
     def _fingerprint(cls, hash_type, key_bytes, prefix):
-        digest = PublicKey.get_digest(hash_type, key_bytes)
+        digest = hash_bytes(hash_type, key_bytes)
 
         if hash_type == Hash.MD5:
             fingerprint = ':'.join(textwrap.wrap(six.ensure_text(binascii.hexlify(digest), 'ascii'), 2))
