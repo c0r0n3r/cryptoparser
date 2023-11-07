@@ -2,6 +2,7 @@
 # pylint: disable=too-many-lines
 
 import abc
+import datetime
 import enum
 import json
 import math
@@ -239,6 +240,8 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             return cls.post_text_encoder(obj.name, level)
         elif isinstance(obj, (ipaddress.IPv4Network, ipaddress.IPv6Network)):
             return False, str(obj)
+        elif isinstance(obj, datetime.timedelta):
+            return False, str(obj.seconds)
         elif attr.has(type(obj)):
             result = cls._markdown_result_complex(obj, level)
         elif hasattr(obj, '_asdict'):

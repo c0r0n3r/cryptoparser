@@ -206,8 +206,10 @@ class ParserText(ParserBase):
             'separator', self._parsed_length, separator, min_length, max_length
         )
 
-    def _parse_numeric_array(self, name, item_num, separator, converter):
+    def _parse_numeric_array(  # pylint: disable=too-many-arguments
+            self, name, item_num, separator, converter, is_floating):
         value = []
+        floating_point_found = False
         last_item_offset = self._parsed_length
         item_offset = self._parsed_length
         while True:
@@ -217,8 +219,14 @@ class ParserText(ParserBase):
             if item_offset == last_item_offset:
                 raise InvalidValue(self._parsable[self._parsed_length:], type(self), name)
 
-            if item_offset != last_item_offset:
-                value.append(converter(self._parsable[last_item_offset:item_offset]))
+            if (is_floating and
+                    not floating_point_found and item_offset < len(self._parsable) and
+                    six.indexbytes(self._parsable, item_offset) == ord('.')):
+                item_offset += 1
+                floating_point_found = True
+                continue
+
+            value.append(converter(self._parsable[last_item_offset:item_offset]))
 
             if item_offset == len(self._parsable) or (item_num is not None and len(value) == item_num):
                 break
@@ -230,19 +238,37 @@ class ParserText(ParserBase):
                     six.raise_from(InvalidValue(self._parsable[self._parsed_length:item_offset], type(self), name), e)
 
             last_item_offset = item_offset
+            floating_point_found = False
 
         return value, item_offset - self._parsed_length
 
     def parse_numeric(self, name, converter=int):
-        value, parsed_length = self._parse_numeric_array(name, 1, None, converter)
+        value, parsed_length = self._parse_numeric_array(name, 1, None, converter, False)
+        self._parsed_values[name] = value[0]
+        self._parsed_length += parsed_length
+
+    def parse_float(self, name, converter=float):
+        value, parsed_length = self._parse_numeric_array(name, 1, None, converter, True)
         self._parsed_values[name] = value[0]
         self._parsed_length += parsed_length
 
     def parse_numeric_array(self, name, item_num, separator, converter=int):
-        value, parsed_length = self._parse_numeric_array(name, item_num, separator, converter)
+        value, parsed_length = self._parse_numeric_array(name, item_num, separator, converter, False)
 
         self._parsed_values[name] = value
         self._parsed_length += parsed_length
+
+    def parse_bool(self, name):
+        for string_value, bool_value in (('yes', True), ('no', False)):
+            try:
+                self.parse_string(name, string_value)
+            except InvalidValue:
+                pass
+            else:
+                self._parsed_values[name] = bool_value
+                break
+        else:
+            raise InvalidValue(self._parsable[self._parsed_length:], type(self), name)
 
     def parse_string(self, name, value):
         min_length = len(value)
@@ -442,7 +468,7 @@ class ParserText(ParserBase):
         self._parsed_length = len(self._parsable)
 
     def parse_time_delta(self, name):
-        value, parsed_length = self._parse_numeric_array(name, 1, None, int)
+        value, parsed_length = self._parse_numeric_array(name, 1, None, int, False)
 
         try:
             time_delta = datetime.timedelta(seconds=value[0])
@@ -756,6 +782,9 @@ class ComposerText(ComposerBase):
 
     def compose_numeric_array(self, values, separator):
         self._compose_numeric_array(values, separator)
+
+    def compose_bool(self, value):
+        self.compose_string('yes' if value else 'no')
 
     def compose_string(self, value):
         self._compose_string_array([value, ], encoding=self._encoding, separator='')

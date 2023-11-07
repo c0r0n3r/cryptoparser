@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# pylint: disable=too-many-lines
 # -*- coding: utf-8 -*-
 
 import abc
@@ -22,17 +23,21 @@ from cryptoparser.common.base import (
 from cryptoparser.common.field import (
     FieldParsableBase,
     FieldValueBase,
+    FieldValueComponentBool,
+    FieldValueComponentFloat,
     FieldValueComponentOption,
     FieldValueComponentString,
     FieldValueComponentStringBase64,
     FieldValueComponentStringEnum,
     FieldValueComponentStringEnumOption,
+    FieldValueComponentTimeDelta,
     FieldValueDateTime,
     FieldValueString,
     FieldValueStringEnum,
     FieldValueStringEnumParams,
     FieldValueTimeDelta,
     FieldsCommaSeparated,
+    FieldsJson,
     FieldsSemicolonSeparated,
     NameValueVariantBase,
 )
@@ -177,6 +182,69 @@ class HttpHeaderFieldValueComponentIncludeSubDomains(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
         return 'includeSubDomains'
+
+
+class HttpHeaderFieldValueNetworkErrorLoggingGroup(FieldValueComponentString):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'report_to'
+
+
+class HttpHeaderFieldValueNetworkErrorLoggingMaxAge(FieldValueComponentTimeDelta):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'max_age'
+
+
+class HttpHeaderFieldValueNetworkErrorLoggingIncludeSubdomains(FieldValueComponentBool):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'include_subdomains'
+
+
+class HttpHeaderFieldValueNetworkErrorLoggingSuccessFraction(FieldValueComponentFloat):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'success_fraction'
+
+
+class HttpHeaderFieldValueNetworkErrorLoggingFailureFraction(FieldValueComponentFloat):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'failure_fraction'
+
+
+@attr.s
+class HttpHeaderFieldValueNetworkErrorLogging(FieldsJson):
+    report_to = attr.ib(
+        converter=HttpHeaderFieldValueNetworkErrorLoggingGroup.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueNetworkErrorLoggingGroup),
+    )
+    max_age = attr.ib(
+        converter=HttpHeaderFieldValueNetworkErrorLoggingMaxAge.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueNetworkErrorLoggingMaxAge),
+    )
+    include_subdomains = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueNetworkErrorLoggingIncludeSubdomains.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(
+            HttpHeaderFieldValueNetworkErrorLoggingIncludeSubdomains
+        )),
+        default=None
+    )
+    success_fraction = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueNetworkErrorLoggingSuccessFraction.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(
+            HttpHeaderFieldValueNetworkErrorLoggingSuccessFraction
+        )),
+        default=None
+    )
+    failure_fraction = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueNetworkErrorLoggingFailureFraction.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(
+            HttpHeaderFieldValueNetworkErrorLoggingFailureFraction
+        )),
+        default=None
+    )
 
 
 class HttpHeaderFieldValueComponentPreload(FieldValueComponentOption):
@@ -627,6 +695,10 @@ class HttpHeaderFieldName(StringEnumCaseInsensitiveParsable, enum.Enum):
         code='last-modified',
         normalized_name='Last-Modified'
     )
+    NETWORK_ERROR_LOGGING = HttpHeaderFieldNameParams(
+        code='nel',
+        normalized_name='NEL',
+    )
     PRAGMA = HttpHeaderFieldNameParams(
         code='pragma',
         normalized_name='Pragma'
@@ -817,6 +889,16 @@ class HttpHeaderFieldLastModified(HttpHeaderFieldParsedBase):
     @classmethod
     def _get_value_class(cls):
         return HttpHeaderFieldValueLastModified
+
+
+class HttpHeaderFieldNetworkErrorLogging(HttpHeaderFieldParsedBase):
+    @classmethod
+    def get_header_field_name(cls):
+        return HttpHeaderFieldName.NETWORK_ERROR_LOGGING
+
+    @classmethod
+    def _get_value_class(cls):
+        return HttpHeaderFieldValueNetworkErrorLogging
 
 
 class HttpHeaderFieldSTS(HttpHeaderFieldParsedBase):

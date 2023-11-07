@@ -498,6 +498,24 @@ class TestParserText(TestParsableBase):
             parser.parse_numeric_array('number', 2, '.')
         self.assertEqual(context_manager.exception.value, b'1')
 
+    def test_parse_float(self):
+        parser = ParserText(b'1.2#')
+        parser.parse_float('number')
+        self.assertEqual(parser['number'], 1.2)
+
+        parser = ParserText(b'1.#')
+        parser.parse_float('number')
+        self.assertEqual(parser['number'], 1.0)
+
+        parser = ParserText(b'1#')
+        parser.parse_float('number')
+        self.assertEqual(parser['number'], 1.0)
+
+        parser = ParserText(b'NaN')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_float('number')
+        self.assertEqual(context_manager.exception.value, b'NaN')
+
     def test_parse_string_until_separator(self):
         parser = ParserText(b'a#')
         parser.parse_string_until_separator('string', '#')
@@ -600,6 +618,22 @@ class TestParserText(TestParsableBase):
         with self.assertRaises(InvalidValue) as context_manager:
             parser.parse_string_by_length('alphabet')
         self.assertEqual(context_manager.exception.value, self._ALPHA_BETA_GAMMA_HASHMARK_BYTES)
+
+    def test_parse_bool(self):
+        parser = ParserText(b'yes')
+        parser.parse_bool('bool')
+        self.assertEqual(parser['bool'], True)
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'no')
+        parser.parse_bool('bool')
+        self.assertEqual(parser['bool'], False)
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b'abcd')
+        with self.assertRaises(InvalidValue) as context_manager:
+            parser.parse_bool('bool')
+        self.assertEqual(context_manager.exception.value, b'abcd')
 
 
 class TestParserTextStringArray(TestParsableBase):
@@ -1124,3 +1158,12 @@ class TestComposerText(TestParsableBase):
         composer = ComposerText()
         composer.compose_time_delta(datetime.timedelta(1))
         self.assertEqual(composer.composed, b'86400')
+
+    def test_compose_bool(self):
+        composer = ComposerText()
+        composer.compose_bool(True)
+        self.assertEqual(composer.composed, b'yes')
+
+        composer = ComposerText()
+        composer.compose_bool(False)
+        self.assertEqual(composer.composed, b'no')

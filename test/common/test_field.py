@@ -24,10 +24,13 @@ from cryptoparser.common.field import (
 
 from .classes import (
     ComponentStringEnumTest,
+    FieldValueJsonTest,
     FieldValueMultipleTest,
     FieldValueMultipleExtendableTest,
     FieldValueEnumTest,
     FieldValueStringEnumTest,
+    FieldValueComponentBoolTest,
+    FieldValueComponentFloatTest,
     FieldValueComponentNumberTest,
     FieldValueComponentOptionTest,
     FieldValueComponentQuotedStringTest,
@@ -228,6 +231,50 @@ class TestFieldValueComponentQuotedString(unittest.TestCase):
         self.assertEqual(FieldValueComponentQuotedStringTest('value').as_markdown(), 'value')
 
 
+class TestFieldValueComponentBool(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueComponentBoolTest.parse_exact_size(b'testBool=str')
+        self.assertEqual(context_manager.exception.value, b'str')
+
+    def test_parse(self):
+        component = FieldValueComponentBoolTest.parse_exact_size(b'testBool=yes')
+        self.assertTrue(component.value)
+
+        component = FieldValueComponentBoolTest.parse_exact_size(b'testBool=no')
+        self.assertFalse(component.value)
+
+    def test_compose(self):
+        self.assertEqual(FieldValueComponentBoolTest(True).compose(), b'testBool=yes')
+        self.assertEqual(FieldValueComponentBoolTest(False).compose(), b'testBool=no')
+
+    def test_as_markdown(self):
+        self.assertEqual(FieldValueComponentBoolTest(True).as_markdown(), 'yes')
+        self.assertEqual(FieldValueComponentBoolTest(False).as_markdown(), 'no')
+
+
+class TestFieldValueComponentFloat(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueComponentFloatTest.parse_exact_size(b'testFloat=str')
+        self.assertEqual(context_manager.exception.value, b'str')
+
+    def test_parse(self):
+        component = FieldValueComponentFloatTest.parse_exact_size(b'testFloat=1')
+        self.assertEqual(component.value, 1.0)
+
+        component = FieldValueComponentFloatTest.parse_exact_size(b'testFloat=1.0')
+        self.assertEqual(component.value, 1.0)
+
+    def test_compose(self):
+        self.assertEqual(FieldValueComponentFloatTest(1).compose(), b'testFloat=1.0')
+        self.assertEqual(FieldValueComponentFloatTest(1.0).compose(), b'testFloat=1.0')
+
+    def test_as_markdown(self):
+        self.assertEqual(FieldValueComponentFloatTest(1).as_markdown(), '1.0')
+        self.assertEqual(FieldValueComponentFloatTest(1.0).as_markdown(), '1.0')
+
+
 class TestFieldValueComponentNumber(unittest.TestCase):
     def test_error(self):
         with self.assertRaises(InvalidValue) as context_manager:
@@ -278,6 +325,66 @@ class TestFieldValueComponentTimeDelta(unittest.TestCase):
         self.assertEqual(
             FieldValueComponentTimeDeltaTest(datetime.timedelta(days=1, seconds=1)).as_markdown(),
             '1 day, 0:00:01'
+        )
+
+
+class TestFieldJson(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            FieldValueJsonTest.parse_exact_size(b'not-a-valid-json')
+        self.assertEqual(context_manager.exception.value, 'not-a-valid-json')
+
+    def test_parse(self):
+        header_field = FieldValueJsonTest.parse_exact_size(b'{"testTimeDelta": 1}')
+        self.assertEqual(
+            header_field,
+            FieldValueJsonTest(datetime.timedelta(seconds=1))
+        )
+        self.assertEqual(
+            header_field.string.value,  # pylint: disable=no-member
+            attr.fields_dict(FieldValueJsonTest)['string'].default
+        )
+        self.assertEqual(
+            header_field.number.value,  # pylint: disable=no-member
+            attr.fields_dict(FieldValueJsonTest)['number'].default
+        )
+
+        parsed_header_field = FieldValueJsonTest.parse_exact_size(
+            b'{"testTimeDelta": 1, "testString": "string", "testNumber": 1}'
+        )
+        header_field = FieldValueJsonTest(
+            time_delta=datetime.timedelta(seconds=1),
+            string='string',
+            number=1
+        )
+        self.assertEqual(parsed_header_field, header_field)
+
+        parsed_header_field = FieldValueJsonTest.parse_exact_size(b'{' + b', '.join([
+            b'"testTimeDelta": 1',
+            b'"testString": "string"',
+            b'"testStringBase64": "ZGVmYXVsdA=="',
+            b'"optional_string": "optional_string"',
+            b'"testNumber": 1',
+        ]) + b'}')
+        header_field = FieldValueJsonTest(
+            time_delta=datetime.timedelta(seconds=1),
+            string='string',
+            number=1
+        )
+        self.assertEqual(parsed_header_field, header_field)
+
+    def test_compose(self):
+        header_field = FieldValueJsonTest(datetime.timedelta(seconds=1))
+        self.assertEqual(
+            header_field.compose(),
+            b'{' + b', '.join([
+                b'"testTimeDelta": 1',
+                b'"testString": "default"',
+                b'"testUrl": "https://example.com"',
+                b'"testStringBase64": "ZGVmYXVsdA=="',
+                b'"testNumber": 0',
+                b'"testPercent": 100',
+            ]) + b'}'
         )
 
 
@@ -368,12 +475,12 @@ class TestFieldValueMultiple(unittest.TestCase):
             header_field.compose(),
             b'; '.join([
                 b'testTimeDelta=1',
-                b'testOption',
                 b'testString=default',
                 b'testUrl=https://example.com',
                 b'testStringBase64="ZGVmYXVsdA=="',
                 b'testNumber=0',
                 b'testPercent=100',
+                b'testOption',
             ])
         )
 
