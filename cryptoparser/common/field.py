@@ -662,7 +662,7 @@ class FieldsJson(FieldValueBase):
     @classmethod
     def _parse(cls, parsable):
         try:
-            raw_values = json.loads(parsable, object_pairs_hook=collections.OrderedDict)
+            raw_values = json.loads(parsable.decode('ascii'), object_pairs_hook=collections.OrderedDict)
         except ValueError as e:  # json.decoder.JSONDecodeError is derived from ValueError
             six.raise_from(InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value'), e)
 
