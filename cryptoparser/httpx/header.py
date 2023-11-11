@@ -23,6 +23,7 @@ from cryptoparser.common.base import (
 from cryptoparser.common.field import (
     FieldParsableBase,
     FieldValueBase,
+    FieldValueComponentBase,
     FieldValueComponentBool,
     FieldValueComponentFloat,
     FieldValueComponentOption,
@@ -318,8 +319,101 @@ class HttpHeaderFieldValueExpectCT(FieldsCommaSeparated):
     )
 
 
-class HttpHeaderFieldValueContentType(FieldValueString):
-    pass
+class MimeTypeRegistry(enum.Enum):
+    APPLICATION = 'application'
+    AUDIO = 'audio'
+    FONT = 'font'
+    EXAMPLE = 'example'
+    IMAGE = 'image'
+    MESSAGE = 'message'
+    MODEL = 'model'
+    MULTIPART = 'multipart'
+    TEXT = 'text'
+    VIDEO = 'video'
+
+
+@attr.s
+class HttpHeaderFieldValueContentTypeMimeType(FieldValueComponentBase):
+    type = attr.ib(
+        validator=attr.validators.instance_of(six.string_types),
+        default=None,
+    )
+    registry = attr.ib(
+        validator=attr.validators.optional(attr.validators.instance_of(MimeTypeRegistry)),
+        default=None,
+    )
+
+    def __str__(self):
+        return '{}/{}'.format(self.registry.value, self.type)
+
+    @property
+    def value(self):
+        return self
+
+    @classmethod
+    def get_canonical_name(cls):
+        return ''
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_string_until_separator('registry', '/', item_class=MimeTypeRegistry)
+        parser.parse_separator('/')
+        parser.parse_string_by_length('type', parser.unparsed_length)
+
+        return HttpHeaderFieldValueContentTypeMimeType(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_string(str(self))
+
+        return composer.composed
+
+    @classmethod
+    def _check_name(cls, name):
+        pass
+
+
+class HttpHeaderFieldValueContentTypeCharset(FieldValueComponentString):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'charset'
+
+
+class HttpHeaderFieldValueContentTypeBoundary(FieldValueComponentString):
+    @classmethod
+    def get_canonical_name(cls):
+        return 'boundary'
+
+
+@attr.s
+class HttpHeaderFieldValueContentType(FieldsSemicolonSeparated):
+    _MIME_TYPES_REQUIRE_BOUNDARY = (MimeTypeRegistry.MESSAGE, MimeTypeRegistry.MULTIPART)
+
+    mime_type = attr.ib(
+        converter=HttpHeaderFieldValueContentTypeMimeType.convert,
+        validator=attr.validators.instance_of(HttpHeaderFieldValueContentTypeMimeType),
+        metadata={'human_readable_name': 'MIME type'}
+    )
+    charset = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueContentTypeCharset.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueContentTypeCharset)),
+        default=None
+    )
+    boundary = attr.ib(
+        converter=attr.converters.optional(HttpHeaderFieldValueContentTypeBoundary.convert),
+        validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueContentTypeBoundary)),
+        default=None
+    )
+
+    def __attrs_post_init__(self):
+        if self.mime_type.registry in self._MIME_TYPES_REQUIRE_BOUNDARY and self.boundary is None:
+            raise InvalidValue(None, type(self), 'boundary')
+
+        if self.mime_type.registry not in self._MIME_TYPES_REQUIRE_BOUNDARY and self.boundary is not None:
+            raise InvalidValue(self.boundary.value, type(self), 'boundary')
 
 
 class HttpHeaderXContentTypeOptions(StringEnumCaseInsensitiveParsable, enum.Enum):
