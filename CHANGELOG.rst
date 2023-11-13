@@ -3,6 +3,34 @@ Changelog
 =========
 
 -------------------
+0.11.2 - 2023-11-13
+-------------------
+
+Features
+========
+
+-  HTTP(S) (``http``)
+
+   -  Headers (``headers``)
+
+      -  add parsers for generic headers
+         (`NEL <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/NEL>`__ (Network Error Logging),
+         `Set-Cookie <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie>`__)
+      -  add parsers for security related headers
+         (`HTTP Public Key Pinning <https://en.wikipedia.org/wiki/HTTP_Public_Key_Pinning>`__ (HPKP),
+         `X-XSS-Protection <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection>`__)
+
+Improvements
+============
+
+-  HTTP(S) (``http``)
+
+   -  Headers (``headers``)
+
+      -  implement detailed parsing of
+         `Content-Type <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type>`__ header
+
+-------------------
 0.11.1 - 2023-11-06
 -------------------
 
