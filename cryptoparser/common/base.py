@@ -60,6 +60,12 @@ class SerializableTextEncoder(object):
 
 
 class Serializable(object):  # pylint: disable=too-few-public-methods
+    _MARKDOWN_RESULT_STRING_CLASSES = (
+        CryptoDataParamsBase,
+        ipaddress.IPv4Network,
+        ipaddress.IPv6Network,
+        urllib3.util.url.Url,
+    )
     post_text_encoder = SerializableTextEncoder()
 
     @staticmethod
@@ -239,12 +245,12 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
                 return cls.post_text_encoder(obj.value, level)
 
             return cls.post_text_encoder(obj.name, level)
-        elif isinstance(obj, (ipaddress.IPv4Network, ipaddress.IPv6Network, urllib3.util.url.Url)):
+        elif attr.has(type(obj)):
+            result = cls._markdown_result_complex(obj, level)
+        elif isinstance(obj, cls._MARKDOWN_RESULT_STRING_CLASSES):
             return False, str(obj)
         elif isinstance(obj, datetime.timedelta):
             return False, str(obj.seconds)
-        elif attr.has(type(obj)):
-            result = cls._markdown_result_complex(obj, level)
         elif hasattr(obj, '_asdict'):
             result = cls._markdown_result(obj._asdict(), level)
         elif hasattr(obj, '__dict__') or isinstance(obj, dict):
