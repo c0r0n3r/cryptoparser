@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import abc
 import collections
 import datetime
+import enum
 import json
 
 import attr
@@ -791,6 +793,63 @@ class FieldsSemicolonSeparated(FieldValueMultiple):
         return NameValuePairListSemicolonSeparated
 
 
+class MimeTypeRegistry(enum.Enum):
+    APPLICATION = 'application'
+    AUDIO = 'audio'
+    FONT = 'font'
+    EXAMPLE = 'example'
+    IMAGE = 'image'
+    MESSAGE = 'message'
+    MODEL = 'model'
+    MULTIPART = 'multipart'
+    TEXT = 'text'
+    VIDEO = 'video'
+
+
+@attr.s
+class FieldValueMimeType(FieldValueComponentBase):
+    type = attr.ib(
+        validator=attr.validators.instance_of(six.string_types),
+        default=None,
+    )
+    registry = attr.ib(
+        validator=attr.validators.optional(attr.validators.instance_of(MimeTypeRegistry)),
+        default=None,
+    )
+
+    def __str__(self):
+        return '{}/{}'.format(self.registry.value, self.type)
+
+    @property
+    def value(self):
+        return self
+
+    @classmethod
+    def get_canonical_name(cls):
+        return ''
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_string_until_separator('registry', '/', item_class=MimeTypeRegistry)
+        parser.parse_separator('/')
+        parser.parse_string_by_length('type', parser.unparsed_length)
+
+        return FieldValueMimeType(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_string(str(self))
+
+        return composer.composed
+
+    @classmethod
+    def _check_name(cls, name):
+        pass
+
+
 @attr.s
 class FieldValueSingleBase(FieldValueBase, Serializable):
     value = attr.ib()
@@ -914,6 +973,32 @@ class FieldValueDateTime(FieldValueSingleComplexBase):
 
     def _as_markdown(self, level):
         return self._markdown_result(self.value, level)
+
+
+class FieldValueStringBySeparatorBase(FieldValueSingleComplexBase):
+    @classmethod
+    @abc.abstractmethod
+    def _get_separators(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _get_value_type(cls):
+        return six.string_types
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_string_until_separator_or_end('value', cls._get_separators())
+
+        return cls(parser['value']), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_string(self.value)
+
+        return composer.composed
 
 
 class FieldValueStringEnum(FieldValueSingleComplexBase):
