@@ -279,7 +279,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
 
 
 @attr.s
-class VariantParsable(ParsableBase):
+class VariantParsableBase(ParsableBase):
     variant = attr.ib()
 
     _REGISTERED_VARIANTS = OrderedDict()
@@ -325,6 +325,21 @@ class VariantParsable(ParsableBase):
         registered_variants[variant_tag].append(parsable_class)
 
     @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    def compose(self):
+        return self.variant.compose()
+
+
+class VariantParsable(VariantParsableBase):
+    @classmethod
+    @abc.abstractmethod
+    def _get_variants(cls):
+        raise NotImplementedError()
+
+    @classmethod
     def _parse(cls, parsable):
         for variant_parser in cls._get_variant_types():
             try:
@@ -335,8 +350,23 @@ class VariantParsable(ParsableBase):
 
         raise InvalidValue(parsable, cls)
 
-    def compose(self):
-        return self.variant.compose()
+
+class VariantParsableExact(VariantParsableBase):
+    @classmethod
+    @abc.abstractmethod
+    def _get_variants(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        for variant_parser in cls._get_variant_types():
+            try:
+                parsed_object = variant_parser.parse_exact_size(parsable)
+                return parsed_object, len(parsable)
+            except (InvalidType, InvalidValue, TooMuchData):
+                pass
+
+        raise InvalidValue(parsable, cls)
 
 
 @attr.s
@@ -825,7 +855,7 @@ class StringEnumParsableBase(ParsableBaseNoABC):
         enum_items.sort(key=lambda color: len(color.value.code), reverse=True)
 
         try:
-            code = six.ensure_text(parsable, 'ascii')
+            code = six.ensure_text(bytes(parsable), 'ascii')
         except UnicodeDecodeError as e:
             six.raise_from(InvalidValue(parsable, cls), e)
 
