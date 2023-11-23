@@ -201,7 +201,7 @@ class ParserText(ParserBase):
 
         return actual_offset - count_offset
 
-    def parse_separator(self, separator, min_length=1, max_length=1):
+    def parse_separator(self, separator, min_length=1, max_length=None):
         self._parsed_length += self._check_separators(
             'separator', self._parsed_length, separator, min_length, max_length
         )
@@ -405,15 +405,18 @@ class ParserText(ParserBase):
                 name, item_offset, separator, str, None, True, separator_spaces
             )
             if parsed_length:
-                parsed_value = self._apply_item_class(
-                    name,
-                    item_offset,
-                    item_offset + parsed_length,
-                    separator,
-                    item_class,
-                    fallback_class,
-                    True
-                )
+                if isinstance(item_class, type) and issubclass(item_class, ParsableBase):
+                    parsed_value = item_class.parse_exact_size(parsed_value.encode(self._encoding))
+                else:
+                    parsed_value = self._apply_item_class(
+                        name,
+                        item_offset,
+                        item_offset + parsed_length,
+                        separator,
+                        item_class,
+                        fallback_class,
+                        True
+                    )
                 value.append(parsed_value)
                 item_offset += parsed_length
             elif not skip_empty:

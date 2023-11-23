@@ -54,6 +54,9 @@ from .classes import (
     SerializableUnhandled,
     SerializableUpperCaseEncoder,
     StringEnum,
+    StringEnumA,
+    StringEnumAA,
+    StringEnumAAA,
     TestObject,
     ThreeByteEnumComposerTest,
     ThreeByteEnumParsableTest,
@@ -61,6 +64,8 @@ from .classes import (
     TwoByteEnumParsableTest,
     TwoByteEvenParsable,
     TwoByteParsable,
+    VariantParsableTest,
+    VariantParsableExactTest,
 )
 
 
@@ -823,3 +828,43 @@ class TestListParsable(unittest.TestCase):
             ListParsableTest([AlwaysTestStringComposer(), AlwaysTestStringComposer(), ]).compose(),
             b'test\r\ntest\r\n\r\n'
         )
+
+
+class TestVariantParsable(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(TooMuchData) as context_manager:
+            VariantParsableTest.parse_exact_size(b'aaaa')
+        self.assertEqual(context_manager.exception.bytes_needed, 1)
+
+    def test_parse(self):
+        parsable = bytearray(b'a')
+        self.assertEqual(VariantParsableTest.parse_mutable(parsable), StringEnumA.A)
+        self.assertEqual(parsable, b'')
+
+        parsable = bytearray(b'aa')
+        self.assertEqual(VariantParsableTest.parse_mutable(parsable), StringEnumA.A)
+        self.assertEqual(parsable, b'a')
+
+        parsable = bytearray(b'aaa')
+        self.assertEqual(VariantParsableTest.parse_mutable(parsable), StringEnumA.A)
+        self.assertEqual(parsable, b'aa')
+
+
+class TestVariantParsableExact(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            VariantParsableExactTest.parse_exact_size(b'aaaa')
+        self.assertEqual(context_manager.exception.value, b'aaaa')
+
+    def test_parse(self):
+        parsable = bytearray(b'a')
+        self.assertEqual(VariantParsableExactTest.parse_mutable(parsable), StringEnumA.A)
+        self.assertEqual(parsable, b'')
+
+        parsable = bytearray(b'aa')
+        self.assertEqual(VariantParsableExactTest.parse_mutable(parsable), StringEnumAA.AA)
+        self.assertEqual(parsable, b'')
+
+        parsable = bytearray(b'aaa')
+        self.assertEqual(VariantParsableExactTest.parse_mutable(parsable), StringEnumAAA.AAA)
+        self.assertEqual(parsable, b'')

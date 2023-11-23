@@ -696,10 +696,20 @@ class TestParserTextStringArray(TestParsableBase):
         self.assertEqual(parser['array'], [ord('a'), ord('b')])
         self.assertEqual(parser.unparsed_length, 0)
 
+        parser = ParserText(b'one,two')
+        parser.parse_string_array('array', ',', item_class=StringEnum)
+        self.assertEqual(parser['array'], [StringEnum.ONE, StringEnum.TWO])
+        self.assertEqual(parser.unparsed_length, 0)
+
     def test_separator_spaces(self):
         parser = ParserText(b' a; \tb\t;\t c')
         parser.parse_string_array('array', ';', separator_spaces=' \t')
         self.assertEqual(parser['array'], ['a', 'b', 'c'])
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b' one; \ttwo\t;\t three')
+        parser.parse_string_array('array', ';', item_class=StringEnum, separator_spaces=' \t')
+        self.assertEqual(parser['array'], [StringEnum.ONE, StringEnum.TWO, StringEnum.THREE])
         self.assertEqual(parser.unparsed_length, 0)
 
         parser = ParserText(b' a \t b ; \tc')
@@ -710,6 +720,11 @@ class TestParserTextStringArray(TestParsableBase):
         parser = ParserText(b' a ')
         parser.parse_string_array('array', ';', separator_spaces=' ')
         self.assertEqual(parser['array'], ['a', ])
+        self.assertEqual(parser.unparsed_length, 0)
+
+        parser = ParserText(b' one ')
+        parser.parse_string_array('array', ';', item_class=StringEnum, separator_spaces=' ')
+        self.assertEqual(parser['array'], [StringEnum.ONE, ])
         self.assertEqual(parser.unparsed_length, 0)
 
     def test_starts_with_separator(self):
@@ -730,12 +745,24 @@ class TestParserTextStringArray(TestParsableBase):
         self.assertEqual(parser['array'], ['a', 'b', 'c'])
         self.assertEqual(parser.unparsed_length, 0)
 
-    def test_ends_with_separat(self):
+        parser = ParserText(b'one; two; three; ')
+        parser.parse_string_array('array', ';', item_class=StringEnum, separator_spaces=' ', skip_empty=True)
+        self.assertEqual(parser['array'], [StringEnum.ONE, StringEnum.TWO, StringEnum.THREE])
+        self.assertEqual(parser.unparsed_length, 0)
+
+    def test_ends_without_separator(self):
         parser = ParserText(b'a; b; c')
         parser.parse_string_array('array', ';', separator_spaces=' ', max_item_num=2)
         self.assertEqual(parser['array'], ['a', 'b'])
         self.assertEqual(parser.unparsed_length, 1)
 
+        parser = ParserText(b'one; two; three')
+        parser.parse_string_array('array', ';', item_class=StringEnum, separator_spaces=' ', max_item_num=2)
+        self.assertEqual(parser['array'], [StringEnum.ONE, StringEnum.TWO])
+        self.assertEqual(parser.unparsed_length, 5)
+
+
+class TestParserTextDateTime(TestParsableBase):
     def test_parse_date_time(self):
         parser = ParserText(b'Wed, 21 Oct 2015 07:28:00 GMT')
         parser.parse_date_time('datetime')
@@ -752,6 +779,8 @@ class TestParserTextStringArray(TestParsableBase):
         self.assertEqual(context_manager.exception.value, datetime_value)
         self.assertEqual(parser.unparsed_length, len(datetime_value))
 
+
+class TestParserTextTimeDelta(TestParsableBase):
     def test_parse_time_delta(self):
         parser = ParserText(b'86400')
         parser.parse_time_delta('timedelta')

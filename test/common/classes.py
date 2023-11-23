@@ -46,7 +46,8 @@ from cryptoparser.common.base import (
     ThreeByteEnumParsable,
     TwoByteEnumComposer,
     TwoByteEnumParsable,
-    VariantParsable
+    VariantParsable,
+    VariantParsableExact,
 )
 from cryptoparser.common.exception import TooMuchData, InvalidType
 from cryptoparser.common.field import (
@@ -462,6 +463,38 @@ class StringEnum(StringEnumParsable, enum.Enum):
     THREE = StringEnumParams(
         code='three',
     )
+
+
+class StringEnumA(StringEnumParsable, enum.Enum):
+    A = StringEnumParams(code='a')
+
+
+class StringEnumAA(StringEnumParsable, enum.Enum):
+    AA = StringEnumParams(code='aa')
+
+
+class StringEnumAAA(StringEnumParsable, enum.Enum):
+    AAA = StringEnumParams(code='aaa')
+
+
+class VariantParsableTest(VariantParsable):
+    @classmethod
+    def _get_variants(cls):
+        return collections.OrderedDict([
+            (StringEnumA, [StringEnumA, ]),
+            (StringEnumAA, [StringEnumAA, ]),
+            (StringEnumAAA, [StringEnumAAA, ]),
+        ])
+
+
+class VariantParsableExactTest(VariantParsableExact):
+    @classmethod
+    def _get_variants(cls):
+        return collections.OrderedDict([
+            (StringEnumA, [StringEnumA, ]),
+            (StringEnumAA, [StringEnumAA, ]),
+            (StringEnumAAA, [StringEnumAAA, ]),
+        ])
 
 
 class EnumStringValue(enum.Enum):

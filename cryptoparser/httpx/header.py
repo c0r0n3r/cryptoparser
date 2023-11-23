@@ -4,13 +4,24 @@
 
 import abc
 import collections
+import itertools
 import enum
 
 import six
 
 import attr
+import urllib3
 
+from cryptodatahub.common.algorithm import Hash
 from cryptodatahub.common.exception import InvalidValue
+from cryptodatahub.common.types import (
+    Base64Data,
+    CryptoDataParamsEnumString,
+    convert_base64_data,
+    convert_iterable,
+    convert_url,
+    convert_value_to_object,
+)
 
 from cryptoparser.common.base import (
     ListParamParsable,
@@ -19,11 +30,12 @@ from cryptoparser.common.base import (
     StringEnumCaseInsensitiveParsable,
     StringEnumParsable,
     VariantParsable,
+    VariantParsableExact,
 )
+from cryptoparser.common.exception import InvalidType
 from cryptoparser.common.field import (
     FieldParsableBase,
     FieldValueBase,
-    FieldValueComponentBase,
     FieldValueComponentBool,
     FieldValueComponentFloat,
     FieldValueComponentOption,
@@ -33,16 +45,19 @@ from cryptoparser.common.field import (
     FieldValueComponentStringEnumOption,
     FieldValueComponentTimeDelta,
     FieldValueDateTime,
+    FieldValueMimeType,
     FieldValueString,
+    FieldValueStringBySeparatorBase,
     FieldValueStringEnum,
     FieldValueStringEnumParams,
     FieldValueTimeDelta,
     FieldsCommaSeparated,
     FieldsJson,
     FieldsSemicolonSeparated,
+    MimeTypeRegistry,
     NameValueVariantBase,
 )
-from cryptoparser.common.parse import ParserCRLF, ParserText, ComposerText
+from cryptoparser.common.parse import ParsableBase, ParserCRLF, ParserText, ComposerText
 from cryptoparser.common.utils import get_leaf_classes
 
 from .parse import (
@@ -295,6 +310,885 @@ class HttpHeaderFieldValueExpectStaple(FieldsSemicolonSeparated):
     )
 
 
+class ContentSecurityPolicyDirectiveType(StringEnumParsable, enum.Enum):
+    BASE_URI = FieldValueStringEnumParams(
+        code='base-uri',
+    )
+    BLOCK_ALL_MIXED_CONTENT = FieldValueStringEnumParams(
+        code='block-all-mixed-content',
+    )
+    CHILD_SRC = FieldValueStringEnumParams(
+        code='child-src',
+    )
+    CONNECT_SRC = FieldValueStringEnumParams(
+        code='connect-src',
+    )
+    DEFAULT_SRC = FieldValueStringEnumParams(
+        code='default-src',
+    )
+    FONT_SRC = FieldValueStringEnumParams(
+        code='font-src',
+    )
+    FORM_ACTION = FieldValueStringEnumParams(
+        code='form-action',
+    )
+    FRAME_ANCESTORS = FieldValueStringEnumParams(
+        code='frame-ancestors',
+    )
+    FRAME_SRC = FieldValueStringEnumParams(
+        code='frame-src',
+    )
+    IMG_SRC = FieldValueStringEnumParams(
+        code='img-src',
+    )
+    MANIFEST_SRC = FieldValueStringEnumParams(
+        code='manifest-src',
+    )
+    MEDIA_SRC = FieldValueStringEnumParams(
+        code='media-src',
+    )
+    OBJECT_SRC = FieldValueStringEnumParams(
+        code='object-src',
+    )
+    PLUGIN_TYPES = FieldValueStringEnumParams(
+        code='plugin-types',
+    )
+    PREFETCH_SRC = FieldValueStringEnumParams(
+        code='prefetch-src',
+    )
+    REFERRER = FieldValueStringEnumParams(
+        code='referrer',
+    )
+    REPORT_SAMPLE = FieldValueStringEnumParams(
+        code='report-sample',
+    )
+    REPORT_TO = FieldValueStringEnumParams(
+        code='report-to',
+    )
+    REPORT_URI = FieldValueStringEnumParams(
+        code='report-uri',
+    )
+    REQUIRE_TRUSTED_TYPES_FOR = FieldValueStringEnumParams(
+        code='require-trusted-types-for',
+    )
+    SANDBOX = FieldValueStringEnumParams(
+        code='sandbox',
+    )
+    SCRIPT_SRC = FieldValueStringEnumParams(
+        code='script-src',
+    )
+    SCRIPT_SRC_ATTR = FieldValueStringEnumParams(
+        code='script-src-attr',
+    )
+    SCRIPT_SRC_ELEM = FieldValueStringEnumParams(
+        code='script-src-elem',
+    )
+    STYLE_SRC = FieldValueStringEnumParams(
+        code='style-src',
+    )
+    STYLE_SRC_ATTR = FieldValueStringEnumParams(
+        code='style-src-attr',
+    )
+    STYLE_SRC_ELEM = FieldValueStringEnumParams(
+        code='style-src-elem',
+    )
+    TRUSTED_TYPES = FieldValueStringEnumParams(
+        code='trusted-types',
+    )
+    UNSAFE_HASHES = FieldValueStringEnumParams(
+        code='unsafe-hashes',
+    )
+    UPGRADE_INSECURE_REQUESTS = FieldValueStringEnumParams(
+        code='upgrade-insecure-requests',
+    )
+    WEBRTC = FieldValueStringEnumParams(
+        code='webrtc',
+    )
+    WORKER_SRC = FieldValueStringEnumParams(
+        code='worker-src',
+    )
+
+
+ContentSecurityPolicySourceType = enum.Enum('ContentSecurityPolicySourceType', 'SCHEME HOST KEYWORD NONCE HASH')
+
+
+class FieldHashTypeParams(CryptoDataParamsEnumString):
+    pass
+
+
+class StringEnumHashParsableBase(StringEnumParsable):
+    @classmethod
+    def from_hash_algorithm(cls, hash_algorithm):
+        return cls[hash_algorithm.name]
+
+    @property
+    def hash_algorithm(self):
+        return Hash[self.name]  # pylint: disable=no-member
+
+
+class ContentSecurityPolicySourceHashType(StringEnumHashParsableBase, enum.Enum):
+    SHA2_256 = FieldHashTypeParams(code='sha256')
+    SHA2_384 = FieldHashTypeParams(code='sha384')
+    SHA2_512 = FieldHashTypeParams(code='sha512')
+
+
+@attr.s
+class ContentSecurityPolicySourceHash(ParsableBase, Serializable):
+    hash_algorithm = attr.ib(validator=attr.validators.instance_of((Hash, six.string_types)))
+    hash_value = attr.ib(converter=convert_base64_data(), validator=attr.validators.instance_of(Base64Data))
+
+    @classmethod
+    def _get_hash_algorithm_enum_type(cls):
+        return ContentSecurityPolicySourceHashType
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        try:
+            parser.parse_parsable('hash_algorithm', cls._get_hash_algorithm_enum_type())
+        except InvalidValue as e:
+            six.raise_from(InvalidType(), e)
+
+        parser.parse_string_until_separator_or_end('hash_value', ' ')
+
+        return cls(parser['hash_algorithm'].hash_algorithm, parser['hash_value']), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_string(
+            self._get_hash_algorithm_enum_type().from_hash_algorithm(self.hash_algorithm).value.code
+        )
+        composer.compose_separator('-')
+        composer.compose_string(str(self.hash_value))
+
+        return composer.composed
+
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicySourceType.HASH
+
+
+@attr.s
+class ContentSecurityPolicySourceNonce(ParsableBase, Serializable):
+    _PREFIX = 'nonce-'
+
+    value = attr.ib(converter=convert_base64_data(), validator=attr.validators.instance_of(Base64Data))
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        try:
+            parser.parse_string('prefix', cls._PREFIX)
+        except InvalidValue as e:
+            six.raise_from(InvalidType(), e)
+
+        del parser['prefix']
+
+        parser.parse_string_until_separator_or_end('value', ' ')
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_string(self._PREFIX)
+        composer.compose_string(str(self.value))
+
+        return composer.composed
+
+    def _asdict(self):
+        return self.value
+
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicySourceType.NONCE
+
+
+@attr.s
+class ContentSecurityPolicySourceScheme(ParsableBase, Serializable):
+    value = attr.ib(validator=attr.validators.instance_of(six.string_types))
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_string_until_separator('value', ':')
+        parser.parse_separator(':')
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_string(self.value)
+        composer.compose_separator(':')
+
+        return composer.composed
+
+    def _asdict(self):
+        return self.value
+
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicySourceType.SCHEME
+
+
+@attr.s
+class ContentSecurityPolicySourceHost(ParsableBase, Serializable):
+    value = attr.ib(
+        converter=convert_url(),
+        validator=attr.validators.instance_of(six.string_types + (urllib3.util.url.Url, ))
+    )
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_string_until_separator_or_end('value', ' ')
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_string(self.value)
+
+        return composer.composed
+
+    def _asdict(self):
+        return self.value
+
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicySourceType.HOST
+
+
+class ContentSecurityPolicySourceKeyword(StringEnumParsable, enum.Enum):
+    NONE = FieldValueStringEnumParams(code='\'none\'')
+    REPORT_SAMPLE = FieldValueStringEnumParams(code='\'report-sample\'')
+    SELF = FieldValueStringEnumParams(code='\'self\'')
+    STRICT_DYNAMIC = FieldValueStringEnumParams(code='\'strict-dynamic\'')
+    UNSAFE_ALLOW_REDIRECTS = FieldValueStringEnumParams(code='\'unsafe-allow-redirects\'')
+    UNSAFE_EVAL = FieldValueStringEnumParams(code='\'unsafe-eval\'')
+    UNSAFE_HASHES = FieldValueStringEnumParams(code='\'unsafe-hashes\'')
+    UNSAFE_INLINE = FieldValueStringEnumParams(code='\'unsafe-inline\'')
+    WASM_UNSAFE_EVAL = FieldValueStringEnumParams(code='\'wasm-unsafe-eval\'')
+
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicySourceType.KEYWORD
+
+
+@attr.s
+class ContentSecurityPolicyDirectiveBase(ParsableBase, Serializable):
+    @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def get_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse_type(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_parsable('type', ContentSecurityPolicyDirectiveType)
+        if parser['type'] != cls.get_type():
+            raise InvalidType()
+
+        return parser
+
+    def _compose_type(self):
+        composer = ComposerText()
+
+        composer.compose_string(self.get_type())
+
+        return composer
+
+
+class ContentSecurityPolicySerializedSource(VariantParsableExact):
+    @classmethod
+    def _get_variants(cls):
+        return collections.OrderedDict([
+            (ContentSecurityPolicySourceType.KEYWORD, [ContentSecurityPolicySourceKeyword]),
+            (ContentSecurityPolicySourceType.NONCE, [ContentSecurityPolicySourceNonce]),
+            (ContentSecurityPolicySourceType.HASH, [ContentSecurityPolicySourceHash]),
+            (ContentSecurityPolicySourceType.SCHEME, [ContentSecurityPolicySourceScheme]),
+            (ContentSecurityPolicySourceType.HOST, [ContentSecurityPolicySourceHost]),
+        ])
+
+
+@attr.s
+class ContentSecurityPolicyDirectiveSourceBase(ContentSecurityPolicyDirectiveBase):
+    value = attr.ib()
+
+    @classmethod
+    @abc.abstractmethod
+    def get_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_source_parser(cls):
+        raise NotImplementedError()
+
+    @value.validator
+    def value_validator(self, _, value):
+        self._value_validator(value)
+
+    def _value_validator(self, value):
+        source_variant_parsable = self._get_source_parser()
+        acceptable_source_types = tuple(itertools.chain.from_iterable(
+            source_variant_parsable._get_variants().values()  # pylint: disable=protected-access
+        ))
+        has_invalid_source_type = any(map(
+            lambda source: not isinstance(source, acceptable_source_types),
+            value
+        ))
+        if has_invalid_source_type:
+            raise InvalidValue(value, type(self), 'value')
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_type(parsable)
+
+        source_variant_parsable = cls._get_source_parser()
+
+        if parser.unparsed_length:
+            parser.parse_separator(' ')
+            parser.parse_string_array('value', ' ', source_variant_parsable, skip_empty=True)
+            directive_value = parser['value']
+        else:
+            raise InvalidValue(parser.unparsed, cls, 'value')
+
+        return cls(directive_value), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_type()
+
+        if self.value:
+            composer.compose_separator(' ')
+            composer.compose_string_array(self.value, ' ')
+
+        return composer.composed
+
+    def _asdict(self):
+        return collections.OrderedDict([
+            ('type', self.get_type()),
+            ('value', [
+                collections.OrderedDict([('type', source.get_type()), ('value', source._asdict())])
+                for source in self.value
+            ])
+        ])
+
+
+class ContentSecurityPolicyDirectiveSerializedSourceListBase(ContentSecurityPolicyDirectiveSourceBase):
+    @classmethod
+    @abc.abstractmethod
+    def get_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _get_source_parser(cls):
+        return ContentSecurityPolicySerializedSource
+
+
+class ContentSecurityPolicyDirectiveChildSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.CHILD_SRC
+
+
+class ContentSecurityPolicyDirectiveConnectSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.CONNECT_SRC
+
+
+class ContentSecurityPolicyDirectiveDefaultSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.DEFAULT_SRC
+
+
+class ContentSecurityPolicyDirectiveFontSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.FONT_SRC
+
+
+class ContentSecurityPolicyDirectiveFrameSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.FRAME_SRC
+
+
+class ContentSecurityPolicyDirectiveImgSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.IMG_SRC
+
+
+class ContentSecurityPolicyDirectiveManifestSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.MANIFEST_SRC
+
+
+class ContentSecurityPolicyDirectiveMediaSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.MEDIA_SRC
+
+
+class ContentSecurityPolicyDirectiveObjectSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.OBJECT_SRC
+
+
+class ContentSecurityPolicyDirectivePrefetchSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.PREFETCH_SRC
+
+
+class ContentSecurityPolicyDirectiveScriptSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.SCRIPT_SRC
+
+
+class ContentSecurityPolicyDirectiveScriptSrcAttr(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.SCRIPT_SRC_ATTR
+
+
+class ContentSecurityPolicyDirectiveScriptSrcElem(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.SCRIPT_SRC_ELEM
+
+
+class ContentSecurityPolicyDirectiveStyleSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.STYLE_SRC
+
+
+class ContentSecurityPolicyDirectiveStyleSrcAttr(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.STYLE_SRC_ATTR
+
+
+class ContentSecurityPolicyDirectiveStyleSrcElem(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.STYLE_SRC_ELEM
+
+
+class ContentSecurityPolicyDirectiveWorkerSrc(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.WORKER_SRC
+
+
+class ContentSecurityPolicyDirectiveBaseUri(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.BASE_URI
+
+
+class ContentSecurityPolicyDirectiveFormAction(ContentSecurityPolicyDirectiveSerializedSourceListBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.FORM_ACTION
+
+
+class ContentSecurityPolicyFrameAncestorsSource(VariantParsableExact):
+    @classmethod
+    def _get_variants(cls):
+        return collections.OrderedDict([
+            (ContentSecurityPolicySourceType.KEYWORD, [ContentSecurityPolicySourceKeyword]),
+            (ContentSecurityPolicySourceType.SCHEME, [ContentSecurityPolicySourceScheme]),
+            (ContentSecurityPolicySourceType.HOST, [ContentSecurityPolicySourceHost]),
+        ])
+
+
+class ContentSecurityPolicyDirectiveFrameAncestors(ContentSecurityPolicyDirectiveSourceBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.FRAME_ANCESTORS
+
+    @classmethod
+    def _get_source_parser(cls):
+        return ContentSecurityPolicyFrameAncestorsSource
+
+    def _value_validator(self, value):
+        super(ContentSecurityPolicyDirectiveFrameAncestors, self)._value_validator(value)
+
+        has_invalid_source_type = any(map(
+            lambda source: (
+                isinstance(source, ContentSecurityPolicySourceKeyword) and
+                source not in [ContentSecurityPolicySourceKeyword.SELF, ContentSecurityPolicySourceKeyword.NONE]
+            ),
+            value
+        ))
+        if has_invalid_source_type:
+            raise InvalidValue(value, type(self), 'value')
+
+
+class ContentSecurityPolicyDirectiveVariant(VariantParsableExact):
+    @classmethod
+    def _get_variants(cls):
+        return collections.OrderedDict([
+            (directive_class.get_type(), [directive_class, ])
+            for directive_class in get_leaf_classes(ContentSecurityPolicyDirectiveBase)
+        ])
+
+
+@attr.s
+class ContentSecurityPolicyDirectiveValueBase(ContentSecurityPolicyDirectiveBase):
+    value = attr.ib()
+
+    @classmethod
+    @abc.abstractmethod
+    def get_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_value_class(cls):
+        raise NotImplementedError()
+
+    @value.validator
+    def _value_validator(self, _, value):
+        if not isinstance(value, self._get_value_class()):
+            raise InvalidValue(value, type(self), 'value')
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_type(parsable)
+
+        parser.parse_separator(' ')
+        parser.parse_parsable('value', cls._get_value_class())
+
+        return cls(parser['value']), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_type()
+
+        composer.compose_separator(' ')
+        composer.compose_parsable(self.value)
+
+        return composer.composed
+
+    def _as_markdown(self, level):
+        return self._markdown_result(self.value, level)
+
+
+class ContentSecurityPolicyWebRtcType(StringEnumParsable, enum.Enum):
+    ALLOW = FieldValueStringEnumParams(code='\'allow\'')
+    BLOCK = FieldValueStringEnumParams(code='\'block\'')
+
+
+class ContentSecurityPolicyDirectiveWebrtc(ContentSecurityPolicyDirectiveValueBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.WEBRTC
+
+    @classmethod
+    def _get_value_class(cls):
+        return ContentSecurityPolicyWebRtcType
+
+
+class ContentSecurityPolicyReferrerPolicy(StringEnumParsable, enum.Enum):
+    NO_REFERRER = FieldValueStringEnumParams(code='"no-referrer"')
+    NON_WHEN_DOWNGRADE = FieldValueStringEnumParams(code='"non-when-downgrade"')
+    ORIGIN = FieldValueStringEnumParams(code='"origin"')
+    ORIGIN_WHEN_CROSSORIGIN = FieldValueStringEnumParams(code='"origin-when-crossorigin"')
+    ORIGIN_WHEN_CROSS_ORIGIN = FieldValueStringEnumParams(code='"origin-when-cross-origin"')
+    UNSAFE_URL = FieldValueStringEnumParams(code='"unsafe-url"')
+
+
+class ContentSecurityPolicyDirectiveReferrer(ContentSecurityPolicyDirectiveValueBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.REFERRER
+
+    @classmethod
+    def _get_value_class(cls):
+        return ContentSecurityPolicyReferrerPolicy
+
+
+class ContentSecurityPolicyReportUri(FieldValueStringBySeparatorBase):
+    @classmethod
+    def _get_separators(cls):
+        return ' "<>^`{|}'
+
+
+class ContentSecurityPolicyToken(FieldValueStringBySeparatorBase):
+    @classmethod
+    def _get_separators(cls):
+        return '"(),/:;<=>?@[\\]{} \t'
+
+
+class ContentSecurityPolicyDirectiveListValueBase(ContentSecurityPolicyDirectiveBase):
+    @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def get_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse_by_value_params(cls, parsable, value_type, value_name, value_min_length=None):
+        parser = cls._parse_type(parsable)
+
+        if parser.unparsed_length:
+            parser.parse_separator(' ')
+            parser.parse_string_array('value', ' ', value_type, skip_empty=True)
+
+        if value_min_length is not None and ('value' not in parser or len(parser['value']) < value_min_length):
+            raise InvalidValue(parser.unparsed, cls, value_name)
+
+        return cls(parser['value']), parser.parsed_length
+
+    def _compose(self, value_name):
+        composer = self._compose_type()
+
+        value = getattr(self, value_name)
+        if value:
+            composer.compose_separator(' ')
+            composer.compose_parsable_array(value, ' ')
+
+        return composer.composed
+
+
+@attr.s
+class ContentSecurityPolicyDirectiveSandbox(ContentSecurityPolicyDirectiveListValueBase):
+    tokens = attr.ib(
+        converter=convert_iterable(convert_value_to_object(ContentSecurityPolicyToken)),
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(ContentSecurityPolicyToken)
+        )
+    )
+
+    @classmethod
+    def _parse(cls, parsable):
+        return cls._parse_by_value_params(parsable, ContentSecurityPolicyToken, 'tokens')
+
+    def compose(self):
+        return self._compose('tokens')
+
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.SANDBOX
+
+    def _asdict(self):
+        return collections.OrderedDict([
+            ('type', self.get_type()),
+            ('tokens', self.tokens),
+        ])
+
+
+@attr.s
+class ContentSecurityPolicyDirectivePluginTypes(ContentSecurityPolicyDirectiveListValueBase):
+    mime_types = attr.ib(
+        converter=convert_iterable(convert_value_to_object(FieldValueMimeType)),
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(FieldValueMimeType)
+        ),
+        metadata={'human_readable_name': 'MIME Types'}
+    )
+
+    @classmethod
+    def _parse(cls, parsable):
+        return cls._parse_by_value_params(parsable, FieldValueMimeType, 'mime_types')
+
+    def compose(self):
+        return self._compose('mime_types')
+
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.PLUGIN_TYPES
+
+    def _asdict(self):
+        return collections.OrderedDict([
+            ('type', self.get_type()),
+            ('mime_types', self.mime_types),
+        ])
+
+
+class ContentSecurityPolicyTrustedTypeSinkGroup(StringEnumParsable, enum.Enum):
+    SCRIPT = FieldValueStringEnumParams(code='\'script\'')
+
+
+@attr.s
+class ContentSecurityPolicyDirectiveRequireTrustedTypesFor(ContentSecurityPolicyDirectiveListValueBase):
+    sink_groups = attr.ib(
+        converter=convert_iterable(convert_value_to_object(ContentSecurityPolicyTrustedTypeSinkGroup)),
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(ContentSecurityPolicyTrustedTypeSinkGroup)
+        ),
+    )
+
+    @classmethod
+    def _parse(cls, parsable):
+        return cls._parse_by_value_params(parsable, ContentSecurityPolicyTrustedTypeSinkGroup, 'sink_groups')
+
+    def compose(self):
+        return self._compose('sink_groups')
+
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.REQUIRE_TRUSTED_TYPES_FOR
+
+    def _asdict(self):
+        return collections.OrderedDict([
+            ('type', self.get_type()),
+            ('sink_groups', self.sink_groups),
+        ])
+
+
+@attr.s
+class ContentSecurityPolicyDirectiveReportUri(ContentSecurityPolicyDirectiveListValueBase):
+    uri_references = attr.ib(
+        converter=convert_iterable(convert_value_to_object(ContentSecurityPolicyReportUri)),
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(ContentSecurityPolicyReportUri),
+        ),
+        metadata={'human_readable_name': 'URI references'}
+    )
+
+    @classmethod
+    def _parse(cls, parsable):
+        return cls._parse_by_value_params(parsable, ContentSecurityPolicyReportUri, 'uri_references', 1)
+
+    def compose(self):
+        return self._compose('uri_references')
+
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.REPORT_URI
+
+    def _asdict(self):
+        return collections.OrderedDict([
+            ('type', self.get_type()),
+            ('uri_references', self.uri_references),
+        ])
+
+
+@attr.s
+class ContentSecurityPolicyDirectiveReportTo(ContentSecurityPolicyDirectiveBase):
+    token = attr.ib(
+        converter=convert_value_to_object(ContentSecurityPolicyToken),
+        validator=attr.validators.instance_of(ContentSecurityPolicyToken)
+    )
+
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.REPORT_TO
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_type(parsable)
+
+        parser.parse_separator(' ')
+        parser.parse_parsable('token', ContentSecurityPolicyToken)
+
+        return cls(parser['token']), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_type()
+
+        composer.compose_separator(' ')
+        composer.compose_parsable(self.token)
+
+        return composer.composed
+
+
+class ContentSecurityPolicyDirectiveNoValueBase(ContentSecurityPolicyDirectiveBase):
+    @classmethod
+    @abc.abstractmethod
+    def get_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_type(parsable)
+
+        return cls(), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_type()
+
+        return composer.composed
+
+    def _asdict(self):
+        return collections.OrderedDict([
+            ('type', self.get_type()),
+            ('value', None),
+        ])
+
+
+class ContentSecurityPolicyDirectiveBlockAllMixedContent(ContentSecurityPolicyDirectiveNoValueBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.BLOCK_ALL_MIXED_CONTENT
+
+
+class ContentSecurityPolicyDirectiveUpgradeInsecureRequests(ContentSecurityPolicyDirectiveNoValueBase):
+    @classmethod
+    def get_type(cls):
+        return ContentSecurityPolicyDirectiveType.UPGRADE_INSECURE_REQUESTS
+
+
+@attr.s
+class HttpHeaderFieldValueContentSecurityPolicy(ParsableBase, Serializable):
+    directives = attr.ib(
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of(ContentSecurityPolicyDirectiveBase)
+        )
+    )
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserText(parsable)
+
+        parser.parse_string_array(
+            'directives',
+            separator=';',
+            item_class=ContentSecurityPolicyDirectiveVariant,
+            separator_spaces=' ',
+            skip_empty=True,
+        )
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerText()
+
+        composer.compose_string_array(self.directives, '; ')
+
+        return composer.composed
+
+
 class HttpHeaderFieldValueExpectCTComponentEnforce(FieldValueComponentOption):
     @classmethod
     def get_canonical_name(cls):
@@ -319,63 +1213,6 @@ class HttpHeaderFieldValueExpectCT(FieldsCommaSeparated):
     )
 
 
-class MimeTypeRegistry(enum.Enum):
-    APPLICATION = 'application'
-    AUDIO = 'audio'
-    FONT = 'font'
-    EXAMPLE = 'example'
-    IMAGE = 'image'
-    MESSAGE = 'message'
-    MODEL = 'model'
-    MULTIPART = 'multipart'
-    TEXT = 'text'
-    VIDEO = 'video'
-
-
-@attr.s
-class HttpHeaderFieldValueContentTypeMimeType(FieldValueComponentBase):
-    type = attr.ib(
-        validator=attr.validators.instance_of(six.string_types),
-        default=None,
-    )
-    registry = attr.ib(
-        validator=attr.validators.optional(attr.validators.instance_of(MimeTypeRegistry)),
-        default=None,
-    )
-
-    def __str__(self):
-        return '{}/{}'.format(self.registry.value, self.type)
-
-    @property
-    def value(self):
-        return self
-
-    @classmethod
-    def get_canonical_name(cls):
-        return ''
-
-    @classmethod
-    def _parse(cls, parsable):
-        parser = ParserText(parsable)
-
-        parser.parse_string_until_separator('registry', '/', item_class=MimeTypeRegistry)
-        parser.parse_separator('/')
-        parser.parse_string_by_length('type', parser.unparsed_length)
-
-        return HttpHeaderFieldValueContentTypeMimeType(**parser), parser.parsed_length
-
-    def compose(self):
-        composer = ComposerText()
-
-        composer.compose_string(str(self))
-
-        return composer.composed
-
-    @classmethod
-    def _check_name(cls, name):
-        pass
-
-
 class HttpHeaderFieldValueContentTypeCharset(FieldValueComponentString):
     @classmethod
     def get_canonical_name(cls):
@@ -393,8 +1230,8 @@ class HttpHeaderFieldValueContentType(FieldsSemicolonSeparated):
     _MIME_TYPES_REQUIRE_BOUNDARY = (MimeTypeRegistry.MESSAGE, MimeTypeRegistry.MULTIPART)
 
     mime_type = attr.ib(
-        converter=HttpHeaderFieldValueContentTypeMimeType.convert,
-        validator=attr.validators.instance_of(HttpHeaderFieldValueContentTypeMimeType),
+        converter=FieldValueMimeType.convert,
+        validator=attr.validators.instance_of(FieldValueMimeType),
         metadata={'human_readable_name': 'MIME type'}
     )
     charset = attr.ib(
@@ -765,6 +1602,14 @@ class HttpHeaderFieldName(StringEnumCaseInsensitiveParsable, enum.Enum):
         code='content-type',
         normalized_name='Content-Type'
     )
+    CONTENT_SECURITY_POLICY = HttpHeaderFieldNameParams(
+        code='content-security-policy',
+        normalized_name='Content-Security-Policy'
+    )
+    CONTENT_SECURITY_POLICY_REPORT_ONLY = HttpHeaderFieldNameParams(
+        code='content-security-policy-report-only',
+        normalized_name='Content-Security-Policy-Report-Only'
+    )
     DATE = HttpHeaderFieldNameParams(
         code='date',
         normalized_name='Date'
@@ -816,6 +1661,10 @@ class HttpHeaderFieldName(StringEnumCaseInsensitiveParsable, enum.Enum):
     STRICT_TRANSPORT_SECURITY = HttpHeaderFieldNameParams(
         code='strict-transport-security',
         normalized_name='Strict-Transport-Security'
+    )
+    X_CONTENT_SECURITY_POLICY = HttpHeaderFieldNameParams(
+        code='x-content-security-policy',
+        normalized_name='X-Content-Security-Policy'
     )
     X_CONTENT_TYPE_OPTIONS = HttpHeaderFieldNameParams(
         code='x-content-type-options',
@@ -943,6 +1792,36 @@ class HttpHeaderFieldContentType(HttpHeaderFieldParsedBase):
     @classmethod
     def _get_value_class(cls):
         return HttpHeaderFieldValueContentType
+
+
+class HttpHeaderFieldContentSecurityPolicy(HttpHeaderFieldParsedBase):
+    @classmethod
+    def get_header_field_name(cls):
+        return HttpHeaderFieldName.CONTENT_SECURITY_POLICY
+
+    @classmethod
+    def _get_value_class(cls):
+        return HttpHeaderFieldValueContentSecurityPolicy
+
+
+class HttpHeaderFieldXContentSecurityPolicy(HttpHeaderFieldParsedBase):
+    @classmethod
+    def get_header_field_name(cls):
+        return HttpHeaderFieldName.X_CONTENT_SECURITY_POLICY
+
+    @classmethod
+    def _get_value_class(cls):
+        return HttpHeaderFieldValueContentSecurityPolicy
+
+
+class HttpHeaderFieldContentSecurityPolicyReportOnly(HttpHeaderFieldParsedBase):
+    @classmethod
+    def get_header_field_name(cls):
+        return HttpHeaderFieldName.CONTENT_SECURITY_POLICY_REPORT_ONLY
+
+    @classmethod
+    def _get_value_class(cls):
+        return HttpHeaderFieldValueContentSecurityPolicy
 
 
 class HttpHeaderFieldCacheControlResponse(HttpHeaderFieldParsedBase):

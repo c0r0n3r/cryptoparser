@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# pylint: disable=too-many-lines
 # -*- coding: utf-8 -*-
 
 import os
@@ -8,13 +9,55 @@ import unittest
 import datetime
 import dateutil
 
+from cryptodatahub.common.algorithm import Hash
 from cryptodatahub.common.exception import InvalidValue
 
+from cryptoparser.common.exception import InvalidType
 from cryptoparser.httpx.header import (
+    ContentSecurityPolicyDirectiveBaseUri,
+    ContentSecurityPolicyDirectiveBlockAllMixedContent,
+    ContentSecurityPolicyDirectiveChildSrc,
+    ContentSecurityPolicyDirectiveConnectSrc,
+    ContentSecurityPolicyDirectiveDefaultSrc,
+    ContentSecurityPolicyDirectiveFontSrc,
+    ContentSecurityPolicyDirectiveFormAction,
+    ContentSecurityPolicyDirectiveFrameAncestors,
+    ContentSecurityPolicyDirectiveFrameSrc,
+    ContentSecurityPolicyDirectiveImgSrc,
+    ContentSecurityPolicyDirectiveManifestSrc,
+    ContentSecurityPolicyDirectiveMediaSrc,
+    ContentSecurityPolicyDirectiveObjectSrc,
+    ContentSecurityPolicyDirectivePluginTypes,
+    ContentSecurityPolicyDirectivePrefetchSrc,
+    ContentSecurityPolicyDirectiveReferrer,
+    ContentSecurityPolicyDirectiveReportTo,
+    ContentSecurityPolicyDirectiveReportUri,
+    ContentSecurityPolicyDirectiveRequireTrustedTypesFor,
+    ContentSecurityPolicyDirectiveSandbox,
+    ContentSecurityPolicyDirectiveScriptSrc,
+    ContentSecurityPolicyDirectiveScriptSrcAttr,
+    ContentSecurityPolicyDirectiveScriptSrcElem,
+    ContentSecurityPolicyDirectiveStyleSrc,
+    ContentSecurityPolicyDirectiveStyleSrcAttr,
+    ContentSecurityPolicyDirectiveStyleSrcElem,
+    ContentSecurityPolicyDirectiveUpgradeInsecureRequests,
+    ContentSecurityPolicyDirectiveWebrtc,
+    ContentSecurityPolicyDirectiveWorkerSrc,
+    ContentSecurityPolicyReferrerPolicy,
+    ContentSecurityPolicySourceHash,
+    ContentSecurityPolicySourceHost,
+    ContentSecurityPolicySourceKeyword,
+    ContentSecurityPolicySourceNonce,
+    ContentSecurityPolicySourceScheme,
+    ContentSecurityPolicyTrustedTypeSinkGroup,
+    ContentSecurityPolicyWebRtcType,
+    FieldValueMimeType,
     HttpHeaderFields,
     HttpHeaderFieldAge,
-    HttpHeaderFieldContentType,
     HttpHeaderFieldCacheControlResponse,
+    HttpHeaderFieldContentType,
+    HttpHeaderFieldContentSecurityPolicy,
+    HttpHeaderFieldContentSecurityPolicyReportOnly,
     HttpHeaderFieldDate,
     HttpHeaderFieldETag,
     HttpHeaderFieldExpectCT,
@@ -31,8 +74,8 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldSTS,
     HttpHeaderFieldUnparsed,
     HttpHeaderFieldValueCacheControlResponse,
+    HttpHeaderFieldValueContentSecurityPolicy,
     HttpHeaderFieldValueContentType,
-    HttpHeaderFieldValueContentTypeMimeType,
     HttpHeaderFieldValueExpectCT,
     HttpHeaderFieldValueExpectStaple,
     HttpHeaderFieldValueNetworkErrorLogging,
@@ -44,6 +87,7 @@ from cryptoparser.httpx.header import (
     HttpHeaderFieldValueXContentTypeOptions,
     HttpHeaderFieldValueXFrameOptions,
     HttpHeaderFieldValueXXSSProtection,
+    HttpHeaderFieldXContentSecurityPolicy,
     HttpHeaderFieldXContentTypeOptions,
     HttpHeaderFieldXFrameOptions,
     HttpHeaderFieldXXSSProtection,
@@ -114,12 +158,465 @@ class TestHttpHeaderFieldValueCacheControlResponse(
     ])
 
 
+class TestContentSecurityPolicySourceHash(unittest.TestCase):
+    def test_error_wrong_prefix(self):
+        with self.assertRaises(InvalidType):
+            ContentSecurityPolicySourceHash.parse_exact_size(b'notavalidhashalgorithm')
+
+    def test_parse(self):
+        self.assertEqual(
+            ContentSecurityPolicySourceHash.parse_exact_size(b'sha256-bGlnaHQgd29yay4='),
+            ContentSecurityPolicySourceHash(Hash.SHA2_256, bytearray(b'light work.'))
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            ContentSecurityPolicySourceHash(Hash.SHA2_256, bytearray(b'light work.')).compose(),
+            b'sha256-bGlnaHQgd29yay4='
+        )
+
+
+class TestContentSecurityPolicySourceHost(unittest.TestCase):
+    def test_parse(self):
+        self.assertEqual(
+            ContentSecurityPolicySourceHost.parse_exact_size(b'http://example.com'),
+            ContentSecurityPolicySourceHost('http://example.com')
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            ContentSecurityPolicySourceHost('http://example.com').compose(),
+            b'http://example.com'
+        )
+
+
+class TestContentSecurityPolicySourceNonce(unittest.TestCase):
+    def test_error_wrong_prefix(self):
+        with self.assertRaises(InvalidType):
+            ContentSecurityPolicySourceNonce.parse_exact_size(b'bGlnaHQgd29yay4=')
+
+    def test_parse(self):
+        self.assertEqual(
+            ContentSecurityPolicySourceNonce.parse_exact_size(b'nonce-bGlnaHQgd29yay4='),
+            ContentSecurityPolicySourceNonce(bytearray(b'light work.'))
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            ContentSecurityPolicySourceNonce(bytearray(b'light work.')).compose(),
+            b'nonce-bGlnaHQgd29yay4='
+        )
+
+
+class TestContentSecurityPolicySourceScheme(unittest.TestCase):
+    def test_parse(self):
+        self.assertEqual(
+            ContentSecurityPolicySourceScheme.parse_exact_size(b'http:'),
+            ContentSecurityPolicySourceScheme('http')
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            ContentSecurityPolicySourceScheme('http').compose(),
+            b'http:'
+        )
+
+
+class TestContentSecurityPolicyDirectivesFetch(
+        TestCasesBasesHttpHeader.MinimalHeader,
+        TestCasesBasesHttpHeader.FullHeader):
+
+    _header_minimal = ContentSecurityPolicyDirectiveDefaultSrc([ContentSecurityPolicySourceKeyword.SELF])
+    _header_minimal_bytes = ' '.join([
+        'default-src',
+        '\'self\'',
+    ]).encode('ascii')
+    _header_minimal_markdown = os.linesep.join([
+        '* Type: default-src',
+        '* Value:',
+        '    1.',
+        '        * Type: KEYWORD',
+        '        * Value: \'self\'',
+        '',
+    ])
+    _header_full = ContentSecurityPolicyDirectiveDefaultSrc([
+        ContentSecurityPolicySourceKeyword.SELF,
+        ContentSecurityPolicySourceScheme('http'),
+        ContentSecurityPolicySourceHost('https://example.com'),
+        ContentSecurityPolicySourceNonce(bytearray(b'light work.')),
+        ContentSecurityPolicySourceHash(Hash.SHA2_256, bytearray(b'light work.')),
+    ])
+    _header_full_bytes = ' '.join([
+        'default-src',
+        '\'self\'',
+        'http:',
+        'https://example.com',
+        'nonce-bGlnaHQgd29yay4=',
+        'sha256-bGlnaHQgd29yay4=',
+    ]).encode('ascii')
+
+    def test_min_source_length(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            ContentSecurityPolicyDirectiveDefaultSrc.parse_exact_size(b'default-src')
+        self.assertEqual(context_manager.exception.value, b'')
+
+    def test_error_invalid_value_type(self):
+        with self.assertRaises(InvalidValue):
+            ContentSecurityPolicyDirectiveDefaultSrc([None])
+
+
+class TestContentSecurityPolicyDirectiveFrameAncestors(
+        TestCasesBasesHttpHeader.MinimalHeader,
+        TestCasesBasesHttpHeader.FullHeader):
+
+    _header_minimal = ContentSecurityPolicyDirectiveFrameAncestors([ContentSecurityPolicySourceKeyword.SELF])
+    _header_minimal_bytes = ' '.join([
+        'frame-ancestors',
+        '\'self\'',
+    ]).encode('ascii')
+    _header_minimal_markdown = os.linesep.join([
+        '* Type: frame-ancestors',
+        '* Value:',
+        '    1.',
+        '        * Type: KEYWORD',
+        '        * Value: \'self\'',
+        '',
+    ])
+    _header_full = ContentSecurityPolicyDirectiveFrameAncestors([
+        ContentSecurityPolicySourceKeyword.SELF,
+        ContentSecurityPolicySourceScheme('http'),
+        ContentSecurityPolicySourceHost('https://example.com'),
+    ])
+    _header_full_bytes = ' '.join([
+        'frame-ancestors',
+        '\'self\'',
+        'http:',
+        'https://example.com',
+    ]).encode('ascii')
+
+    def test_error_invalid_value_type(self):
+        with self.assertRaises(InvalidValue):
+            ContentSecurityPolicyDirectiveFrameAncestors([
+                ContentSecurityPolicySourceKeyword(ContentSecurityPolicySourceKeyword.REPORT_SAMPLE)
+            ])
+
+        with self.assertRaises(InvalidValue):
+            ContentSecurityPolicyDirectiveFrameAncestors([
+                ContentSecurityPolicySourceNonce(bytearray(b'light work.'))
+            ])
+
+        with self.assertRaises(InvalidValue):
+            ContentSecurityPolicyDirectiveFrameAncestors([
+                ContentSecurityPolicySourceHash(Hash.SHA2_256, bytearray(b'light work.'))
+            ])
+
+
+class TestContentSecurityPolicyDirectiveWebrtc(
+        TestCasesBasesHttpHeader.MinimalHeader):
+
+    _header_minimal = ContentSecurityPolicyDirectiveWebrtc(ContentSecurityPolicyWebRtcType.ALLOW)
+    _header_minimal_bytes = ' '.join([
+        'webrtc',
+        '\'allow\'',
+    ]).encode('ascii')
+    _header_minimal_markdown = '\'allow\''
+
+    def test_error_invalid_value_type(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            ContentSecurityPolicyDirectiveWebrtc('not-a-webrtc-type')
+        self.assertEqual(context_manager.exception.value, 'not-a-webrtc-type')
+
+
+class TestContentSecurityPolicyDirectiveRequireTrustedTypesFor(
+        TestCasesBasesHttpHeader.MinimalHeader):
+
+    _header_minimal = ContentSecurityPolicyDirectiveRequireTrustedTypesFor([
+        ContentSecurityPolicyTrustedTypeSinkGroup.SCRIPT
+    ])
+    _header_minimal_bytes = ' '.join([
+        'require-trusted-types-for',
+        '\'script\'',
+    ]).encode('ascii')
+    _header_minimal_markdown = os.linesep.join([
+        '* Type: require-trusted-types-for',
+        '* Sink Groups:',
+        '    1. \'script\'',
+        '',
+    ])
+
+
+class TestContentSecurityPolicyDirectiveReportUri(
+        TestCasesBasesHttpHeader.MinimalHeader,
+        TestCasesBasesHttpHeader.FullHeader):
+
+    _header_minimal = ContentSecurityPolicyDirectiveReportUri(['http://example.com'])
+    _header_minimal_bytes = ' '.join([
+        'report-uri',
+        'http://example.com',
+    ]).encode('ascii')
+    _header_minimal_markdown = os.linesep.join([
+        '* Type: report-uri',
+        '* URI references:',
+        '    1. http://example.com',
+        '',
+    ])
+    _header_full = ContentSecurityPolicyDirectiveReportUri(['http://example.com/1', 'http://example.com/2'])
+    _header_full_bytes = ' '.join([
+        'report-uri',
+        'http://example.com/1',
+        'http://example.com/2',
+    ]).encode('ascii')
+
+    def test_min_reference_length(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            ContentSecurityPolicyDirectiveReportUri.parse_exact_size(b'report-uri')
+        self.assertEqual(context_manager.exception.value, b'')
+
+
+class TestContentSecurityPolicyDirectiveReportTo(
+        TestCasesBasesHttpHeader.MinimalHeader):
+
+    _header_minimal = ContentSecurityPolicyDirectiveReportTo('token')
+    _header_minimal_bytes = ' '.join([
+        'report-to',
+        'token',
+    ]).encode('ascii')
+    _header_minimal_markdown = os.linesep.join([
+        '* Token: token',
+        '',
+    ])
+
+
+class TestContentSecurityPolicyDirectiveSandbox(
+        TestCasesBasesHttpHeader.MinimalHeader,
+        TestCasesBasesHttpHeader.FullHeader):
+
+    _header_minimal = ContentSecurityPolicyDirectiveSandbox(['token'])
+    _header_minimal_bytes = ' '.join([
+        'sandbox',
+        'token',
+    ]).encode('ascii')
+    _header_minimal_markdown = os.linesep.join([
+        '* Type: sandbox',
+        '* Tokens:',
+        '    1. token',
+        '',
+    ])
+    _header_full = ContentSecurityPolicyDirectiveSandbox(['token1', 'token2'])
+    _header_full_bytes = ' '.join([
+        'sandbox',
+        'token1',
+        'token2',
+    ]).encode('ascii')
+
+
+class TestContentSecurityPolicyDirectivePluginTypes(
+        TestCasesBasesHttpHeader.MinimalHeader,
+        TestCasesBasesHttpHeader.FullHeader):
+
+    _header_minimal = ContentSecurityPolicyDirectivePluginTypes([
+        FieldValueMimeType('html', MimeTypeRegistry.TEXT)
+    ])
+    _header_minimal_bytes = ' '.join([
+        'plugin-types',
+        'text/html',
+    ]).encode('ascii')
+    _header_minimal_markdown = os.linesep.join([
+        '* Type: plugin-types',
+        '* MIME Types:',
+        '    1.',
+        '        * Type: html',
+        '        * Registry: TEXT',
+        '',
+    ])
+    _header_full = ContentSecurityPolicyDirectivePluginTypes([
+        FieldValueMimeType('html', MimeTypeRegistry.TEXT),
+        FieldValueMimeType('csv', MimeTypeRegistry.TEXT),
+    ])
+    _header_full_bytes = ' '.join([
+        'plugin-types',
+        'text/html',
+        'text/csv',
+    ]).encode('ascii')
+
+
+class TestContentSecurityPolicyDirectiveNoValue(
+        TestCasesBasesHttpHeader.MinimalHeader):
+
+    _header_minimal = ContentSecurityPolicyDirectiveBlockAllMixedContent()
+    _header_minimal_bytes = b'block-all-mixed-content'
+    _header_minimal_markdown = os.linesep.join([
+        '* Type: block-all-mixed-content',
+        '* Value: n/a',
+        '',
+    ])
+
+
+class TestHttpHeaderFieldValueContentSecurityPolicy(
+        TestCasesBasesHttpHeader.MinimalHeader,
+        TestCasesBasesHttpHeader.FullHeader):
+
+    _header_minimal = HttpHeaderFieldValueContentSecurityPolicy([
+        ContentSecurityPolicyDirectiveDefaultSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+            ContentSecurityPolicySourceHash(Hash.SHA2_256, bytearray(b'light work.')),
+            ContentSecurityPolicySourceNonce(bytearray(b'light work.')),
+            ContentSecurityPolicySourceScheme('http'),
+            ContentSecurityPolicySourceHost('http://example.com'),
+        ])
+    ])
+    _header_minimal_bytes = ' '.join([
+        'default-src',
+        '\'self\'',
+        'sha256-bGlnaHQgd29yay4=',
+        'nonce-bGlnaHQgd29yay4=',
+        'http:',
+        'http://example.com',
+    ]).encode('ascii')
+    _header_minimal_markdown = os.linesep.join([
+        '* Directives:',
+        '    1.',
+        '        * Type: default-src',
+        '        * Value:',
+        '            1.',
+        '                * Type: KEYWORD',
+        '                * Value: \'self\'',
+        '            2.',
+        '                * Type: HASH',
+        '                * Value:',
+        '                    * Hash Algorithm: SHA-256',
+        '                    * Hash Value: bGlnaHQgd29yay4=',
+        '            3.',
+        '                * Type: NONCE',
+        '                * Value: bGlnaHQgd29yay4=',
+        '            4.',
+        '                * Type: SCHEME',
+        '                * Value: http',
+        '            5.',
+        '                * Type: HOST',
+        '                * Value: http://example.com',
+        '',
+    ])
+    _header_full = HttpHeaderFieldValueContentSecurityPolicy([
+        ContentSecurityPolicyDirectiveChildSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveConnectSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveDefaultSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveFontSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveFrameSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveImgSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveManifestSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveMediaSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveObjectSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectivePrefetchSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveScriptSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveScriptSrcElem([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveScriptSrcAttr([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveStyleSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveStyleSrcElem([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveStyleSrcAttr([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveWebrtc(
+            ContentSecurityPolicyWebRtcType.ALLOW,
+        ),
+        ContentSecurityPolicyDirectiveWorkerSrc([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveBaseUri([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveSandbox([
+            'token'
+        ]),
+        ContentSecurityPolicyDirectiveFormAction([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveFrameAncestors([
+            ContentSecurityPolicySourceKeyword.SELF,
+        ]),
+        ContentSecurityPolicyDirectiveReportUri([
+            'http://example.com'
+        ]),
+        ContentSecurityPolicyDirectiveReportTo(
+            'token'
+        ),
+        ContentSecurityPolicyDirectiveBlockAllMixedContent(),
+        ContentSecurityPolicyDirectiveUpgradeInsecureRequests(),
+        ContentSecurityPolicyDirectiveReferrer(
+            ContentSecurityPolicyReferrerPolicy.NO_REFERRER,
+        ),
+        ContentSecurityPolicyDirectivePluginTypes([
+            FieldValueMimeType('html', MimeTypeRegistry.TEXT)
+        ]),
+    ])
+    _header_full_bytes = '; '.join([
+        'child-src \'self\'',
+        'connect-src \'self\'',
+        'default-src \'self\'',
+        'font-src \'self\'',
+        'frame-src \'self\'',
+        'img-src \'self\'',
+        'manifest-src \'self\'',
+        'media-src \'self\'',
+        'object-src \'self\'',
+        'prefetch-src \'self\'',
+        'script-src \'self\'',
+        'script-src-elem \'self\'',
+        'script-src-attr \'self\'',
+        'style-src \'self\'',
+        'style-src-elem \'self\'',
+        'style-src-attr \'self\'',
+        'webrtc \'allow\'',
+        'worker-src \'self\'',
+        'base-uri \'self\'',
+        'sandbox token',
+        'form-action \'self\'',
+        'frame-ancestors \'self\'',
+        'report-uri http://example.com',
+        'report-to token',
+        'block-all-mixed-content',
+        'upgrade-insecure-requests',
+        'referrer "no-referrer"',
+        'plugin-types text/html',
+    ]).encode('ascii')
+
+
 class TestHttpHeaderFieldValueContentType(
         TestCasesBasesHttpHeader.MinimalHeader,
         TestCasesBasesHttpHeader.FullHeader):
 
     _header_minimal = HttpHeaderFieldValueContentType(
-        HttpHeaderFieldValueContentTypeMimeType('html', MimeTypeRegistry.TEXT)
+        FieldValueMimeType('html', MimeTypeRegistry.TEXT)
      )
     _header_minimal_bytes = b'text/html'
     _header_minimal_markdown = os.linesep.join([
@@ -132,7 +629,7 @@ class TestHttpHeaderFieldValueContentType(
     ])
 
     _header_full = HttpHeaderFieldValueContentType(
-        HttpHeaderFieldValueContentTypeMimeType('bhttp', MimeTypeRegistry.MESSAGE),
+        FieldValueMimeType('bhttp', MimeTypeRegistry.MESSAGE),
         charset='utf-8',
         boundary='boundary_pattern',
     )
@@ -141,14 +638,14 @@ class TestHttpHeaderFieldValueContentType(
     def test_error_invalid_parameter(self):
         with self.assertRaises(InvalidValue) as context_manager:
             HttpHeaderFieldValueContentType(
-                HttpHeaderFieldValueContentTypeMimeType('html', MimeTypeRegistry.TEXT),
+                FieldValueMimeType('html', MimeTypeRegistry.TEXT),
                 boundary='pattern',
             )
         self.assertEqual(context_manager.exception.value, 'pattern')
 
         with self.assertRaises(InvalidValue) as context_manager:
             HttpHeaderFieldValueContentType(
-                HttpHeaderFieldValueContentTypeMimeType('bhttp', MimeTypeRegistry.MESSAGE),
+                FieldValueMimeType('bhttp', MimeTypeRegistry.MESSAGE),
             )
         self.assertEqual(context_manager.exception.value, None)
 
@@ -418,13 +915,16 @@ class TestHttpHeaderFields(unittest.TestCase):
             b'X-Content-Type-Options: nosniff',
             b'X-Frame-Options: SAMEORIGIN',
             b'X-XSS-Protection: 1',
+            b'Content-Security-Policy: default-src \'self\'',
+            b'Content-Security-Policy-Report-Only: default-src \'self\'',
+            b'X-Content-Security-Policy: default-src \'self\'',
             b'',
             b'',
         ])
         self.headers = HttpHeaderFields([
             HttpHeaderFieldAge(datetime.timedelta(seconds=1)),
             HttpHeaderFieldCacheControlResponse(HttpHeaderFieldValueCacheControlResponse(no_cache=True)),
-            HttpHeaderFieldContentType(HttpHeaderFieldValueContentTypeMimeType('html', MimeTypeRegistry.TEXT)),
+            HttpHeaderFieldContentType(FieldValueMimeType('html', MimeTypeRegistry.TEXT)),
             HttpHeaderFieldDate(datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC)),
             HttpHeaderFieldETag('12345678'),
             HttpHeaderFieldExpectCT(HttpHeaderFieldValueExpectCT(datetime.timedelta(seconds=1))),
@@ -447,6 +947,15 @@ class TestHttpHeaderFields(unittest.TestCase):
             HttpHeaderFieldXContentTypeOptions(HttpHeaderXContentTypeOptions.NOSNIFF),
             HttpHeaderFieldXFrameOptions(HttpHeaderXFrameOptions.SAMEORIGIN),
             HttpHeaderFieldXXSSProtection(HttpHeaderXXSSProtectionState.ENABLED),
+            HttpHeaderFieldContentSecurityPolicy([
+                ContentSecurityPolicyDirectiveDefaultSrc([ContentSecurityPolicySourceKeyword.SELF])
+            ]),
+            HttpHeaderFieldContentSecurityPolicyReportOnly([
+                ContentSecurityPolicyDirectiveDefaultSrc([ContentSecurityPolicySourceKeyword.SELF])
+            ]),
+            HttpHeaderFieldXContentSecurityPolicy([
+                ContentSecurityPolicyDirectiveDefaultSrc([ContentSecurityPolicySourceKeyword.SELF])
+            ]),
         ])
 
     def test_parse(self):
@@ -565,6 +1074,36 @@ class TestHttpHeaderFields(unittest.TestCase):
             '        * State: enabled',
             '        * Mode: n/a',
             '        * Report: n/a',
+            '21.',
+            '    * Name: Content-Security-Policy',
+            '    * Value:',
+            '        * Directives:',
+            '            1.',
+            '                * Type: default-src',
+            '                * Value:',
+            '                    1.',
+            '                        * Type: KEYWORD',
+            '                        * Value: \'self\'',
+            '22.',
+            '    * Name: Content-Security-Policy-Report-Only',
+            '    * Value:',
+            '        * Directives:',
+            '            1.',
+            '                * Type: default-src',
+            '                * Value:',
+            '                    1.',
+            '                        * Type: KEYWORD',
+            '                        * Value: \'self\'',
+            '23.',
+            '    * Name: X-Content-Security-Policy',
+            '    * Value:',
+            '        * Directives:',
+            '            1.',
+            '                * Type: default-src',
+            '                * Value:',
+            '                    1.',
+            '                        * Type: KEYWORD',
+            '                        * Value: \'self\'',
             '',
         ]))
 
