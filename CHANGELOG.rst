@@ -3,6 +3,23 @@ Changelog
 =========
 
 -------------------
+0.12.0 - 2023-11-23
+-------------------
+
+Features
+========
+
+-  HTTP(S) (``http``)
+
+   -  Headers (``headers``)
+
+      -  add parsers for security related headers
+         (`Content Security Policy <https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP>`__ (CSP),
+         `Content-Security-Policy-Report-Only <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy-Report-Only>`__)
+         (#59)
+
+
+-------------------
 0.11.2 - 2023-11-13
 -------------------
 

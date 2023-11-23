@@ -50,7 +50,9 @@ Hypertext Transfer Protocol (HTTP)
    `Last-Modified <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified>`__,
    `Pragma <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Pragma>`__)
 4. supports detailed parsing of security headers
-   (`Expect-CT <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expect-CT>`__,
+   (`Content Security Policy <https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP>`__ (CSP),
+   `Content-Security-Policy-Report-Only <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy-Report-Only>`__,
+   `Expect-CT <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expect-CT>`__,
    `Expect-Staple <https://scotthelme.co.uk/designing-a-new-security-header-expect-staple>`__,
    `HTTP Public Key Pinning <https://en.wikipedia.org/wiki/HTTP_Public_Key_Pinning>`__ (HPKP),
    `Referrer-Policy <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy>`__,
