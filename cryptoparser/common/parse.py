@@ -201,7 +201,7 @@ class ParserText(ParserBase):
 
         return actual_offset - count_offset
 
-    def parse_separator(self, separator, min_length=1, max_length=1):
+    def parse_separator(self, separator, min_length=1, max_length=None):
         self._parsed_length += self._check_separators(
             'separator', self._parsed_length, separator, min_length, max_length
         )
