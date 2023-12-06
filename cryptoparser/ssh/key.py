@@ -7,6 +7,7 @@ import binascii
 import collections
 import datetime
 import enum
+import itertools
 import textwrap
 
 from collections import OrderedDict
@@ -26,7 +27,7 @@ from cryptodatahub.common.key import (
     PublicKeyParamsRsa,
 )
 from cryptodatahub.common.utils import hash_bytes
-from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm, SshEllipticCurveIdentifier
+from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm, SshHostKeyType, SshEllipticCurveIdentifier
 
 from cryptoparser.common.base import (
     FourByteEnumComposer,
@@ -174,13 +175,13 @@ class SshHostKeyDSSBase(SshHostKeyBase):
 
     @classmethod
     def get_host_key_algorithms(cls):
-        return [
-            SshHostKeyAlgorithm.SSH_DSS,
-            SshHostKeyAlgorithm.SSH_DSS_SHA224_SSH_COM,
-            SshHostKeyAlgorithm.SSH_DSS_SHA256_SSH_COM,
-            SshHostKeyAlgorithm.SSH_DSS_SHA384_SSH_COM,
-            SshHostKeyAlgorithm.SSH_DSS_SHA512_SSH_COM,
-        ]
+        return filter(
+            lambda host_key_algorithm: (
+                host_key_algorithm.value.key_type == SshHostKeyType.HOST_KEY and
+                host_key_algorithm.value.signature.value.key_type == Authentication.DSS
+            ),
+            SshHostKeyAlgorithm
+        )
 
     @classmethod
     def _parse_host_key(cls, parser):
@@ -233,13 +234,13 @@ class SshHostKeyRSABase(SshHostKeyBase):
 
     @classmethod
     def get_host_key_algorithms(cls):
-        return [
-            SshHostKeyAlgorithm.SSH_RSA,
-            SshHostKeyAlgorithm.SSH_RSA_SHA224_SSH_COM,
-            SshHostKeyAlgorithm.SSH_RSA_SHA256_SSH_COM,
-            SshHostKeyAlgorithm.SSH_RSA_SHA384_SSH_COM,
-            SshHostKeyAlgorithm.SSH_RSA_SHA512_SSH_COM,
-        ]
+        return filter(
+            lambda host_key_algorithm: (
+                host_key_algorithm.value.key_type == SshHostKeyType.HOST_KEY and
+                host_key_algorithm.value.signature.value.key_type == Authentication.RSA
+            ),
+            SshHostKeyAlgorithm
+        )
 
     @classmethod
     def _parse_host_key(cls, parser):
@@ -279,11 +280,13 @@ class SshHostKeyECDSABase(SshHostKeyBase):
 
     @classmethod
     def get_host_key_algorithms(cls):
-        return [
-            SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256,
-            SshHostKeyAlgorithm.ECDSA_SHA2_NISTP384,
-            SshHostKeyAlgorithm.ECDSA_SHA2_NISTP521,
-        ]
+        return filter(
+            lambda host_key_algorithm: (
+                host_key_algorithm.value.key_type == SshHostKeyType.HOST_KEY and
+                host_key_algorithm.value.signature.value.key_type == Authentication.ECDSA
+            ),
+            SshHostKeyAlgorithm
+        )
 
     @classmethod
     def _parse_host_key(cls, parser):
@@ -328,7 +331,13 @@ class SshHostKeyEDDSABase(SshHostKeyBase):
 
     @classmethod
     def get_host_key_algorithms(cls):
-        return [SshHostKeyAlgorithm.SSH_ED25519, ]
+        return filter(
+            lambda host_key_algorithm: (
+                host_key_algorithm.value.key_type == SshHostKeyType.HOST_KEY and
+                host_key_algorithm.value.signature.value.key_type == Authentication.EDDSA
+            ),
+            SshHostKeyAlgorithm
+        )
 
     @classmethod
     def _parse_host_key(cls, parser):
@@ -1043,6 +1052,7 @@ class SshHostCertificateV01ECDSA(SshHostCertificateV01ECDSABase, SshHostCertific
             SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256_CERT_V01_OPENSSH_COM,
             SshHostKeyAlgorithm.ECDSA_SHA2_NISTP384_CERT_V01_OPENSSH_COM,
             SshHostKeyAlgorithm.ECDSA_SHA2_NISTP521_CERT_V01_OPENSSH_COM,
+            SshHostKeyAlgorithm.ECDSA_SHA2_SECP256K1_OID_CERT_V01_OPENSSH_COM,
         ]
 
 
@@ -1069,20 +1079,10 @@ class SshX509Certificate(ParsableBase, SshHostKeyBase):
 
     @classmethod
     def get_host_key_algorithms(cls):
-        return [
-            SshHostKeyAlgorithm.X509V3_SIGN_RSA,
-            SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA1,
-            SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA224_SSH_COM,
-            SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA256_SSH_COM,
-            SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA384_SSH_COM,
-            SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA512_SSH_COM,
-            SshHostKeyAlgorithm.X509V3_SIGN_DSS,
-            SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA1,
-            SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA224_SSH_COM,
-            SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA256_SSH_COM,
-            SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA384_SSH_COM,
-            SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA512_SSH_COM,
-        ]
+        return filter(
+            lambda host_key_algorithm: host_key_algorithm.value.key_type == SshHostKeyType.X509_CERTIFICATE,
+            SshHostKeyAlgorithm
+        )
 
     @property
     def key_bytes(self):
@@ -1142,15 +1142,10 @@ class SshX509CertificateChain(ParsableBase, SshHostKeyBase):
 
     @classmethod
     def get_host_key_algorithms(cls):
-        return [
-            SshHostKeyAlgorithm.X509V3_SSH_DSS,
-            SshHostKeyAlgorithm.X509V3_SSH_RSA,
-            SshHostKeyAlgorithm.X509V3_RSA2048_SHA256,
-            SshHostKeyAlgorithm.X509V3_ECDSA_SHA2_1_3_132_0_10,
-            SshHostKeyAlgorithm.X509V3_ECDSA_SHA2_NISTP256,
-            SshHostKeyAlgorithm.X509V3_ECDSA_SHA2_NISTP384,
-            SshHostKeyAlgorithm.X509V3_ECDSA_SHA2_NISTP521,
-        ]
+        return filter(
+            lambda host_key_algorithm: host_key_algorithm.value.key_type == SshHostKeyType.X509_CERTIFICATE_CHAIN,
+            SshHostKeyAlgorithm
+        )
 
     @property
     def key_bytes(self):
@@ -1199,44 +1194,26 @@ class SshX509CertificateChain(ParsableBase, SshHostKeyBase):
 
 
 class SshHostPublicKeyVariant(VariantParsable):
-    _VARIANTS = collections.OrderedDict([
-        (SshHostKeyAlgorithm.SSH_ED25519, (SshHostKeyEDDSA, )),
-        (SshHostKeyAlgorithm.SSH_RSA, (SshHostKeyRSA, )),
-        (SshHostKeyAlgorithm.RSA_SHA2_256, (SshHostKeyRSA, )),
-        (SshHostKeyAlgorithm.RSA_SHA2_512, (SshHostKeyRSA, )),
-        (SshHostKeyAlgorithm.SSH_DSS, (SshHostKeyDSS, )),
-        (SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256, (SshHostKeyECDSA, )),
-        (SshHostKeyAlgorithm.ECDSA_SHA2_NISTP384, (SshHostKeyECDSA, )),
-        (SshHostKeyAlgorithm.ECDSA_SHA2_NISTP521, (SshHostKeyECDSA, )),
-        (SshHostKeyAlgorithm.SSH_DSS_CERT_V00_OPENSSH_COM, (SshHostCertificateV00DSS, )),
-        (SshHostKeyAlgorithm.SSH_RSA_CERT_V00_OPENSSH_COM, (SshHostCertificateV00RSA, )),
-        (SshHostKeyAlgorithm.SSH_DSS_CERT_V01_OPENSSH_COM, (SshHostCertificateV01DSS, )),
-        (SshHostKeyAlgorithm.SSH_RSA_CERT_V01_OPENSSH_COM, (SshHostCertificateV01RSA, )),
-        (SshHostKeyAlgorithm.ECDSA_SHA2_NISTP256_CERT_V01_OPENSSH_COM, (SshHostCertificateV01ECDSA, )),
-        (SshHostKeyAlgorithm.ECDSA_SHA2_NISTP384_CERT_V01_OPENSSH_COM, (SshHostCertificateV01ECDSA, )),
-        (SshHostKeyAlgorithm.ECDSA_SHA2_NISTP521_CERT_V01_OPENSSH_COM, (SshHostCertificateV01ECDSA, )),
-        (SshHostKeyAlgorithm.SSH_ED25519_CERT_V01_OPENSSH_COM, (SshHostCertificateV01EDDSA, )),
-        (SshHostKeyAlgorithm.X509V3_RSA2048_SHA256, (SshX509CertificateChain, )),
-        (SshHostKeyAlgorithm.X509V3_SSH_DSS, (SshX509CertificateChain, )),
-        (SshHostKeyAlgorithm.X509V3_SSH_RSA, (SshX509CertificateChain, )),
-        (SshHostKeyAlgorithm.X509V3_ECDSA_SHA2_1_3_132_0_10, (SshX509CertificateChain, )),
-        (SshHostKeyAlgorithm.X509V3_ECDSA_SHA2_NISTP256, (SshX509CertificateChain, )),
-        (SshHostKeyAlgorithm.X509V3_ECDSA_SHA2_NISTP384, (SshX509CertificateChain, )),
-        (SshHostKeyAlgorithm.X509V3_ECDSA_SHA2_NISTP521, (SshX509CertificateChain, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA1, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA1, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA224_SSH_COM, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA256_SSH_COM, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA384_SSH_COM, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_RSA_SHA512_SSH_COM, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA1, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA224_SSH_COM, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA256_SSH_COM, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA384_SSH_COM, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_DSS_SHA512_SSH_COM, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_RSA, (SshX509Certificate, )),
-        (SshHostKeyAlgorithm.X509V3_SIGN_DSS, (SshX509Certificate, )),
-    ])
+    _VARIANTS = collections.OrderedDict(itertools.chain.from_iterable([
+        [
+            (host_key_algorithm, (ssh_key_class, ))
+            for host_key_algorithm in ssh_key_class.get_host_key_algorithms()
+        ]
+        for ssh_key_class in [
+            SshHostKeyDSS,
+            SshHostKeyECDSA,
+            SshHostKeyEDDSA,
+            SshHostKeyRSA,
+            SshHostCertificateV00DSS,
+            SshHostCertificateV00RSA,
+            SshHostCertificateV01DSS,
+            SshHostCertificateV01ECDSA,
+            SshHostCertificateV01EDDSA,
+            SshHostCertificateV01RSA,
+            SshX509Certificate,
+            SshX509CertificateChain,
+        ]
+    ]))
 
     @classmethod
     def _get_variants(cls):
