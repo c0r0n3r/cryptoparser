@@ -42,13 +42,39 @@ class TestTlsProtocolVersion(unittest.TestCase):
 
     def test_lt(self):
         self.assertLess(
+            TlsProtocolVersion(TlsVersion.SSL2),
+            TlsProtocolVersion(TlsVersion.SSL3)
+        )
+        self.assertGreater(
+            TlsProtocolVersion(TlsVersion.SSL3),
+            TlsProtocolVersion(TlsVersion.SSL2)
+        )
+
+        self.assertLess(
+            TlsProtocolVersion(TlsVersion.SSL3),
+            TlsProtocolVersion(TlsVersion.TLS1)
+        )
+        self.assertGreater(
+            TlsProtocolVersion(TlsVersion.TLS1),
+            TlsProtocolVersion(TlsVersion.SSL3)
+        )
+
+        self.assertLess(
             TlsProtocolVersion(TlsVersion.TLS1_1),
             TlsProtocolVersion(TlsVersion.TLS1_2)
+        )
+        self.assertGreater(
+            TlsProtocolVersion(TlsVersion.TLS1_2),
+            TlsProtocolVersion(TlsVersion.TLS1_1)
         )
 
         self.assertLess(
             TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_1),
             TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_2)
+        )
+        self.assertGreater(
+            TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_2),
+            TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_1)
         )
 
         self.assertLess(
@@ -58,6 +84,11 @@ class TestTlsProtocolVersion(unittest.TestCase):
         self.assertGreater(
             TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_0),
             TlsProtocolVersion(TlsVersion.TLS1_2)
+        )
+
+        self.assertLess(
+            TlsProtocolVersion(TlsVersion.TLS1_2),
+            TlsProtocolVersion(TlsVersion.TLS1_3)
         )
         self.assertGreater(
             TlsProtocolVersion(TlsVersion.TLS1_3),
@@ -72,6 +103,7 @@ class TestTlsProtocolVersion(unittest.TestCase):
             TlsProtocolVersion(TlsVersion.TLS1_3),
             TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_28)
         )
+
         self.assertLess(
             TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_0),
             TlsProtocolVersion(TlsVersion.TLS1_3_DRAFT_28)

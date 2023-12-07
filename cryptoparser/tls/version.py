@@ -78,8 +78,10 @@ class TlsProtocolVersion(ProtocolVersionBase, GradeableSimple):
             return self.minor < other.minor
         if self.is_draft:
             return other.version == TlsVersion.TLS1_3
+        if other.is_draft:
+            return self.version != TlsVersion.TLS1_3
 
-        return self.version != TlsVersion.TLS1_3
+        return self.major < other.major
 
     @property
     def identifier(self):
