@@ -440,8 +440,7 @@ class TestExtensionSignedCertificateTimestampServer(unittest.TestCase):
 
         self.assertEqual(scts[0].as_markdown(), '\n'.join([
             '* Version: V1',
-            '* Log:',
-            '    * ID: AAECAwQFBgcICQoLDA0ODwABAgMEBQYHCAkKCwwNDg8=',
+            '* Log: AAECAwQFBgcICQoLDA0ODwABAgMEBQYHCAkKCwwNDg8=',
             '* Timestamp: 1970-01-01 00:00:00.001000+00:00',
             '* Extensions: -',
             '* Signature Algorithm: none with no encryption',
@@ -450,12 +449,7 @@ class TestExtensionSignedCertificateTimestampServer(unittest.TestCase):
 
         self.assertEqual(scts[1].as_markdown(), '\n'.join([
             '* Version: V1',
-            '* Log:',
-            '    * ID: lgbALGkAM6odFF9ZxuJkjQVJ8N+WqrjbkVpw2OzzkKU=',
-            '    * Description: Akamai CT Log',
-            '    * Log State:',
-            '        * State Type: REJECTED',
-            '        * Timestamp: 2015-11-27 15:37:00+00:00',
+            '* Log: Akamai CT Log (lgbALGkAM6odFF9ZxuJkjQVJ8N+WqrjbkVpw2OzzkKU=)',
             '* Timestamp: 1970-01-01 00:00:00.001000+00:00',
             '* Extensions: -',
             '* Signature Algorithm: none with no encryption',

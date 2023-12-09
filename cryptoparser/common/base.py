@@ -61,7 +61,6 @@ class SerializableTextEncoder(object):
 
 class Serializable(object):  # pylint: disable=too-few-public-methods
     _MARKDOWN_RESULT_STRING_CLASSES = (
-        CryptoDataParamsBase,
         ipaddress.IPv4Network,
         ipaddress.IPv6Network,
         urllib3.util.url.Url,
@@ -143,7 +142,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
             ])
         elif hasattr(obj, '__dict__'):
             result = Serializable._json_traverse(obj.__dict__, result_func)
-        elif isinstance(obj, (list, tuple)):
+        elif isinstance(obj, (list, tuple, frozenset, set)):
             result = [Serializable._json_traverse(item, result_func) for item in obj]
         else:
             result = result_func(obj)
@@ -227,7 +226,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         return not isinstance(obj, enum.Enum) and isinstance(obj, six.string_types + six.integer_types + (float, ))
 
     @classmethod
-    def _markdown_result(cls, obj, level=0):  # pylint: disable=too-many-branches
+    def _markdown_result(cls, obj, level=0):  # pylint: disable=too-many-branches,too-many-return-statements
         if obj is None:
             result = cls.post_text_encoder('n/a', level)
         elif isinstance(obj, bool):
@@ -245,17 +244,19 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
                 return cls.post_text_encoder(obj.value, level)
 
             return cls.post_text_encoder(obj.name, level)
-        elif attr.has(type(obj)):
-            result = cls._markdown_result_complex(obj, level)
         elif isinstance(obj, cls._MARKDOWN_RESULT_STRING_CLASSES):
             return False, str(obj)
         elif isinstance(obj, datetime.timedelta):
             return False, str(obj.seconds)
+        elif isinstance(obj, CryptoDataParamsBase) and hasattr(obj, '__str__'):
+            return False, str(obj)
+        elif attr.has(type(obj)):
+            result = cls._markdown_result_complex(obj, level)
         elif hasattr(obj, '_asdict'):
             result = cls._markdown_result(obj._asdict(), level)
         elif hasattr(obj, '__dict__') or isinstance(obj, dict):
             result = cls._markdown_result_complex(obj, level)
-        elif isinstance(obj, (list, tuple, set, ArrayBase)):
+        elif isinstance(obj, (list, tuple, frozenset, set, ArrayBase)):
             result = cls._markdown_result_list(obj, level)
         elif isinstance(obj, (bytes, bytearray)):
             result = cls.post_text_encoder(bytes_to_hex_string(obj, separator=':', lowercase=False), level)
