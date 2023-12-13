@@ -3,6 +3,21 @@ Changelog
 =========
 
 -------------------
+0.12.1 - 2023-12-13
+-------------------
+
+Notable fixes
+=============
+
+-  SSH
+
+   -  add missing host key algorithms to key parser classes (#79)
+
+-  Generic
+
+   -  fix markdown generation in the case of TLS client versions (#80)
+
+-------------------
 0.12.0 - 2023-11-23
 -------------------
 
