@@ -3,6 +3,10 @@
         2AAgZNptPaMHxDeXJegA8i8aW1jURVBpQseacnHQr8Q
 
 .. meta::
+    :description:
+        An analysis oriented security protocol parser and generator
+
+.. meta::
     :author:
         Szilárd Pfeiffer
 
