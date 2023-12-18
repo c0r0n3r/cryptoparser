@@ -7,6 +7,12 @@
         An analysis oriented security protocol parser and generator
 
 .. meta::
+    :keywords:
+        cryptoparser,cryptolyzer,cryptography,cryptographic algorithms,tls handdhake,ssl handdhake,ssh handdhake,
+        starttls,opportunistic tls,ssh host keys,ssh host certificates,http caching headers,http security header,
+        dnssec records,email authentication
+
+.. meta::
     :author:
         Szilárd Pfeiffer
 
