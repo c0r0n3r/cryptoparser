@@ -20,7 +20,7 @@ from cryptodatahub.common.key import (
 
 from cryptodatahub.dnsrec.algorithm import DnsRrType, DnsSecAlgorithm, DnsSecDigestType
 
-from cryptoparser.common.base import OneByteEnumParsable, Serializable, TwoByteEnumParsable
+from cryptoparser.common.base import NumericRangeParsableBase, OneByteEnumParsable, Serializable, TwoByteEnumParsable
 from cryptoparser.common.exception import NotEnoughData
 from cryptoparser.common.parse import ByteOrder, ComposerBinary, ParsableBase, ParserBinary
 
@@ -318,6 +318,20 @@ class DnsRrTypeFactory(TwoByteEnumParsable):
         raise NotImplementedError()
 
 
+class DnsRrTypePrivate(NumericRangeParsableBase):
+    @classmethod
+    def _get_value_min(cls):
+        return 0xff00
+
+    @classmethod
+    def _get_value_max(cls):
+        return 0xfffe
+
+    @classmethod
+    def _get_value_length(cls):
+        return 2
+
+
 @attr.s
 class DnsNameUncompressed(ParsableBase, Serializable):
     labels = attr.ib(
@@ -373,7 +387,7 @@ class DnsNameUncompressed(ParsableBase, Serializable):
 class DnsRecordRrsig(ParsableBase):  # pylint: disable=too-many-instance-attributes
     HEADER_SIZE = 24
 
-    type_covered = attr.ib(validator=attr.validators.instance_of(DnsRrType))
+    type_covered = attr.ib(validator=attr.validators.instance_of((DnsRrType, DnsRrTypePrivate)))
     algorithm = attr.ib(validator=attr.validators.instance_of(DnsSecAlgorithm))
     labels = attr.ib(validator=attr.validators.instance_of(six.integer_types))
     original_ttl = attr.ib(
@@ -396,7 +410,10 @@ class DnsRecordRrsig(ParsableBase):  # pylint: disable=too-many-instance-attribu
 
         parser = ParserBinary(parsable)
 
-        parser.parse_parsable('type_covered', DnsRrTypeFactory)
+        try:
+            parser.parse_parsable('type_covered', DnsRrTypeFactory)
+        except InvalidValue:
+            parser.parse_parsable('type_covered', DnsRrTypePrivate)
         parser.parse_parsable('algorithm', DnsSecAlgorithmFactory)
         parser.parse_numeric('labels', 1)
         parser.parse_numeric('original_ttl', 4)
@@ -411,7 +428,10 @@ class DnsRecordRrsig(ParsableBase):  # pylint: disable=too-many-instance-attribu
     def compose(self):
         composer = ComposerBinary()
 
-        composer.compose_numeric_enum_coded(self.type_covered)
+        if isinstance(self.type_covered, DnsRrType):
+            composer.compose_numeric_enum_coded(self.type_covered)
+        else:
+            composer.compose_parsable(self.type_covered)
         composer.compose_numeric_enum_coded(self.algorithm)
         composer.compose_numeric(self.labels, 1)
         composer.compose_numeric(self.original_ttl, 4)
