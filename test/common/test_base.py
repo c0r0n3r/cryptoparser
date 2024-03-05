@@ -35,6 +35,7 @@ from .classes import (
     FourByteEnumParsableTest,
     ListParsableTest,
     NByteEnumTest,
+    NumericRangeParsableTest,
     OneByteEnumComposerTest,
     OneByteEnumParsableTest,
     OneByteOddParsable,
@@ -868,3 +869,24 @@ class TestVariantParsableExact(unittest.TestCase):
         parsable = bytearray(b'aaa')
         self.assertEqual(VariantParsableExactTest.parse_mutable(parsable), StringEnumAAA.AAA)
         self.assertEqual(parsable, b'')
+
+
+class TestNumericRangeParsable(unittest.TestCase):
+    def test_error(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            NumericRangeParsableTest.parse_exact_size(b'\x00')
+        self.assertEqual(context_manager.exception.value, 0x00)
+
+        with self.assertRaises(InvalidValue) as context_manager:
+            NumericRangeParsableTest.parse_exact_size(b'\xff')
+        self.assertEqual(context_manager.exception.value, 0xff)
+
+    def test_parse(self):
+        self.assertEqual(NumericRangeParsableTest.parse_exact_size(b'\x01'), NumericRangeParsableTest(1))
+        self.assertEqual(NumericRangeParsableTest(1).compose(), b'\x01')
+
+    def test_str(self):
+        self.assertEqual(str(NumericRangeParsableTest(1)), '1')
+
+    def test_as_markdown(self):
+        self.assertEqual(NumericRangeParsableTest(1).as_markdown(), '1')

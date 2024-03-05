@@ -1044,3 +1044,52 @@ class OpaqueEnumComposer(enum.Enum):
     @classmethod
     def get_encoding(cls):
         return 'utf-8'
+
+
+@attr.s
+class NumericRangeParsableBase(ParsableBase, Serializable):
+    value = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+
+    @value.validator
+    def _validator_variant(self, _, value):
+        if value < self._get_value_min():
+            raise InvalidValue(value, type(self))
+
+        if value > self._get_value_max():
+            raise InvalidValue(value, type(self))
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_value_min(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_value_max(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_value_length(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_numeric('value', cls._get_value_length())
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric(self.value, self._get_value_length())
+
+        return composer.composed
+
+    def __str__(self):
+        return str(self.value)
+
+    def _as_markdown(self, level):
+        return self._markdown_result(str(self), level)

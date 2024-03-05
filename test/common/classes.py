@@ -31,6 +31,7 @@ from cryptoparser.common.base import (
     FourByteEnumParsable,
     ListParamParsable,
     ListParsable,
+    NumericRangeParsableBase,
     OneByteEnumComposer,
     OneByteEnumParsable,
     OpaqueEnumComposer,
@@ -789,3 +790,17 @@ class TestKeyBase(pyfakefs.fake_filesystem_unittest.TestCase, unittest.TestCase)
 
     def _get_public_key_x509(self, public_key_file_name):
         return PublicKeyX509.from_pem(self._get_pem_str(public_key_file_name))
+
+
+class NumericRangeParsableTest(NumericRangeParsableBase):
+    @classmethod
+    def _get_value_min(cls):
+        return 0x01
+
+    @classmethod
+    def _get_value_max(cls):
+        return 0xfe
+
+    @classmethod
+    def _get_value_length(cls):
+        return 1
