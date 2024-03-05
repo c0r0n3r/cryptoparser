@@ -1,6 +1,6 @@
 asn1crypto
 attrs>=20.3.0,<22.0.1
-cryptodatahub==0.12.2
+cryptodatahub==0.12.3
 python-dateutil
 py2-ipaddress;python_version<"3.4"
 typing;python_version<"3.5"
