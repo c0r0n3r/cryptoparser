@@ -401,7 +401,10 @@ class DnsRecordRrsig(ParsableBase):  # pylint: disable=too-many-instance-attribu
         converter=DnsNameUncompressed.convert,
         validator=attr.validators.instance_of(DnsNameUncompressed)
     )
-    signature = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+    signature = attr.ib(
+        validator=attr.validators.instance_of((bytes, bytearray)),
+        metadata={'human_friendly': False}
+    )
 
     @classmethod
     def _parse(cls, parsable):
