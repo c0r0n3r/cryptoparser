@@ -28,6 +28,7 @@ from cryptoparser.dnsrec.record import (
     DnsRecordMx,
     DnsRecordRrsig,
     DnsRecordTxt,
+    DnsRrTypePrivate,
     DnsSecFlag,
     DnsSecProtocol,
 )
@@ -447,6 +448,30 @@ class TestDnsRecordRrsig(unittest.TestCase):
             signature=32 * b'\xff',
         )
 
+        self.record_private_type_bytes = bytes(
+            b'\xff\xfe' +          # type_covered: A
+            b'\x01' +              # algorithm: RSAMD5
+            b'\x03' +              # labels
+            b'\x00\x00\x0e\x10' +  # original_ttl: 3600
+            b'\x00\x00\x00\x01' +  # signature_expiration
+            b'\x00\x00\x00\x02' +  # signature_inception
+            b'\xab\xcd' +          # key_tag
+            b'\x06signer\x00' +    # signers_name
+            32 * b'\xff' +         # signature
+            b''
+        )
+        self.record_private_types = DnsRecordRrsig(
+            type_covered=DnsRrTypePrivate(0xfffe),
+            algorithm=DnsSecAlgorithm.RSAMD5,
+            labels=3,
+            original_ttl=3600,
+            signature_expiration=datetime.datetime(1970, 1, 1, 0, 0, 1, tzinfo=dateutil.tz.UTC),
+            signature_inception=datetime.datetime(1970, 1, 1, 0, 0, 2, tzinfo=dateutil.tz.UTC),
+            key_tag=0xabcd,
+            signers_name='signer',
+            signature=32 * b'\xff',
+        )
+
     def test_error_not_enough_data(self):
         with self.assertRaises(NotEnoughData) as context_manager:
             DnsRecordRrsig.parse_exact_size(b'\x00')
@@ -458,9 +483,11 @@ class TestDnsRecordRrsig(unittest.TestCase):
 
     def test_parse(self):
         self.assertEqual(DnsRecordRrsig.parse_exact_size(self.record_bytes), self.record)
+        self.assertEqual(DnsRecordRrsig.parse_exact_size(self.record_private_type_bytes), self.record_private_types)
 
     def test_compose(self):
         self.assertEqual(self.record.compose(), self.record_bytes)
+        self.assertEqual(self.record_private_types.compose(), self.record_private_type_bytes)
 
 
 class TestDnsRecordMx(unittest.TestCase):
