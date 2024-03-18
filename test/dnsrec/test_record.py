@@ -520,12 +520,21 @@ class TestDnsRecordMx(unittest.TestCase):
 
 class TestDnsRecordTxt(unittest.TestCase):
     def setUp(self):
-        self.record_bytes = bytes(
+        self.record_bytes_single = bytes(
             b'\x05' +              # length: 5
             b'value' +
             b''
         )
-        self.record = DnsRecordTxt(value='value')
+        self.record_single = DnsRecordTxt(value='value')
+
+        self.record_bytes_multiple = bytes(
+            b'\x06' +              # length: 6
+            b'value1' +
+            b'\x06' +              # length: 6
+            b'value2' +
+            b''
+        )
+        self.record_multiple = DnsRecordTxt(value='value1value2')
 
     def test_error_not_enough_data(self):
         with self.assertRaises(NotEnoughData) as context_manager:
@@ -537,7 +546,8 @@ class TestDnsRecordTxt(unittest.TestCase):
         )
 
     def test_parse(self):
-        self.assertEqual(DnsRecordTxt.parse_exact_size(self.record_bytes), self.record)
+        self.assertEqual(DnsRecordTxt.parse_exact_size(self.record_bytes_single), self.record_single)
+        self.assertEqual(DnsRecordTxt.parse_exact_size(self.record_bytes_multiple), self.record_multiple)
 
     def test_compose(self):
-        self.assertEqual(self.record.compose(), self.record_bytes)
+        self.assertEqual(self.record_single.compose(), self.record_bytes_single)
