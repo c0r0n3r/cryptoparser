@@ -490,10 +490,13 @@ class DnsRecordTxt(ParsableBase):
             raise NotEnoughData(cls.HEADER_SIZE - len(parsable))
 
         parser = ParserBinary(parsable)
+        value = ''
 
-        parser.parse_string('value', 1, encoding='ascii')
+        while parser.unparsed_length:
+            parser.parse_string('value', 1, encoding='ascii')
+            value += parser['value']
 
-        return cls(**parser), parser.parsed_length
+        return cls(value), parser.parsed_length
 
     def compose(self):
         composer = ComposerBinary()

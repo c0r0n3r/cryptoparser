@@ -2,6 +2,17 @@
 Changelog
 =========
 
+------
+0.12.4
+------
+
+Notable fixes
+=============
+
+-  DNS
+
+   -  handle TXT records that contain multiple string (#84)
+
 -------------------
 0.12.3 - 2024-03-05
 -------------------
