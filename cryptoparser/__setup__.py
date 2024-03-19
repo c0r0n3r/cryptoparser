@@ -2,7 +2,7 @@
 
 __title__ = 'CryptoParser'
 __technical_name__ = __title__.lower()
-__version__ = '0.12.3'
+__version__ = '0.12.4'
 __description__ = 'An analysis oriented security protocol parser and generator'
 __author__ = 'Szilárd Pfeiffer'
 __author_email__ = 'coroner@pfeifferszilard.hu'
