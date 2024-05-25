@@ -9,7 +9,7 @@ import unittest
 
 from collections import OrderedDict
 
-from test.common.classes import TestKeyBase
+from test.common.classes import TestClasses
 
 import dateutil.tz
 
@@ -1268,7 +1268,7 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
         ]))
 
 
-class TestX509CertificateChain(TestKeyBase):
+class TestX509CertificateChain(TestClasses.TestKeyBase):
     def setUp(self):
         super(TestX509CertificateChain, self).setUp()
 
@@ -1314,7 +1314,7 @@ class TestX509CertificateChain(TestKeyBase):
         self.assertEqual(self.x509v3_ssh_rsa_certificate.compose(), self.x509v3_ssh_rsa_certificate_bytes)
 
 
-class TestX509Certificate(TestKeyBase):
+class TestX509Certificate(TestClasses.TestKeyBase):
     def setUp(self):
         super(TestX509Certificate, self).setUp()
 
