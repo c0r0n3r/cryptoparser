@@ -1280,6 +1280,12 @@ class TlsExtensionEncryptedClientHelloOuter(TlsExtensionEncryptedClientHelloBase
         return header_bytes + payload_composer.composed_bytes
 
 
+class TlsExtensionPostHandshakeAuthentication(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.POST_HANDSHAKE_AUTH
+
+
 class TlsExtensionVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1322,6 +1328,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
             (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClient, ]),
             (TlsExtensionType.KEY_SHARE_RESERVED, [TlsExtensionKeyShareReservedClient, ]),
+            (TlsExtensionType.POST_HANDSHAKE_AUTH, [TlsExtensionPostHandshakeAuthentication, ]),
             (TlsExtensionType.PSK_KEY_EXCHANGE_MODES, [TlsExtensionPskKeyExchangeModes, ]),
             (TlsExtensionType.RECORD_SIZE_LIMIT, [TlsExtensionRecordSizeLimit, ]),
             (TlsExtensionType.SHORT_RECORD_HEADER, [TlsExtensionShortRecordHeader, ]),

@@ -47,6 +47,7 @@ from cryptoparser.tls.extension import (
     TlsExtensionNextProtocolNegotiationClient,
     TlsExtensionNextProtocolNegotiationServer,
     TlsExtensionPadding,
+    TlsExtensionPostHandshakeAuthentication,
     TlsExtensionPskKeyExchangeModes,
     TlsExtensionRecordSizeLimit,
     TlsExtensionRenegotiationInfo,
@@ -936,4 +937,21 @@ class ExtensionEncryptedClientHelloOuter(unittest.TestCase):
         self.assertEqual(
             extension_encrypted_client_hello.compose(),
             extension_encrypted_client_hello_bytes
+        )
+
+
+class TestExtensionPostHandshakeAuthentication(unittest.TestCase):
+    def test_parse(self):
+        extension_post_handshake_authentication_dict = collections.OrderedDict([
+            ('extension_type', b'\x00\x31'),
+            ('extension_length', b'\x00\x00'),
+        ])
+        extension_post_handshake_authentication_bytes = b''.join(extension_post_handshake_authentication_dict.values())
+
+        extension_post_handshake_authentication = TlsExtensionPostHandshakeAuthentication.parse_exact_size(
+            extension_post_handshake_authentication_bytes
+        )
+        self.assertEqual(
+            extension_post_handshake_authentication.compose(),
+            extension_post_handshake_authentication_bytes
         )
