@@ -36,6 +36,8 @@ from cryptoparser.tls.extension import (
     TlsExtensionCompressCertificate,
     TlsExtensionECPointFormats,
     TlsExtensionEllipticCurves,
+    TlsExtensionEncryptedClientHelloInner,
+    TlsExtensionEncryptedClientHelloOuter,
     TlsExtensionEncryptThenMAC,
     TlsExtensionExtendedMasterSecret,
     TlsExtensionKeyShareClient,
@@ -884,3 +886,54 @@ class TestExtensionPadding(unittest.TestCase):
 
         extension_padding_with_data = TlsExtensionPadding.parse_exact_size(extension_padding_with_data_bytes)
         self.assertEqual(extension_padding_with_data.compose(), extension_padding_with_data_bytes)
+
+
+class ExtensionEncryptedClientHelloBase(unittest.TestCase):
+    def test_parse(self):
+        extension_encrypted_client_hello_dict = collections.OrderedDict([
+            ('extension_type', b'\xfe\x0d'),
+            ('extension_length', b'\x00\x01'),
+            ('hello_type', b'\x00'),
+        ])
+        extension_encrypted_client_hello_bytes = b''.join(extension_encrypted_client_hello_dict.values())
+
+        with self.assertRaises(InvalidType):
+            # pylint: disable=expression-not-assigned
+            TlsExtensionEncryptedClientHelloInner.parse_exact_size(extension_encrypted_client_hello_bytes)
+
+
+class ExtensionEncryptedClientHelloInner(unittest.TestCase):
+    def test_parse(self):
+        extension_encrypted_client_hello_dict = collections.OrderedDict([
+            ('extension_type', b'\xfe\x0d'),
+            ('extension_length', b'\x00\x01'),
+            ('hello_type', b'\x01'),
+        ])
+        extension_encrypted_client_hello_bytes = b''.join(extension_encrypted_client_hello_dict.values())
+
+        extension_encrypted_client_hello = TlsExtensionEncryptedClientHelloInner.parse_exact_size(
+            extension_encrypted_client_hello_bytes
+        )
+        self.assertEqual(
+            extension_encrypted_client_hello.compose(),
+            extension_encrypted_client_hello_bytes
+        )
+
+
+class ExtensionEncryptedClientHelloOuter(unittest.TestCase):
+    def test_parse(self):
+        extension_encrypted_client_hello_dict = collections.OrderedDict([
+            ('extension_type', b'\xfe\x0d'),
+            ('extension_length', b'\x00\x11'),
+            ('hello_type', b'\x00'),
+            ('hello_data', b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'),
+        ])
+        extension_encrypted_client_hello_bytes = b''.join(extension_encrypted_client_hello_dict.values())
+
+        extension_encrypted_client_hello = TlsExtensionEncryptedClientHelloOuter.parse_exact_size(
+            extension_encrypted_client_hello_bytes
+        )
+        self.assertEqual(
+            extension_encrypted_client_hello.compose(),
+            extension_encrypted_client_hello_bytes
+        )
