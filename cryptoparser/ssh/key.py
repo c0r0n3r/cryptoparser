@@ -366,7 +366,7 @@ class SshHostKeyEDDSA(SshHostKeyEDDSABase, SshHostKeyParserBase):
 @attr.s(frozen=True)
 class SshCertTypeParams(Serializable):
     code = attr.ib(validator=attr.validators.instance_of(int))
-    name = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    name = attr.ib(validator=attr.validators.instance_of(str))
 
     def _as_markdown(self, level):
         return self._markdown_result(self.name, level)
@@ -412,7 +412,7 @@ class SshCertSignature(ParsableBase):
 
 @attr.s
 class SshString(ParsableBase):
-    value = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    value = attr.ib(validator=attr.validators.instance_of(str))
 
     @classmethod
     def _parse(cls, parsable):
@@ -442,7 +442,7 @@ class SshCertValidPrincipals(VectorParsable):
 
 @attr.s(frozen=True)
 class SshCertExtensionParam():
-    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    code = attr.ib(validator=attr.validators.instance_of(str))
     critical = attr.ib(validator=attr.validators.instance_of(bool))
 
 
@@ -505,7 +505,7 @@ class SshCertExtensionBase(ParsableBase):
 
 @attr.s
 class SshCertExtensionUnparsed(SshCertExtensionBase):
-    extension_name = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    extension_name = attr.ib(validator=attr.validators.instance_of(str))
     extension_data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
 
     @classmethod
@@ -629,7 +629,7 @@ class SshCertExtensionPermitUserRC(SshCertExtensionNoData):
 
 @attr.s
 class SshCertExtensionForceCommand(SshCertExtensionParsed):
-    command = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    command = attr.ib(validator=attr.validators.instance_of(str))
 
     @classmethod
     def get_extension_name(cls):
@@ -751,7 +751,7 @@ class SshCertificateBase():
 class SshHostCertificateV00Base(ParsableBase, SshCertificateBase):  # pylint: disable=too-many-instance-attributes
     certificate_type = attr.ib(validator=attr.validators.instance_of(SshCertType))
     key_id = attr.ib(
-        validator=attr.validators.instance_of(six.string_types),
+        validator=attr.validators.instance_of(str),
         metadata={'human_readable_name': 'Key ID'},
     )
     valid_principals = attr.ib(
@@ -917,7 +917,7 @@ class SshHostCertificateV01Base(ParsableBase, SshCertificateBase):  # pylint: di
     nonce = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
     serial = attr.ib(validator=attr.validators.instance_of(int))
     certificate_type = attr.ib(validator=attr.validators.instance_of(SshCertType))
-    key_id = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    key_id = attr.ib(validator=attr.validators.instance_of(str))
     valid_principals = attr.ib(
         converter=SshCertValidPrincipals,
         validator=attr.validators.instance_of(SshCertValidPrincipals)

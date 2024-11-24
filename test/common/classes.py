@@ -245,7 +245,7 @@ class OpaqueEnumFactory(OpaqueEnumParsable):
 
 @attr.s
 class OpaqueEnumParams():
-    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    code = attr.ib(validator=attr.validators.instance_of(str))
 
 
 class OpaqueEnum(OpaqueEnumComposer):

@@ -335,7 +335,7 @@ class DnsRrTypePrivate(NumericRangeParsableBase):
 @attr.s
 class DnsNameUncompressed(ParsableBase, Serializable):
     labels = attr.ib(
-        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(six.string_types))
+        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(str))
     )
 
     def __str__(self):
@@ -348,7 +348,7 @@ class DnsNameUncompressed(ParsableBase, Serializable):
     def convert(cls, value):
         if isinstance(value, cls):
             return value
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             if not value:
                 return cls([])
 
@@ -482,7 +482,7 @@ class DnsRecordMx(ParsableBase):
 class DnsRecordTxt(ParsableBase):
     HEADER_SIZE = 1
 
-    value = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    value = attr.ib(validator=attr.validators.instance_of(str))
 
     @classmethod
     def _parse(cls, parsable):

@@ -92,8 +92,8 @@ class NameValueVariantBase(FieldParsableBase):
 
 @attr.s
 class NameValuePair(FieldParsableBase):
-    name = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)), default=None)
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)), default=None)
     quoted = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(bool)), default=False)
 
     @classmethod
@@ -382,7 +382,7 @@ class FieldValueComponentParsableOptional(FieldValueComponentParsableBase):
 
 @attr.s
 class FieldValueComponentQuotedString(FieldValueComponentKeyValueBase):
-    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)))
+    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     @classmethod
     @abc.abstractmethod
@@ -541,7 +541,7 @@ class FieldValueComponentPercent(FieldValueComponentNumber):
 
 @attr.s
 class FieldValueComponentStringEnumParams():
-    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    code = attr.ib(validator=attr.validators.instance_of(str))
 
 
 @attr.s
@@ -592,7 +592,7 @@ class FieldValueComponentStringEnumOption(FieldValueComponentStringEnum):
 
 @attr.s
 class FieldValueComponentString(FieldValueComponentKeyValueBase):
-    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)))
+    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     @classmethod
     @abc.abstractmethod
@@ -809,7 +809,7 @@ class MimeTypeRegistry(enum.Enum):
 @attr.s
 class FieldValueMimeType(FieldValueComponentBase):
     type = attr.ib(
-        validator=attr.validators.instance_of(six.string_types),
+        validator=attr.validators.instance_of(str),
         default=None,
     )
     registry = attr.ib(
@@ -917,10 +917,10 @@ class FieldValueSingle(FieldValueSingleSimpleBase):
 
 @attr.s
 class FieldValueStringEnumParams(Serializable):
-    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    code = attr.ib(validator=attr.validators.instance_of(str))
     human_readable_name = attr.ib(
         default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(six.string_types))
+        validator=attr.validators.optional(attr.validators.instance_of(str))
     )
 
     def _as_markdown(self, level):
@@ -933,7 +933,7 @@ class FieldValueStringEnumParams(Serializable):
 class FieldValueString(FieldValueSingle):
     @classmethod
     def _get_value_type(cls):
-        return six.string_types
+        return str
 
     @classmethod
     def _value_from_str(cls, value):
@@ -983,7 +983,7 @@ class FieldValueStringBySeparatorBase(FieldValueSingleComplexBase):
 
     @classmethod
     def _get_value_type(cls):
-        return six.string_types
+        return str
 
     @classmethod
     def _parse(cls, parsable):

@@ -84,7 +84,7 @@ class SshMessageBase(ParsableBase):
 class SshProtocolMessage(ParsableBase):
     protocol_version = attr.ib(validator=attr.validators.instance_of(SshProtocolVersion))
     software_version = attr.ib(validator=attr.validators.instance_of(SshSoftwareVersionBase))
-    comment = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)), default=None)
+    comment = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)), default=None)
 
     @comment.validator
     def comment_validator(self, _, value):  # pylint: disable=no-self-use
@@ -311,7 +311,7 @@ class SshKeyExchangeInit(SshMessageBase):  # pylint: disable=too-many-instance-a
     def _hassh(algorithm_vectors):
         hassh_text = ';'.join([
             ','.join([
-                algorithm if isinstance(algorithm, six.string_types) else algorithm.value.code
+                algorithm if isinstance(algorithm, str) else algorithm.value.code
                 for algorithm in algorithms
             ])
             for algorithms in algorithm_vectors
@@ -364,11 +364,11 @@ class SshDisconnectMessage(SshMessageBase):
     reason = attr.ib(validator=attr.validators.instance_of(SshReasonCode))
     description = attr.ib(
         converter=six.text_type,
-        validator=attr.validators.instance_of(six.string_types)
+        validator=attr.validators.instance_of(str)
     )
     language = attr.ib(
         default='US',
-        validator=attr.validators.instance_of(six.string_types)
+        validator=attr.validators.instance_of(str)
     )
 
     @classmethod

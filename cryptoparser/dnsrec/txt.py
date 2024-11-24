@@ -426,7 +426,7 @@ class SpfModifier(StringEnumParsable, enum.Enum):
 class SpfDomainSpec(FieldValueSingleBase):
     @classmethod
     def _get_value_type(cls):
-        return six.string_types
+        return str
 
     @classmethod
     def _parse(cls, parsable):

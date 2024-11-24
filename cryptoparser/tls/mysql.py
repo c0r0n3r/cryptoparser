@@ -66,8 +66,8 @@ class MySQLStatusFlag(enum.IntEnum):
 @attr.s(frozen=True)
 class MySQLCharacterSetParams(Serializable):
     code = attr.ib(validator=attr.validators.instance_of(int))
-    name = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    collate_name = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    collate_name = attr.ib(validator=attr.validators.instance_of(str))
 
 
 class MySQLCharacterSetFactory(OneByteEnumParsable):
@@ -335,7 +335,7 @@ class MySQLRecord(ParsableBase):
 @attr.s
 class MySQLHandshakeV10(MySQLPacketBase):  # pylint: disable=too-many-instance-attributes
     protocol_version = attr.ib(validator=attr.validators.in_(MySQLVersion))
-    server_version = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    server_version = attr.ib(validator=attr.validators.instance_of(str))
     connection_id = attr.ib(validator=attr.validators.instance_of(int))
     auth_plugin_data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
     capabilities = attr.ib(validator=attr.validators.deep_iterable(
@@ -353,7 +353,7 @@ class MySQLHandshakeV10(MySQLPacketBase):  # pylint: disable=too-many-instance-a
     )
     auth_plugin_name = attr.ib(
         default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(six.string_types))
+        validator=attr.validators.optional(attr.validators.instance_of(str))
     )
 
     MINIMUM_SIZE = 33

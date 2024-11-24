@@ -317,7 +317,7 @@ class ParserText(ParserBase):
             elif issubclass(item_class, ParsableBaseNoABC):
                 item, parsed_length = item_class.parse_immutable(self._parsable[item_offset:item_end])
                 item_end = item_offset + parsed_length
-            elif issubclass(item_class, six.string_types):
+            elif issubclass(item_class, str):
                 item = six.ensure_text(self._parsable[item_offset:item_end], self._encoding)
             else:
                 item = item_class(six.ensure_text(self._parsable[item_offset:item_end], self._encoding))

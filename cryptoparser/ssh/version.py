@@ -83,7 +83,7 @@ class SshSoftwareVersionBase(ParsableBase):
 
 @attr.s
 class SshSoftwareVersionUnparsed(SshSoftwareVersionBase, Serializable):
-    raw = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    raw = attr.ib(validator=attr.validators.instance_of(str))
 
     @raw.validator
     def raw_validator(self, _, value):  # pylint: disable=no-self-use
@@ -115,7 +115,7 @@ class SshSoftwareVersionUnparsed(SshSoftwareVersionBase, Serializable):
 
 @attr.s
 class SshSoftwareVersionParsedBase(SshSoftwareVersionBase):
-    version = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(six.string_types)))
+    version = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     @classmethod
     @abc.abstractmethod

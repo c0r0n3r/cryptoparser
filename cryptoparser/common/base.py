@@ -51,7 +51,7 @@ json.JSONEncoder.default = _default
 
 class SerializableTextEncoder():
     def __call__(self, obj, level):
-        if isinstance(obj, six.string_types):
+        if isinstance(obj, str):
             string_result = obj
         else:
             string_result = str(obj)
@@ -117,7 +117,7 @@ class Serializable():  # pylint: disable=too-few-public-methods
                 result = obj.name
             else:
                 result = {obj.name: obj.value}
-        elif isinstance(obj, six.string_types + (int, float, bool, )) or obj is None:
+        elif isinstance(obj, (str, int, float, bool, )) or obj is None:
             result = obj
         elif isinstance(obj, (bytes, bytearray)):
             result = bytes_to_hex_string(obj, separator=':', lowercase=False)
@@ -158,7 +158,7 @@ class Serializable():  # pylint: disable=too-few-public-methods
         name_dict = {}
         fields_dict = attr.fields_dict(type(obj)) if attr.has(type(obj)) else {}
         for name in dict_value:
-            if isinstance(name, six.string_types):
+            if isinstance(name, str):
                 if name in fields_dict and 'human_readable_name' in fields_dict[name].metadata:
                     human_readable_name = fields_dict[name].metadata['human_readable_name']
                 else:
@@ -223,7 +223,7 @@ class Serializable():  # pylint: disable=too-few-public-methods
 
     @staticmethod
     def _markdown_is_directly_printable(obj):
-        return not isinstance(obj, enum.Enum) and isinstance(obj, six.string_types + (int, float, ))
+        return not isinstance(obj, enum.Enum) and isinstance(obj, (str, int, float, ))
 
     @classmethod
     def _markdown_result(cls, obj, level=0):  # pylint: disable=too-many-branches,too-many-return-statements
@@ -406,8 +406,8 @@ class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
 
 @attr.s
 class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-methods
-    separator = attr.ib(validator=attr.validators.instance_of(six.string_types), default=',')
-    encoding = attr.ib(validator=attr.validators.instance_of(six.string_types), default='ascii')
+    separator = attr.ib(validator=attr.validators.instance_of(str), default=',')
+    encoding = attr.ib(validator=attr.validators.instance_of(str), default='ascii')
     item_class = attr.ib(validator=attr.validators.instance_of((type, types.FunctionType)), default=str)
     fallback_class = attr.ib(
         default=None,
@@ -419,7 +419,7 @@ class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-meth
             return len(item.compose())
         if isinstance(item, CryptoDataEnumCodedBase):
             return item.value.get_code_size()
-        if isinstance(item, six.string_types):
+        if isinstance(item, str):
             return len(item)
 
         raise NotImplementedError(type(item))
