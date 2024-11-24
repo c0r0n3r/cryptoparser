@@ -260,12 +260,12 @@ class SshKeyExchangeInit(SshMessageBase):  # pylint: disable=too-many-instance-a
         converter=SshLanguageVector,
         validator=attr.validators.instance_of(SshLanguageVector), default=()
     )
-    first_kex_packet_follows = attr.ib(validator=attr.validators.instance_of(six.integer_types), default=0)
+    first_kex_packet_follows = attr.ib(validator=attr.validators.instance_of(int), default=0)
     cookie = attr.ib(
         validator=attr.validators.instance_of((bytearray, bytes)),
         default=bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32))
     )
-    reserved = attr.ib(validator=attr.validators.instance_of(six.integer_types), default=0x00000000)
+    reserved = attr.ib(validator=attr.validators.instance_of(int), default=0x00000000)
 
     @classmethod
     def _get_cipher_attributes(cls):
@@ -397,7 +397,7 @@ class SshDisconnectMessage(SshMessageBase):
 
 @attr.s
 class SshUnimplementedMessage(SshMessageBase):
-    sequence_number = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    sequence_number = attr.ib(validator=attr.validators.instance_of(int))
 
     @classmethod
     def get_message_code(cls):
@@ -519,9 +519,9 @@ class SshDHGroupExchangeReply(SshDHKeyExchangeReplyBase):
 
 @attr.s
 class SshDHGroupExchangeRequest(SshMessageBase):
-    gex_min = attr.ib(validator=attr.validators.instance_of(six.integer_types))
-    gex_number = attr.ib(validator=attr.validators.instance_of(six.integer_types))
-    gex_max = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    gex_min = attr.ib(validator=attr.validators.instance_of(int))
+    gex_number = attr.ib(validator=attr.validators.instance_of(int))
+    gex_max = attr.ib(validator=attr.validators.instance_of(int))
 
     @classmethod
     def get_message_code(cls):

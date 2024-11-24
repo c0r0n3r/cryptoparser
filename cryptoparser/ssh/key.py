@@ -915,7 +915,7 @@ class SshCertCriticalOptionVector(VectorParsableDerived):
 @attr.s
 class SshHostCertificateV01Base(ParsableBase, SshCertificateBase):  # pylint: disable=too-many-instance-attributes
     nonce = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
-    serial = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    serial = attr.ib(validator=attr.validators.instance_of(int))
     certificate_type = attr.ib(validator=attr.validators.instance_of(SshCertType))
     key_id = attr.ib(validator=attr.validators.instance_of(six.string_types))
     valid_principals = attr.ib(

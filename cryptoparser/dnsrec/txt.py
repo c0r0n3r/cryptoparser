@@ -671,11 +671,11 @@ class DnsRecordTxtValueSpfDirectiveDomainCidr(DnsRecordTxtValueSpfDirectiveBase)
     )
     ipv4_cidr_length = attr.ib(
         default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(six.integer_types)),
+        validator=attr.validators.optional(attr.validators.instance_of(int)),
     )
     ipv6_cidr_length = attr.ib(
         default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(six.integer_types)),
+        validator=attr.validators.optional(attr.validators.instance_of(int)),
     )
     qualifier = attr.ib(
         default=None,

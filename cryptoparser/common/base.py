@@ -117,7 +117,7 @@ class Serializable():  # pylint: disable=too-few-public-methods
                 result = obj.name
             else:
                 result = {obj.name: obj.value}
-        elif isinstance(obj, six.string_types + six.integer_types + (float, bool, )) or obj is None:
+        elif isinstance(obj, six.string_types + (int, float, bool, )) or obj is None:
             result = obj
         elif isinstance(obj, (bytes, bytearray)):
             result = bytes_to_hex_string(obj, separator=':', lowercase=False)
@@ -223,7 +223,7 @@ class Serializable():  # pylint: disable=too-few-public-methods
 
     @staticmethod
     def _markdown_is_directly_printable(obj):
-        return not isinstance(obj, enum.Enum) and isinstance(obj, six.string_types + six.integer_types + (float, ))
+        return not isinstance(obj, enum.Enum) and isinstance(obj, six.string_types + (int, float, ))
 
     @classmethod
     def _markdown_result(cls, obj, level=0):  # pylint: disable=too-many-branches,too-many-return-statements
@@ -1048,7 +1048,7 @@ class OpaqueEnumComposer(enum.Enum):
 
 @attr.s
 class NumericRangeParsableBase(ParsableBase, Serializable):
-    value = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    value = attr.ib(validator=attr.validators.instance_of(int))
 
     @value.validator
     def _validator_variant(self, _, value):

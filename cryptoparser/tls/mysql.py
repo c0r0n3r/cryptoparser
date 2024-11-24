@@ -303,7 +303,7 @@ class MySQLPacketBase(ParsableBase):
 class MySQLRecord(ParsableBase):
     HEADER_SIZE = 4
 
-    packet_number = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    packet_number = attr.ib(validator=attr.validators.instance_of(int))
     packet_bytes = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
 
     @classmethod
@@ -336,7 +336,7 @@ class MySQLRecord(ParsableBase):
 class MySQLHandshakeV10(MySQLPacketBase):  # pylint: disable=too-many-instance-attributes
     protocol_version = attr.ib(validator=attr.validators.in_(MySQLVersion))
     server_version = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    connection_id = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    connection_id = attr.ib(validator=attr.validators.instance_of(int))
     auth_plugin_data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
     capabilities = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(MySQLCapability),
@@ -443,7 +443,7 @@ class MySQLHandshakeSslRequest(MySQLPacketBase):
     capabilities = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(MySQLCapability),
     ))
-    max_packet_size = attr.ib(default=0xffff, validator=attr.validators.instance_of(six.integer_types))
+    max_packet_size = attr.ib(default=0xffff, validator=attr.validators.instance_of(int))
     character_set = attr.ib(default=None, validator=attr.validators.optional(attr.validators.in_(MySQLCharacterSet)))
 
     MINIMUM_SIZE = 5

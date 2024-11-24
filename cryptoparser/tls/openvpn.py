@@ -45,11 +45,11 @@ class OpenVpnPacketWrapperTcp(ParsableBase):
 class OpenVpnPacketBase(ParsableBase):
     HEADER_SIZE = 10
 
-    session_id = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    session_id = attr.ib(validator=attr.validators.instance_of(int))
     packet_id_array = attr.ib(
-        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(six.integer_types))
+        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(int))
     )
-    remote_session_id = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.integer_types)))
+    remote_session_id = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(int)))
 
     @classmethod
     @abc.abstractmethod
@@ -96,7 +96,7 @@ class OpenVpnPacketBase(ParsableBase):
 
 @attr.s
 class OpenVpnPacketControlV1(OpenVpnPacketBase):
-    packet_id = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    packet_id = attr.ib(validator=attr.validators.instance_of(int))
     payload = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
 
     @classmethod

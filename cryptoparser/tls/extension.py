@@ -1162,7 +1162,7 @@ class TlsExtensionCompressCertificate(TlsExtensionParsed):
 
 @attr.s
 class TlsExtensionPadding(TlsExtensionParsed):
-    length = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    length = attr.ib(validator=attr.validators.instance_of(int))
 
     @classmethod
     def get_extension_type(cls):
