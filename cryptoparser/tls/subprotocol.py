@@ -50,7 +50,7 @@ class TlsContentType(enum.IntEnum):
 
 
 @attr.s
-class SubprotocolParser(object):
+class SubprotocolParser():
     _subprotocol_type = attr.ib(validator=attr.validators.instance_of(enum.IntEnum))
 
     @classmethod

@@ -244,7 +244,7 @@ class OpaqueEnumFactory(OpaqueEnumParsable):
 
 
 @attr.s
-class OpaqueEnumParams(object):
+class OpaqueEnumParams():
     code = attr.ib(validator=attr.validators.instance_of(six.string_types))
 
 
@@ -260,7 +260,7 @@ class OpaqueEnum(OpaqueEnumComposer):
     )
 
 
-class TestObject(object):
+class TestObject():
     pass
 
 
@@ -355,19 +355,19 @@ class SerializableAttributeOrder(Serializable):
     attr_a = attr.ib(default='a')
 
 
-class Class(object):
+class Class():
     def __init__(self):
         self.attr_b = 'b'
         self.attr_a = 'a'
 
 
 @attr.s
-class ClassAttr(object):
+class ClassAttr():
     attr_b = attr.ib(default='b')
     attr_a = attr.ib(default='a')
 
 
-class ClassAsDict(object):
+class ClassAsDict():
     def __init__(self):
         self.attr_a = 'a'
         self.attr_b = 'b'
@@ -380,7 +380,7 @@ class ClassAsDict(object):
 
 
 @attr.s
-class ClassAttrAsDict(object):
+class ClassAttrAsDict():
     attr_a = attr.ib(default='a')
     attr_b = attr.ib(default='b')
 
@@ -437,7 +437,7 @@ class FlagEnum(enum.IntEnum):
 
 
 @attr.s
-class StringEnumParams(object):
+class StringEnumParams():
     code = attr.ib()
 
     def _check_code(self, code):
@@ -514,7 +514,7 @@ class ListParsableTest(ListParsable):
 
 
 @attr.s
-class NByteEnumParam(object):
+class NByteEnumParam():
     code = attr.ib(validator=attr.validators.instance_of(int))
 
 
@@ -699,7 +699,7 @@ class FieldValueComponentTimeDeltaTest(FieldValueComponentTimeDelta):
 
 
 @attr.s
-class FieldValueComplexTestBase(object):  # pylint: disable=too-many-instance-attributes
+class FieldValueComplexTestBase():  # pylint: disable=too-many-instance-attributes
     time_delta = attr.ib(
         converter=FieldValueComponentTimeDeltaTest.convert,
         validator=attr.validators.instance_of(FieldValueComponentTimeDeltaTest)

@@ -20,7 +20,7 @@ class TlsInvalidType(enum.IntEnum):
 
 
 @attr.s
-class TlsInvalidTypeParamsBase(object):
+class TlsInvalidTypeParamsBase():
     code = attr.ib(validator=attr.validators.instance_of(int))
     value_type = attr.ib(validator=attr.validators.in_(TlsInvalidType))
 

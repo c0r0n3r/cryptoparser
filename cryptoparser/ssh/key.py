@@ -47,7 +47,7 @@ from cryptoparser.common.x509 import PublicKeyX509
 
 
 @attr.s
-class SshPublicKeyBase(object):
+class SshPublicKeyBase():
     host_key_algorithm = attr.ib(
         converter=SshHostKeyAlgorithm,
         validator=attr.validators.instance_of(SshHostKeyAlgorithm)
@@ -441,7 +441,7 @@ class SshCertValidPrincipals(VectorParsable):
 
 
 @attr.s(frozen=True)
-class SshCertExtensionParam(object):
+class SshCertExtensionParam():
     code = attr.ib(validator=attr.validators.instance_of(six.string_types))
     critical = attr.ib(validator=attr.validators.instance_of(bool))
 
@@ -724,7 +724,7 @@ class SshCertConstraintVariant(VariantParsable):
         raise NotImplementedError()
 
 
-class SshCertificateBase(object):
+class SshCertificateBase():
     @classmethod
     @abc.abstractmethod
     def _parse_host_key_algorithm(cls, parsable):
@@ -835,7 +835,7 @@ class SshHostCertificateV00Base(ParsableBase, SshCertificateBase):  # pylint: di
         return composer.composed
 
 
-class SshHostCertificateBase(object):
+class SshHostCertificateBase():
     def _asdict(self):
         key_dict = OrderedDict([])
 

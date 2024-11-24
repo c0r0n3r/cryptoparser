@@ -21,7 +21,7 @@ from cryptoparser.common.exception import InvalidType, NotEnoughData, TooMuchDat
 import cryptoparser.common.utils
 
 
-class ParsableBaseNoABC(object):
+class ParsableBaseNoABC():
     @classmethod
     def parse_mutable(cls, parsable):
         parsed_object, parsed_length = cls._parse(parsable)
@@ -748,7 +748,7 @@ class ParserBinary(ParserBase):
 
 
 @attr.s
-class ComposerBase(object):
+class ComposerBase():
     _composed = attr.ib(init=False, default=bytes())
 
     @property

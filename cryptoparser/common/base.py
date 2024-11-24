@@ -49,7 +49,7 @@ _default.default = json.JSONEncoder().default
 json.JSONEncoder.default = _default
 
 
-class SerializableTextEncoder(object):
+class SerializableTextEncoder():
     def __call__(self, obj, level):
         if isinstance(obj, six.string_types):
             string_result = obj
@@ -59,7 +59,7 @@ class SerializableTextEncoder(object):
         return False, string_result
 
 
-class Serializable(object):  # pylint: disable=too-few-public-methods
+class Serializable():  # pylint: disable=too-few-public-methods
     _MARKDOWN_RESULT_STRING_CLASSES = (
         ipaddress.IPv4Network,
         ipaddress.IPv6Network,
@@ -371,7 +371,7 @@ class VariantParsableExact(VariantParsableBase):
 
 
 @attr.s
-class VectorParamBase(object):  # pylint: disable=too-few-public-methods
+class VectorParamBase():  # pylint: disable=too-few-public-methods
     min_byte_num = attr.ib(validator=attr.validators.instance_of(int))
     max_byte_num = attr.ib(validator=attr.validators.instance_of(int))
     item_num_size = attr.ib(init=False, validator=attr.validators.instance_of(int))
@@ -954,7 +954,7 @@ class ProtocolVersionMajorMinorBase(ProtocolVersionBase):
 
 
 @attr.s
-class ListParamParsable(object):  # pylint: disable=too-few-public-methods
+class ListParamParsable():  # pylint: disable=too-few-public-methods
     item_class = attr.ib(validator=attr.validators.instance_of(type))
     fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)))
     separator_class = attr.ib(attr.validators.instance_of(ParsableBase))

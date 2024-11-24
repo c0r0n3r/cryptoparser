@@ -540,7 +540,7 @@ class FieldValueComponentPercent(FieldValueComponentNumber):
 
 
 @attr.s
-class FieldValueComponentStringEnumParams(object):
+class FieldValueComponentStringEnumParams():
     code = attr.ib(validator=attr.validators.instance_of(six.string_types))
 
 
