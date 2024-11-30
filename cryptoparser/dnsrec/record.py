@@ -339,7 +339,7 @@ class DnsNameUncompressed(ParsableBase, Serializable):
     )
 
     def __str__(self):
-        return six.u('.').join(self.labels)
+        return '.'.join(self.labels)
 
     def _as_markdown(self, level):
         return self._markdown_result(str(self), level)
