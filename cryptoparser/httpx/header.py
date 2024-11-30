@@ -448,7 +448,7 @@ class ContentSecurityPolicySourceHash(ParsableBase, Serializable):
         try:
             parser.parse_parsable('hash_algorithm', cls._get_hash_algorithm_enum_type())
         except InvalidValue as e:
-            six.raise_from(InvalidType(), e)
+            raise InvalidType() from e
 
         parser.parse_string_until_separator_or_end('hash_value', ' ')
 
@@ -483,7 +483,7 @@ class ContentSecurityPolicySourceNonce(ParsableBase, Serializable):
         try:
             parser.parse_string('prefix', cls._PREFIX)
         except InvalidValue as e:
-            six.raise_from(InvalidType(), e)
+            raise InvalidType() from e
 
         del parser['prefix']
 

@@ -94,7 +94,7 @@ class SshProtocolMessage(ParsableBase):
             try:
                 six.ensure_binary(value, 'ascii')
             except UnicodeEncodeError as e:
-                six.raise_from(InvalidValue(value, SshProtocolMessage, 'comment'), e)
+                raise InvalidValue(value, SshProtocolMessage, 'comment') from e
 
     @classmethod
     def _parse(cls, parsable):

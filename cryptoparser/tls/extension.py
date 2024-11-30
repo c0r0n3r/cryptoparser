@@ -72,7 +72,7 @@ class TlsExtensionsBase(VectorParsable):
                 if extension.extension_type == extension_type
             )
         except StopIteration as e:
-            six.raise_from(KeyError, e)
+            raise KeyError from e
 
         return item
 

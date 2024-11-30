@@ -153,14 +153,14 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
         try:
             self.level = TlsAlertLevel(value)
         except ValueError as e:
-            six.raise_from(InvalidValue(value, TlsAlertLevel, 'level'), e)
+            raise InvalidValue(value, TlsAlertLevel, 'level') from e
 
     @description.validator
     def _validator_description(self, attribute, value):  # pylint: disable=unused-argument
         try:
             self.description = TlsAlertDescription(value)
         except ValueError as e:
-            six.raise_from(InvalidValue(value, TlsAlertDescription), e)
+            raise InvalidValue(value, TlsAlertDescription) from e
 
 
 class TlsChangeCipherSpecType(enum.IntEnum):
@@ -255,7 +255,7 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
         try:
             parser.parse_bytes('payload', 3)
         except NotEnoughData as e:
-            six.raise_from(NotEnoughData(e.bytes_needed), e)
+            raise NotEnoughData(e.bytes_needed) from e
 
         return parser
 

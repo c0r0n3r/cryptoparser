@@ -45,7 +45,7 @@ class SshProtocolVersion(ProtocolVersionBase, GradeableSimple):
             parser.parse_separator('.')
             parser.parse_numeric('minor')
         except InvalidValue as e:
-            six.raise_from(InvalidValue(parsable, SshProtocolVersion), e)
+            raise InvalidValue(parsable, SshProtocolVersion) from e
 
         return SshProtocolVersion(parser['major'], parser['minor']), parser.parsed_length
 
@@ -92,7 +92,7 @@ class SshSoftwareVersionUnparsed(SshSoftwareVersionBase, Serializable):
         try:
             six.ensure_binary(value, 'ascii')
         except UnicodeEncodeError as e:
-            six.raise_from(InvalidValue(value, SshSoftwareVersionUnparsed, 'raw'), e)
+            raise InvalidValue(value, SshSoftwareVersionUnparsed, 'raw') from e
 
     def _as_markdown(self, level):
         return self._markdown_result(self.raw, level)

@@ -37,7 +37,7 @@ class TlsRecord(ParsableBase):
         try:
             parser.parse_numeric('content_type', 1, TlsContentType)
         except InvalidValue as e:
-            six.raise_from(InvalidValue(e.value, TlsContentType), e)
+            raise InvalidValue(e.value, TlsContentType) from e
         parser.parse_parsable('protocol_version', TlsProtocolVersion)
         parser.parse_numeric('fragment_length', 2)
 
@@ -90,7 +90,7 @@ class SslRecord(ParsableBase):
         try:
             parser.parse_numeric('message_type', 1, SslMessageType)
         except InvalidValue as e:
-            six.raise_from(InvalidValue(e.value, SslMessageType), e)
+            raise InvalidValue(e.value, SslMessageType) from e
 
         parser.parse_variant('message', SslSubprotocolMessageParser(parser['message_type']))
         parser.parse_raw('padding', padding_length)

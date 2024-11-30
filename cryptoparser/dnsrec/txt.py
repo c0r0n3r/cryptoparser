@@ -494,7 +494,7 @@ class DnsRecordTxtValueSpfDirectiveBase(ParsableBase, Serializable):
         try:
             parser.parse_string('mechanism', mechanism.value.code)
         except InvalidValue as e:
-            six.raise_from(InvalidType, e)
+            raise InvalidType from e
 
         return parser
 
@@ -879,7 +879,7 @@ class DnsRecordTxtValueSpf(ParsableBase, Serializable):
         try:
             parser.parse_parsable('version', DnsRecordTxtValueSpfVersion)
         except InvalidValue as e:
-            six.raise_from(InvalidType, e)
+            raise InvalidType from e
 
         terms = []
         while parser.unparsed_length:

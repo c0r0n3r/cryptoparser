@@ -301,7 +301,7 @@ class FieldValueComponentKeyValueBase(FieldValueComponentBase):
         try:
             parser.parse_string_by_length('name', len(name), len(name))
         except NotEnoughData as e:
-            six.raise_from(InvalidType, e)
+            raise InvalidType from e
 
         cls._check_name(parser['name'])
 
@@ -568,7 +568,7 @@ class FieldValueComponentStringEnum(FieldValueComponentKeyValueBase):
         try:
             parser.parse_parsable('value', cls._get_value_type())
         except InvalidValue as e:
-            six.raise_from(InvalidValue(e.value.decode('ascii'), cls, 'value'), e)
+            raise InvalidValue(e.value.decode('ascii'), cls, 'value') from e
 
     def _get_value_as_simple_type(self):
         return self.value.value.code
@@ -668,7 +668,7 @@ class FieldsJson(FieldValueBase):
         try:
             raw_values = json.loads(parsable.decode('ascii'), object_pairs_hook=collections.OrderedDict)
         except ValueError as e:  # json.decoder.JSONDecodeError is derived from ValueError
-            six.raise_from(InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value'), e)
+            raise InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value') from e
 
         attr_fields_dict = attr.fields_dict(cls)
 
@@ -1012,7 +1012,7 @@ class FieldValueStringEnum(FieldValueSingleComplexBase):
         try:
             value = cls._get_value_type().parse_exact_size(parsable)
         except InvalidValue as e:
-            six.raise_from(InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value'), e)
+            raise InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value') from e
 
         return cls(value), len(parsable)
 

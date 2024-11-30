@@ -1107,7 +1107,7 @@ class SshX509Certificate(ParsableBase, SshHostKeyBase):
         try:
             parser.parse_raw('public_key', public_key_length, PublicKeyX509.from_der)
         except (NotEnoughData, InvalidValue) as e:
-            six.raise_from(InvalidValue(parser.unparsed, cls, 'public_key'), e)
+            raise InvalidValue(parser.unparsed, cls, 'public_key') from e
 
         public_key = parser['public_key']
         if host_key_algorithm is None:

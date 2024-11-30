@@ -858,7 +858,7 @@ class StringEnumParsableBase(ParsableBaseNoABC):
         try:
             code = six.ensure_text(bytes(parsable), 'ascii')
         except UnicodeDecodeError as e:
-            six.raise_from(InvalidValue(parsable, cls), e)
+            raise InvalidValue(parsable, cls) from e
 
         for enum_item in enum_items:
             if cls._code_eq(enum_item.value.code, code[:len(enum_item.value.code)]):
@@ -1015,7 +1015,7 @@ class OpaqueEnumParsable(Vector):
                 if enum_item.value.code == code
             ]))
         except StopIteration as e:
-            six.raise_from(InvalidValue(code, cls), e)
+            raise InvalidValue(code, cls) from e
 
         return parsed_object, parsed_length
 
