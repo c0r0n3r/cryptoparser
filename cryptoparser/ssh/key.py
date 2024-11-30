@@ -72,9 +72,9 @@ class SshPublicKeyBase():
         digest = hash_bytes(hash_type, key_bytes)
 
         if hash_type == Hash.MD5:
-            fingerprint = ':'.join(textwrap.wrap(six.ensure_text(binascii.hexlify(digest), 'ascii'), 2))
+            fingerprint = ':'.join(textwrap.wrap(binascii.hexlify(digest).decode('ascii'), 2))
         else:
-            fingerprint = six.ensure_text(base64.b64encode(digest), 'ascii')
+            fingerprint = base64.b64encode(digest).decode('ascii')
 
         return ':'.join((prefix, fingerprint))
 
@@ -87,7 +87,7 @@ class SshPublicKeyBase():
         ])
 
     def host_key_asdict(self):
-        known_hosts = six.ensure_text(base64.b64encode(self.key_bytes), 'ascii')
+        known_hosts = base64.b64encode(self.key_bytes).decode('ascii')
 
         public_key_dict = (
             [('key_type', self.host_key_algorithm.value.key_type.value)] +

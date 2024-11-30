@@ -185,10 +185,10 @@ class TestSshSoftwareVersion(unittest.TestCase):
 
     def test_error_raw(self):
         with self.assertRaises(InvalidValue):
-            SshSoftwareVersionUnparsed(six.ensure_text('αβγ'))
+            SshSoftwareVersionUnparsed('αβγ')
         with self.assertRaises(InvalidValue):
-            SshSoftwareVersionUnparsed(six.ensure_text('software_version '))
+            SshSoftwareVersionUnparsed('software_version ')
         with self.assertRaises(InvalidValue):
-            SshSoftwareVersionUnparsed(six.ensure_text('software_version\r'))
+            SshSoftwareVersionUnparsed('software_version\r')
         with self.assertRaises(InvalidValue):
-            SshSoftwareVersionUnparsed(six.ensure_text('software_version\n'))
+            SshSoftwareVersionUnparsed('software_version\n')

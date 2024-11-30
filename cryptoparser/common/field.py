@@ -668,7 +668,7 @@ class FieldsJson(FieldValueBase):
         try:
             raw_values = json.loads(parsable.decode('ascii'), object_pairs_hook=collections.OrderedDict)
         except ValueError as e:  # json.decoder.JSONDecodeError is derived from ValueError
-            raise InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value') from e
+            raise InvalidValue(parsable.decode('ascii'), cls, 'value') from e
 
         attr_fields_dict = attr.fields_dict(cls)
 
@@ -720,7 +720,7 @@ class FieldValueMultiple(FieldValueBase):
                     parsable = component
                 else:
                     parsable = '='.join([attr_to_component_name_dict[name].get_canonical_name(), parsable])
-                params[name] = attr_to_component_name_dict[name].parse_exact_size(six.ensure_binary(parsable, 'ascii'))
+                params[name] = attr_to_component_name_dict[name].parse_exact_size(parsable.encode('ascii'))
             else:
                 params[name] = attribute.default
 
@@ -1012,7 +1012,7 @@ class FieldValueStringEnum(FieldValueSingleComplexBase):
         try:
             value = cls._get_value_type().parse_exact_size(parsable)
         except InvalidValue as e:
-            raise InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value') from e
+            raise InvalidValue(parsable.decode('ascii'), cls, 'value') from e
 
         return cls(value), len(parsable)
 

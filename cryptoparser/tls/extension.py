@@ -245,14 +245,12 @@ class TlsExtensionServerNameClient(TlsExtensionParsed):
         parser.parse_numeric('server_name_type', 1, TlsServerNameType)
         parser.parse_parsable('server_name', TlsServerName)
 
-        return cls(
-            six.ensure_text(bytes(bytearray(parser['server_name'])), 'idna')
-        ), parser.parsed_length
+        return cls(bytearray(parser['server_name']).decode('idna')), parser.parsed_length
 
     def compose(self):
         composer = ComposerBinary()
 
-        idna_encoded_host_name = six.ensure_binary(self.host_name, 'idna')
+        idna_encoded_host_name = self.host_name.encode('idna')
 
         composer.compose_numeric(3 + len(idna_encoded_host_name), 2)
         composer.compose_numeric(self.name_type, 1)

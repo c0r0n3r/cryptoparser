@@ -170,7 +170,7 @@ class TestExtensionHostnameClient(unittest.TestCase):
         extension_hostname_internationalized = TlsExtensionServerNameClient.parse_exact_size(
             extension_hostname_internationalized_bytes
         )
-        self.assertEqual(extension_hostname_internationalized.host_name, six.ensure_text('ísland.icom.museum'))
+        self.assertEqual(extension_hostname_internationalized.host_name, 'ísland.icom.museum')
         self.assertEqual(extension_hostname_internationalized.compose(), extension_hostname_internationalized_bytes)
 
 

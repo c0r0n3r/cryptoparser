@@ -92,7 +92,7 @@ class SshProtocolMessage(ParsableBase):
             if '\r' in value or '\n' in value:
                 raise InvalidValue(value, SshProtocolMessage, 'comment')
             try:
-                six.ensure_binary(value, 'ascii')
+                value.encode('ascii')
             except UnicodeEncodeError as e:
                 raise InvalidValue(value, SshProtocolMessage, 'comment') from e
 
@@ -114,7 +114,7 @@ class SshProtocolMessage(ParsableBase):
         if software_version_and_comment[-1][-1] == '\r':
             software_version_and_comment[-1] = software_version_and_comment[-1][:-1]
 
-        software_version_parser = ParserText(six.ensure_binary(software_version_and_comment[0], 'ascii'))
+        software_version_parser = ParserText(software_version_and_comment[0].encode('ascii'))
         try:
             software_version_parser.parse_parsable('value', SshSoftwareVersionParsedVariant)
         except InvalidValue:
@@ -318,7 +318,7 @@ class SshKeyExchangeInit(SshMessageBase):  # pylint: disable=too-many-instance-a
         ])
 
         message = hashlib.md5()
-        message.update(six.ensure_binary(hassh_text, 'ascii'))
+        message.update(hassh_text.encode('ascii'))
 
         return bytes_to_hex_string(message.digest(), lowercase=True)
 

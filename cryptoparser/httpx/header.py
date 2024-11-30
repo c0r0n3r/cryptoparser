@@ -1747,14 +1747,14 @@ class HttpHeaderFieldParsedBase(HttpHeaderFieldBase):
         parser.parse_separator(' ', min_length=0, max_length=None)
         parser.parse_string_until_separator('value', ['\r\n', ])
 
-        value = cls._get_value_class().parse_exact_size(six.ensure_binary(parser['value'], 'ascii'))
+        value = cls._get_value_class().parse_exact_size(parser['value'].encode('ascii'))
 
         return cls(value), parser.parsed_length
 
     def compose(self):
         return self._compose_name_and_value(
             self.get_header_field_name().value.normalized_name,
-            six.ensure_text(bytes(self.value.compose()), 'ascii')
+            bytes(self.value.compose()).decode('ascii')
         )
 
     def _asdict(self):

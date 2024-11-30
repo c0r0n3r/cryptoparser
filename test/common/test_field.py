@@ -307,7 +307,7 @@ class TestFieldValueComponentTimeDelta(unittest.TestCase):
 
         with self.assertRaises(InvalidValue) as context_manager:
             FieldValueComponentTimeDeltaTest.parse_exact_size(
-                b'testTimeDelta=' + six.ensure_binary(str(2 ** 48), 'ascii')
+                b'testTimeDelta=' + str(2 ** 48).encode('ascii')
             )
         self.assertEqual(context_manager.exception.value, 2 ** 48)
 

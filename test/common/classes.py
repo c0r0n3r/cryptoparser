@@ -249,15 +249,9 @@ class OpaqueEnumParams():
 
 
 class OpaqueEnum(OpaqueEnumComposer):
-    ALPHA = OpaqueEnumParams(
-        code=six.ensure_text('άλφα')
-    )
-    BETA = OpaqueEnumParams(
-        code=six.ensure_text('βήτα')
-    )
-    GAMMA = OpaqueEnumParams(
-        code=six.ensure_text('γάμμα')
-    )
+    ALPHA = OpaqueEnumParams(code='άλφα')
+    BETA = OpaqueEnumParams(code='βήτα')
+    GAMMA = OpaqueEnumParams(code='γάμμα')
 
 
 class TestObject():
