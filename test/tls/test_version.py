@@ -16,12 +16,12 @@ class TestTlsProtocolVersion(unittest.TestCase):
     def test_parse(self):
         parsable = b'\x03\xff'
         expected_error_message = ' is not a valid TlsVersionFactory'
-        with six.assertRaisesRegex(self, InvalidValue, expected_error_message):
+        with self.assertRaisesRegex(InvalidValue, expected_error_message):
             # pylint: disable=expression-not-assigned
             TlsProtocolVersion.parse_exact_size(parsable)
 
         expected_error_message = ' is not a valid TlsVersionFactory'
-        with six.assertRaisesRegex(self, InvalidValue, expected_error_message):
+        with self.assertRaisesRegex(InvalidValue, expected_error_message):
             # pylint: disable=expression-not-assigned
             TlsProtocolVersion.parse_exact_size(b'\x8f\x00')
 

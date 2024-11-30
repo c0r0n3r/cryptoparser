@@ -28,17 +28,17 @@ class TestSshVersion(unittest.TestCase):
     def test_error(self):
         parsable = b'3.0'
         expected_error_message = '3 is not a valid SshVersion'
-        with six.assertRaisesRegex(self, ValueError, expected_error_message):
+        with self.assertRaisesRegex(ValueError, expected_error_message):
             # pylint: disable=expression-not-assigned
             SshProtocolVersion.parse_exact_size(parsable)
 
         expected_error_message = '\'.0\' is not a valid SshProtocolVersion'
-        with six.assertRaisesRegex(self, InvalidValue, expected_error_message):
+        with self.assertRaisesRegex(InvalidValue, expected_error_message):
             # pylint: disable=expression-not-assigned
             SshProtocolVersion.parse_exact_size(b'.0')
 
         expected_error_message = '\'2.\' is not a valid SshProtocolVersion'
-        with six.assertRaisesRegex(self, InvalidValue, expected_error_message):
+        with self.assertRaisesRegex(InvalidValue, expected_error_message):
             # pylint: disable=expression-not-assigned
             SshProtocolVersion.parse_exact_size(b'2.')
 

@@ -18,7 +18,7 @@ from cryptoparser.tls.subprotocol import SslErrorMessage, SslErrorType, SslMessa
 class TestTlsSubprotocolMessageBase(unittest.TestCase):
     def test_error(self):
         error_message = 'Can\'t instantiate abstract class TlsSubprotocolMessageBase'
-        with six.assertRaisesRegex(self, BaseException, error_message) as context_manager:
+        with self.assertRaisesRegex(BaseException, error_message) as context_manager:
             TlsSubprotocolMessageBase()  # pylint: disable=abstract-class-instantiated
         self.assertTrue(isinstance(context_manager.exception, (TypeError, AssertionError)))
 
@@ -48,7 +48,7 @@ class TestTlsRecord(unittest.TestCase):
             TlsRecord.parse_exact_size(b'')
         self.assertEqual(context_manager.exception.bytes_needed, TlsRecord.HEADER_SIZE)
 
-        with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid TlsContentType'):
+        with self.assertRaisesRegex(InvalidValue, '0xff is not a valid TlsContentType'):
             TlsRecord.parse_exact_size(
                 b'\xff' +      # type = INVALID
                 b'\x03\x03' +  # version = TLS 1.2
@@ -111,7 +111,7 @@ class TestSslRecord(unittest.TestCase):
         )
 
     def test_error(self):
-        with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid SslMessageType'):
+        with self.assertRaisesRegex(InvalidValue, '0xff is not a valid SslMessageType'):
             SslRecord.parse_exact_size(
                 b'\x80\x00' +  # length = 0
                 b'\xff' +      # type = INVALID
