@@ -649,7 +649,7 @@ class ParserBinary(ParserBase):
         try:
             length = next(iter([
                 i
-                for i, value in enumerate(six.iterbytes(self._parsable[self._parsed_length:]))
+                for i, value in enumerate(self._parsable[self._parsed_length:])
                 if value == 0
             ]))
         except StopIteration as e:

@@ -464,7 +464,7 @@ class ArrayBase(ParsableBase, MutableSequence, Serializable):
 
     def __attrs_post_init__(self):
         if isinstance(self._items, six.binary_type):
-            items = six.iterbytes(bytes(self._items))
+            items = bytes(self._items)
         else:
             items = self._items
 
