@@ -51,8 +51,7 @@ class ParsableBaseNoABC():
         raise NotImplementedError()
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ParsableBase(ParsableBaseNoABC):
+class ParsableBase(ParsableBaseNoABC, metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
     def _parse(cls, parsable):

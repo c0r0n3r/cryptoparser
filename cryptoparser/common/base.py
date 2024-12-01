@@ -882,8 +882,7 @@ class StringEnumCaseInsensitiveParsable(StringEnumParsableBase):
         return item_code.lower() == parsed_code.lower()
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ProtocolVersionBase(Serializable, ParsableBase):
+class ProtocolVersionBase(Serializable, ParsableBase, metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
     def _parse(cls, parsable):
