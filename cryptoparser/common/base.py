@@ -463,10 +463,7 @@ class ArrayBase(ParsableBase, MutableSequence, Serializable):
     param = attr.ib(init=False, default=None)
 
     def __attrs_post_init__(self):
-        if isinstance(self._items, six.binary_type):
-            items = bytes(self._items)
-        else:
-            items = self._items
+        items = self._items
 
         self.param = self.get_param()
         self._items = []
