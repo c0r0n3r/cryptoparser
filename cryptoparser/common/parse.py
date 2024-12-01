@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import collections.abc
 import datetime
 import enum
 import struct
@@ -90,7 +91,7 @@ class ByteOrder(enum.Enum):
 
 
 @attr.s
-class ParserBase(collections_abc.Mapping):
+class ParserBase(collections.abc.Mapping):
     _parsable = attr.ib(converter=bytes, validator=attr.validators.instance_of((bytes, bytearray)))
     _parsed_length = attr.ib(init=False, default=0)
     _parsed_values = attr.ib(init=False, default=None)
