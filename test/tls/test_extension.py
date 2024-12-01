@@ -5,7 +5,6 @@ import datetime
 import unittest
 
 import dateutil
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.types import Base64Data

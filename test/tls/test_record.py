@@ -2,7 +2,6 @@
 
 import unittest
 
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptoparser.common.exception import NotEnoughData

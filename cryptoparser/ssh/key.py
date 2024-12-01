@@ -14,7 +14,6 @@ from collections import OrderedDict
 
 import ipaddress
 import attr
-import six
 
 
 from cryptodatahub.common.algorithm import Authentication, Hash, NamedGroup

@@ -2,7 +2,6 @@
 
 import unittest
 
-import six
 
 from cryptodatahub.common.algorithm import Authentication, MAC, Signature
 from cryptodatahub.common.exception import InvalidValue

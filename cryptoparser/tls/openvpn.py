@@ -4,7 +4,6 @@
 import abc
 import collections
 import enum
-import six
 
 import attr
 

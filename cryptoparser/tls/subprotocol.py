@@ -9,7 +9,6 @@ import enum
 import random
 import attr
 
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.tls.algorithm import SslCipherKind, TlsCipherSuite, TlsCipherSuiteExtension, TlsCompressionMethod

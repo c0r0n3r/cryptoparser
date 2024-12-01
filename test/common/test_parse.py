@@ -4,7 +4,6 @@
 import datetime
 import unittest
 
-import six
 import dateutil.tz
 
 import asn1crypto.x509

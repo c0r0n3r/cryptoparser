@@ -4,7 +4,6 @@
 import collections
 import unittest
 
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.grade import Grade

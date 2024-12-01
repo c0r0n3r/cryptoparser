@@ -6,7 +6,6 @@ import datetime
 import enum
 
 import attr
-import six
 
 from cryptodatahub.common.algorithm import Authentication, NamedGroup, Signature
 from cryptodatahub.common.exception import InvalidValue

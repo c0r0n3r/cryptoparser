@@ -7,7 +7,6 @@ import collections
 import itertools
 import enum
 
-import six
 
 import attr
 import urllib3

@@ -9,7 +9,6 @@ from collections import OrderedDict
 
 import attr
 import dateutil
-import six
 import urllib3
 
 from cryptodatahub.common.exception import InvalidValue

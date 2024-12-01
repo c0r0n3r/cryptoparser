@@ -7,8 +7,6 @@ import struct
 import time
 
 import attr
-import six
-from six.moves import collections_abc
 
 import dateutil
 import dateutil.parser

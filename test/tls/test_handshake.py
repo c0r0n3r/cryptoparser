@@ -5,7 +5,6 @@ import unittest
 import collections
 import copy
 import datetime
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.tls.algorithm import (

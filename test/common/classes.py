@@ -7,7 +7,6 @@ import collections
 import enum
 import json
 import attr
-import six
 
 try:
     import pathlib

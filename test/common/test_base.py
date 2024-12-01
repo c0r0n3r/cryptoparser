@@ -3,7 +3,6 @@
 import json
 import unittest
 
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 

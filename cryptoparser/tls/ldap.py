@@ -3,7 +3,6 @@
 import abc
 import enum
 import re
-import six
 
 import attr
 

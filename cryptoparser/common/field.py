@@ -8,7 +8,6 @@ import enum
 import json
 
 import attr
-import six
 import urllib3
 
 from cryptodatahub.common.exception import InvalidValue

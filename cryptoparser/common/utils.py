@@ -3,8 +3,6 @@
 import binascii
 import inspect
 
-import six
-
 
 def get_leaf_classes(base_class):
 

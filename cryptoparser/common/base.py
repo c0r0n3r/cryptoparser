@@ -18,7 +18,6 @@ except ImportError:  # pragma: no cover
 from collections import OrderedDict
 
 import attr
-import six
 import urllib3
 
 from cryptodatahub.common.exception import InvalidValue

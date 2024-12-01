@@ -7,7 +7,6 @@ import hashlib
 import random
 
 import attr
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.ssh.algorithm import (

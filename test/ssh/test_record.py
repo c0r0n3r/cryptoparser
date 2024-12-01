@@ -3,7 +3,6 @@
 
 import unittest
 
-import six
 
 from cryptoparser.common.exception import NotEnoughData
 

@@ -2,7 +2,6 @@
 
 import abc
 import enum
-import six
 
 import attr
 

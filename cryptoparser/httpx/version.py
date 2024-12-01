@@ -3,7 +3,6 @@
 import enum
 
 import attr
-import six
 
 from cryptoparser.common.base import Serializable
 

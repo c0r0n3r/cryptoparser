@@ -7,7 +7,6 @@ import enum
 import ipaddress
 
 import attr
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.types import convert_url, convert_value_to_object

@@ -2,7 +2,6 @@
 
 import attr
 
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 
