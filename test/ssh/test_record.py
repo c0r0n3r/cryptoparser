@@ -15,8 +15,8 @@ class TestRecord(unittest.TestCase):
     def setUp(self):
         self.test_packet = SshDisconnectMessage(
             SshReasonCode.PROTOCOL_ERROR,
-            six.text_type('αβγ'),
-            six.text_type('en-US')
+            'αβγ',
+            'en-US'
         )
         self.test_record = SshRecordInit(self.test_packet)
         self.test_record_bytes = bytes(

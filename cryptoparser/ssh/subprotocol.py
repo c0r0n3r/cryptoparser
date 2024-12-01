@@ -363,7 +363,7 @@ class SshReasonCode(enum.IntEnum):
 class SshDisconnectMessage(SshMessageBase):
     reason = attr.ib(validator=attr.validators.instance_of(SshReasonCode))
     description = attr.ib(
-        converter=six.text_type,
+        converter=str,
         validator=attr.validators.instance_of(str)
     )
     language = attr.ib(

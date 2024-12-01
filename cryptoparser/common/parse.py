@@ -766,7 +766,7 @@ class ComposerBase():
                 if isinstance(value, ParsableBaseNoABC):
                     composed_str += value.compose()
                 else:
-                    composed_str += six.text_type(value).encode(encoding)
+                    composed_str += str(value).encode(encoding)
             except UnicodeError as e:
                 raise InvalidValue(value, type(self)) from e
 
