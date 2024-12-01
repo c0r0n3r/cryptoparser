@@ -1173,7 +1173,7 @@ class TlsExtensionPadding(TlsExtensionParsed):
         parser.parse_raw('padding', parser['extension_length'])
         try:
             non_zero_int = next(byte for byte in parser['padding'] if byte != 0)
-            raise InvalidValue(six.int2byte(non_zero_int), cls)
+            raise InvalidValue(bytes((non_zero_int,)), cls)
         except StopIteration:
             pass
 

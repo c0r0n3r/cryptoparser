@@ -37,7 +37,7 @@ from .classes import (
 class TestParsableBase(unittest.TestCase):
     _ALPHA_BETA_GAMMA = 'αβγ'
     _ALPHA_BETA_GAMMA_BYTES = 'αβγ'.encode('utf-8')
-    _ALPHA_BETA_GAMMA_LEN_BYTES = six.int2byte(len(_ALPHA_BETA_GAMMA_BYTES))
+    _ALPHA_BETA_GAMMA_LEN_BYTES = bytes((len(_ALPHA_BETA_GAMMA_BYTES),))
 
     _ALPHA_BETA_GAMMA_HASHMARK_BYTES = 'αβγ#'.encode('utf-8')
 

@@ -1003,7 +1003,7 @@ class OpaqueEnumParsable(Vector):
     @classmethod
     def _parse(cls, parsable):
         opaque, parsed_length = super(OpaqueEnumParsable, cls)._parse(parsable)
-        code = b''.join([six.int2byte(opaque_item) for opaque_item in opaque]).decode(cls.get_encoding())
+        code = b''.join([bytes((opaque_item,)) for opaque_item in opaque]).decode(cls.get_encoding())
 
         try:
             parsed_object = next(iter([

@@ -562,7 +562,7 @@ class ParserBinary(ParserBase):
 
     def _parse_mpint(self, mpint_length, mpint_offset, negative):
         if mpint_length % 4:
-            pad_byte = six.int2byte(0xff) if negative else six.int2byte(0x00)
+            pad_byte = bytes((0xff,)) if negative else bytes((0x00,))
             pad_bytes = (4 - (mpint_length % 4)) * pad_byte
         else:
             pad_bytes = b''
