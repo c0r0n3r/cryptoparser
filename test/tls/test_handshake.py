@@ -697,10 +697,7 @@ class TestTlsHandshakeServerHelloDone(unittest.TestCase):
         self.server_hello_done = TlsHandshakeServerHelloDone()
 
     def test_error(self):
-        if six.PY2:
-            error_regex = '\'\\\\x00\' is not a valid TlsHandshakeServerHelloDone payload value'
-        else:
-            error_regex = 'b\'\\\\x00\' is not a valid TlsHandshakeServerHelloDone payload value'
+        error_regex = 'b\'\\\\x00\' is not a valid TlsHandshakeServerHelloDone payload value'
         with self.assertRaisesRegex(InvalidValue, error_regex):
             # pylint: disable=expression-not-assigned
             TlsHandshakeServerHelloDone.parse_exact_size(b'\x0e\x00\x00\x01\x00')
