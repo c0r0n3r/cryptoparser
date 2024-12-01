@@ -225,7 +225,7 @@ class ParserText(ParserBase):
 
             if (is_floating and
                     not floating_point_found and item_offset < len(self._parsable) and
-                    six.indexbytes(self._parsable, item_offset) == ord('.')):
+                    self._parsable[item_offset] == ord('.')):
                 item_offset += 1
                 floating_point_found = True
                 continue
@@ -593,7 +593,7 @@ class ParserBinary(ParserBase):
         mpint_length, parsed_length = self._parse_numeric_array(name, 1, 4, int)
         mpint_length = mpint_length[0]
 
-        negative = (mpint_length and (six.indexbytes(self._parsable, self._parsed_length + 4) >= 0x80))
+        negative = (mpint_length and self._parsable[self._parsed_length + 4] >= 0x80)
 
         value = self._parse_mpint(mpint_length, 4, negative)
 
