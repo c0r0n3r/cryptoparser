@@ -6,12 +6,9 @@ import codecs
 import collections
 import enum
 import json
-import attr
+import pathlib
 
-try:
-    import pathlib
-except ImportError:  # pragma: no cover
-    import pathlib2 as pathlib  # pragma: no cover
+import attr
 
 import pyfakefs.fake_filesystem_unittest
 
