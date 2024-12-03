@@ -3,15 +3,11 @@
 
 import datetime
 import unittest
+from unittest import mock
 
 import dateutil.tz
 
 import asn1crypto.x509
-
-try:
-    from unittest import mock
-except ImportError:
-    import mock
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptoparser.common.exception import NotEnoughData, TooMuchData, InvalidType
