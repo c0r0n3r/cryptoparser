@@ -3,6 +3,22 @@ Changelog
 =========
 
 -------------------
+0.12.6 - 2024-12-08
+-------------------
+
+Improvements
+============
+
+
+-  TLS (``tls``)
+
+   -  Extensions (``extensions``)
+
+      -  add `TLS encrypted client hello <https://datatracker.ietf.org/doc/draft-ietf-tls-esni/>`__ extension related
+         messages (#86)
+      -  add `post-handshake authentication <https://tools.ietf.org/html/rfc8446>`__ messages (#86)
+
+-------------------
 0.12.5 - 2024-05-25
 -------------------
 
