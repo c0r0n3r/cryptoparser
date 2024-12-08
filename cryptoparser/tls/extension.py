@@ -1191,6 +1191,101 @@ class TlsExtensionPadding(TlsExtensionParsed):
         return header_bytes + payload_composer.composed_bytes
 
 
+class TlsEncryptedClientHelloType(enum.IntEnum):
+    OUTER = 0
+    INNER = 1
+
+
+@attr.s
+class TlsExtensionEncryptedClientHelloBase(TlsExtensionParsed):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.ENCRYPTED_CLIENT_HELLO
+
+    @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def get_encrypted_client_hello_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse_header(cls, parsable):
+        parser = super(TlsExtensionEncryptedClientHelloBase, cls)._parse_header(parsable)
+
+        parser.parse_numeric('client_hello_type', 1, TlsEncryptedClientHelloType)
+        if parser['client_hello_type'] != cls.get_encrypted_client_hello_type():
+            raise InvalidType()
+
+        return parser
+
+    def compose_type(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric(self.get_encrypted_client_hello_type(), 1)
+
+        return composer
+
+
+@attr.s
+class TlsExtensionEncryptedClientHelloInner(TlsExtensionEncryptedClientHelloBase):
+    @classmethod
+    def get_encrypted_client_hello_type(cls):
+        return TlsEncryptedClientHelloType.INNER
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        return cls(), parser.parsed_length
+
+    def compose(self):
+        payload_composer = self.compose_type()
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+@attr.s
+class TlsExtensionEncryptedClientHelloOuter(TlsExtensionEncryptedClientHelloBase):
+    data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    def get_encrypted_client_hello_type(cls):
+        return TlsEncryptedClientHelloType.OUTER
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_raw('data', parser.unparsed_length)
+
+        return cls(parser['data']), parser.parsed_length
+
+    def compose(self):
+        payload_composer = self.compose_type()
+
+        payload_composer.compose_raw(self.data)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+class TlsExtensionPostHandshakeAuthentication(TlsExtensionUnusedData):
+    @classmethod
+    def get_extension_type(cls):
+        return TlsExtensionType.POST_HANDSHAKE_AUTH
+
+
 class TlsExtensionVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1233,6 +1328,7 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.EC_POINT_FORMATS, [TlsExtensionECPointFormats, ]),
             (TlsExtensionType.KEY_SHARE, [TlsExtensionKeyShareClient, ]),
             (TlsExtensionType.KEY_SHARE_RESERVED, [TlsExtensionKeyShareReservedClient, ]),
+            (TlsExtensionType.POST_HANDSHAKE_AUTH, [TlsExtensionPostHandshakeAuthentication, ]),
             (TlsExtensionType.PSK_KEY_EXCHANGE_MODES, [TlsExtensionPskKeyExchangeModes, ]),
             (TlsExtensionType.RECORD_SIZE_LIMIT, [TlsExtensionRecordSizeLimit, ]),
             (TlsExtensionType.SHORT_RECORD_HEADER, [TlsExtensionShortRecordHeader, ]),
@@ -1240,6 +1336,8 @@ class TlsExtensionVariantClient(TlsExtensionVariantBase):
             (TlsExtensionType.SIGNATURE_ALGORITHMS_CERT, [TlsExtensionSignatureAlgorithmsCert, ]),
             (TlsExtensionType.SIGNED_CERTIFICATE_TIMESTAMP, [TlsExtensionSignedCertificateTimestampClient, ]),
             (TlsExtensionType.SUPPORTED_VERSIONS, [TlsExtensionSupportedVersionsClient, ]),
+            (TlsExtensionType.ENCRYPTED_CLIENT_HELLO, [TlsExtensionEncryptedClientHelloInner,
+                                                       TlsExtensionEncryptedClientHelloOuter]),
             (TlsExtensionType.TOKEN_BINDING, [TlsExtensionTokenBinding, ]),
         ])
 
