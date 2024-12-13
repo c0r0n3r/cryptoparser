@@ -149,7 +149,7 @@ class ParserBase(collections_abc.Mapping):
             item_max_length,
             encoding,
             converter
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         if item_min_length > self.unparsed_length:
             raise NotEnoughData(item_min_length - self.unparsed_length)
 
@@ -177,7 +177,7 @@ class ParserText(ParserBase):
         super(ParserText, self).__init__(parsable)
         self._encoding = encoding
 
-    def _check_separators(  # pylint: disable=too-many-arguments
+    def _check_separators(  # pylint: disable=too-many-arguments,too-many-positional-arguments
             self,
             name,
             count_offset,
@@ -206,7 +206,7 @@ class ParserText(ParserBase):
             'separator', self._parsed_length, separator, min_length, max_length
         )
 
-    def _parse_numeric_array(  # pylint: disable=too-many-arguments
+    def _parse_numeric_array(  # pylint: disable=too-many-arguments,too-many-positional-arguments
             self, name, item_num, separator, converter, is_floating):
         value = []
         floating_point_found = False
@@ -293,7 +293,7 @@ class ParserText(ParserBase):
         self._parsed_values[name] = value
         self._parsed_length += parsed_length
 
-    def _apply_item_class(  # pylint: disable=too-many-arguments
+    def _apply_item_class(  # pylint: disable=too-many-arguments,too-many-positional-arguments
             self,
             name,
             item_offset,
@@ -326,7 +326,7 @@ class ParserText(ParserBase):
 
         return item
 
-    def _parse_string_until_separator(  # pylint: disable=too-many-arguments
+    def _parse_string_until_separator(  # pylint: disable=too-many-arguments,too-many-positional-arguments
             self,
             name,
             item_offset,
@@ -392,7 +392,7 @@ class ParserText(ParserBase):
             fallback_class=None,
             separator_spaces='',
             skip_empty=False
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         value = []
         item_offset = self._parsed_length
         max_separator_count = None if skip_empty else 1
@@ -449,7 +449,7 @@ class ParserText(ParserBase):
             separator_spaces='',
             skip_empty=False,
             max_item_num=None,
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self._parse_string_array(
             name,
             separator,
