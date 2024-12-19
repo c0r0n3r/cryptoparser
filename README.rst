@@ -1,3 +1,13 @@
+.. image:: https://gitlab.com/coroner/cryptoparser/badges/master/pipeline.svg
+    :alt:  Pipeline
+    :target: https://gitlab.com/coroner/cryptoparser/-/pipelines/master/latest
+.. image:: https://coveralls.io/repos/gitlab/coroner/cryptoparser/badge.svg?branch=master
+    :alt:  Test Coverage
+    :target: https://coveralls.io/gitlab/coroner/cryptoparser/
+.. image:: https://readthedocs.org/projects/cryptoparser/badge/?version=latest
+    :alt:  Documentation
+    :target: https://cryptoparser.readthedocs.io
+
 **CryptoParser** is a cryptographic protocol (TLS, SSH) and security-related protocol piece (HTTP headers) parser. It
 is neither a comprehensive nor a secure implementation of any cryptographic protocol. The goal is to support
 testing cryptographic libraries or analysing cryptography-realted settings of application servers such as
