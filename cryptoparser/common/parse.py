@@ -126,13 +126,17 @@ class ParserBase(collections_abc.Mapping):
     def unparsed_length(self):
         return len(self._parsable) - self._parsed_length
 
+    @abc.abstractmethod
+    def _parse_numeric(self, name, converter, item_size):
+        raise NotImplementedError()
+
     def parse_parsable(self, name, parsable_class, item_size=None):
         if item_size is None:
             parsed_object, parsed_length = parsable_class.parse_immutable(
                 self._parsable[self._parsed_length:]
             )
         else:
-            parsable_length, _ = self._parse_numeric_array(name, 1, item_size, int)
+            parsable_length, _ = self._parse_numeric(name, int, item_size)
             parsable_length = parsable_length[0]
             parsed_object = parsable_class.parse_exact_size(
                 self._parsable[self._parsed_length + item_size:self._parsed_length + parsable_length + item_size]
@@ -241,6 +245,9 @@ class ParserText(ParserBase):
             floating_point_found = False
 
         return value, item_offset - self._parsed_length
+
+    def _parse_numeric(self, name, converter, item_size):
+        raise NotImplementedError()
 
     def parse_numeric(self, name, converter=int):
         value, parsed_length = self._parse_numeric_array(name, 1, None, converter, False)
@@ -528,6 +535,9 @@ class ParserBinary(ParserBase):
             raise NotImplementedError()
 
         return value, item_num * item_size
+
+    def _parse_numeric(self, name, converter, item_size):
+        return self._parse_numeric_array(name, 1, item_size, converter)
 
     def parse_numeric(self, name, size, converter=int):
         value, parsed_length = self._parse_numeric_array(name, 1, size, converter)
