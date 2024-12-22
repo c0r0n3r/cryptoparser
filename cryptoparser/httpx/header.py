@@ -836,7 +836,7 @@ class ContentSecurityPolicyDirectiveFrameAncestors(ContentSecurityPolicyDirectiv
         return ContentSecurityPolicyFrameAncestorsSource
 
     def _value_validator(self, value):
-        super(ContentSecurityPolicyDirectiveFrameAncestors, self)._value_validator(value)
+        super()._value_validator(value)
 
         has_invalid_source_type = any(map(
             lambda source: (

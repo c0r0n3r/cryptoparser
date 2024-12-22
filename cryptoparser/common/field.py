@@ -366,7 +366,7 @@ class FieldValueComponentParsable(FieldValueComponentParsableBase):
 class FieldValueComponentParsableOptional(FieldValueComponentParsableBase):
     def __attrs_post_init__(self):
         if self.value is not None:
-            super(FieldValueComponentParsableOptional, self).__attrs_post_init__()
+            super().__attrs_post_init__()
 
     @classmethod
     @abc.abstractmethod

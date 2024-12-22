@@ -279,7 +279,7 @@ class TlsHandshakeHelloRandomBytes(Vector):
         return cls(vector), parsed_length - vector_param.item_num_size
 
     def compose(self):
-        return super(TlsHandshakeHelloRandomBytes, self).compose()[self.get_param().item_num_size:]
+        return super().compose()[self.get_param().item_num_size:]
 
     @classmethod
     def get_param(cls):
@@ -334,7 +334,7 @@ class TlsHandshakeHello(TlsHandshakeMessage):
     def _compose_header(self, payload_length):
         composer = ComposerBinary()
 
-        handshake_header_bytes = super(TlsHandshakeHello, self)._compose_header(
+        handshake_header_bytes = super()._compose_header(
             payload_length + composer.composed_length
         )
 
@@ -668,7 +668,7 @@ class TlsHandshakeCertificate(TlsHandshakeMessage):
 
 class TlsHandshakeCertificateStatus(TlsHandshakeMessage):
     def __init__(self, status_type, status):
-        super(TlsHandshakeCertificateStatus, self).__init__()
+        super().__init__()
 
         self.status_type = status_type
         self.status = status

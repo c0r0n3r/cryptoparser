@@ -199,7 +199,7 @@ class SshCompressionAlgorithmVector(SshAlgorithmVector):
 
 class VectorParamSshLanguage(VectorParamString):
     def __init__(self):
-        super(VectorParamSshLanguage, self).__init__(
+        super().__init__(
             min_byte_num=0,
             max_byte_num=2 ** 32 - 1,
             separator=',',

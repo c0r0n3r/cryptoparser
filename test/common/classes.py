@@ -754,7 +754,7 @@ class FieldValueMultipleExtendableTest(FieldValueMultipleTest):
 
 class SerializableUpperCaseEncoder(SerializableTextEncoder):
     def __call__(self, obj, level):
-        _, string_result = super(SerializableUpperCaseEncoder, self).__call__(obj, level)
+        _, string_result = super().__call__(obj, level)
 
         return False, string_result.upper()
 

@@ -572,7 +572,7 @@ class SshCertExtensionNoData(SshCertExtensionParsed):
         return header_parser
 
     def _compose_header(self):
-        header_composer = super(SshCertExtensionNoData, self)._compose_header()
+        header_composer = super()._compose_header()
 
         header_composer.compose_numeric(0, 4)
 

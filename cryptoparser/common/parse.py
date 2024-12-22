@@ -176,7 +176,7 @@ class ParserBase(collections.abc.Mapping):
 
 class ParserText(ParserBase):
     def __init__(self, parsable, encoding='ascii'):
-        super(ParserText, self).__init__(parsable)
+        super().__init__(parsable)
         self._encoding = encoding
 
     def _check_separators(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -775,7 +775,7 @@ class ComposerBase():
 
 class ComposerText(ComposerBase):
     def __init__(self, encoding='ascii'):
-        super(ComposerText, self).__init__()
+        super().__init__()
         self._encoding = encoding
 
     def _compose_numeric_array(self, values, separator):

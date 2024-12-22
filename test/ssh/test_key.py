@@ -438,7 +438,7 @@ class TestHostCertificateDSSBase(TestPublicKeyBase):
 
 class TestHostCertificateV00DSS(TestHostCertificateDSSBase):
     def setUp(self):
-        super(TestHostCertificateV00DSS, self).setUp()
+        super().setUp()
         self.host_cert_bytes = bytes(
             b'\x00\x00\x00\x1c' +
             b'ssh-dss-cert-v00@openssh.com' +
@@ -575,7 +575,7 @@ class TestHostCertificateV00DSS(TestHostCertificateDSSBase):
 
 class TestHostCertificateV01DSS(TestHostCertificateDSSBase):
     def setUp(self):
-        super(TestHostCertificateV01DSS, self).setUp()
+        super().setUp()
         self.host_cert_bytes = bytes(
             b'\x00\x00\x00\x1c' +
             b'ssh-dss-cert-v01@openssh.com' +
@@ -738,7 +738,7 @@ class TestHostCertificateRSABase(TestPublicKeyBase):
 
 class TestHostCertificateV00RSA(TestHostCertificateRSABase):
     def setUp(self):
-        super(TestHostCertificateV00RSA, self).setUp()
+        super().setUp()
         self.host_cert_bytes = bytes(
             b'\x00\x00\x00\x1c' +
             b'ssh-rsa-cert-v00@openssh.com' +
@@ -853,7 +853,7 @@ class TestHostCertificateV00RSA(TestHostCertificateRSABase):
 
 class TestHostCertificateV01RSA(TestHostCertificateRSABase):
     def setUp(self):
-        super(TestHostCertificateV01RSA, self).setUp()
+        super().setUp()
         self.host_cert_bytes = bytes(
             b'\x00\x00\x00\x1c' +
             b'ssh-rsa-cert-v01@openssh.com' +
@@ -998,7 +998,7 @@ class TestHostCertificateECDSABase(TestPublicKeyBase):
 
 class TestHostCertificateV01ECDSA(TestHostCertificateECDSABase):
     def setUp(self):
-        super(TestHostCertificateV01ECDSA, self).setUp()
+        super().setUp()
         self.point_x_bytes = b'\x80' + (256 // 8 - 1) * b'\x00'
         self.point_y_bytes = b'\x40' + (256 // 8 - 1) * b'\x00'
         self.host_cert_bytes = bytes(
@@ -1151,7 +1151,7 @@ class TestHostCertificateEDDSABase(TestPublicKeyBase):
 
 class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
     def setUp(self):
-        super(TestHostCertificateV01EDDSA, self).setUp()
+        super().setUp()
         self.host_cert_bytes = bytes(
             b'\x00\x00\x00\x20' +
             b'ssh-ed25519-cert-v01@openssh.com' +
@@ -1270,7 +1270,7 @@ class TestHostCertificateV01EDDSA(TestHostCertificateEDDSABase):
 
 class TestX509CertificateChain(TestClasses.TestKeyBase):
     def setUp(self):
-        super(TestX509CertificateChain, self).setUp()
+        super().setUp()
 
         x509_certificate = self._get_public_key_x509('snakeoil_cert.pem')
         self.x509_certificate_bytes = x509_certificate.der
@@ -1316,7 +1316,7 @@ class TestX509CertificateChain(TestClasses.TestKeyBase):
 
 class TestX509Certificate(TestClasses.TestKeyBase):
     def setUp(self):
-        super(TestX509Certificate, self).setUp()
+        super().setUp()
 
         self.x509v3_sign_rsa_header = bytes(
             b'\x00\x00\x00\x14' +  # host_key_algorithm

@@ -130,7 +130,7 @@ class OpenVpnPacketControlV1(OpenVpnPacketBase):
 @attr.s(init=False)
 class OpenVpnPacketAckV1(OpenVpnPacketBase):
     def __init__(self, session_id, remote_session_id, packet_id_array):
-        super(OpenVpnPacketAckV1, self).__init__(session_id, packet_id_array, remote_session_id)
+        super().__init__(session_id, packet_id_array, remote_session_id)
 
     @classmethod
     def get_op_code(cls):
@@ -149,7 +149,7 @@ class OpenVpnPacketAckV1(OpenVpnPacketBase):
 @attr.s(init=False)
 class OpenVpnPacketHardResetClientV2(OpenVpnPacketBase):
     def __init__(self, session_id, packet_id):
-        super(OpenVpnPacketHardResetClientV2, self).__init__(session_id, packet_id_array=[], remote_session_id=None)
+        super().__init__(session_id, packet_id_array=[], remote_session_id=None)
 
         self.packet_id = packet_id
 
@@ -181,7 +181,7 @@ class OpenVpnPacketHardResetClientV2(OpenVpnPacketBase):
 @attr.s(init=False)
 class OpenVpnPacketHardResetServerV2(OpenVpnPacketBase):
     def __init__(self, session_id, remote_session_id, packet_id_array, packet_id):
-        super(OpenVpnPacketHardResetServerV2, self).__init__(session_id, packet_id_array, remote_session_id)
+        super().__init__(session_id, packet_id_array, remote_session_id)
 
         self.packet_id = packet_id
 

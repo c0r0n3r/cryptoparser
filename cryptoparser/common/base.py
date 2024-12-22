@@ -397,7 +397,7 @@ class VectorParamNumeric(VectorParamBase):  # pylint: disable=too-few-public-met
 @attr.s(init=False)
 class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
     def __init__(self, min_byte_num, max_byte_num):
-        super(OpaqueParam, self).__init__(min_byte_num, max_byte_num, 1)
+        super().__init__(min_byte_num, max_byte_num, 1)
 
     def get_item_size(self, item):
         return 1

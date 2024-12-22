@@ -684,7 +684,7 @@ class TlsCertificateStatusRequestResponderIdList(VectorParsable):
 
 class TlsExtensionCertificateStatusRequestClient(TlsExtensionParsed):
     def __init__(self, responder_id_list=(), extensions=()):
-        super(TlsExtensionCertificateStatusRequestClient, self).__init__()
+        super().__init__()
 
         self.responder_id_list = TlsCertificateStatusRequestResponderIdList(responder_id_list)
         self.request_extensions = TlsCertificateStatusRequestExtensions(extensions)

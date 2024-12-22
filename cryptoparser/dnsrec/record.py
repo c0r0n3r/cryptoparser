@@ -86,7 +86,7 @@ class DnsRecordDnskey(ParsableBase, Serializable):
         return key_tag & 0xffff
 
     def _asdict(self):
-        dict_value = super(DnsRecordDnskey, self)._asdict()
+        dict_value = super()._asdict()
         return collections.OrderedDict([('key_tag', self.key_tag)] + list(dict_value.items()))
 
     @classmethod
