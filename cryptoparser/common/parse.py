@@ -782,7 +782,7 @@ class ComposerText(ComposerBase):
         composed_str = str()
 
         for value in values:
-            composed_str += '{:d}{}'.format(value, separator)
+            composed_str += f'{value:d}{separator}'
 
         self._composed += composed_str[:len(composed_str) - len(separator)].encode(self._encoding)
 

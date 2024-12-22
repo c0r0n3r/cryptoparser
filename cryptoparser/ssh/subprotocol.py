@@ -262,7 +262,7 @@ class SshKeyExchangeInit(SshMessageBase):  # pylint: disable=too-many-instance-a
     first_kex_packet_follows = attr.ib(validator=attr.validators.instance_of(int), default=0)
     cookie = attr.ib(
         validator=attr.validators.instance_of((bytearray, bytes)),
-        default=bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32))
+        default=bytearray.fromhex(f'{random.getrandbits(128):16x}'.zfill(32))
     )
     reserved = attr.ib(validator=attr.validators.instance_of(int), default=0x00000000)
 

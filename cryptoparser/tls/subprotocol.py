@@ -298,7 +298,7 @@ class TlsHandshakeHelloRandom(ParsableBase):
     @random.default
     def _default_random(self):  # pylint: disable=no-self-use
         return TlsHandshakeHelloRandomBytes(
-            bytearray.fromhex('{:28x}'.format(random.getrandbits(224)).zfill(56))
+            bytearray.fromhex(f'{random.getrandbits(224):28x}'.zfill(56))
         )
 
     @classmethod
@@ -1003,7 +1003,7 @@ class SslHandshakeClientHello(SslMessageBase):
 
     @challenge.default
     def _default_challenge(self):  # pylint: disable=no-self-use
-        return bytes(bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32)))
+        return bytes(bytearray.fromhex(f'{random.getrandbits(128):16x}'.zfill(32)))
 
     @classmethod
     def get_message_type(cls):

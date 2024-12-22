@@ -188,12 +188,12 @@ class Serializable():  # pylint: disable=too-few-public-methods
         result = ''
         name_dict = cls._markdown_human_readable_names(obj, dict_value)
         for name, value in dict_value.items():
-            result += '{indent}* {name}'.format(indent=indent, name=name_dict[name])
+            result += f'{indent}* {name_dict[name]}'
             multiline, markdnow_result = cls._markdown_result(value, level + 1)
             if multiline:
-                result += ':\n{result}'.format(result=markdnow_result)
+                result += f':\n{markdnow_result}'
             else:
-                result += ': {result}\n'.format(result=markdnow_result)
+                result += f': {markdnow_result}\n'
 
         if not result:
             return False, '-'
@@ -210,13 +210,9 @@ class Serializable():  # pylint: disable=too-few-public-methods
         result = ''
         for index, item in enumerate(obj):
             multiline, markdnow_result = cls._markdown_result(item, level + 1)
-            result += '{indent}{index}.{separator}{value}{newline}'.format(
-                indent=indent,
-                index=index + 1,
-                separator='\n' if multiline else ' ',
-                value=markdnow_result,
-                newline='' if multiline else '\n',
-            )
+            separator = '\n' if multiline else ' '
+            newline = '' if multiline else '\n'
+            result += f'{indent}{index + 1}.{separator}{markdnow_result}{newline}'
 
         return True, result
 
@@ -942,10 +938,10 @@ class ProtocolVersionMajorMinorBase(ProtocolVersionBase):
 
     @property
     def identifier(self):
-        return '{}_{}'.format(self.major, self.minor)
+        return f'{self.major}_{self.minor}'
 
     def __str__(self):
-        return '{}.{}'.format(self.major, self.minor)
+        return f'{self.major}.{self.minor}'
 
 
 @attr.s

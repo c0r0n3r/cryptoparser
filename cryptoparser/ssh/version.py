@@ -33,7 +33,7 @@ class SshProtocolVersion(ProtocolVersionBase, GradeableSimple):
         return Grade.SECURE
 
     def __str__(self):
-        return 'SSH {}.{}'.format(self.major, self.minor)
+        return f'SSH {self.major}.{self.minor}'
 
     @classmethod
     def _parse(cls, parsable):
@@ -59,7 +59,7 @@ class SshProtocolVersion(ProtocolVersionBase, GradeableSimple):
 
     @property
     def identifier(self):
-        return 'ssh{}'.format(self.major)
+        return f'ssh{self.major}'
 
     @property
     def supported_versions(self):

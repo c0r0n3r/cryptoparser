@@ -389,7 +389,7 @@ class FieldValueComponentQuotedString(FieldValueComponentKeyValueBase):
         raise NotImplementedError()
 
     def _get_value_as_str(self):
-        return '"{}"'.format(self.value)
+        return f'"{self.value}"'
 
     def _get_value_as_simple_type(self):
         return self.value
@@ -817,7 +817,7 @@ class FieldValueMimeType(FieldValueComponentBase):
     )
 
     def __str__(self):
-        return '{}/{}'.format(self.registry.value, self.type)
+        return f'{self.registry.value}/{self.type}'
 
     @property
     def value(self):

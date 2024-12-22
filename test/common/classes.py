@@ -92,7 +92,7 @@ class NByteParsable(ParsableBase):
         return composer.composed_bytes
 
     def __repr__(self):
-        return '{0:#0{1}x}'.format(self.value, self.get_byte_size() * 2 + 2)
+        return f'0x{self.value:>0{self.get_byte_size() * 2}x}'
 
     def __eq__(self, other):
         return self.get_byte_size() == other.get_byte_size() and self.value == other.value

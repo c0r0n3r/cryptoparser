@@ -11,13 +11,13 @@ class InvalidDataLength(Exception):
 @attr.s
 class NotEnoughData(InvalidDataLength):
     def __str__(self):
-        return 'not enough data received from target; missing_byte_count="{}"'.format(self.bytes_needed)
+        return f'not enough data received from target; missing_byte_count="{self.bytes_needed}"'
 
 
 @attr.s
 class TooMuchData(InvalidDataLength):
     def __str__(self):
-        return 'too much data received from target; rest_byte_count="{}"'.format(self.bytes_needed)
+        return f'too much data received from target; rest_byte_count="{self.bytes_needed}"'
 
 
 class InvalidType(Exception):
