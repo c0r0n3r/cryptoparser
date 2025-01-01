@@ -5,11 +5,10 @@
 
 *.pyc
 
-.coverage
-.idea
-.mypy_cache
+*.egg-info
 
-/*.egg-info
+/.coverage
+
 /.eggs
 /.tox
 /Pipfile
