@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import abc
+import collections.abc
 import datetime
 import enum
 import struct
 import time
 
 import attr
-import six
-from six.moves import collections_abc
 
 import dateutil
 import dateutil.parser
@@ -21,7 +20,7 @@ from cryptoparser.common.exception import InvalidType, NotEnoughData, TooMuchDat
 import cryptoparser.common.utils
 
 
-class ParsableBaseNoABC(object):
+class ParsableBaseNoABC():
     @classmethod
     def parse_mutable(cls, parsable):
         parsed_object, parsed_length = cls._parse(parsable)
@@ -51,8 +50,7 @@ class ParsableBaseNoABC(object):
         raise NotImplementedError()
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ParsableBase(ParsableBaseNoABC):
+class ParsableBase(ParsableBaseNoABC, metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
     def _parse(cls, parsable):
@@ -93,7 +91,7 @@ class ByteOrder(enum.Enum):
 
 
 @attr.s
-class ParserBase(collections_abc.Mapping):
+class ParserBase(collections.abc.Mapping):
     _parsable = attr.ib(converter=bytes, validator=attr.validators.instance_of((bytes, bytearray)))
     _parsed_length = attr.ib(init=False, default=0)
     _parsed_values = attr.ib(init=False, default=None)
@@ -164,21 +162,21 @@ class ParserBase(collections_abc.Mapping):
 
         value = self._parsable[self._parsed_length:self._parsed_length + parsable_length]
         try:
-            value = six.ensure_text(value, encoding)
+            value = value.decode(encoding)
             if converter != str:
                 value = converter(value)
             self._parsed_values[name] = value
         except UnicodeError as e:
-            six.raise_from(InvalidValue(value, converter, name), e)
+            raise InvalidValue(value, converter, name) from e
         except ValueError as e:
-            six.raise_from(InvalidValue(value, converter, name), e)
+            raise InvalidValue(value, converter, name) from e
 
         return value, parsable_length
 
 
 class ParserText(ParserBase):
     def __init__(self, parsable, encoding='ascii'):
-        super(ParserText, self).__init__(parsable)
+        super().__init__(parsable)
         self._encoding = encoding
 
     def _check_separators(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -189,7 +187,7 @@ class ParserText(ParserBase):
             min_count,
             max_count
     ):
-        separators = six.ensure_binary(separators, self._encoding)
+        separators = separators.encode(self._encoding)
 
         count = 0
         actual_offset = count_offset
@@ -225,7 +223,7 @@ class ParserText(ParserBase):
 
             if (is_floating and
                     not floating_point_found and item_offset < len(self._parsable) and
-                    six.indexbytes(self._parsable, item_offset) == ord('.')):
+                    self._parsable[item_offset] == ord('.')):
                 item_offset += 1
                 floating_point_found = True
                 continue
@@ -239,7 +237,7 @@ class ParserText(ParserBase):
                 try:
                     item_offset += self._check_separators(name, item_offset, separator, 1, 1)
                 except InvalidValue as e:
-                    six.raise_from(InvalidValue(self._parsable[self._parsed_length:item_offset], type(self), name), e)
+                    raise InvalidValue(self._parsable[self._parsed_length:item_offset], type(self), name) from e
 
             last_item_offset = item_offset
             floating_point_found = False
@@ -285,9 +283,7 @@ class ParserText(ParserBase):
                 name, min_length, max_length, self._encoding, str
             )
         except NotEnoughData as e:
-            six.raise_from(
-                InvalidValue(self._parsable[self._parsed_length:min_length - e.bytes_needed], type(self), name), e
-            )
+            raise InvalidValue(self._parsable[self._parsed_length:min_length - e.bytes_needed], type(self), name) from e
 
         if value != actual_value:
             raise InvalidValue(self._parsable[self._parsed_length:self._parsed_length + max_length], type(self), name)
@@ -311,16 +307,16 @@ class ParserText(ParserBase):
             may_end):
         try:
             if not isinstance(item_class, type):
-                item = item_class(six.ensure_text(self._parsable[item_offset:item_end], self._encoding))
+                item = item_class(self._parsable[item_offset:item_end].decode(self._encoding))
             elif issubclass(item_class, CryptoDataEnumCodedBase):
-                item = item_class.from_code(six.ensure_text(self._parsable[item_offset:item_end], self._encoding))
+                item = item_class.from_code(self._parsable[item_offset:item_end].decode(self._encoding))
             elif issubclass(item_class, ParsableBaseNoABC):
                 item, parsed_length = item_class.parse_immutable(self._parsable[item_offset:item_end])
                 item_end = item_offset + parsed_length
-            elif issubclass(item_class, six.string_types):
-                item = six.ensure_text(self._parsable[item_offset:item_end], self._encoding)
+            elif issubclass(item_class, str):
+                item = self._parsable[item_offset:item_end].decode(self._encoding)
             else:
-                item = item_class(six.ensure_text(self._parsable[item_offset:item_end], self._encoding))
+                item = item_class(self._parsable[item_offset:item_end].decode(self._encoding))
         except (InvalidValue, ValueError, UnicodeError) as e:
             if fallback_class is not None:
                 parsed_value, parsed_length = self._parse_string_until_separator(
@@ -329,7 +325,7 @@ class ParserText(ParserBase):
                 item_offset += parsed_length
                 return parsed_value
 
-            six.raise_from(InvalidValue(self._parsable[item_offset:], type(self), name), e)
+            raise InvalidValue(self._parsable[item_offset:], type(self), name) from e
 
         return item
 
@@ -344,7 +340,7 @@ class ParserText(ParserBase):
             separator_spaces=''
     ):
         item_end = None
-        byte_separators = [six.ensure_binary(separator, self._encoding) for separator in separators]
+        byte_separators = [separator.encode(self._encoding) for separator in separators]
 
         for separator_end in range(item_offset, len(self._parsable) + 1):
             for separator in byte_separators:
@@ -360,7 +356,7 @@ class ParserText(ParserBase):
             item_end = len(self._parsable)
 
         separator_space_count = 0
-        byte_separator_spaces = six.ensure_binary(separator_spaces, self._encoding)
+        byte_separator_spaces = separator_spaces.encode(self._encoding)
         while (item_end > item_offset and
                 self._parsable[
                     item_end - separator_space_count - 1:
@@ -470,9 +466,9 @@ class ParserText(ParserBase):
     def parse_date_time(self, name):
         try:
             value = self._parsable[self._parsed_length:]
-            date_time = dateutil.parser.parse(six.ensure_text(value, self._encoding))
+            date_time = dateutil.parser.parse(value.decode(self._encoding))
         except ValueError as e:
-            six.raise_from(InvalidValue(value, type(self), 'value'), e)
+            raise InvalidValue(value, type(self), 'value') from e
 
         self._parsed_values[name] = date_time
         self._parsed_length = len(self._parsable)
@@ -483,7 +479,7 @@ class ParserText(ParserBase):
         try:
             time_delta = datetime.timedelta(seconds=value[0])
         except OverflowError as e:
-            six.raise_from(InvalidValue(value[0], type(self), 'value'), e)
+            raise InvalidValue(value[0], type(self), 'value') from e
 
         self._parsed_values[name] = time_delta
         self._parsed_length += parsed_length
@@ -530,7 +526,7 @@ class ParserBinary(ParserBase):
                 try:
                     value.append(item_numeric_class(item))
                 except ValueError as e:
-                    six.raise_from(InvalidValue(item, item_numeric_class, name), e)
+                    raise InvalidValue(item, item_numeric_class, name) from e
         else:
             raise NotImplementedError()
 
@@ -564,7 +560,7 @@ class ParserBinary(ParserBase):
 
     def _parse_mpint(self, mpint_length, mpint_offset, negative):
         if mpint_length % 4:
-            pad_byte = six.int2byte(0xff) if negative else six.int2byte(0x00)
+            pad_byte = bytes((0xff,)) if negative else bytes((0x00,))
             pad_bytes = (4 - (mpint_length % 4)) * pad_byte
         else:
             pad_bytes = b''
@@ -595,7 +591,7 @@ class ParserBinary(ParserBase):
         mpint_length, parsed_length = self._parse_numeric_array(name, 1, 4, int)
         mpint_length = mpint_length[0]
 
-        negative = (mpint_length and (six.indexbytes(self._parsable, self._parsed_length + 4) >= 0x80))
+        negative = (mpint_length and self._parsable[self._parsed_length + 4] >= 0x80)
 
         value = self._parse_mpint(mpint_length, 4, negative)
 
@@ -622,7 +618,7 @@ class ParserBinary(ParserBase):
         try:
             self._parsed_values[name] = converter(parsed_bytes)
         except ValueError as e:
-            six.raise_from(InvalidValue(value, converter, name), e)
+            raise InvalidValue(value, converter, name) from e
         self._parsed_length += len(parsed_bytes)
 
     def parse_raw(self, name, size, converter=bytearray):
@@ -631,7 +627,7 @@ class ParserBinary(ParserBase):
         try:
             self._parsed_values[name] = converter(parsed_bytes)
         except ValueError as e:
-            six.raise_from(InvalidValue(parsed_bytes, converter, name), e)
+            raise InvalidValue(parsed_bytes, converter, name) from e
 
         self._parsed_length += size
 
@@ -651,11 +647,11 @@ class ParserBinary(ParserBase):
         try:
             length = next(iter([
                 i
-                for i, value in enumerate(six.iterbytes(self._parsable[self._parsed_length:]))
+                for i, value in enumerate(self._parsable[self._parsed_length:])
                 if value == 0
             ]))
         except StopIteration as e:
-            six.raise_from(InvalidValue(self._parsable[self._parsed_length:], str, name), e)
+            raise InvalidValue(self._parsable[self._parsed_length:], str, name) from e
 
         value, parsed_length = self._parse_string_by_length(name, length, length, encoding, converter)
         self._parsed_length += parsed_length + 1
@@ -692,7 +688,7 @@ class ParserBinary(ParserBase):
         except NotEnoughData as e:
             raise e
         except ValueError as e:
-            six.raise_from(InvalidValue(e.args[0], item_class, name), e)
+            raise InvalidValue(e.args[0], item_class, name) from e
 
         self._parsed_values[name] = items
         self._parsed_length += items_size
@@ -704,7 +700,7 @@ class ParserBinary(ParserBase):
         except NotEnoughData as e:
             raise e
         except ValueError as e:
-            six.raise_from(InvalidValue(e.args[0], item_base_class, name), e)
+            raise InvalidValue(e.args[0], item_base_class, name) from e
 
         self._parsed_values[name] = items
         self._parsed_length += items_size
@@ -720,7 +716,7 @@ class ParserBinary(ParserBase):
                 self.unparsed_length, [separator_class, item_class], fallback_class
             )
         except ValueError as e:
-            six.raise_from(InvalidValue(e.args[0], item_class, name), e)
+            raise InvalidValue(e.args[0], item_class, name) from e
 
         if not items:
             raise NotEnoughData(2)
@@ -748,7 +744,7 @@ class ParserBinary(ParserBase):
 
 
 @attr.s
-class ComposerBase(object):
+class ComposerBase():
     _composed = attr.ib(init=False, default=bytes())
 
     @property
@@ -760,7 +756,7 @@ class ComposerBase(object):
         return len(self._composed)
 
     def _compose_string_array(self, values, encoding, separator):
-        separator = bytearray(six.ensure_binary(separator, encoding))
+        separator = bytearray(separator.encode(encoding))
         composed_str = bytearray()
 
         for value in values:
@@ -768,9 +764,9 @@ class ComposerBase(object):
                 if isinstance(value, ParsableBaseNoABC):
                     composed_str += value.compose()
                 else:
-                    composed_str += six.ensure_binary(six.text_type(value), encoding)
+                    composed_str += str(value).encode(encoding)
             except UnicodeError as e:
-                six.raise_from(InvalidValue(value, type(self)), e)
+                raise InvalidValue(value, type(self)) from e
 
             composed_str += separator
 
@@ -779,16 +775,16 @@ class ComposerBase(object):
 
 class ComposerText(ComposerBase):
     def __init__(self, encoding='ascii'):
-        super(ComposerText, self).__init__()
+        super().__init__()
         self._encoding = encoding
 
     def _compose_numeric_array(self, values, separator):
         composed_str = str()
 
         for value in values:
-            composed_str += '{:d}{}'.format(value, separator)
+            composed_str += f'{value:d}{separator}'
 
-        self._composed += six.ensure_binary(composed_str[:len(composed_str) - len(separator)], self._encoding)
+        self._composed += composed_str[:len(composed_str) - len(separator)].encode(self._encoding)
 
     def compose_numeric(self, value):
         self._compose_numeric_array([value, ], separator='')
@@ -813,16 +809,16 @@ class ComposerText(ComposerBase):
         self._composed += self._compose_parsable(value)
 
     def compose_parsable_array(self, values, separator=',', fallback_class=None):
-        separator = six.ensure_binary(separator, self._encoding)
+        separator = separator.encode(self._encoding)
 
         composed_items = []
         for item in values:
             if isinstance(item, (ComposerBase, ParsableBase, ParsableBaseNoABC)):
                 composed_item = self._compose_parsable(item)
             elif isinstance(item, CryptoDataEnumBase):
-                composed_item = six.ensure_binary(item.value.code, self._encoding)
+                composed_item = item.value.code.encode(self._encoding)
             elif fallback_class is not None and isinstance(item, fallback_class):
-                composed_item = six.ensure_binary(item, self._encoding)
+                composed_item = item.encode(self._encoding)
             else:
                 raise InvalidType()
 
@@ -874,7 +870,7 @@ class ComposerBinary(ComposerBase):
                 else:
                     composed_bytes += packed_bytes
             except struct.error as e:
-                six.raise_from(InvalidValue(value, int), e)
+                raise InvalidValue(value, int) from e
 
         self._composed += composed_bytes
 
@@ -970,9 +966,9 @@ class ComposerBinary(ComposerBase):
 
     def compose_string(self, value, encoding, item_size):
         try:
-            value = six.ensure_binary(value, encoding)
+            value = value.encode(encoding)
         except UnicodeError as e:
-            six.raise_from(InvalidValue(value, type(self)), e)
+            raise InvalidValue(value, type(self)) from e
 
         self.compose_bytes(value, item_size)
 
@@ -980,7 +976,7 @@ class ComposerBinary(ComposerBase):
         try:
             value = value.encode(encoding)
         except UnicodeError as e:
-            six.raise_from(InvalidValue(value, type(self)), e)
+            raise InvalidValue(value, type(self)) from e
 
         self.compose_raw(value)
         self.compose_raw(b'\x00')

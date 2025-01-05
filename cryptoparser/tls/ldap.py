@@ -3,7 +3,6 @@
 import abc
 import enum
 import re
-import six
 
 import attr
 
@@ -159,9 +158,9 @@ class LDAPMessageParsableBase(ParsableBase):
             if match:
                 bytes_requested = int(match.group(1))
                 bytes_available = int(match.group(2))
-                six.raise_from(NotEnoughData(bytes_requested - bytes_available), e)
-            else:
-                six.raise_from(InvalidValue(parsable, cls), e)
+                raise NotEnoughData(bytes_requested - bytes_available) from e
+
+            raise InvalidValue(parsable, cls) from e
 
         return message
 

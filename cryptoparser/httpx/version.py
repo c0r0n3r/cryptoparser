@@ -3,15 +3,14 @@
 import enum
 
 import attr
-import six
 
 from cryptoparser.common.base import Serializable
 
 
 @attr.s(frozen=True)
 class HttpVersionParams(Serializable):
-    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    name = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    code = attr.ib(validator=attr.validators.instance_of(str))
+    name = attr.ib(validator=attr.validators.instance_of(str))
 
     @property
     def identifier(self):

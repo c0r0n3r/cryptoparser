@@ -7,7 +7,6 @@ import enum
 import ipaddress
 
 import attr
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.types import convert_url, convert_value_to_object
@@ -426,7 +425,7 @@ class SpfModifier(StringEnumParsable, enum.Enum):
 class SpfDomainSpec(FieldValueSingleBase):
     @classmethod
     def _get_value_type(cls):
-        return six.string_types
+        return str
 
     @classmethod
     def _parse(cls, parsable):
@@ -494,7 +493,7 @@ class DnsRecordTxtValueSpfDirectiveBase(ParsableBase, Serializable):
         try:
             parser.parse_string('mechanism', mechanism.value.code)
         except InvalidValue as e:
-            six.raise_from(InvalidType, e)
+            raise InvalidType from e
 
         return parser
 
@@ -671,11 +670,11 @@ class DnsRecordTxtValueSpfDirectiveDomainCidr(DnsRecordTxtValueSpfDirectiveBase)
     )
     ipv4_cidr_length = attr.ib(
         default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(six.integer_types)),
+        validator=attr.validators.optional(attr.validators.instance_of(int)),
     )
     ipv6_cidr_length = attr.ib(
         default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(six.integer_types)),
+        validator=attr.validators.optional(attr.validators.instance_of(int)),
     )
     qualifier = attr.ib(
         default=None,
@@ -879,7 +878,7 @@ class DnsRecordTxtValueSpf(ParsableBase, Serializable):
         try:
             parser.parse_parsable('version', DnsRecordTxtValueSpfVersion)
         except InvalidValue as e:
-            six.raise_from(InvalidType, e)
+            raise InvalidType from e
 
         terms = []
         while parser.unparsed_length:

@@ -4,7 +4,6 @@
 import abc
 import collections
 import enum
-import six
 import attr
 
 from cryptodatahub.common.exception import InvalidValue
@@ -72,7 +71,7 @@ class TlsExtensionsBase(VectorParsable):
                 if extension.extension_type == extension_type
             )
         except StopIteration as e:
-            six.raise_from(KeyError, e)
+            raise KeyError from e
 
         return item
 
@@ -230,7 +229,7 @@ class TlsServerName(Vector):
 
 @attr.s
 class TlsExtensionServerNameClient(TlsExtensionParsed):
-    host_name = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    host_name = attr.ib(validator=attr.validators.instance_of(str))
     name_type = attr.ib(validator=attr.validators.in_(TlsServerNameType), default=TlsServerNameType.HOST_NAME)
 
     @classmethod
@@ -245,14 +244,12 @@ class TlsExtensionServerNameClient(TlsExtensionParsed):
         parser.parse_numeric('server_name_type', 1, TlsServerNameType)
         parser.parse_parsable('server_name', TlsServerName)
 
-        return cls(
-            six.ensure_text(bytes(bytearray(parser['server_name'])), 'idna')
-        ), parser.parsed_length
+        return cls(bytearray(parser['server_name']).decode('idna')), parser.parsed_length
 
     def compose(self):
         composer = ComposerBinary()
 
-        idna_encoded_host_name = six.ensure_binary(self.host_name, 'idna')
+        idna_encoded_host_name = self.host_name.encode('idna')
 
         composer.compose_numeric(3 + len(idna_encoded_host_name), 2)
         composer.compose_numeric(self.name_type, 1)
@@ -687,7 +684,7 @@ class TlsCertificateStatusRequestResponderIdList(VectorParsable):
 
 class TlsExtensionCertificateStatusRequestClient(TlsExtensionParsed):
     def __init__(self, responder_id_list=(), extensions=()):
-        super(TlsExtensionCertificateStatusRequestClient, self).__init__()
+        super().__init__()
 
         self.responder_id_list = TlsCertificateStatusRequestResponderIdList(responder_id_list)
         self.request_extensions = TlsCertificateStatusRequestExtensions(extensions)
@@ -1162,7 +1159,7 @@ class TlsExtensionCompressCertificate(TlsExtensionParsed):
 
 @attr.s
 class TlsExtensionPadding(TlsExtensionParsed):
-    length = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    length = attr.ib(validator=attr.validators.instance_of(int))
 
     @classmethod
     def get_extension_type(cls):
@@ -1175,7 +1172,7 @@ class TlsExtensionPadding(TlsExtensionParsed):
         parser.parse_raw('padding', parser['extension_length'])
         try:
             non_zero_int = next(byte for byte in parser['padding'] if byte != 0)
-            raise InvalidValue(six.int2byte(non_zero_int), cls)
+            raise InvalidValue(bytes((non_zero_int,)), cls)
         except StopIteration:
             pass
 

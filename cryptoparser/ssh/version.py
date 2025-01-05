@@ -4,7 +4,6 @@
 import abc
 import collections
 import enum
-import six
 
 import attr
 
@@ -34,7 +33,7 @@ class SshProtocolVersion(ProtocolVersionBase, GradeableSimple):
         return Grade.SECURE
 
     def __str__(self):
-        return 'SSH {}.{}'.format(self.major, self.minor)
+        return f'SSH {self.major}.{self.minor}'
 
     @classmethod
     def _parse(cls, parsable):
@@ -45,7 +44,7 @@ class SshProtocolVersion(ProtocolVersionBase, GradeableSimple):
             parser.parse_separator('.')
             parser.parse_numeric('minor')
         except InvalidValue as e:
-            six.raise_from(InvalidValue(parsable, SshProtocolVersion), e)
+            raise InvalidValue(parsable, SshProtocolVersion) from e
 
         return SshProtocolVersion(parser['major'], parser['minor']), parser.parsed_length
 
@@ -60,7 +59,7 @@ class SshProtocolVersion(ProtocolVersionBase, GradeableSimple):
 
     @property
     def identifier(self):
-        return 'ssh{}'.format(self.major)
+        return f'ssh{self.major}'
 
     @property
     def supported_versions(self):
@@ -83,16 +82,16 @@ class SshSoftwareVersionBase(ParsableBase):
 
 @attr.s
 class SshSoftwareVersionUnparsed(SshSoftwareVersionBase, Serializable):
-    raw = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    raw = attr.ib(validator=attr.validators.instance_of(str))
 
     @raw.validator
     def raw_validator(self, _, value):  # pylint: disable=no-self-use
         if '\r' in value or '\n' in value or ' ' in value:
             raise InvalidValue(value, SshSoftwareVersionUnparsed, 'raw')
         try:
-            six.ensure_binary(value, 'ascii')
+            value.encode('ascii')
         except UnicodeEncodeError as e:
-            six.raise_from(InvalidValue(value, SshSoftwareVersionUnparsed, 'raw'), e)
+            raise InvalidValue(value, SshSoftwareVersionUnparsed, 'raw') from e
 
     def _as_markdown(self, level):
         return self._markdown_result(self.raw, level)
@@ -115,7 +114,7 @@ class SshSoftwareVersionUnparsed(SshSoftwareVersionBase, Serializable):
 
 @attr.s
 class SshSoftwareVersionParsedBase(SshSoftwareVersionBase):
-    version = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(six.string_types)))
+    version = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     @classmethod
     @abc.abstractmethod

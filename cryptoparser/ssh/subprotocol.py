@@ -7,7 +7,6 @@ import hashlib
 import random
 
 import attr
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.ssh.algorithm import (
@@ -84,7 +83,7 @@ class SshMessageBase(ParsableBase):
 class SshProtocolMessage(ParsableBase):
     protocol_version = attr.ib(validator=attr.validators.instance_of(SshProtocolVersion))
     software_version = attr.ib(validator=attr.validators.instance_of(SshSoftwareVersionBase))
-    comment = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)), default=None)
+    comment = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)), default=None)
 
     @comment.validator
     def comment_validator(self, _, value):  # pylint: disable=no-self-use
@@ -92,9 +91,9 @@ class SshProtocolMessage(ParsableBase):
             if '\r' in value or '\n' in value:
                 raise InvalidValue(value, SshProtocolMessage, 'comment')
             try:
-                six.ensure_binary(value, 'ascii')
+                value.encode('ascii')
             except UnicodeEncodeError as e:
-                six.raise_from(InvalidValue(value, SshProtocolMessage, 'comment'), e)
+                raise InvalidValue(value, SshProtocolMessage, 'comment') from e
 
     @classmethod
     def _parse(cls, parsable):
@@ -114,7 +113,7 @@ class SshProtocolMessage(ParsableBase):
         if software_version_and_comment[-1][-1] == '\r':
             software_version_and_comment[-1] = software_version_and_comment[-1][:-1]
 
-        software_version_parser = ParserText(six.ensure_binary(software_version_and_comment[0], 'ascii'))
+        software_version_parser = ParserText(software_version_and_comment[0].encode('ascii'))
         try:
             software_version_parser.parse_parsable('value', SshSoftwareVersionParsedVariant)
         except InvalidValue:
@@ -200,7 +199,7 @@ class SshCompressionAlgorithmVector(SshAlgorithmVector):
 
 class VectorParamSshLanguage(VectorParamString):
     def __init__(self):
-        super(VectorParamSshLanguage, self).__init__(
+        super().__init__(
             min_byte_num=0,
             max_byte_num=2 ** 32 - 1,
             separator=',',
@@ -260,12 +259,12 @@ class SshKeyExchangeInit(SshMessageBase):  # pylint: disable=too-many-instance-a
         converter=SshLanguageVector,
         validator=attr.validators.instance_of(SshLanguageVector), default=()
     )
-    first_kex_packet_follows = attr.ib(validator=attr.validators.instance_of(six.integer_types), default=0)
+    first_kex_packet_follows = attr.ib(validator=attr.validators.instance_of(int), default=0)
     cookie = attr.ib(
         validator=attr.validators.instance_of((bytearray, bytes)),
-        default=bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32))
+        default=bytearray.fromhex(f'{random.getrandbits(128):16x}'.zfill(32))
     )
-    reserved = attr.ib(validator=attr.validators.instance_of(six.integer_types), default=0x00000000)
+    reserved = attr.ib(validator=attr.validators.instance_of(int), default=0x00000000)
 
     @classmethod
     def _get_cipher_attributes(cls):
@@ -311,14 +310,14 @@ class SshKeyExchangeInit(SshMessageBase):  # pylint: disable=too-many-instance-a
     def _hassh(algorithm_vectors):
         hassh_text = ';'.join([
             ','.join([
-                algorithm if isinstance(algorithm, six.string_types) else algorithm.value.code
+                algorithm if isinstance(algorithm, str) else algorithm.value.code
                 for algorithm in algorithms
             ])
             for algorithms in algorithm_vectors
         ])
 
         message = hashlib.md5()
-        message.update(six.ensure_binary(hassh_text, 'ascii'))
+        message.update(hassh_text.encode('ascii'))
 
         return bytes_to_hex_string(message.digest(), lowercase=True)
 
@@ -363,12 +362,12 @@ class SshReasonCode(enum.IntEnum):
 class SshDisconnectMessage(SshMessageBase):
     reason = attr.ib(validator=attr.validators.instance_of(SshReasonCode))
     description = attr.ib(
-        converter=six.text_type,
-        validator=attr.validators.instance_of(six.string_types)
+        converter=str,
+        validator=attr.validators.instance_of(str)
     )
     language = attr.ib(
         default='US',
-        validator=attr.validators.instance_of(six.string_types)
+        validator=attr.validators.instance_of(str)
     )
 
     @classmethod
@@ -397,7 +396,7 @@ class SshDisconnectMessage(SshMessageBase):
 
 @attr.s
 class SshUnimplementedMessage(SshMessageBase):
-    sequence_number = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    sequence_number = attr.ib(validator=attr.validators.instance_of(int))
 
     @classmethod
     def get_message_code(cls):
@@ -519,9 +518,9 @@ class SshDHGroupExchangeReply(SshDHKeyExchangeReplyBase):
 
 @attr.s
 class SshDHGroupExchangeRequest(SshMessageBase):
-    gex_min = attr.ib(validator=attr.validators.instance_of(six.integer_types))
-    gex_number = attr.ib(validator=attr.validators.instance_of(six.integer_types))
-    gex_max = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    gex_min = attr.ib(validator=attr.validators.instance_of(int))
+    gex_number = attr.ib(validator=attr.validators.instance_of(int))
+    gex_max = attr.ib(validator=attr.validators.instance_of(int))
 
     @classmethod
     def get_message_code(cls):

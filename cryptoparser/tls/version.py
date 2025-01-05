@@ -89,15 +89,15 @@ class TlsProtocolVersion(ProtocolVersionBase, GradeableSimple):
 
     def __str__(self):
         if self.is_draft:
-            return 'TLS 1.3 Draft {}'.format(self.minor)
+            return f'TLS 1.3 Draft {self.minor}'
         if self.is_google_experimental:
-            return 'TLS 1.3 Google Experiment {}'.format(self.minor)
+            return f'TLS 1.3 Google Experiment {self.minor}'
         if self.version == TlsVersion.SSL3:
             return 'SSL 3.0'
         if self.version == TlsVersion.SSL2:
             return 'SSL 2.0'
 
-        return 'TLS 1.{}'.format(self.minor - 1)
+        return f'TLS 1.{self.minor - 1}'
 
     def _as_markdown(self, level):
         return self._markdown_result(str(self), level)

@@ -2,7 +2,6 @@
 
 import unittest
 
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 
@@ -13,11 +12,11 @@ from cryptoparser.tls.subprotocol import TlsAlertMessage, TlsAlertLevel, TlsAler
 
 class TestAlert(unittest.TestCase):
     def test_error(self):
-        with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid TlsAlertLevel'):
+        with self.assertRaisesRegex(InvalidValue, '0xff is not a valid TlsAlertLevel'):
             # pylint: disable=expression-not-assigned
             TlsAlertMessage.parse_exact_size(b'\xff\x00')
 
-        with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid TlsAlertDescription'):
+        with self.assertRaisesRegex(InvalidValue, '0xff is not a valid TlsAlertDescription'):
             # pylint: disable=expression-not-assigned
             TlsAlertMessage.parse_exact_size(b'\x01\xff')
 

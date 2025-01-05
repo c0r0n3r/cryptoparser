@@ -8,7 +8,6 @@ import enum
 import json
 
 import attr
-import six
 import urllib3
 
 from cryptodatahub.common.exception import InvalidValue
@@ -92,8 +91,8 @@ class NameValueVariantBase(FieldParsableBase):
 
 @attr.s
 class NameValuePair(FieldParsableBase):
-    name = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)), default=None)
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)), default=None)
     quoted = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(bool)), default=False)
 
     @classmethod
@@ -301,7 +300,7 @@ class FieldValueComponentKeyValueBase(FieldValueComponentBase):
         try:
             parser.parse_string_by_length('name', len(name), len(name))
         except NotEnoughData as e:
-            six.raise_from(InvalidType, e)
+            raise InvalidType from e
 
         cls._check_name(parser['name'])
 
@@ -367,7 +366,7 @@ class FieldValueComponentParsable(FieldValueComponentParsableBase):
 class FieldValueComponentParsableOptional(FieldValueComponentParsableBase):
     def __attrs_post_init__(self):
         if self.value is not None:
-            super(FieldValueComponentParsableOptional, self).__attrs_post_init__()
+            super().__attrs_post_init__()
 
     @classmethod
     @abc.abstractmethod
@@ -382,7 +381,7 @@ class FieldValueComponentParsableOptional(FieldValueComponentParsableBase):
 
 @attr.s
 class FieldValueComponentQuotedString(FieldValueComponentKeyValueBase):
-    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)))
+    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     @classmethod
     @abc.abstractmethod
@@ -390,7 +389,7 @@ class FieldValueComponentQuotedString(FieldValueComponentKeyValueBase):
         raise NotImplementedError()
 
     def _get_value_as_str(self):
-        return '"{}"'.format(self.value)
+        return f'"{self.value}"'
 
     def _get_value_as_simple_type(self):
         return self.value
@@ -540,8 +539,8 @@ class FieldValueComponentPercent(FieldValueComponentNumber):
 
 
 @attr.s
-class FieldValueComponentStringEnumParams(object):
-    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
+class FieldValueComponentStringEnumParams():
+    code = attr.ib(validator=attr.validators.instance_of(str))
 
 
 @attr.s
@@ -568,7 +567,7 @@ class FieldValueComponentStringEnum(FieldValueComponentKeyValueBase):
         try:
             parser.parse_parsable('value', cls._get_value_type())
         except InvalidValue as e:
-            six.raise_from(InvalidValue(e.value.decode('ascii'), cls, 'value'), e)
+            raise InvalidValue(e.value.decode('ascii'), cls, 'value') from e
 
     def _get_value_as_simple_type(self):
         return self.value.value.code
@@ -592,7 +591,7 @@ class FieldValueComponentStringEnumOption(FieldValueComponentStringEnum):
 
 @attr.s
 class FieldValueComponentString(FieldValueComponentKeyValueBase):
-    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(six.string_types)))
+    value = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(str)))
 
     @classmethod
     @abc.abstractmethod
@@ -668,7 +667,7 @@ class FieldsJson(FieldValueBase):
         try:
             raw_values = json.loads(parsable.decode('ascii'), object_pairs_hook=collections.OrderedDict)
         except ValueError as e:  # json.decoder.JSONDecodeError is derived from ValueError
-            six.raise_from(InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value'), e)
+            raise InvalidValue(parsable.decode('ascii'), cls, 'value') from e
 
         attr_fields_dict = attr.fields_dict(cls)
 
@@ -720,7 +719,7 @@ class FieldValueMultiple(FieldValueBase):
                     parsable = component
                 else:
                     parsable = '='.join([attr_to_component_name_dict[name].get_canonical_name(), parsable])
-                params[name] = attr_to_component_name_dict[name].parse_exact_size(six.ensure_binary(parsable, 'ascii'))
+                params[name] = attr_to_component_name_dict[name].parse_exact_size(parsable.encode('ascii'))
             else:
                 params[name] = attribute.default
 
@@ -809,7 +808,7 @@ class MimeTypeRegistry(enum.Enum):
 @attr.s
 class FieldValueMimeType(FieldValueComponentBase):
     type = attr.ib(
-        validator=attr.validators.instance_of(six.string_types),
+        validator=attr.validators.instance_of(str),
         default=None,
     )
     registry = attr.ib(
@@ -818,7 +817,7 @@ class FieldValueMimeType(FieldValueComponentBase):
     )
 
     def __str__(self):
-        return '{}/{}'.format(self.registry.value, self.type)
+        return f'{self.registry.value}/{self.type}'
 
     @property
     def value(self):
@@ -917,10 +916,10 @@ class FieldValueSingle(FieldValueSingleSimpleBase):
 
 @attr.s
 class FieldValueStringEnumParams(Serializable):
-    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    code = attr.ib(validator=attr.validators.instance_of(str))
     human_readable_name = attr.ib(
         default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(six.string_types))
+        validator=attr.validators.optional(attr.validators.instance_of(str))
     )
 
     def _as_markdown(self, level):
@@ -933,7 +932,7 @@ class FieldValueStringEnumParams(Serializable):
 class FieldValueString(FieldValueSingle):
     @classmethod
     def _get_value_type(cls):
-        return six.string_types
+        return str
 
     @classmethod
     def _value_from_str(cls, value):
@@ -983,7 +982,7 @@ class FieldValueStringBySeparatorBase(FieldValueSingleComplexBase):
 
     @classmethod
     def _get_value_type(cls):
-        return six.string_types
+        return str
 
     @classmethod
     def _parse(cls, parsable):
@@ -1012,7 +1011,7 @@ class FieldValueStringEnum(FieldValueSingleComplexBase):
         try:
             value = cls._get_value_type().parse_exact_size(parsable)
         except InvalidValue as e:
-            six.raise_from(InvalidValue(six.ensure_text(parsable, 'ascii'), cls, 'value'), e)
+            raise InvalidValue(parsable.decode('ascii'), cls, 'value') from e
 
         return cls(value), len(parsable)
 

@@ -2,7 +2,6 @@
 
 import unittest
 
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 
@@ -15,7 +14,7 @@ from cryptoparser.tls.version import TlsProtocolVersion, TlsVersion
 
 class TestRecord(unittest.TestCase):
     def test_error(self):
-        with six.assertRaisesRegex(self, InvalidValue, '0xff is not a valid TlsChangeCipherSpecType'):
+        with self.assertRaisesRegex(InvalidValue, '0xff is not a valid TlsChangeCipherSpecType'):
             # pylint: disable=expression-not-assigned
             TlsChangeCipherSpecMessage.parse_exact_size(b'\xff')
 

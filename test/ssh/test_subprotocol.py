@@ -4,7 +4,6 @@
 import collections
 import unittest
 
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.key import PublicKey, PublicKeyParamsRsa
@@ -82,19 +81,19 @@ class TestProtocolMessage(unittest.TestCase):
             SshProtocolMessage(
                 SshProtocolVersion(SshVersion.SSH2, 2),
                 SshSoftwareVersionUnparsed('software_version'),
-                comment=six.ensure_text('αβγ'),
+                comment='αβγ',
             )
         with self.assertRaises(InvalidValue):
             SshProtocolMessage(
                 SshProtocolVersion(SshVersion.SSH2, 2),
                 SshSoftwareVersionUnparsed('software_version'),
-                comment=six.ensure_text('comment\r'),
+                comment='comment\r',
             )
         with self.assertRaises(InvalidValue):
             SshProtocolMessage(
                 SshProtocolVersion(SshVersion.SSH2, 2),
                 SshSoftwareVersionUnparsed('software_version'),
-                comment=six.ensure_text('comment\n'),
+                comment='comment\n',
             )
 
     def test_compose(self):

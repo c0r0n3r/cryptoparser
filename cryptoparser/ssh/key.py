@@ -14,7 +14,6 @@ from collections import OrderedDict
 
 import ipaddress
 import attr
-import six
 
 
 from cryptodatahub.common.algorithm import Authentication, Hash, NamedGroup
@@ -47,7 +46,7 @@ from cryptoparser.common.x509 import PublicKeyX509
 
 
 @attr.s
-class SshPublicKeyBase(object):
+class SshPublicKeyBase():
     host_key_algorithm = attr.ib(
         converter=SshHostKeyAlgorithm,
         validator=attr.validators.instance_of(SshHostKeyAlgorithm)
@@ -72,9 +71,9 @@ class SshPublicKeyBase(object):
         digest = hash_bytes(hash_type, key_bytes)
 
         if hash_type == Hash.MD5:
-            fingerprint = ':'.join(textwrap.wrap(six.ensure_text(binascii.hexlify(digest), 'ascii'), 2))
+            fingerprint = ':'.join(textwrap.wrap(binascii.hexlify(digest).decode('ascii'), 2))
         else:
-            fingerprint = six.ensure_text(base64.b64encode(digest), 'ascii')
+            fingerprint = base64.b64encode(digest).decode('ascii')
 
         return ':'.join((prefix, fingerprint))
 
@@ -87,7 +86,7 @@ class SshPublicKeyBase(object):
         ])
 
     def host_key_asdict(self):
-        known_hosts = six.ensure_text(base64.b64encode(self.key_bytes), 'ascii')
+        known_hosts = base64.b64encode(self.key_bytes).decode('ascii')
 
         public_key_dict = (
             [('key_type', self.host_key_algorithm.value.key_type.value)] +
@@ -366,7 +365,7 @@ class SshHostKeyEDDSA(SshHostKeyEDDSABase, SshHostKeyParserBase):
 @attr.s(frozen=True)
 class SshCertTypeParams(Serializable):
     code = attr.ib(validator=attr.validators.instance_of(int))
-    name = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    name = attr.ib(validator=attr.validators.instance_of(str))
 
     def _as_markdown(self, level):
         return self._markdown_result(self.name, level)
@@ -412,7 +411,7 @@ class SshCertSignature(ParsableBase):
 
 @attr.s
 class SshString(ParsableBase):
-    value = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    value = attr.ib(validator=attr.validators.instance_of(str))
 
     @classmethod
     def _parse(cls, parsable):
@@ -441,8 +440,8 @@ class SshCertValidPrincipals(VectorParsable):
 
 
 @attr.s(frozen=True)
-class SshCertExtensionParam(object):
-    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
+class SshCertExtensionParam():
+    code = attr.ib(validator=attr.validators.instance_of(str))
     critical = attr.ib(validator=attr.validators.instance_of(bool))
 
 
@@ -505,7 +504,7 @@ class SshCertExtensionBase(ParsableBase):
 
 @attr.s
 class SshCertExtensionUnparsed(SshCertExtensionBase):
-    extension_name = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    extension_name = attr.ib(validator=attr.validators.instance_of(str))
     extension_data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
 
     @classmethod
@@ -573,7 +572,7 @@ class SshCertExtensionNoData(SshCertExtensionParsed):
         return header_parser
 
     def _compose_header(self):
-        header_composer = super(SshCertExtensionNoData, self)._compose_header()
+        header_composer = super()._compose_header()
 
         header_composer.compose_numeric(0, 4)
 
@@ -629,7 +628,7 @@ class SshCertExtensionPermitUserRC(SshCertExtensionNoData):
 
 @attr.s
 class SshCertExtensionForceCommand(SshCertExtensionParsed):
-    command = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    command = attr.ib(validator=attr.validators.instance_of(str))
 
     @classmethod
     def get_extension_name(cls):
@@ -724,7 +723,7 @@ class SshCertConstraintVariant(VariantParsable):
         raise NotImplementedError()
 
 
-class SshCertificateBase(object):
+class SshCertificateBase():
     @classmethod
     @abc.abstractmethod
     def _parse_host_key_algorithm(cls, parsable):
@@ -751,7 +750,7 @@ class SshCertificateBase(object):
 class SshHostCertificateV00Base(ParsableBase, SshCertificateBase):  # pylint: disable=too-many-instance-attributes
     certificate_type = attr.ib(validator=attr.validators.instance_of(SshCertType))
     key_id = attr.ib(
-        validator=attr.validators.instance_of(six.string_types),
+        validator=attr.validators.instance_of(str),
         metadata={'human_readable_name': 'Key ID'},
     )
     valid_principals = attr.ib(
@@ -835,7 +834,7 @@ class SshHostCertificateV00Base(ParsableBase, SshCertificateBase):  # pylint: di
         return composer.composed
 
 
-class SshHostCertificateBase(object):
+class SshHostCertificateBase():
     def _asdict(self):
         key_dict = OrderedDict([])
 
@@ -915,9 +914,9 @@ class SshCertCriticalOptionVector(VectorParsableDerived):
 @attr.s
 class SshHostCertificateV01Base(ParsableBase, SshCertificateBase):  # pylint: disable=too-many-instance-attributes
     nonce = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
-    serial = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    serial = attr.ib(validator=attr.validators.instance_of(int))
     certificate_type = attr.ib(validator=attr.validators.instance_of(SshCertType))
-    key_id = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    key_id = attr.ib(validator=attr.validators.instance_of(str))
     valid_principals = attr.ib(
         converter=SshCertValidPrincipals,
         validator=attr.validators.instance_of(SshCertValidPrincipals)
@@ -1107,7 +1106,7 @@ class SshX509Certificate(ParsableBase, SshHostKeyBase):
         try:
             parser.parse_raw('public_key', public_key_length, PublicKeyX509.from_der)
         except (NotEnoughData, InvalidValue) as e:
-            six.raise_from(InvalidValue(parser.unparsed, cls, 'public_key'), e)
+            raise InvalidValue(parser.unparsed, cls, 'public_key') from e
 
         public_key = parser['public_key']
         if host_key_algorithm is None:

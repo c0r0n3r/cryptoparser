@@ -3,8 +3,6 @@
 import binascii
 import inspect
 
-import six
-
 
 def get_leaf_classes(base_class):
 
@@ -29,7 +27,7 @@ def bytes_to_hex_string(byte_array, separator='', lowercase=False):
     else:
         format_str = '{:02X}'
 
-    return separator.join([format_str.format(x) for x in six.iterbytes(bytes(byte_array))])
+    return separator.join([format_str.format(x) for x in bytes(byte_array)])
 
 
 def bytes_from_hex_string(hex_string, separator=''):
@@ -39,6 +37,6 @@ def bytes_from_hex_string(hex_string, separator=''):
     try:
         binary_data = binascii.a2b_hex(hex_string)
     except (TypeError, ValueError) as e:
-        six.raise_from(ValueError(*e.args), e)
+        raise ValueError(*e.args) from e
 
     return binary_data

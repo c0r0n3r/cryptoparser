@@ -9,7 +9,6 @@ import enum
 import random
 import attr
 
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.tls.algorithm import SslCipherKind, TlsCipherSuite, TlsCipherSuiteExtension, TlsCompressionMethod
@@ -50,7 +49,7 @@ class TlsContentType(enum.IntEnum):
 
 
 @attr.s
-class SubprotocolParser(object):
+class SubprotocolParser():
     _subprotocol_type = attr.ib(validator=attr.validators.instance_of(enum.IntEnum))
 
     @classmethod
@@ -153,14 +152,14 @@ class TlsAlertMessage(TlsSubprotocolMessageBase):
         try:
             self.level = TlsAlertLevel(value)
         except ValueError as e:
-            six.raise_from(InvalidValue(value, TlsAlertLevel, 'level'), e)
+            raise InvalidValue(value, TlsAlertLevel, 'level') from e
 
     @description.validator
     def _validator_description(self, attribute, value):  # pylint: disable=unused-argument
         try:
             self.description = TlsAlertDescription(value)
         except ValueError as e:
-            six.raise_from(InvalidValue(value, TlsAlertDescription), e)
+            raise InvalidValue(value, TlsAlertDescription) from e
 
 
 class TlsChangeCipherSpecType(enum.IntEnum):
@@ -255,7 +254,7 @@ class TlsHandshakeMessage(TlsSubprotocolMessageBase):
         try:
             parser.parse_bytes('payload', 3)
         except NotEnoughData as e:
-            six.raise_from(NotEnoughData(e.bytes_needed), e)
+            raise NotEnoughData(e.bytes_needed) from e
 
         return parser
 
@@ -280,7 +279,7 @@ class TlsHandshakeHelloRandomBytes(Vector):
         return cls(vector), parsed_length - vector_param.item_num_size
 
     def compose(self):
-        return super(TlsHandshakeHelloRandomBytes, self).compose()[self.get_param().item_num_size:]
+        return super().compose()[self.get_param().item_num_size:]
 
     @classmethod
     def get_param(cls):
@@ -299,7 +298,7 @@ class TlsHandshakeHelloRandom(ParsableBase):
     @random.default
     def _default_random(self):  # pylint: disable=no-self-use
         return TlsHandshakeHelloRandomBytes(
-            bytearray.fromhex('{:28x}'.format(random.getrandbits(224)).zfill(56))
+            bytearray.fromhex(f'{random.getrandbits(224):28x}'.zfill(56))
         )
 
     @classmethod
@@ -335,7 +334,7 @@ class TlsHandshakeHello(TlsHandshakeMessage):
     def _compose_header(self, payload_length):
         composer = ComposerBinary()
 
-        handshake_header_bytes = super(TlsHandshakeHello, self)._compose_header(
+        handshake_header_bytes = super()._compose_header(
             payload_length + composer.composed_length
         )
 
@@ -669,7 +668,7 @@ class TlsHandshakeCertificate(TlsHandshakeMessage):
 
 class TlsHandshakeCertificateStatus(TlsHandshakeMessage):
     def __init__(self, status_type, status):
-        super(TlsHandshakeCertificateStatus, self).__init__()
+        super().__init__()
 
         self.status_type = status_type
         self.status = status
@@ -1004,7 +1003,7 @@ class SslHandshakeClientHello(SslMessageBase):
 
     @challenge.default
     def _default_challenge(self):  # pylint: disable=no-self-use
-        return bytes(bytearray.fromhex('{:16x}'.format(random.getrandbits(128)).zfill(32)))
+        return bytes(bytearray.fromhex(f'{random.getrandbits(128):16x}'.zfill(32)))
 
     @classmethod
     def get_message_type(cls):

@@ -6,7 +6,6 @@ import datetime
 import enum
 
 import attr
-import six
 
 from cryptodatahub.common.algorithm import Authentication, NamedGroup, Signature
 from cryptodatahub.common.exception import InvalidValue
@@ -87,7 +86,7 @@ class DnsRecordDnskey(ParsableBase, Serializable):
         return key_tag & 0xffff
 
     def _asdict(self):
-        dict_value = super(DnsRecordDnskey, self)._asdict()
+        dict_value = super()._asdict()
         return collections.OrderedDict([('key_tag', self.key_tag)] + list(dict_value.items()))
 
     @classmethod
@@ -278,7 +277,7 @@ class DnsSecDigestTypeFactory(OneByteEnumParsable):
 class DnsRecordDs(ParsableBase):
     HEADER_SIZE = 4
 
-    key_tag = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    key_tag = attr.ib(validator=attr.validators.instance_of(int))
     algorithm = attr.ib(validator=attr.validators.instance_of(DnsSecAlgorithm))
     digest_type = attr.ib(validator=attr.validators.instance_of(DnsSecDigestType))
     digest = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
@@ -335,11 +334,11 @@ class DnsRrTypePrivate(NumericRangeParsableBase):
 @attr.s
 class DnsNameUncompressed(ParsableBase, Serializable):
     labels = attr.ib(
-        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(six.string_types))
+        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(str))
     )
 
     def __str__(self):
-        return six.u('.').join(self.labels)
+        return '.'.join(self.labels)
 
     def _as_markdown(self, level):
         return self._markdown_result(str(self), level)
@@ -348,7 +347,7 @@ class DnsNameUncompressed(ParsableBase, Serializable):
     def convert(cls, value):
         if isinstance(value, cls):
             return value
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             if not value:
                 return cls([])
 
@@ -389,14 +388,14 @@ class DnsRecordRrsig(ParsableBase):  # pylint: disable=too-many-instance-attribu
 
     type_covered = attr.ib(validator=attr.validators.instance_of((DnsRrType, DnsRrTypePrivate)))
     algorithm = attr.ib(validator=attr.validators.instance_of(DnsSecAlgorithm))
-    labels = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    labels = attr.ib(validator=attr.validators.instance_of(int))
     original_ttl = attr.ib(
-        validator=attr.validators.instance_of(six.integer_types),
+        validator=attr.validators.instance_of(int),
         metadata={'human_readable_name': 'Original TTL'}
     )
     signature_expiration = attr.ib(validator=attr.validators.instance_of(datetime.datetime))
     signature_inception = attr.ib(validator=attr.validators.instance_of(datetime.datetime))
-    key_tag = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    key_tag = attr.ib(validator=attr.validators.instance_of(int))
     signers_name = attr.ib(
         converter=DnsNameUncompressed.convert,
         validator=attr.validators.instance_of(DnsNameUncompressed)
@@ -451,7 +450,7 @@ class DnsRecordRrsig(ParsableBase):  # pylint: disable=too-many-instance-attribu
 class DnsRecordMx(ParsableBase):
     HEADER_SIZE = 2
 
-    priority = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    priority = attr.ib(validator=attr.validators.instance_of(int))
     exchange = attr.ib(
         converter=DnsNameUncompressed.convert,
         validator=attr.validators.instance_of(DnsNameUncompressed)
@@ -482,7 +481,7 @@ class DnsRecordMx(ParsableBase):
 class DnsRecordTxt(ParsableBase):
     HEADER_SIZE = 1
 
-    value = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    value = attr.ib(validator=attr.validators.instance_of(str))
 
     @classmethod
     def _parse(cls, parsable):

@@ -3,7 +3,6 @@
 import json
 import unittest
 
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 
@@ -485,18 +484,18 @@ class TestOpaque(unittest.TestCase):
 class TestOpaqueEnum(unittest.TestCase):
     def test_error(self):
         with self.assertRaises(InvalidValue) as context_manager:
-            OpaqueEnumFactory.parse_exact_size(b'\x0a' + six.ensure_binary('δέλτα', 'utf-8'))
-        self.assertEqual(context_manager.exception.value, six.ensure_text('δέλτα'))
+            OpaqueEnumFactory.parse_exact_size(b'\x0a' + 'δέλτα'.encode('utf-8'))
+        self.assertEqual(context_manager.exception.value, 'δέλτα')
 
     def test_parse(self):
         self.assertEqual(
             OpaqueEnum.ALPHA,
-            OpaqueEnumFactory.parse_exact_size(b'\x08' + six.ensure_binary(six.ensure_text('άλφα'), 'utf-8'))
+            OpaqueEnumFactory.parse_exact_size(b'\x08' + 'άλφα'.encode('utf-8'))
         )
 
     def test_compose(self):
         self.assertEqual(
-            b'\x0a' + six.ensure_binary(six.ensure_text('γάμμα'), 'utf-8'),
+            b'\x0a' + 'γάμμα'.encode('utf-8'),
             OpaqueEnum.GAMMA.compose()  # pylint: disable=no-member
         )
 

@@ -2,7 +2,6 @@
 
 import abc
 import enum
-import six
 
 import attr
 
@@ -66,8 +65,8 @@ class MySQLStatusFlag(enum.IntEnum):
 @attr.s(frozen=True)
 class MySQLCharacterSetParams(Serializable):
     code = attr.ib(validator=attr.validators.instance_of(int))
-    name = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    collate_name = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    collate_name = attr.ib(validator=attr.validators.instance_of(str))
 
 
 class MySQLCharacterSetFactory(OneByteEnumParsable):
@@ -303,7 +302,7 @@ class MySQLPacketBase(ParsableBase):
 class MySQLRecord(ParsableBase):
     HEADER_SIZE = 4
 
-    packet_number = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    packet_number = attr.ib(validator=attr.validators.instance_of(int))
     packet_bytes = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
 
     @classmethod
@@ -335,8 +334,8 @@ class MySQLRecord(ParsableBase):
 @attr.s
 class MySQLHandshakeV10(MySQLPacketBase):  # pylint: disable=too-many-instance-attributes
     protocol_version = attr.ib(validator=attr.validators.in_(MySQLVersion))
-    server_version = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    connection_id = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    server_version = attr.ib(validator=attr.validators.instance_of(str))
+    connection_id = attr.ib(validator=attr.validators.instance_of(int))
     auth_plugin_data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
     capabilities = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(MySQLCapability),
@@ -353,7 +352,7 @@ class MySQLHandshakeV10(MySQLPacketBase):  # pylint: disable=too-many-instance-a
     )
     auth_plugin_name = attr.ib(
         default=None,
-        validator=attr.validators.optional(attr.validators.instance_of(six.string_types))
+        validator=attr.validators.optional(attr.validators.instance_of(str))
     )
 
     MINIMUM_SIZE = 33
@@ -443,7 +442,7 @@ class MySQLHandshakeSslRequest(MySQLPacketBase):
     capabilities = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(MySQLCapability),
     ))
-    max_packet_size = attr.ib(default=0xffff, validator=attr.validators.instance_of(six.integer_types))
+    max_packet_size = attr.ib(default=0xffff, validator=attr.validators.instance_of(int))
     character_set = attr.ib(default=None, validator=attr.validators.optional(attr.validators.in_(MySQLCharacterSet)))
 
     MINIMUM_SIZE = 5

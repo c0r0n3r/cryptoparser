@@ -2,7 +2,6 @@
 
 import unittest
 
-import six
 
 from cryptodatahub.common.algorithm import Authentication, MAC, Signature
 from cryptodatahub.common.exception import InvalidValue
@@ -10,7 +9,7 @@ from cryptodatahub.common.exception import InvalidValue
 
 class TestAlgortihmOIDBase(unittest.TestCase):
     def test_error_not_found(self):
-        with six.assertRaisesRegex(self, InvalidValue, '\'1.2.3.4.5.6.7.8\' is not a valid Authentication oid value'):
+        with self.assertRaisesRegex(InvalidValue, '\'1.2.3.4.5.6.7.8\' is not a valid Authentication oid value'):
             Authentication.from_oid('1.2.3.4.5.6.7.8')
 
     def test_from_oid(self):

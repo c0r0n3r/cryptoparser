@@ -18,7 +18,6 @@ except ImportError:  # pragma: no cover
 from collections import OrderedDict
 
 import attr
-import six
 import urllib3
 
 from cryptodatahub.common.exception import InvalidValue
@@ -49,9 +48,9 @@ _default.default = json.JSONEncoder().default
 json.JSONEncoder.default = _default
 
 
-class SerializableTextEncoder(object):
+class SerializableTextEncoder():
     def __call__(self, obj, level):
-        if isinstance(obj, six.string_types):
+        if isinstance(obj, str):
             string_result = obj
         else:
             string_result = str(obj)
@@ -59,7 +58,7 @@ class SerializableTextEncoder(object):
         return False, string_result
 
 
-class Serializable(object):  # pylint: disable=too-few-public-methods
+class Serializable():  # pylint: disable=too-few-public-methods
     _MARKDOWN_RESULT_STRING_CLASSES = (
         ipaddress.IPv4Network,
         ipaddress.IPv6Network,
@@ -117,7 +116,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
                 result = obj.name
             else:
                 result = {obj.name: obj.value}
-        elif isinstance(obj, six.string_types + six.integer_types + (float, bool, )) or obj is None:
+        elif isinstance(obj, (str, int, float, bool, )) or obj is None:
             result = obj
         elif isinstance(obj, (bytes, bytearray)):
             result = bytes_to_hex_string(obj, separator=':', lowercase=False)
@@ -158,7 +157,7 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         name_dict = {}
         fields_dict = attr.fields_dict(type(obj)) if attr.has(type(obj)) else {}
         for name in dict_value:
-            if isinstance(name, six.string_types):
+            if isinstance(name, str):
                 if name in fields_dict and 'human_readable_name' in fields_dict[name].metadata:
                     human_readable_name = fields_dict[name].metadata['human_readable_name']
                 else:
@@ -189,12 +188,12 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         result = ''
         name_dict = cls._markdown_human_readable_names(obj, dict_value)
         for name, value in dict_value.items():
-            result += '{indent}* {name}'.format(indent=indent, name=name_dict[name])
+            result += f'{indent}* {name_dict[name]}'
             multiline, markdnow_result = cls._markdown_result(value, level + 1)
             if multiline:
-                result += ':\n{result}'.format(result=markdnow_result)
+                result += f':\n{markdnow_result}'
             else:
-                result += ': {result}\n'.format(result=markdnow_result)
+                result += f': {markdnow_result}\n'
 
         if not result:
             return False, '-'
@@ -211,19 +210,15 @@ class Serializable(object):  # pylint: disable=too-few-public-methods
         result = ''
         for index, item in enumerate(obj):
             multiline, markdnow_result = cls._markdown_result(item, level + 1)
-            result += '{indent}{index}.{separator}{value}{newline}'.format(
-                indent=indent,
-                index=index + 1,
-                separator='\n' if multiline else ' ',
-                value=markdnow_result,
-                newline='' if multiline else '\n',
-            )
+            separator = '\n' if multiline else ' '
+            newline = '' if multiline else '\n'
+            result += f'{indent}{index + 1}.{separator}{markdnow_result}{newline}'
 
         return True, result
 
     @staticmethod
     def _markdown_is_directly_printable(obj):
-        return not isinstance(obj, enum.Enum) and isinstance(obj, six.string_types + six.integer_types + (float, ))
+        return not isinstance(obj, enum.Enum) and isinstance(obj, (str, int, float, ))
 
     @classmethod
     def _markdown_result(cls, obj, level=0):  # pylint: disable=too-many-branches,too-many-return-statements
@@ -371,7 +366,7 @@ class VariantParsableExact(VariantParsableBase):
 
 
 @attr.s
-class VectorParamBase(object):  # pylint: disable=too-few-public-methods
+class VectorParamBase():  # pylint: disable=too-few-public-methods
     min_byte_num = attr.ib(validator=attr.validators.instance_of(int))
     max_byte_num = attr.ib(validator=attr.validators.instance_of(int))
     item_num_size = attr.ib(init=False, validator=attr.validators.instance_of(int))
@@ -398,7 +393,7 @@ class VectorParamNumeric(VectorParamBase):  # pylint: disable=too-few-public-met
 @attr.s(init=False)
 class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
     def __init__(self, min_byte_num, max_byte_num):
-        super(OpaqueParam, self).__init__(min_byte_num, max_byte_num, 1)
+        super().__init__(min_byte_num, max_byte_num, 1)
 
     def get_item_size(self, item):
         return 1
@@ -406,8 +401,8 @@ class OpaqueParam(VectorParamNumeric):  # pylint: disable=too-few-public-methods
 
 @attr.s
 class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-methods
-    separator = attr.ib(validator=attr.validators.instance_of(six.string_types), default=',')
-    encoding = attr.ib(validator=attr.validators.instance_of(six.string_types), default='ascii')
+    separator = attr.ib(validator=attr.validators.instance_of(str), default=',')
+    encoding = attr.ib(validator=attr.validators.instance_of(str), default='ascii')
     item_class = attr.ib(validator=attr.validators.instance_of((type, types.FunctionType)), default=str)
     fallback_class = attr.ib(
         default=None,
@@ -419,7 +414,7 @@ class VectorParamString(VectorParamBase):  # pylint: disable=too-few-public-meth
             return len(item.compose())
         if isinstance(item, CryptoDataEnumCodedBase):
             return item.value.get_code_size()
-        if isinstance(item, six.string_types):
+        if isinstance(item, str):
             return len(item)
 
         raise NotImplementedError(type(item))
@@ -463,10 +458,7 @@ class ArrayBase(ParsableBase, MutableSequence, Serializable):
     param = attr.ib(init=False, default=None)
 
     def __attrs_post_init__(self):
-        if isinstance(self._items, six.binary_type):
-            items = six.iterbytes(bytes(self._items))
-        else:
-            items = self._items
+        items = self._items
 
         self.param = self.get_param()
         self._items = []
@@ -856,9 +848,9 @@ class StringEnumParsableBase(ParsableBaseNoABC):
         enum_items.sort(key=lambda color: len(color.value.code), reverse=True)
 
         try:
-            code = six.ensure_text(bytes(parsable), 'ascii')
+            code = bytes(parsable).decode('ascii')
         except UnicodeDecodeError as e:
-            six.raise_from(InvalidValue(parsable, cls), e)
+            raise InvalidValue(parsable, cls) from e
 
         for enum_item in enum_items:
             if cls._code_eq(enum_item.value.code, code[:len(enum_item.value.code)]):
@@ -867,7 +859,7 @@ class StringEnumParsableBase(ParsableBaseNoABC):
         raise InvalidValue(parsable, cls, 'code')
 
     def compose(self):
-        return six.ensure_binary(self._asdict(), 'ascii')
+        return self._asdict().encode('ascii')
 
     def _asdict(self):
         return getattr(self, 'value').code
@@ -885,8 +877,7 @@ class StringEnumCaseInsensitiveParsable(StringEnumParsableBase):
         return item_code.lower() == parsed_code.lower()
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ProtocolVersionBase(Serializable, ParsableBase):
+class ProtocolVersionBase(Serializable, ParsableBase, metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
     def _parse(cls, parsable):
@@ -947,14 +938,14 @@ class ProtocolVersionMajorMinorBase(ProtocolVersionBase):
 
     @property
     def identifier(self):
-        return '{}_{}'.format(self.major, self.minor)
+        return f'{self.major}_{self.minor}'
 
     def __str__(self):
-        return '{}.{}'.format(self.major, self.minor)
+        return f'{self.major}.{self.minor}'
 
 
 @attr.s
-class ListParamParsable(object):  # pylint: disable=too-few-public-methods
+class ListParamParsable():  # pylint: disable=too-few-public-methods
     item_class = attr.ib(validator=attr.validators.instance_of(type))
     fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)))
     separator_class = attr.ib(attr.validators.instance_of(ParsableBase))
@@ -1003,10 +994,7 @@ class OpaqueEnumParsable(Vector):
     @classmethod
     def _parse(cls, parsable):
         opaque, parsed_length = super(OpaqueEnumParsable, cls)._parse(parsable)
-        code = six.ensure_text(
-            b''.join([six.int2byte(opaque_item) for opaque_item in opaque]),
-            cls.get_encoding()
-        )
+        code = b''.join([bytes((opaque_item,)) for opaque_item in opaque]).decode(cls.get_encoding())
 
         try:
             parsed_object = next(iter([
@@ -1015,7 +1003,7 @@ class OpaqueEnumParsable(Vector):
                 if enum_item.value.code == code
             ]))
         except StopIteration as e:
-            six.raise_from(InvalidValue(code, cls), e)
+            raise InvalidValue(code, cls) from e
 
         return parsed_object, parsed_length
 
@@ -1035,7 +1023,7 @@ class OpaqueEnumComposer(enum.Enum):
 
     def compose(self):
         composer = ComposerBinary()
-        value = six.ensure_binary(self.value.code, self.get_encoding())  # pylint: disable=no-member
+        value = self.value.code.encode(self.get_encoding())  # pylint: disable=no-member
 
         composer.compose_bytes(value, 1)
 
@@ -1048,7 +1036,7 @@ class OpaqueEnumComposer(enum.Enum):
 
 @attr.s
 class NumericRangeParsableBase(ParsableBase, Serializable):
-    value = attr.ib(validator=attr.validators.instance_of(six.integer_types))
+    value = attr.ib(validator=attr.validators.instance_of(int))
 
     @value.validator
     def _validator_variant(self, _, value):

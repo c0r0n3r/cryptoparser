@@ -6,13 +6,9 @@ import codecs
 import collections
 import enum
 import json
-import attr
-import six
+import pathlib
 
-try:
-    import pathlib
-except ImportError:  # pragma: no cover
-    import pathlib2 as pathlib  # pragma: no cover
+import attr
 
 import pyfakefs.fake_filesystem_unittest
 
@@ -96,7 +92,7 @@ class NByteParsable(ParsableBase):
         return composer.composed_bytes
 
     def __repr__(self):
-        return '{0:#0{1}x}'.format(self.value, self.get_byte_size() * 2 + 2)
+        return f'0x{self.value:>0{self.get_byte_size() * 2}x}'
 
     def __eq__(self, other):
         return self.get_byte_size() == other.get_byte_size() and self.value == other.value
@@ -244,23 +240,17 @@ class OpaqueEnumFactory(OpaqueEnumParsable):
 
 
 @attr.s
-class OpaqueEnumParams(object):
-    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
+class OpaqueEnumParams():
+    code = attr.ib(validator=attr.validators.instance_of(str))
 
 
 class OpaqueEnum(OpaqueEnumComposer):
-    ALPHA = OpaqueEnumParams(
-        code=six.ensure_text('άλφα')
-    )
-    BETA = OpaqueEnumParams(
-        code=six.ensure_text('βήτα')
-    )
-    GAMMA = OpaqueEnumParams(
-        code=six.ensure_text('γάμμα')
-    )
+    ALPHA = OpaqueEnumParams(code='άλφα')
+    BETA = OpaqueEnumParams(code='βήτα')
+    GAMMA = OpaqueEnumParams(code='γάμμα')
 
 
-class TestObject(object):
+class TestObject():
     pass
 
 
@@ -269,7 +259,7 @@ class SerializableSimpleTypes(Serializable):  # pylint: disable=too-many-instanc
         self.int_value = 1
         self.float_value = 1.0
         self.bool_value = False
-        self.str_value = six.u('string')
+        self.str_value = 'string'
         self.bytearray_value = bytearray(b'\x00\x01\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f')
         self.none_value = None
 
@@ -355,19 +345,19 @@ class SerializableAttributeOrder(Serializable):
     attr_a = attr.ib(default='a')
 
 
-class Class(object):
+class Class():
     def __init__(self):
         self.attr_b = 'b'
         self.attr_a = 'a'
 
 
 @attr.s
-class ClassAttr(object):
+class ClassAttr():
     attr_b = attr.ib(default='b')
     attr_a = attr.ib(default='a')
 
 
-class ClassAsDict(object):
+class ClassAsDict():
     def __init__(self):
         self.attr_a = 'a'
         self.attr_b = 'b'
@@ -380,7 +370,7 @@ class ClassAsDict(object):
 
 
 @attr.s
-class ClassAttrAsDict(object):
+class ClassAttrAsDict():
     attr_a = attr.ib(default='a')
     attr_b = attr.ib(default='b')
 
@@ -437,7 +427,7 @@ class FlagEnum(enum.IntEnum):
 
 
 @attr.s
-class StringEnumParams(object):
+class StringEnumParams():
     code = attr.ib()
 
     def _check_code(self, code):
@@ -514,7 +504,7 @@ class ListParsableTest(ListParsable):
 
 
 @attr.s
-class NByteEnumParam(object):
+class NByteEnumParam():
     code = attr.ib(validator=attr.validators.instance_of(int))
 
 
@@ -699,7 +689,7 @@ class FieldValueComponentTimeDeltaTest(FieldValueComponentTimeDelta):
 
 
 @attr.s
-class FieldValueComplexTestBase(object):  # pylint: disable=too-many-instance-attributes
+class FieldValueComplexTestBase():  # pylint: disable=too-many-instance-attributes
     time_delta = attr.ib(
         converter=FieldValueComponentTimeDeltaTest.convert,
         validator=attr.validators.instance_of(FieldValueComponentTimeDeltaTest)
@@ -764,7 +754,7 @@ class FieldValueMultipleExtendableTest(FieldValueMultipleTest):
 
 class SerializableUpperCaseEncoder(SerializableTextEncoder):
     def __call__(self, obj, level):
-        _, string_result = super(SerializableUpperCaseEncoder, self).__call__(obj, level)
+        _, string_result = super().__call__(obj, level)
 
         return False, string_result.upper()
 

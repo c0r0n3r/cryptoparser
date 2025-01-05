@@ -7,7 +7,6 @@ import collections
 import itertools
 import enum
 
-import six
 
 import attr
 import urllib3
@@ -434,7 +433,7 @@ class ContentSecurityPolicySourceHashType(StringEnumHashParsableBase, enum.Enum)
 
 @attr.s
 class ContentSecurityPolicySourceHash(ParsableBase, Serializable):
-    hash_algorithm = attr.ib(validator=attr.validators.instance_of((Hash, six.string_types)))
+    hash_algorithm = attr.ib(validator=attr.validators.instance_of((Hash, str)))
     hash_value = attr.ib(converter=convert_base64_data(), validator=attr.validators.instance_of(Base64Data))
 
     @classmethod
@@ -448,7 +447,7 @@ class ContentSecurityPolicySourceHash(ParsableBase, Serializable):
         try:
             parser.parse_parsable('hash_algorithm', cls._get_hash_algorithm_enum_type())
         except InvalidValue as e:
-            six.raise_from(InvalidType(), e)
+            raise InvalidType() from e
 
         parser.parse_string_until_separator_or_end('hash_value', ' ')
 
@@ -483,7 +482,7 @@ class ContentSecurityPolicySourceNonce(ParsableBase, Serializable):
         try:
             parser.parse_string('prefix', cls._PREFIX)
         except InvalidValue as e:
-            six.raise_from(InvalidType(), e)
+            raise InvalidType() from e
 
         del parser['prefix']
 
@@ -509,7 +508,7 @@ class ContentSecurityPolicySourceNonce(ParsableBase, Serializable):
 
 @attr.s
 class ContentSecurityPolicySourceScheme(ParsableBase, Serializable):
-    value = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    value = attr.ib(validator=attr.validators.instance_of(str))
 
     @classmethod
     def _parse(cls, parsable):
@@ -540,7 +539,7 @@ class ContentSecurityPolicySourceScheme(ParsableBase, Serializable):
 class ContentSecurityPolicySourceHost(ParsableBase, Serializable):
     value = attr.ib(
         converter=convert_url(),
-        validator=attr.validators.instance_of(six.string_types + (urllib3.util.url.Url, ))
+        validator=attr.validators.instance_of((str, urllib3.util.url.Url, ))
     )
 
     @classmethod
@@ -837,7 +836,7 @@ class ContentSecurityPolicyDirectiveFrameAncestors(ContentSecurityPolicyDirectiv
         return ContentSecurityPolicyFrameAncestorsSource
 
     def _value_validator(self, value):
-        super(ContentSecurityPolicyDirectiveFrameAncestors, self)._value_validator(value)
+        super()._value_validator(value)
 
         has_invalid_source_type = any(map(
             lambda source: (
@@ -1398,8 +1397,8 @@ class HttpHeaderFieldValueSetCookieParams(FieldsSemicolonSeparated):
 
 @attr.s
 class HttpHeaderFieldValueSetCookie(FieldValueBase):  # pylint: disable=too-many-instance-attributes
-    name = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    value = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    value = attr.ib(validator=attr.validators.instance_of(str))
     expires = attr.ib(
         converter=attr.converters.optional(HttpHeaderFieldValueComponentExpires.convert),
         validator=attr.validators.optional(attr.validators.instance_of(HttpHeaderFieldValueComponentExpires)),
@@ -1582,8 +1581,8 @@ class HttpHeaderFieldValueReferrerPolicy(FieldValueStringEnum):
 
 @attr.s(frozen=True)
 class HttpHeaderFieldNameParams(Serializable):
-    code = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    normalized_name = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    code = attr.ib(validator=attr.validators.instance_of(str))
+    normalized_name = attr.ib(validator=attr.validators.instance_of(str))
 
     def _as_markdown(self, level):
         return self._markdown_result(self.normalized_name, level)
@@ -1747,14 +1746,14 @@ class HttpHeaderFieldParsedBase(HttpHeaderFieldBase):
         parser.parse_separator(' ', min_length=0, max_length=None)
         parser.parse_string_until_separator('value', ['\r\n', ])
 
-        value = cls._get_value_class().parse_exact_size(six.ensure_binary(parser['value'], 'ascii'))
+        value = cls._get_value_class().parse_exact_size(parser['value'].encode('ascii'))
 
         return cls(value), parser.parsed_length
 
     def compose(self):
         return self._compose_name_and_value(
             self.get_header_field_name().value.normalized_name,
-            six.ensure_text(bytes(self.value.compose()), 'ascii')
+            bytes(self.value.compose()).decode('ascii')
         )
 
     def _asdict(self):
@@ -1995,8 +1994,8 @@ class HttpHeaderFieldParsedVariant(VariantParsable):
 
 @attr.s
 class HttpHeaderFieldUnparsed(FieldParsableBase, Serializable):
-    name = attr.ib(validator=attr.validators.instance_of(six.string_types))
-    value = attr.ib(validator=attr.validators.instance_of(six.string_types))
+    name = attr.ib(validator=attr.validators.instance_of(str))
+    value = attr.ib(validator=attr.validators.instance_of(str))
 
     @classmethod
     def get_separator(cls):

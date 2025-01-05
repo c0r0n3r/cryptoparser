@@ -5,7 +5,6 @@ import unittest
 import collections
 import copy
 import datetime
-import six
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.tls.algorithm import (
@@ -117,7 +116,7 @@ class TestVariantParsable(unittest.TestCase):
         ])
         invalid_tls_message_bytes = b''.join(invalid_tls_message_dict.values())
 
-        with six.assertRaisesRegex(self, InvalidValue, 'is not a valid TlsHandshakeMessageVariant'):
+        with self.assertRaisesRegex(InvalidValue, 'is not a valid TlsHandshakeMessageVariant'):
             TlsHandshakeMessageVariant.parse_exact_size(invalid_tls_message_bytes)
 
     def test_compose(self):
@@ -697,11 +696,8 @@ class TestTlsHandshakeServerHelloDone(unittest.TestCase):
         self.server_hello_done = TlsHandshakeServerHelloDone()
 
     def test_error(self):
-        if six.PY2:
-            error_regex = '\'\\\\x00\' is not a valid TlsHandshakeServerHelloDone payload value'
-        else:
-            error_regex = 'b\'\\\\x00\' is not a valid TlsHandshakeServerHelloDone payload value'
-        with six.assertRaisesRegex(self, InvalidValue, error_regex):
+        error_regex = 'b\'\\\\x00\' is not a valid TlsHandshakeServerHelloDone payload value'
+        with self.assertRaisesRegex(InvalidValue, error_regex):
             # pylint: disable=expression-not-assigned
             TlsHandshakeServerHelloDone.parse_exact_size(b'\x0e\x00\x00\x01\x00')
 

@@ -116,7 +116,7 @@ class PublicKeyX509(PublicKeyX509Base):
         return SignedCertificateTimestampList([])
 
     def _asdict(self):
-        dict_value = super(PublicKeyX509, self)._asdict()
+        dict_value = super()._asdict()
 
         return collections.OrderedDict(list(dict_value.items()) + [
             ('signed_certificate_timestamps', self.signed_certificate_timestamps),
