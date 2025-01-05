@@ -6,7 +6,7 @@ stages:
 - deploy
 
 before_script:
-- pip install -r dev-requirements.txt
+- pip install tox .[tests]
 
 variables:
   GIT_SUBMODULE_DEPTH: 1
@@ -71,7 +71,8 @@ coveralls:
   stage: deploy
   script:
     - pip install coveralls
-    - pip install -r requirements.txt
+    - pip install .
+    - pip install .[tests]
     - coverage run -m unittest -v -f
     - coveralls
   only:

@@ -1,5 +1,0 @@
-asn1crypto
-attrs
-cryptodatahub==0.12.6
-python-dateutil
-urllib3
