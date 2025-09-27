@@ -6,6 +6,7 @@ import unittest
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.ike.algorithm import (
     Ikev2ProtocolId,
+    Ikev2IntegrityAlgorithm,
     Ikev2PseudorandomFunction,
     Ikev2TransformType,
     Ikev2DiffieHellmanGroup,
@@ -22,6 +23,7 @@ from cryptoparser.ike.ikev2 import (
     Ikev2TransformPrf,
     Ikev2TransformDhGroup,
     Ikev2TransformEncryptionAlgorithm,
+    Ikev2TransformIntegrity,
     TransformAttributeSignatureAlgorithm,
     TransformNextPayload,
 )
@@ -177,6 +179,17 @@ class TestIkev2TransformDhGroup(unittest.TestCase):
         self.assertEqual(
             Ikev2TransformDhGroup._get_transform_id_class(),  # pylint: disable=protected-access
             Ikev2DiffieHellmanGroup
+        )
+
+
+class TestIkev2TransformIntegrity(unittest.TestCase):
+    def test_get_transform_type(self):
+        self.assertEqual(Ikev2TransformIntegrity.get_transform_type(), Ikev2TransformType.INTEG)
+
+    def test_get_transform_id_class(self):
+        self.assertEqual(
+            Ikev2TransformIntegrity._get_transform_id_class(),  # pylint: disable=protected-access
+            Ikev2IntegrityAlgorithm
         )
 
 

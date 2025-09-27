@@ -40,7 +40,7 @@ classifiers=[
     'Topic :: Software Development :: Testing',
 ]
 
-keywords=['ssl', 'tls', 'gost', 'ja3', 'ldap', 'rdp', 'ssh', 'hsts', 'dns']
+keywords=['ssl', 'tls', 'gost', 'ja3', 'ldap', 'rdp', 'ssh', 'hsts', 'dns', 'ike']
 readme = {file = 'README.rst', content-type = 'text/x-rst'}
 license = {text = 'MPL-2.0'}
 
