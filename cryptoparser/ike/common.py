@@ -1,7 +1,10 @@
 import abc
 import enum
+import typing
 
 import attr
+
+from cryptodatahub.common.exception import InvalidValue
 
 from cryptoparser.common.exception import InvalidType
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
@@ -92,6 +95,44 @@ class DataAttributeTypeValue(DataAttributeBase):
     @classmethod
     def _get_format(cls):
         return DataAttributeFormat.TYPE_VALUE
+
+
+@attr.s
+class DataAttributeTypeValueEnumCoded(DataAttributeTypeValue):
+    """Data attribute type/value parser where the type is an enum."""
+
+    value: typing.Any = attr.ib()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_enum_type(cls):
+        raise NotImplementedError()
+
+    @value.validator
+    def _validate_value(self, _, value):
+        enum_type = self._get_enum_type()
+        if not isinstance(value, enum_type):
+            raise InvalidValue(value, type(self), 'value')
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+
+        parser.parse_numeric_enum_coded('value', cls._get_enum_type())
+
+        return cls(value=parser['value']), parser.parsed_length
+
+    def compose(self):
+        composer = self._compose_header()
+
+        composer.compose_numeric_enum_coded(self.value)
+
+        return composer.composed_bytes
 
 
 @attr.s
