@@ -241,7 +241,7 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
             len(self.client_hello_minimal_bytes)
         )
 
-        self.random_time = datetime.datetime(2018, 8, 10, tzinfo=None)
+        self.random_time = datetime.datetime(2018, 8, 10, tzinfo=datetime.timezone.utc)
         self.client_hello_minimal = TlsHandshakeClientHello(
             TlsCipherSuiteVector([
                 TlsInvalidTypeTwoByte(TlsGreaseTwoByte.GREASE_0A0A),
@@ -372,7 +372,7 @@ class TestTlsHandshakeServerHello(unittest.TestCase):
         self.server_hello_minimal = TlsHandshakeServerHello(
             TlsProtocolVersion(TlsVersion.TLS1_2),
             TlsHandshakeHelloRandom(
-                datetime.datetime(2018, 8, 10, tzinfo=None),
+                datetime.datetime(2018, 8, 10, tzinfo=datetime.timezone.utc),
                 TlsHandshakeHelloRandomBytes(bytearray(
                     b'\x04\x05\x06\x07' +
                     b'\x00\x01\x02\x03\x04\x05\x06\x07' +
@@ -475,7 +475,7 @@ class TestTlsHandshakeHelloRetryRequest(unittest.TestCase):
             TlsCipherSuite.TLS_RSA_WITH_NULL_MD5,
             TlsProtocolVersion(TlsVersion.TLS1_2),
             TlsHandshakeHelloRandom(
-                datetime.datetime(2018, 8, 10, tzinfo=None),
+                datetime.datetime(2018, 8, 10, tzinfo=datetime.timezone.utc),
                 TlsHandshakeHelloRandomBytes(bytearray(
                     b'\x04\x05\x06\x07' +
                     b'\x00\x01\x02\x03\x04\x05\x06\x07' +

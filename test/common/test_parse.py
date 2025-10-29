@@ -5,8 +5,6 @@ import datetime
 import unittest
 from unittest import mock
 
-import dateutil.tz
-
 import asn1crypto.x509
 
 from cryptodatahub.common.exception import InvalidValue
@@ -400,24 +398,24 @@ class TestParserBinary(TestParsableBase):
     def test_parse_timestamp(self):
         parser = ParserBinary(b'\x00\x00\x00\x00\x00\x00\x00\x00')
         parser.parse_timestamp('timestamp')
-        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0, dateutil.tz.UTC))
+        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0, datetime.timezone.utc))
 
         parser = ParserBinary(b'\x00\x00\x00\x00')
         parser.parse_timestamp('timestamp', item_size=4)
-        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0, dateutil.tz.UTC))
+        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0, datetime.timezone.utc))
 
         parser = ParserBinary(b'\x00\x00\x00\x00\x00\x00\x00\xff')
         parser.parse_timestamp('timestamp', milliseconds=True)
         self.assertEqual(
             parser['timestamp'],
-            datetime.datetime.fromtimestamp(0, dateutil.tz.UTC) + datetime.timedelta(microseconds=255000)
+            datetime.datetime.fromtimestamp(0, datetime.timezone.utc) + datetime.timedelta(microseconds=255000)
         )
 
         parser = ParserBinary(b'\x00\x00\x00\xff')
         parser.parse_timestamp('timestamp', milliseconds=True, item_size=4)
         self.assertEqual(
             parser['timestamp'],
-            datetime.datetime.fromtimestamp(0, dateutil.tz.UTC) + datetime.timedelta(microseconds=255000)
+            datetime.datetime.fromtimestamp(0, datetime.timezone.utc) + datetime.timedelta(microseconds=255000)
         )
 
         parser = ParserBinary(b'\xff\xff\xff\xff\xff\xff\xff\xff')
@@ -430,11 +428,11 @@ class TestParserBinary(TestParsableBase):
 
         parser = ParserBinary(b'\x00\x00\x00\x00\xff\xff\xff\xff')
         parser.parse_timestamp('timestamp')
-        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0xffffffff, dateutil.tz.UTC))
+        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0xffffffff, datetime.timezone.utc))
 
         parser = ParserBinary(b'\x00\x00\xff\xff')
         parser.parse_timestamp('timestamp', item_size=4)
-        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0x0000ffff, dateutil.tz.UTC))
+        self.assertEqual(parser['timestamp'], datetime.datetime.fromtimestamp(0x0000ffff, datetime.timezone.utc))
 
 
 class TestParserText(TestParsableBase):
@@ -763,7 +761,7 @@ class TestParserTextDateTime(TestParsableBase):
         parser.parse_date_time('datetime')
         self.assertEqual(
             parser['datetime'],
-            datetime.datetime(2015, 10, 21, 7, 28, tzinfo=dateutil.tz.tzoffset(None, 0))
+            datetime.datetime(2015, 10, 21, 7, 28, tzinfo=datetime.timezone.utc)
         )
         self.assertEqual(parser.unparsed_length, 0)
 
@@ -1081,17 +1079,17 @@ class TestComposerBinary(TestParsableBase):
 
     def test_compose_timestamp(self):
         composer = ComposerBinary()
-        date_time = datetime.datetime.utcfromtimestamp(0)
+        date_time = datetime.datetime.fromtimestamp(0, datetime.timezone.utc)
         composer.compose_timestamp(date_time)
         self.assertEqual(b'\x00\x00\x00\x00\x00\x00\x00\x00', composer.composed_bytes)
 
         composer = ComposerBinary()
-        date_time = datetime.datetime.utcfromtimestamp(0) + datetime.timedelta(microseconds=255000)
+        date_time = datetime.datetime.fromtimestamp(0, datetime.timezone.utc) + datetime.timedelta(microseconds=255000)
         composer.compose_timestamp(date_time, milliseconds=True)
         self.assertEqual(b'\x00\x00\x00\x00\x00\x00\x00\xff', composer.composed_bytes)
 
         composer = ComposerBinary()
-        date_time = datetime.datetime.utcfromtimestamp(0xffffffff)
+        date_time = datetime.datetime.fromtimestamp(0xffffffff, datetime.timezone.utc)
         date_time.replace(tzinfo=None)
         composer.compose_timestamp(date_time)
         self.assertEqual(b'\x00\x00\x00\x00\xff\xff\xff\xff', composer.composed_bytes)

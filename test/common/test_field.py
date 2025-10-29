@@ -8,7 +8,6 @@ import datetime
 from collections import OrderedDict
 
 import attr
-import dateutil
 import urllib3
 
 from cryptodatahub.common.exception import InvalidValue
@@ -559,19 +558,19 @@ class TestFieldValueDateTime(unittest.TestCase):
         http_header_field = FieldValueDateTime.parse_exact_size(b'Wed, 21 Oct 2015 07:28:00 GMT')
         self.assertEqual(
             http_header_field.value,
-            datetime.datetime(2015, 10, 21, 7, 28, tzinfo=dateutil.tz.tzoffset(None, 0))
+            datetime.datetime(2015, 10, 21, 7, 28, tzinfo=datetime.timezone.utc)
         )
 
         http_header_field = FieldValueDateTime.parse_exact_size(b'Wed, 21 Oct 2015 07:28:00 +01:00')
         self.assertEqual(
             http_header_field.value,
-            datetime.datetime(2015, 10, 21, 7, 28, tzinfo=dateutil.tz.tzoffset(None, 3600))
+            datetime.datetime(2015, 10, 21, 7, 28, tzinfo=datetime.timezone(datetime.timedelta(hours=1)))
         )
 
     def test_compose(self):
         self.assertEqual(
             FieldValueDateTime(
-                datetime.datetime(2015, 10, 21, 7, 28, tzinfo=dateutil.tz.tzoffset(None, 0))
+                datetime.datetime(2015, 10, 21, 7, 28, tzinfo=datetime.timezone.utc)
             ).compose(),
             b'Wed, 21 Oct 2015 07:28:00 GMT'
         )

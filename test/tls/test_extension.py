@@ -4,8 +4,6 @@ import collections
 import datetime
 import unittest
 
-import dateutil
-
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.types import Base64Data
 from cryptodatahub.common.stores import CertificateTransparencyLog
@@ -423,7 +421,7 @@ class TestExtensionSignedCertificateTimestampServer(unittest.TestCase):
         sct = SignedCertificateTimestamp(
             CtVersion.V1,
             Base64Data(2 * b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'),
-            datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=dateutil.tz.UTC),
+            datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc),
             CtExtensions([]),
             TlsSignatureAndHashAlgorithm.ANONYMOUS_NONE,
             b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',

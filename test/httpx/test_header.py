@@ -7,7 +7,6 @@ import os
 import unittest
 
 import datetime
-import dateutil
 
 from cryptodatahub.common.algorithm import Hash
 from cryptodatahub.common.exception import InvalidValue
@@ -822,7 +821,7 @@ class TestHttpHeaderFieldValueSetCookie(TestCasesBasesHttpHeader.MinimalHeader, 
 
     _header_full = HttpHeaderFieldValueSetCookie(
         name='name', value='value',
-        expires=datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC),
+        expires=datetime.datetime.fromtimestamp(0, datetime.timezone.utc),
         max_age=datetime.timedelta(seconds=1),
         domain='example.com',
         path='/',
@@ -925,12 +924,12 @@ class TestHttpHeaderFields(unittest.TestCase):
             HttpHeaderFieldAge(datetime.timedelta(seconds=1)),
             HttpHeaderFieldCacheControlResponse(HttpHeaderFieldValueCacheControlResponse(no_cache=True)),
             HttpHeaderFieldContentType(FieldValueMimeType('html', MimeTypeRegistry.TEXT)),
-            HttpHeaderFieldDate(datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC)),
+            HttpHeaderFieldDate(datetime.datetime.fromtimestamp(0, datetime.timezone.utc)),
             HttpHeaderFieldETag('12345678'),
             HttpHeaderFieldExpectCT(HttpHeaderFieldValueExpectCT(datetime.timedelta(seconds=1))),
             HttpHeaderFieldExpectStaple(HttpHeaderFieldValueExpectStaple(datetime.timedelta(seconds=1))),
-            HttpHeaderFieldExpires(datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC)),
-            HttpHeaderFieldLastModified(datetime.datetime.fromtimestamp(0, tz=dateutil.tz.UTC)),
+            HttpHeaderFieldExpires(datetime.datetime.fromtimestamp(0, datetime.timezone.utc)),
+            HttpHeaderFieldLastModified(datetime.datetime.fromtimestamp(0, datetime.timezone.utc)),
             HttpHeaderFieldNetworkErrorLogging(HttpHeaderFieldValueNetworkErrorLogging(
                 report_to="network-errors", max_age=1
             )),

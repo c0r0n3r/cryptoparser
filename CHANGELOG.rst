@@ -2,6 +2,13 @@
 Changelog
 =========
 
+Refactor
+========
+
+-  Generic
+
+   -  Remove unnecessary dateutil dependency (#89)
+ 
 -------------------
 1.0.0 - 2025-01-05
 -------------------
