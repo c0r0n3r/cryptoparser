@@ -2,7 +2,6 @@
 
 import abc
 import base64
-import codecs
 import collections
 import enum
 import json
@@ -769,7 +768,7 @@ class TestClasses:
 
         def _get_pem_str(self, public_key_file_name):
             public_key_path = self.__certs_dir / public_key_file_name
-            with codecs.open(str(public_key_path), 'r', encoding='ascii') as pem_file:
+            with open(str(public_key_path), 'r', encoding='ascii') as pem_file:
                 return pem_file.read()
 
         def _get_public_key_x509(self, public_key_file_name):
