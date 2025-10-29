@@ -500,7 +500,7 @@ class ParserBinary(ParserBase):
             if milliseconds:
                 millis = value % 1000
                 value //= 1000
-            value = datetime.datetime.fromtimestamp(0x00000000ffffffff & value, dateutil.tz.UTC)
+            value = datetime.datetime.fromtimestamp(0x00000000ffffffff & value, datetime.timezone.utc)
             if milliseconds:
                 value += datetime.timedelta(milliseconds=millis)
             self._parsed_values[name] = value

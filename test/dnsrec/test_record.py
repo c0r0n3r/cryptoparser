@@ -6,8 +6,6 @@ import collections
 import datetime
 import unittest
 
-import dateutil
-
 from cryptodatahub.common.algorithm import Authentication, KeyExchange, NamedGroup
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.key import (
@@ -441,8 +439,8 @@ class TestDnsRecordRrsig(unittest.TestCase):
             algorithm=DnsSecAlgorithm.RSAMD5,
             labels=3,
             original_ttl=3600,
-            signature_expiration=datetime.datetime(1970, 1, 1, 0, 0, 1, tzinfo=dateutil.tz.UTC),
-            signature_inception=datetime.datetime(1970, 1, 1, 0, 0, 2, tzinfo=dateutil.tz.UTC),
+            signature_expiration=datetime.datetime(1970, 1, 1, 0, 0, 1, tzinfo=datetime.timezone.utc),
+            signature_inception=datetime.datetime(1970, 1, 1, 0, 0, 2, tzinfo=datetime.timezone.utc),
             key_tag=0xabcd,
             signers_name='signer',
             signature=32 * b'\xff',
@@ -465,8 +463,8 @@ class TestDnsRecordRrsig(unittest.TestCase):
             algorithm=DnsSecAlgorithm.RSAMD5,
             labels=3,
             original_ttl=3600,
-            signature_expiration=datetime.datetime(1970, 1, 1, 0, 0, 1, tzinfo=dateutil.tz.UTC),
-            signature_inception=datetime.datetime(1970, 1, 1, 0, 0, 2, tzinfo=dateutil.tz.UTC),
+            signature_expiration=datetime.datetime(1970, 1, 1, 0, 0, 1, tzinfo=datetime.timezone.utc),
+            signature_inception=datetime.datetime(1970, 1, 1, 0, 0, 2, tzinfo=datetime.timezone.utc),
             key_tag=0xabcd,
             signers_name='signer',
             signature=32 * b'\xff',

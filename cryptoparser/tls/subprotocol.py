@@ -293,7 +293,7 @@ class TlsHandshakeHelloRandom(ParsableBase):
 
     @time.default
     def _default_time(self):  # pylint: disable=no-self-use
-        return datetime.datetime.utcnow()
+        return datetime.datetime.now(datetime.timezone.utc)
 
     @random.default
     def _default_random(self):  # pylint: disable=no-self-use
@@ -305,7 +305,7 @@ class TlsHandshakeHelloRandom(ParsableBase):
     def _parse(cls, parsable):
         parser = ParserBinary(parsable)
 
-        parser.parse_numeric('time', 4, datetime.datetime.utcfromtimestamp)
+        parser.parse_timestamp('time', item_size=4)
         parser.parse_parsable('random', TlsHandshakeHelloRandomBytes)
 
         return TlsHandshakeHelloRandom(parser['time'], parser['random']), parser.parsed_length
