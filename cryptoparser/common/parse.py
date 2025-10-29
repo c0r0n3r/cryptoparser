@@ -9,10 +9,6 @@ import time
 
 import attr
 
-import dateutil
-import dateutil.parser
-import dateutil.tz
-
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.common.types import CryptoDataEnumBase, CryptoDataEnumCodedBase
 
@@ -466,9 +462,15 @@ class ParserText(ParserBase):
     def parse_date_time(self, name):
         try:
             value = self._parsable[self._parsed_length:]
-            date_time = dateutil.parser.parse(value.decode(self._encoding))
-        except ValueError as e:
-            raise InvalidValue(value, type(self), 'value') from e
+            value_str = value.decode(self._encoding)
+
+            date_time = datetime.datetime.strptime(value_str, '%a, %d %b %Y %H:%M:%S %z')
+        except ValueError:
+            try:
+                date_time = datetime.datetime.strptime(value_str, '%a, %d %b %Y %H:%M:%S GMT')
+                date_time = date_time.replace(tzinfo=datetime.timezone.utc)
+            except ValueError as e:
+                raise InvalidValue(value, type(self), 'value') from e
 
         self._parsed_values[name] = date_time
         self._parsed_length = len(self._parsable)

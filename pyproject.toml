@@ -48,7 +48,6 @@ dependencies = [
     'asn1crypto',
     'attrs',
     'cryptodatahub==1.0.0',
-    'python-dateutil',
     'urllib3',
 ]
 
