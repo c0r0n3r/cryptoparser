@@ -489,7 +489,7 @@ class ParserText(ParserBase):
 
 @attr.s
 class ParserBinary(ParserBase):
-    byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
+    byte_order: ByteOrder = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
     def parse_timestamp(self, name, milliseconds=False, item_size=8):
         value, parsed_length = self._parse_numeric_array(name, 1, item_size, int)
@@ -840,7 +840,7 @@ class ComposerText(ComposerBase):
 
 @attr.s
 class ComposerBinary(ComposerBase):
-    byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
+    byte_order: ByteOrder = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
     def compose_timestamp(self, value, milliseconds=False, item_size=8):
         if value is None:
