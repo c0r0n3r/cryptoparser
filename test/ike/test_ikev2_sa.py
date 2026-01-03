@@ -5,12 +5,12 @@ import unittest
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.ike.algorithm import (
-    Ikev2ProtocolId,
-    Ikev2IntegrityAlgorithm,
-    Ikev2PseudorandomFunction,
-    Ikev2TransformType,
     Ikev2DiffieHellmanGroup,
     Ikev2EncryptionAlgorithm,
+    Ikev2IntegrityAlgorithm,
+    Ikev2ProtocolId,
+    Ikev2PseudorandomFunction,
+    Ikev2TransformType,
 )
 
 from cryptoparser.common.exception import NotEnoughData
@@ -478,6 +478,118 @@ class TestIkev2PayloadSecurityAssociation(unittest.TestCase):  # pylint: disable
                 flags=set(),
                 proposals=["invalid_proposal"]
             )
+
+    def test_get_transform_by_type(self):
+        transform_prf = Ikev2TransformPrf(
+            transform_id=Ikev2PseudorandomFunction.PRF_HMAC_SHA1
+        )
+        transform_prf.next_payload = TransformNextPayload.LAST
+
+        transform_dh = Ikev2TransformDhGroup(
+            transform_id=Ikev2DiffieHellmanGroup.MODP_GROUP_2048_BIT
+        )
+        transform_dh.next_payload = TransformNextPayload.LAST
+
+        transform_encr = Ikev2TransformEncryptionAlgorithm(
+            transform_id=Ikev2EncryptionAlgorithm.ENCR_AES_CBC,
+            key_length=128
+        )
+        transform_encr.next_payload = TransformNextPayload.LAST
+
+        proposal = Ikev2Proposal(
+            protocol_id=Ikev2ProtocolId.IKE,
+            transforms=[transform_prf, transform_dh, transform_encr],
+            spi=bytes()
+        )
+
+        sa_payload = Ikev2PayloadSecurityAssociation(
+            flags=set(),
+            proposals=[proposal]
+        )
+
+        found_prf = sa_payload.get_transform_by_type(Ikev2TransformType.PRF)
+        self.assertEqual(found_prf, transform_prf)
+        self.assertEqual(found_prf.get_transform_type(), Ikev2TransformType.PRF)
+
+        found_dh = sa_payload.get_transform_by_type(Ikev2TransformType.DH)
+        self.assertEqual(found_dh, transform_dh)
+        self.assertEqual(found_dh.get_transform_type(), Ikev2TransformType.DH)
+
+        found_encr = sa_payload.get_transform_by_type(Ikev2TransformType.ENCR)
+        self.assertEqual(found_encr, transform_encr)
+        self.assertEqual(found_encr.get_transform_type(), Ikev2TransformType.ENCR)
+
+        transform_integ = Ikev2TransformIntegrity(
+            transform_id=Ikev2IntegrityAlgorithm.AUTH_HMAC_SHA1_96
+        )
+        transform_integ.next_payload = TransformNextPayload.LAST
+
+        proposal_with_integ = Ikev2Proposal(
+            protocol_id=Ikev2ProtocolId.IKE,
+            transforms=[transform_integ],
+            spi=bytes()
+        )
+
+        sa_payload_with_integ = Ikev2PayloadSecurityAssociation(
+            flags=set(),
+            proposals=[proposal_with_integ]
+        )
+
+        found_integ = sa_payload_with_integ.get_transform_by_type(Ikev2TransformType.INTEG)
+        self.assertEqual(found_integ, transform_integ)
+        self.assertEqual(found_integ.get_transform_type(), Ikev2TransformType.INTEG)
+
+    def test_get_transform_by_type_multiple_proposals(self):
+        transform_prf1 = Ikev2TransformPrf(
+            transform_id=Ikev2PseudorandomFunction.PRF_HMAC_SHA1
+        )
+        transform_prf1.next_payload = TransformNextPayload.LAST
+
+        transform_prf2 = Ikev2TransformPrf(
+            transform_id=Ikev2PseudorandomFunction.PRF_HMAC_SHA2_256
+        )
+        transform_prf2.next_payload = TransformNextPayload.LAST
+
+        proposal1 = Ikev2Proposal(
+            protocol_id=Ikev2ProtocolId.IKE,
+            transforms=[transform_prf1],
+            spi=bytes()
+        )
+
+        proposal2 = Ikev2Proposal(
+            protocol_id=Ikev2ProtocolId.IKE,
+            transforms=[transform_prf2],
+            spi=bytes()
+        )
+
+        sa_payload = Ikev2PayloadSecurityAssociation(
+            flags=set(),
+            proposals=[proposal1, proposal2]
+        )
+
+        found_prf = sa_payload.get_transform_by_type(Ikev2TransformType.PRF)
+        self.assertEqual(found_prf.get_transform_type(), Ikev2TransformType.PRF)
+        self.assertIn(found_prf, [transform_prf1, transform_prf2])
+
+    def test_get_transform_by_type_not_found(self):
+        sa_payload = Ikev2PayloadSecurityAssociation(
+            flags=set(),
+            proposals=[self.proposal_single]
+        )
+
+        with self.assertRaises(KeyError) as context_manager:
+            sa_payload.get_transform_by_type(Ikev2TransformType.DH)
+        self.assertEqual(context_manager.exception.args[0], Ikev2TransformType.DH)
+
+    def test_get_transform_by_type_empty_proposals(self):
+        sa_payload = Ikev2PayloadSecurityAssociation(
+            flags=set(),
+            proposals=[]
+        )
+
+        with self.assertRaises(KeyError) as context_manager:
+            sa_payload.get_transform_by_type(Ikev2TransformType.PRF)
+        self.assertEqual(context_manager.exception.args[0], Ikev2TransformType.PRF)
 
 
 if __name__ == '__main__':

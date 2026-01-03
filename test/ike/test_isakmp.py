@@ -10,9 +10,17 @@ import unittest
 from test.ike.classes import Ikev2PayloadBaseTest
 
 from cryptodatahub.common.exception import InvalidValue
-from cryptodatahub.ike.algorithm import Ikev1ExchangeType, Ikev2ExchangeType, Ikev2PayloadType
+from cryptodatahub.ike.algorithm import (
+    Ikev1ExchangeType,
+    Ikev1PayloadType,
+    Ikev2DiffieHellmanGroup,
+    Ikev2ExchangeType,
+    Ikev2PayloadType,
+)
 
 from cryptoparser.common.exception import InvalidType, NotEnoughData
+from cryptoparser.ike.ikev1 import Ikev1PayloadKeyExchange, Ikev1PayloadNonce
+from cryptoparser.ike.ikev2 import Ikev2PayloadNonce, Ikev2PayloadKeyExchange
 from cryptoparser.ike.isakmp import IsakmpFlags, IsakmpMessage
 from cryptoparser.ike.version import IsakmpProtocolVersion, IsakmpVersion
 
@@ -219,3 +227,85 @@ class TestISAKMPHeader(unittest.TestCase):
         with self.assertRaises(InvalidType):
             IsakmpMessage.parse_exact_size(header_bytes)
 
+    def test_get_payload_by_type_ikev2(self):
+        nonce_payload = Ikev2PayloadNonce(
+            flags=set(),
+            nonce_data=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
+        )
+        ke_payload = Ikev2PayloadKeyExchange(
+            flags=set(),
+            dh_group=Ikev2DiffieHellmanGroup.MODP_GROUP_2048_BIT,
+            key_exchange_data=b'\x00\x01\x02\x03\x04\x05\x06\x07'
+        )
+        message = IsakmpMessage(
+            version=IsakmpProtocolVersion(IsakmpVersion.V2, 0),
+            initiator_spi=0,
+            responder_spi=0,
+            exchange_type=Ikev2ExchangeType.IKE_SA_INIT,
+            flags=set(),
+            message_id=0,
+            payloads=[nonce_payload, ke_payload]
+        )
+
+        found_nonce = message.get_payload_by_type(Ikev2PayloadType.NONCE)
+        self.assertEqual(found_nonce, nonce_payload)
+        self.assertEqual(found_nonce.get_payload_type(), Ikev2PayloadType.NONCE)
+
+        found_ke = message.get_payload_by_type(Ikev2PayloadType.KE)
+        self.assertEqual(found_ke, ke_payload)
+        self.assertEqual(found_ke.get_payload_type(), Ikev2PayloadType.KE)
+
+    def test_get_payload_by_type_ikev1(self):
+        ke_payload = Ikev1PayloadKeyExchange(key_exchange_data=b'\x00\x01\x02\x03')
+        nonce_payload = Ikev1PayloadNonce(nonce_data=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08')
+        message = IsakmpMessage(
+            version=IsakmpProtocolVersion(IsakmpVersion.V1, 1),
+            initiator_spi=0,
+            responder_spi=0,
+            exchange_type=Ikev1ExchangeType.BASE,
+            flags=set(),
+            message_id=0,
+            payloads=[ke_payload, nonce_payload]
+        )
+
+        found_ke = message.get_payload_by_type(Ikev1PayloadType.KEY_EXCHANGE)
+        self.assertEqual(found_ke, ke_payload)
+        self.assertEqual(found_ke.get_payload_type(), Ikev1PayloadType.KEY_EXCHANGE)
+
+        found_nonce = message.get_payload_by_type(Ikev1PayloadType.NONCE)
+        self.assertEqual(found_nonce, nonce_payload)
+        self.assertEqual(found_nonce.get_payload_type(), Ikev1PayloadType.NONCE)
+
+    def test_get_payload_by_type_not_found(self):
+        nonce_payload = Ikev2PayloadNonce(
+            flags=set(),
+            nonce_data=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
+        )
+        message = IsakmpMessage(
+            version=IsakmpProtocolVersion(IsakmpVersion.V2, 0),
+            initiator_spi=0,
+            responder_spi=0,
+            exchange_type=Ikev2ExchangeType.IKE_SA_INIT,
+            flags=set(),
+            message_id=0,
+            payloads=[nonce_payload]
+        )
+
+        with self.assertRaises(KeyError) as context_manager:
+            message.get_payload_by_type(Ikev2PayloadType.KE)
+        self.assertEqual(context_manager.exception.args[0], Ikev2PayloadType.KE)
+
+    def test_get_payload_by_type_empty_payloads(self):
+        message = IsakmpMessage(
+            version=IsakmpProtocolVersion(IsakmpVersion.V2, 0),
+            initiator_spi=0,
+            responder_spi=0,
+            exchange_type=Ikev2ExchangeType.IKE_SA_INIT,
+            flags=set(),
+            message_id=0,
+            payloads=[]
+        )
+
+        with self.assertRaises(KeyError) as context_manager:
+            message.get_payload_by_type(Ikev2PayloadType.NONCE)
+        self.assertEqual(context_manager.exception.args[0], Ikev2PayloadType.NONCE)

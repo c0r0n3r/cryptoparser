@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import collections
 import unittest
@@ -192,7 +193,7 @@ class TestIkev1AttributeKeyLength(unittest.TestCase):
 
     def test_get_type(self):
         # pylint: disable=protected-access
-        self.assertEqual(Ikev1AttributeKeyLength._get_type(), Ikev1AttributeType.KEY_LENGTH)
+        self.assertEqual(Ikev1AttributeKeyLength.get_type(), Ikev1AttributeType.KEY_LENGTH)
 
     def test_key_length_value_support(self):
         different_key_lengths = [64, 128, 192, 256]  # bits
@@ -215,7 +216,7 @@ class TestIkev1AttributeEncryptionAlgorithm(unittest.TestCase):
 
     def test_get_type(self):
         # pylint: disable=protected-access
-        self.assertEqual(Ikev1AttributeEncryptionAlgorithm._get_type(), Ikev1AttributeType.ENCRYPTION_ALGORITHM)
+        self.assertEqual(Ikev1AttributeEncryptionAlgorithm.get_type(), Ikev1AttributeType.ENCRYPTION_ALGORITHM)
 
     def test_get_enum_type(self):
         # pylint: disable=protected-access
@@ -248,7 +249,7 @@ class TestIkev1AttributeAuthenticationMethod(unittest.TestCase):
 
     def test_get_type(self):
         # pylint: disable=protected-access
-        self.assertEqual(Ikev1AttributeAuthenticationMethod._get_type(), Ikev1AttributeType.AUTHENTICATION_METHOD)
+        self.assertEqual(Ikev1AttributeAuthenticationMethod.get_type(), Ikev1AttributeType.AUTHENTICATION_METHOD)
 
     def test_get_enum_type(self):
         # pylint: disable=protected-access
@@ -285,7 +286,7 @@ class TestIkev1AttributeDiffieHellmanGroup(unittest.TestCase):
 
     def test_get_type(self):
         # pylint: disable=protected-access
-        self.assertEqual(Ikev1AttributeDiffieHellmanGroup._get_type(), Ikev1AttributeType.GROUP_DESCRIPTION)
+        self.assertEqual(Ikev1AttributeDiffieHellmanGroup.get_type(), Ikev1AttributeType.GROUP_DESCRIPTION)
 
     def test_get_enum_type(self):
         # pylint: disable=protected-access
@@ -318,7 +319,7 @@ class TestIkev1AttributeHashAlgorithm(unittest.TestCase):
 
     def test_get_type(self):
         # pylint: disable=protected-access
-        self.assertEqual(Ikev1AttributeHashAlgorithm._get_type(), Ikev1AttributeType.HASH_ALGORITHM)
+        self.assertEqual(Ikev1AttributeHashAlgorithm.get_type(), Ikev1AttributeType.HASH_ALGORITHM)
 
     def test_get_enum_type(self):
         # pylint: disable=protected-access
@@ -348,7 +349,7 @@ class TestIkev1AttributeLifeType(unittest.TestCase):
 
     def test_get_type(self):
         # pylint: disable=protected-access
-        self.assertEqual(Ikev1AttributeLifeType._get_type(), Ikev1AttributeType.LIFE_TYPE)
+        self.assertEqual(Ikev1AttributeLifeType.get_type(), Ikev1AttributeType.LIFE_TYPE)
 
     def test_get_enum_type(self):
         # pylint: disable=protected-access
@@ -378,7 +379,7 @@ class TestIkev1AttributeLifeDuration(unittest.TestCase):
 
     def test_get_type(self):
         # pylint: disable=protected-access
-        self.assertEqual(Ikev1AttributeLifeDuration._get_type(), Ikev1AttributeType.LIFE_DURATION)
+        self.assertEqual(Ikev1AttributeLifeDuration.get_type(), Ikev1AttributeType.LIFE_DURATION)
 
     def test_get_size(self):
         # pylint: disable=protected-access
@@ -510,6 +511,25 @@ class TestIkev1PayloadTransform(unittest.TestCase):  # pylint: disable=too-many-
 
     def test_attributes_storage(self):
         self.assertEqual(self.transform.attributes, self.attributes)
+
+    def test_get_attribute_by_type(self):
+        transform = Ikev1PayloadTransform(
+            transform_id=Ikev1TransformId.KEY_IKE,
+            attributes=[self.auth_attribute],
+        )
+
+        attribute = transform.get_attribute_by_type(Ikev1AttributeType.AUTHENTICATION_METHOD)
+        self.assertIsInstance(attribute, Ikev1AttributeAuthenticationMethod)
+        self.assertEqual(attribute.value, Ikev1AuthenticationMethod.PRE_SHARED_KEY)
+
+    def test_error_get_attribute_by_type_not_found(self):
+        transform = Ikev1PayloadTransform(
+            transform_id=Ikev1TransformId.KEY_IKE,
+            attributes=[],
+        )
+
+        with self.assertRaises(KeyError):
+            transform.get_attribute_by_type(Ikev1AttributeType.AUTHENTICATION_METHOD)
 
     def test_transform_number_initialization(self):
         self.assertIsNone(self.transform.transform_number)

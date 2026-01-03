@@ -92,6 +92,15 @@ class IsakmpMessage(ParsableBase):
         )
     )
 
+    def get_payload_by_type(
+        self, payload_type: typing.Union[Ikev1PayloadType, Ikev2PayloadType]
+    ) -> typing.Union[Ikev1PayloadBase, Ikev2PayloadBase]:
+        for payload in self.payloads:
+            if payload.get_payload_type() == payload_type:
+                return payload
+
+        raise KeyError(payload_type)
+
     @classmethod
     def _parse(cls, parsable):
         if len(parsable) < cls.HEADER_SIZE:

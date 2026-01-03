@@ -233,7 +233,7 @@ class Transform(ParsableBase):
 
 class TransformAttributeKeyLength(DataAttributeLength):
     @classmethod
-    def _get_type(cls):
+    def get_type(cls):
         return Ikev2TransformAttributeType.KEY_LENGTH
 
     @classmethod
@@ -264,7 +264,7 @@ class TransformAttributeSignatureAlgorithm(DataAttributeTypeValue):
     )
 
     @classmethod
-    def _get_type(cls):
+    def get_type(cls):
         return Ikev2TransformAttributeType.SIGNATURE_ALGORITHM
 
     @classmethod
@@ -577,6 +577,14 @@ class Ikev2PayloadSecurityAssociation(Ikev2PayloadBase):
     @classmethod
     def get_payload_type(cls):
         return Ikev2PayloadType.SA
+
+    def get_transform_by_type(self, transform_type: Ikev2TransformType) -> Transform:
+        for proposal in self.proposals:
+            for transform in proposal.transforms:
+                if transform.get_transform_type() == transform_type:
+                    return transform
+
+        raise KeyError(transform_type)
 
     @classmethod
     def _parse(cls, parsable):

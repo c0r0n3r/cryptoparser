@@ -113,7 +113,7 @@ class Ikev1AttributeAuthenticationMethod(DataAttributeTypeValueEnumCoded):
     """Authentication Method transform attribute (TLV format)."""
 
     @classmethod
-    def _get_type(cls):
+    def get_type(cls):
         return Ikev1AttributeType.AUTHENTICATION_METHOD
 
     @classmethod
@@ -126,7 +126,7 @@ class Ikev1AttributeDiffieHellmanGroup(DataAttributeTypeValueEnumCoded):
     """Diffie-Hellman Group transform attribute (TLV format)."""
 
     @classmethod
-    def _get_type(cls):
+    def get_type(cls):
         return Ikev1AttributeType.GROUP_DESCRIPTION
 
     @classmethod
@@ -139,7 +139,7 @@ class Ikev1AttributeKeyLength(DataAttributeKeyLength):
     """Key Length transform attribute (TV format)."""
 
     @classmethod
-    def _get_type(cls):
+    def get_type(cls):
         return Ikev1AttributeType.KEY_LENGTH
 
 
@@ -148,7 +148,7 @@ class Ikev1AttributeEncryptionAlgorithm(DataAttributeTypeValueEnumCoded):
     """Encryption Algorithm transform attribute (TLV format)."""
 
     @classmethod
-    def _get_type(cls):
+    def get_type(cls):
         return Ikev1AttributeType.ENCRYPTION_ALGORITHM
 
     @classmethod
@@ -161,7 +161,7 @@ class Ikev1AttributeHashAlgorithm(DataAttributeTypeValueEnumCoded):
     """Hash Algorithm transform attribute (TLV format)."""
 
     @classmethod
-    def _get_type(cls):
+    def get_type(cls):
         return Ikev1AttributeType.HASH_ALGORITHM
 
     @classmethod
@@ -174,7 +174,7 @@ class Ikev1AttributeLifeType(DataAttributeTypeValueEnumCoded):
     """Life Type transform attribute (TLV format)."""
 
     @classmethod
-    def _get_type(cls):
+    def get_type(cls):
         return Ikev1AttributeType.LIFE_TYPE
 
     @classmethod
@@ -191,7 +191,7 @@ class Ikev1AttributeLifeDuration(DataAttributeLength):
         return DataAttributeFormat.TYPE_LENGTH_VALUE
 
     @classmethod
-    def _get_type(cls):
+    def get_type(cls):
         return Ikev1AttributeType.LIFE_DURATION
 
     @classmethod
@@ -239,6 +239,12 @@ class Ikev1PayloadTransform(Ikev1PayloadBase):
     @classmethod
     def get_payload_type(cls):
         return Ikev1PayloadType.TRANSFORM
+
+    def get_attribute_by_type(self, attribute_type: Ikev1AttributeType) -> DataAttributeBase:
+        for attribute in self.attributes:
+            if attribute.get_type() == attribute_type:
+                return attribute
+        raise KeyError(attribute_type)
 
     @classmethod
     def _parse(cls, parsable):

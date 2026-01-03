@@ -38,7 +38,7 @@ class DataAttributeBase(ParsableBase):
 
     @classmethod
     @abc.abstractmethod
-    def _get_type(cls):
+    def get_type(cls):
         raise NotImplementedError()
 
     @classmethod
@@ -53,8 +53,8 @@ class DataAttributeBase(ParsableBase):
         if parser['format'] != cls._get_format():
             raise InvalidType()
 
-        parser.parse_numeric_enum_coded('type', type(cls._get_type()))
-        if parser['type'] != cls._get_type():
+        parser.parse_numeric_enum_coded('type', type(cls.get_type()))
+        if parser['type'] != cls.get_type():
             raise InvalidType()
 
         return parser
@@ -63,7 +63,7 @@ class DataAttributeBase(ParsableBase):
         composer = ComposerBinary()
 
         composer.compose_numeric(self._get_format().value, 1)
-        composer.compose_numeric_enum_coded(self._get_type())
+        composer.compose_numeric_enum_coded(self.get_type())
 
         return composer
 
@@ -80,7 +80,7 @@ class DataAttributeTypeValue(DataAttributeBase):
 
     @classmethod
     @abc.abstractmethod
-    def _get_type(cls):
+    def get_type(cls):
         raise NotImplementedError()
 
     @classmethod
@@ -105,7 +105,7 @@ class DataAttributeTypeValueEnumCoded(DataAttributeTypeValue):
 
     @classmethod
     @abc.abstractmethod
-    def _get_type(cls):
+    def get_type(cls):
         raise NotImplementedError()
 
     @classmethod
@@ -158,7 +158,7 @@ class DataAttributeKeyLength(DataAttributeTypeValue):
 
     @classmethod
     @abc.abstractmethod
-    def _get_type(cls):
+    def get_type(cls):
         raise NotImplementedError()
 
     @classmethod
@@ -199,7 +199,7 @@ class DataAttributeLength(DataAttributeBase):
 
     @classmethod
     @abc.abstractmethod
-    def _get_type(cls):
+    def get_type(cls):
         raise NotImplementedError()
 
     @classmethod
