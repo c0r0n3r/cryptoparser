@@ -545,6 +545,48 @@ class Ikev1PayloadNonce(Ikev1PayloadBase):
 
 
 @attr.s
+class Ikev1PayloadHash(Ikev1PayloadBase):
+    """Hash payload parser.
+
+    The Hash payload has the following format:
+
+    .. code-block:: text
+
+                          1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        | Next Payload  |   RESERVED    |         Payload Length        |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        |                                                               |
+        ~                           Hash Data                           ~
+        |                                                               |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+    :ivar hash_data: Hash data (variable length)
+    """
+
+    hash_data: bytes = attr.ib(converter=bytes, validator=attr.validators.instance_of(bytes))
+
+    @classmethod
+    def get_payload_type(cls):
+        return Ikev1PayloadType.HASH
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+        parser.parse_raw('hash_data', parser['payload_length'] - cls.HEADER_SIZE)
+        payload = cls(hash_data=parser['hash_data'])
+        payload.next_payload = parser['next_payload']
+        return payload, parser.parsed_length
+
+    def compose(self):
+        composer_payload = ComposerBinary()
+        composer_payload.compose_raw(self.hash_data)
+        composer_header = self.compose_header(composer_payload.composed_length)
+        return composer_header.composed_bytes + composer_payload.composed_bytes
+
+
+@attr.s
 class Ikev1PayloadNotification(Ikev1PayloadBase):
     """Notification payload parser.
 
@@ -673,6 +715,7 @@ class Ikev1PayloadVendorId(Ikev1PayloadBase):
 IKEV1_PAYLOAD_CLASSES_BY_TYPE = {
     Ikev1PayloadType.SECURITY_ASSOCIATION: Ikev1PayloadSecurityAssociation,
     Ikev1PayloadType.KEY_EXCHANGE: Ikev1PayloadKeyExchange,
+    Ikev1PayloadType.HASH: Ikev1PayloadHash,
     Ikev1PayloadType.NONCE: Ikev1PayloadNonce,
     Ikev1PayloadType.NOTIFICATION: Ikev1PayloadNotification,
     Ikev1PayloadType.VENDOR_ID: Ikev1PayloadVendorId,

@@ -15,7 +15,8 @@ from cryptoparser.common.exception import NotEnoughData
 from cryptoparser.ike.ikev1 import (
     Ikev1AttributeAuthenticationMethod, Ikev1AttributeDiffieHellmanGroup, Ikev1AttributeHashAlgorithm,
     Ikev1AttributeLifeType, Ikev1AttributeLifeDuration, Ikev1AttributeKeyLength, Ikev1AttributeEncryptionAlgorithm,
-    Ikev1PayloadTransform, Ikev1PayloadKeyExchange, Ikev1PayloadNonce, Ikev1PayloadNotification, Ikev1PayloadVendorId
+    Ikev1PayloadTransform, Ikev1PayloadKeyExchange, Ikev1PayloadHash, Ikev1PayloadNonce, Ikev1PayloadNotification,
+    Ikev1PayloadVendorId
 )
 
 from .classes import Ikev1PayloadBaseTest
@@ -762,6 +763,130 @@ class TestIkev1PayloadKeyExchange(unittest.TestCase):  # pylint: disable=too-man
 
         self.assertEqual(parsed.next_payload, Ikev1PayloadType.SECURITY_ASSOCIATION)
         self.assertEqual(parsed.key_exchange_data, self.key_exchange_data)
+
+
+class TestIkev1PayloadHash(unittest.TestCase):  # pylint: disable=too-many-instance-attributes
+    def setUp(self):
+        self.hash_data = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
+        self.large_hash_data = bytes(range(256))
+
+        self.test_dict_small_hash = collections.OrderedDict([
+            ('next_payload', b'\x0a'),  # NONCE = 0x0a (10)
+            ('reserved', b'\x00'),
+            ('payload_length', b'\x00\x14'),  # 4 + 16 = 20 bytes total
+            ('hash_data', self.hash_data),
+        ])
+        self.test_bytes_small_hash = b''.join(self.test_dict_small_hash.values())
+
+        self.test_dict_empty_hash = collections.OrderedDict([
+            ('next_payload', b'\x00'),  # NONE = 0x00
+            ('reserved', b'\x00'),
+            ('payload_length', b'\x00\x04'),
+        ])
+        self.test_bytes_empty_hash = b''.join(self.test_dict_empty_hash.values())
+
+        self.test_dict_large_hash = collections.OrderedDict([
+            ('next_payload', b'\x04'),  # KEY_EXCHANGE = 0x04
+            ('reserved', b'\x00'),
+            ('payload_length', b'\x01\x04'),  # 4 + 256 = 260 bytes total
+            ('hash_data', self.large_hash_data),
+        ])
+        self.test_bytes_large_hash = b''.join(self.test_dict_large_hash.values())
+
+        self.hash_small = Ikev1PayloadHash(hash_data=self.hash_data)
+        self.hash_small.next_payload = Ikev1PayloadType.NONCE
+
+        self.hash_empty = Ikev1PayloadHash(hash_data=b'')
+        self.hash_empty.next_payload = Ikev1PayloadType.NONE
+
+        self.hash_large = Ikev1PayloadHash(hash_data=self.large_hash_data)
+        self.hash_large.next_payload = Ikev1PayloadType.KEY_EXCHANGE
+
+    def test_get_payload_type(self):
+        self.assertEqual(Ikev1PayloadHash.get_payload_type(), Ikev1PayloadType.HASH)
+
+    def test_parse_small_hash_data(self):
+        parsed: Ikev1PayloadHash = Ikev1PayloadHash.parse_exact_size(self.test_bytes_small_hash)
+
+        self.assertEqual(parsed.next_payload, Ikev1PayloadType.NONCE)
+        self.assertEqual(parsed.hash_data, self.hash_data)
+
+    def test_parse_empty_hash_data(self):
+        parsed: Ikev1PayloadHash = Ikev1PayloadHash.parse_exact_size(self.test_bytes_empty_hash)
+
+        self.assertEqual(parsed.next_payload, Ikev1PayloadType.NONE)
+        self.assertEqual(parsed.hash_data, b'')
+
+    def test_parse_large_hash_data(self):
+        parsed: Ikev1PayloadHash = Ikev1PayloadHash.parse_exact_size(self.test_bytes_large_hash)
+
+        self.assertEqual(parsed.next_payload, Ikev1PayloadType.KEY_EXCHANGE)
+        self.assertEqual(parsed.hash_data, self.large_hash_data)
+        self.assertEqual(len(parsed.hash_data), 256)
+
+    def test_compose_small_hash_data(self):
+        composed_bytes = self.hash_small.compose()
+        self.assertEqual(composed_bytes, self.test_bytes_small_hash)
+
+    def test_compose_empty_hash_data(self):
+        composed_bytes = self.hash_empty.compose()
+        self.assertEqual(composed_bytes, self.test_bytes_empty_hash)
+
+    def test_compose_large_hash_data(self):
+        composed_bytes = self.hash_large.compose()
+        self.assertEqual(composed_bytes, self.test_bytes_large_hash)
+
+    def test_round_trip_small_hash(self):
+        composed_bytes = self.hash_small.compose()
+        parsed: Ikev1PayloadHash = Ikev1PayloadHash.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed.hash_data, self.hash_small.hash_data)
+        self.assertEqual(parsed.next_payload, self.hash_small.next_payload)
+
+    def test_round_trip_empty_hash(self):
+        composed_bytes = self.hash_empty.compose()
+        parsed: Ikev1PayloadHash = Ikev1PayloadHash.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed.hash_data, self.hash_empty.hash_data)
+        self.assertEqual(parsed.next_payload, self.hash_empty.next_payload)
+
+    def test_round_trip_large_hash(self):
+        composed_bytes = self.hash_large.compose()
+        parsed: Ikev1PayloadHash = Ikev1PayloadHash.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed.hash_data, self.hash_large.hash_data)
+        self.assertEqual(parsed.next_payload, self.hash_large.next_payload)
+        self.assertEqual(len(parsed.hash_data), len(self.hash_large.hash_data))
+
+    def test_payload_length_calculation(self):
+        test_data = b'\x00\x01\x02\x03\x04\x05'
+        payload = Ikev1PayloadHash(hash_data=test_data)
+        payload.next_payload = Ikev1PayloadType.VENDOR_ID
+
+        composed = payload.compose()
+        self.assertEqual(len(composed), 10)  # 4 + 6 = 10 bytes total
+        self.assertEqual(composed[2:4], b'\x00\x0a')  # 10 = 0x000a
+
+    def test_error_parse_not_enough_data(self):
+        incomplete_data = b'\x00\x00\x00'
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            Ikev1PayloadHash.parse_exact_size(incomplete_data)
+
+        self.assertEqual(context_manager.exception.bytes_needed, 1)
+
+    def test_error_parse_payload_length_mismatch(self):
+        malformed_dict = collections.OrderedDict([
+            ('next_payload', b'\x00'),  # NONE = 0x00
+            ('reserved', b'\x00'),
+            ('payload_length', b'\x00\x14'),  # 20 bytes total, but missing data
+        ])
+        malformed_data = b''.join(malformed_dict.values())
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            Ikev1PayloadHash.parse_exact_size(malformed_data)
+
+        self.assertEqual(context_manager.exception.bytes_needed, 16)
 
 
 class TestIkev1PayloadNonce(unittest.TestCase):  # pylint: disable=too-many-instance-attributes
