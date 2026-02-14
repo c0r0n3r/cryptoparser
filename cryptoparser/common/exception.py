@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import typing
+
 import attr
 
 
 @attr.s
 class InvalidDataLength(Exception):
-    bytes_needed = attr.ib(default=None, validator=attr.validators.optional(attr.validators.instance_of(int)))
+    bytes_needed: typing.Optional[int] = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(int))
+    )
 
 
 @attr.s

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import abc
 import collections.abc
@@ -6,6 +7,7 @@ import datetime
 import enum
 import struct
 import time
+import typing
 
 import attr
 
@@ -88,9 +90,12 @@ class ByteOrder(enum.Enum):
 
 @attr.s
 class ParserBase(collections.abc.Mapping):
-    _parsable = attr.ib(converter=bytes, validator=attr.validators.instance_of((bytes, bytearray)))
-    _parsed_length = attr.ib(init=False, default=0)
-    _parsed_values = attr.ib(init=False, default=None)
+    _parsable: typing.Union[bytes, bytearray] = attr.ib(
+        converter=bytes,
+        validator=attr.validators.instance_of((bytes, bytearray))
+    )
+    _parsed_length: int = attr.ib(init=False, default=0)
+    _parsed_values: typing.Dict[str, typing.Any] = attr.ib(init=False, default=None)
 
     def __attrs_post_init__(self):
         if self._parsed_values is None:
@@ -279,6 +284,7 @@ class ParserText(ParserBase):
                 name, min_length, max_length, self._encoding, str
             )
         except NotEnoughData as e:
+            assert e.bytes_needed is not None
             raise InvalidValue(self._parsable[self._parsed_length:min_length - e.bytes_needed], type(self), name) from e
 
         if value != actual_value:
@@ -489,7 +495,7 @@ class ParserText(ParserBase):
 
 @attr.s
 class ParserBinary(ParserBase):
-    byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
+    byte_order: ByteOrder = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
     def parse_timestamp(self, name, milliseconds=False, item_size=8):
         value, parsed_length = self._parse_numeric_array(name, 1, item_size, int)
@@ -539,6 +545,13 @@ class ParserBinary(ParserBase):
 
     def parse_numeric(self, name, size, converter=int):
         value, parsed_length = self._parse_numeric_array(name, 1, size, converter)
+
+        self._parsed_length += parsed_length
+        self._parsed_values[name] = value[0]
+
+    def parse_numeric_enum_coded(self, name, enum_class):
+        param = list(enum_class)[0].value
+        value, parsed_length = self._parse_numeric_array(name, 1, param.get_code_size(), enum_class.from_code)
 
         self._parsed_length += parsed_length
         self._parsed_values[name] = value[0]
@@ -840,7 +853,7 @@ class ComposerText(ComposerBase):
 
 @attr.s
 class ComposerBinary(ComposerBase):
-    byte_order = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
+    byte_order: ByteOrder = attr.ib(default=ByteOrder.NETWORK, validator=attr.validators.in_(ByteOrder))
 
     def compose_timestamp(self, value, milliseconds=False, item_size=8):
         if value is None:
