@@ -3,6 +3,19 @@ Changelog
 =========
 
 -------------------
+1.1.0 - 2026-02-13
+-------------------
+
+Features
+========
+
+-  IKE (``ike``)
+
+   -  add ISAKMP header parsing (#91)
+   -  add parser/composer for mandatory IKEv2 protocol elements (#91)
+   -  add parser/composer for mandatory IKEv1 protocol elements (#91)
+
+-------------------
 1.0.2 - 2025-12-30
 -------------------
 
