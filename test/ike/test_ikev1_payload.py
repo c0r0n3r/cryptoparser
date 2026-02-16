@@ -17,10 +17,10 @@ from cryptoparser.ike.ikev1 import (
     Ikev1AttributeAuthenticationMethod, Ikev1AttributeDiffieHellmanGroup, Ikev1AttributeHashAlgorithm,
     Ikev1AttributeLifeType, Ikev1AttributeLifeDuration, Ikev1AttributeKeyLength, Ikev1AttributeEncryptionAlgorithm,
     Ikev1PayloadTransform, Ikev1PayloadKeyExchange, Ikev1PayloadHash, Ikev1PayloadNonce, Ikev1PayloadNotification,
-    Ikev1PayloadVendorId
+    Ikev1PayloadDelete, Ikev1PayloadVendorId
 )
 
-from .classes import Ikev1PayloadBaseTest
+from .classes import Ikev1PayloadBaseTest, Ikev1PayloadDoiProtocolSpiBaseTest
 
 
 class TestIkev1PayloadBaseTest(unittest.TestCase):
@@ -186,6 +186,80 @@ class TestIkev1PayloadBase(unittest.TestCase):
             Ikev1PayloadBaseTest.parse_exact_size(malformed_data)
 
         self.assertEqual(context_manager.exception.bytes_needed, 16)
+
+
+class TestIkev1PayloadSaIdentifyingBase(unittest.TestCase):
+    """Test Ikev1PayloadDoiProtocolSpiBase (RFC 2408 Section 2.4 Identifying Security Associations)."""
+
+    def setUp(self):
+        self.doi = Ikev1Doi.IPSEC
+        self.protocol_id = Ikev1ProtocolId.ISAKMP
+        self.spi_size = 8
+        self.extra_data = b'\x00\x01\x02\x03'
+
+        self.test_payload = Ikev1PayloadDoiProtocolSpiBaseTest(
+            doi=self.doi,
+            protocol_id=self.protocol_id,
+            spi_size=self.spi_size,
+            extra_data=self.extra_data
+        )
+        self.test_payload.next_payload = Ikev1PayloadType.NONE
+
+    def test_parse(self):
+        composed = self.test_payload.compose()
+        parsed: Ikev1PayloadDoiProtocolSpiBaseTest = Ikev1PayloadDoiProtocolSpiBaseTest.parse_exact_size(composed)
+        self.assertEqual(parsed.doi, self.doi)
+        self.assertEqual(parsed.protocol_id, self.protocol_id)
+        self.assertEqual(parsed.spi_size, self.spi_size)
+        self.assertEqual(parsed.extra_data, self.extra_data)
+
+    def test_compose_round_trip(self):
+        composed = self.test_payload.compose()
+        parsed: Ikev1PayloadDoiProtocolSpiBaseTest = Ikev1PayloadDoiProtocolSpiBaseTest.parse_exact_size(composed)
+        recomposed = parsed.compose()
+        self.assertEqual(recomposed, composed)
+
+    def test_different_doi_protocol_spi_values(self):
+        for doi, protocol_id, spi_size in [
+            (Ikev1Doi.ISAKMP, Ikev1ProtocolId.IPSEC_ESP, 4),
+            (Ikev1Doi.GDOI, Ikev1ProtocolId.IPSEC_AH, 0),
+        ]:
+            payload = Ikev1PayloadDoiProtocolSpiBaseTest(
+                doi=doi,
+                protocol_id=protocol_id,
+                spi_size=spi_size,
+                extra_data=b''
+            )
+            composed = payload.compose()
+            parsed: Ikev1PayloadDoiProtocolSpiBaseTest = Ikev1PayloadDoiProtocolSpiBaseTest.parse_exact_size(composed)
+            self.assertEqual(parsed.doi, doi)
+            self.assertEqual(parsed.protocol_id, protocol_id)
+            self.assertEqual(parsed.spi_size, spi_size)
+
+    def test_error_not_enough_data(self):
+        minimal = Ikev1PayloadDoiProtocolSpiBaseTest(
+            doi=self.doi,
+            protocol_id=self.protocol_id,
+            spi_size=0,
+            extra_data=b''
+        )
+        minimal.next_payload = Ikev1PayloadType.NONE
+
+        minimal_bytes = minimal.compose()
+        incomplete = minimal_bytes[:-1]
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            Ikev1PayloadDoiProtocolSpiBaseTest.parse_exact_size(incomplete)
+        self.assertEqual(context_manager.exception.bytes_needed, 1)
+
+        truncated_doi_protocol_spi = (
+            b'\x00\x00'  # next_payload, reserved
+            b'\x00\x09'  # payload_length = 9
+            b'\x00\x00\x00\x00\x00'  # 5 bytes (need 6 for DOI+Protocol+SPI)
+        )
+        with self.assertRaises(NotEnoughData) as context_manager:
+            Ikev1PayloadDoiProtocolSpiBaseTest.parse_exact_size(truncated_doi_protocol_spi)
+        self.assertEqual(context_manager.exception.bytes_needed, 1)
 
 
 class TestIkev1AttributeKeyLength(unittest.TestCase):
@@ -962,86 +1036,13 @@ class TestIkev1PayloadNonce(unittest.TestCase):  # pylint: disable=too-many-inst
         self.assertEqual(len(parsed.nonce_data), len(special_nonce))
 
 
-class TestIkev1PayloadNotification(unittest.TestCase):  # pylint: disable=too-many-instance-attributes
+class TestIkev1PayloadNotification(unittest.TestCase):
+    """Test Notification-specific payload fields: notify_type, spi, notification_data."""
+
     def setUp(self):
-        self.doi = Ikev1Doi.IPSEC
-        self.protocol_id = Ikev1ProtocolId.ISAKMP
-        self.spi_size = 8
         self.notify_type = Ikev1NotifyType.NO_PROPOSAL_CHOSEN
         self.spi = b'\x00\x01\x02\x03\x04\x05\x06\x07'
         self.notification_data = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
-
-        self.test_dict_small_notification = collections.OrderedDict([
-            ('next_payload', b'\x00'),  # NONE = 0x00
-            ('reserved', b'\x00'),
-            ('payload_length', b'\x00\x24'),  # 4 + 4 + 1 + 1 + 1 + 8 + 16 = 36 bytes total
-            ('doi', b'\x00\x00\x00\x01'),  # IPSEC = 0x00000001
-            ('protocol_id', b'\x01'),  # ISAKMP = 0x01
-            ('spi_size', b'\x08'),
-            ('notify_type', b'\x0e'),  # NO_PROPOSAL_CHOSEN = 0x0e (14)
-            ('spi', b'\x00\x01\x02\x03\x04\x05\x06\x07'),
-            ('notification_data', b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'),
-        ])
-        self.test_bytes_small_notification = b''.join(self.test_dict_small_notification.values())
-
-        self.test_dict_empty_notification = collections.OrderedDict([
-            ('next_payload', b'\x00'),  # NONE = 0x00
-            ('reserved', b'\x00'),
-            ('payload_length', b'\x00\x0c'),  # 4 + 4 + 1 + 1 + 1 + 0 + 0 = 12 bytes total
-            ('doi', b'\x00\x00\x00\x00'),  # ISAKMP = 0x00000000
-            ('protocol_id', b'\x01'),  # ISAKMP = 0x01
-            ('spi_size', b'\x00'),
-            ('notify_type', b'\x01'),  # INVALID_PAYLOAD_TYPE = 0x01
-            ('spi', b''),
-            ('notification_data', b''),
-        ])
-        self.test_bytes_empty_notification = b''.join(self.test_dict_empty_notification.values())
-
-        self.large_spi = bytes(range(64))
-        self.large_notification_data = bytes(range(128))
-        self.test_dict_large_notification = collections.OrderedDict([
-            ('next_payload', b'\x04'),  # KEY_EXCHANGE = 0x04
-            ('reserved', b'\x00'),
-            ('payload_length', b'\x00\xcb'),  # 4 + 4 + 1 + 1 + 1 + 64 + 128 = 203 bytes total
-            ('doi', b'\x00\x00\x00\x02'),  # GDOI = 0x00000002
-            ('protocol_id', b'\x02'),  # IPSEC_AH = 0x02
-            ('spi_size', b'\x40'),
-            ('notify_type', b'\x0f'),  # BAD_PROPOSAL_SYNTAX = 0x0f
-            ('spi', self.large_spi),
-            ('notification_data', self.large_notification_data),
-        ])
-        self.test_bytes_large_notification = b''.join(self.test_dict_large_notification.values())
-
-        # Notification objects for compose tests
-        self.notification_small = Ikev1PayloadNotification(
-            doi=self.doi,
-            protocol_id=self.protocol_id,
-            spi_size=self.spi_size,
-            notify_type=self.notify_type,
-            spi=self.spi,
-            notification_data=self.notification_data
-        )
-        self.notification_small.next_payload = Ikev1PayloadType.NONE
-
-        self.notification_empty = Ikev1PayloadNotification(
-            doi=Ikev1Doi.ISAKMP,
-            protocol_id=self.protocol_id,
-            spi_size=0,
-            notify_type=Ikev1NotifyType.INVALID_PAYLOAD_TYPE,
-            spi=b'',
-            notification_data=b''
-        )
-        self.notification_empty.next_payload = Ikev1PayloadType.NONE
-
-        self.notification_large = Ikev1PayloadNotification(
-            doi=Ikev1Doi.GDOI,
-            protocol_id=Ikev1ProtocolId.IPSEC_AH,
-            spi_size=64,
-            notify_type=Ikev1NotifyType.BAD_PROPOSAL_SYNTAX,
-            spi=self.large_spi,
-            notification_data=self.large_notification_data
-        )
-        self.notification_large.next_payload = Ikev1PayloadType.KEY_EXCHANGE
 
     def test_get_payload_type(self):
         self.assertEqual(Ikev1PayloadNotification.get_payload_type(), Ikev1PayloadType.NOTIFICATION)
@@ -1063,27 +1064,59 @@ class TestIkev1PayloadNotification(unittest.TestCase):  # pylint: disable=too-ma
         self.assertEqual(len(composed), 20)
         self.assertEqual(composed[2:4], b'\x00\x14')  # 20 = 0x0014
 
-    def test_different_next_payload_types(self):
+    def test_notify_type_spi_notification_data_round_trip(self):
         notification = Ikev1PayloadNotification(
-            doi=self.doi,
-            protocol_id=self.protocol_id,
-            spi_size=self.spi_size,
+            doi=Ikev1Doi.IPSEC,
+            protocol_id=Ikev1ProtocolId.ISAKMP,
+            spi_size=8,
             notify_type=self.notify_type,
             spi=self.spi,
             notification_data=self.notification_data
         )
-        notification.next_payload = Ikev1PayloadType.SECURITY_ASSOCIATION
-
         composed = notification.compose()
         parsed: Ikev1PayloadNotification = Ikev1PayloadNotification.parse_exact_size(composed)
-
-        self.assertEqual(parsed.next_payload, Ikev1PayloadType.SECURITY_ASSOCIATION)
-        self.assertEqual(parsed.doi, self.doi)
-        self.assertEqual(parsed.protocol_id, self.protocol_id)
-        self.assertEqual(parsed.spi_size, self.spi_size)
         self.assertEqual(parsed.notify_type, self.notify_type)
         self.assertEqual(parsed.spi, self.spi)
         self.assertEqual(parsed.notification_data, self.notification_data)
+
+
+class TestIkev1PayloadDelete(unittest.TestCase):
+    def setUp(self):
+        self.doi = Ikev1Doi.IPSEC
+        self.protocol_id = Ikev1ProtocolId.ISAKMP
+        self.spi_size = 8
+        self.spis = [
+            b'\x00\x01\x02\x03\x04\x05\x06\x07',
+            b'\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+        ]
+
+    def test_get_payload_type(self):
+        self.assertEqual(Ikev1PayloadDelete.get_payload_type(), Ikev1PayloadType.DELETE)
+
+    def test_payload_length_calculation(self):
+        spis_4byte = [b'\x12\x34\x56\x78', b'\x9a\xbc\xde\xf0']
+        delete = Ikev1PayloadDelete(
+            doi=Ikev1Doi.IPSEC,
+            protocol_id=Ikev1ProtocolId.IPSEC_ESP,
+            spi_size=4,
+            spis=spis_4byte,
+        )
+        delete.next_payload = Ikev1PayloadType.VENDOR_ID
+
+        composed = delete.compose()
+        self.assertEqual(len(composed), 20)  # 4 + 4 + 1 + 1 + 2 + 8 = 20 bytes total
+        self.assertEqual(composed[2:4], b'\x00\x14')  # 20 = 0x0014
+
+    def test_spis_round_trip(self):
+        delete = Ikev1PayloadDelete(
+            doi=self.doi,
+            protocol_id=self.protocol_id,
+            spi_size=self.spi_size,
+            spis=self.spis,
+        )
+        composed = delete.compose()
+        parsed: Ikev1PayloadDelete = Ikev1PayloadDelete.parse_exact_size(composed)
+        self.assertEqual(parsed.spis, self.spis)
 
 
 class TestIkev1PayloadVendorId(unittest.TestCase):  # pylint: disable=too-many-instance-attributes

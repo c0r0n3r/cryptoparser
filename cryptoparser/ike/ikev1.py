@@ -588,7 +588,60 @@ class Ikev1PayloadHash(Ikev1PayloadBase):
 
 
 @attr.s
-class Ikev1PayloadNotification(Ikev1PayloadBase):
+class Ikev1PayloadDoiProtocolSpiBase(Ikev1PayloadBase):
+    """Base class for IKEv1 payloads with DOI, Protocol-Id, and SPI Size fields.
+
+    Shared structure:
+
+    .. code-block:: text
+
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |              Domain of Interpretation  (DOI)                  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |  Protocol-Id  |   SPI Size    |                               |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+    :ivar doi: Domain of Interpretation (4 bytes)
+    :ivar protocol_id: Protocol ID (1 byte)
+    :ivar spi_size: Size of SPI in bytes (1 byte)
+    """
+
+    DOI_PROTOCOL_SPI_SIZE = 6
+
+    doi: Ikev1Doi = attr.ib(validator=attr.validators.instance_of(Ikev1Doi))
+    protocol_id: Ikev1ProtocolId = attr.ib(validator=attr.validators.instance_of(Ikev1ProtocolId))
+    spi_size: int = attr.ib(validator=attr.validators.instance_of(int))
+
+    @classmethod
+    @abc.abstractmethod
+    def _parse(cls, parsable):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse_header(cls, parsable):
+        parser = super()._parse_header(parsable)
+        if parser.unparsed_length < cls.DOI_PROTOCOL_SPI_SIZE:
+            raise NotEnoughData(cls.DOI_PROTOCOL_SPI_SIZE - parser.unparsed_length)
+
+        parser.parse_numeric_enum_coded('doi', Ikev1Doi)
+        parser.parse_numeric_enum_coded('protocol_id', Ikev1ProtocolId)
+        parser.parse_numeric('spi_size', 1)
+
+        return parser
+
+    def _compose_doi_protocol_spi(self, composer):
+        """Compose DOI, Protocol-Id, and SPI Size to composer."""
+        composer.compose_numeric_enum_coded(self.doi)
+        composer.compose_numeric_enum_coded(self.protocol_id)
+        composer.compose_numeric(self.spi_size, 1)
+
+
+@attr.s
+class Ikev1PayloadNotification(Ikev1PayloadDoiProtocolSpiBase):
     """Notification payload parser.
 
     The Notification payload has the following format:
@@ -613,17 +666,11 @@ class Ikev1PayloadNotification(Ikev1PayloadBase):
         !                                                               !
         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-    :ivar doi: Domain of Interpretation (4 bytes)
-    :ivar protocol_id: Protocol ID (1 byte)
-    :ivar spi_size: Size of SPI in bytes (1 byte)
     :ivar notify_message_type: Notify message type (1 byte)
     :ivar spi: Security Parameter Index (variable length)
     :ivar notification_data: Notification data (variable length)
     """
 
-    doi: Ikev1Doi = attr.ib(validator=attr.validators.instance_of(Ikev1Doi))
-    protocol_id: Ikev1ProtocolId = attr.ib(validator=attr.validators.instance_of(Ikev1ProtocolId))
-    spi_size: int = attr.ib(validator=attr.validators.instance_of(int))
     notify_type: Ikev1NotifyType = attr.ib(validator=attr.validators.instance_of(Ikev1NotifyType))
     spi: bytes = attr.ib(converter=bytes, validator=attr.validators.instance_of(bytes))
     notification_data: bytes = attr.ib(converter=bytes, validator=attr.validators.instance_of(bytes))
@@ -635,9 +682,6 @@ class Ikev1PayloadNotification(Ikev1PayloadBase):
     @classmethod
     def _parse(cls, parsable):
         parser = cls._parse_header(parsable)
-        parser.parse_numeric_enum_coded('doi', Ikev1Doi)
-        parser.parse_numeric_enum_coded('protocol_id', Ikev1ProtocolId)
-        parser.parse_numeric('spi_size', 1)
         parser.parse_numeric_enum_coded('notify_type', Ikev1NotifyType)
         parser.parse_raw('spi', parser['spi_size'])
         parser.parse_raw('notification_data', parser['payload_length'] - parser.parsed_length)
@@ -655,14 +699,80 @@ class Ikev1PayloadNotification(Ikev1PayloadBase):
 
     def compose(self):
         composer_payload = ComposerBinary()
-        composer_payload.compose_numeric_enum_coded(self.doi)
-        composer_payload.compose_numeric_enum_coded(self.protocol_id)
-        composer_payload.compose_numeric(len(self.spi), 1)
+        self._compose_doi_protocol_spi(composer_payload)
         composer_payload.compose_numeric_enum_coded(self.notify_type)
         composer_payload.compose_raw(self.spi)
         composer_payload.compose_raw(self.notification_data)
 
         composer_header = self.compose_header(composer_payload.composed_length)
+        return composer_header.composed_bytes + composer_payload.composed_bytes
+
+
+@attr.s
+class Ikev1PayloadDelete(Ikev1PayloadDoiProtocolSpiBase):
+    """Delete payload parser.
+
+    The Delete payload has the following format:
+
+    .. code-block:: text
+
+                          1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       | Next Payload  |   RESERVED    |         Payload Length        |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |              Domain of Interpretation  (DOI)                  |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |  Protocol-Id  |   SPI Size    |           # of SPIs           |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+       |                                                               |
+       ~               Security Parameter Index(es) (SPI)              ~
+       |                                                               |
+       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+    :ivar spis: Security Parameter Index(es) (variable length, list of spi_size bytes each)
+    """
+
+    spis: typing.Sequence[typing.Union[bytes, bytearray]] = attr.ib(
+        validator=attr.validators.deep_iterable(
+            member_validator=attr.validators.instance_of((bytes, bytearray)),
+        )
+    )
+
+    @classmethod
+    def get_payload_type(cls):
+        return Ikev1PayloadType.DELETE
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+        parser.parse_numeric('spi_count', 2)
+
+        spis = []
+        for _ in range(parser['spi_count']):
+            parser.parse_raw('spi', parser['spi_size'])
+            spis.append(parser['spi'])
+
+        payload = cls(
+            doi=parser['doi'],
+            protocol_id=parser['protocol_id'],
+            spi_size=parser['spi_size'],
+            spis=spis,
+        )
+        payload.next_payload = parser['next_payload']
+
+        return payload, parser.parsed_length
+
+    def compose(self):
+        composer_payload = ComposerBinary()
+        self._compose_doi_protocol_spi(composer_payload)
+        composer_payload.compose_numeric(len(self.spis), 2)
+
+        for spi in self.spis:
+            composer_payload.compose_raw(spi)
+
+        composer_header = self.compose_header(composer_payload.composed_length)
+
         return composer_header.composed_bytes + composer_payload.composed_bytes
 
 
@@ -719,6 +829,7 @@ IKEV1_PAYLOAD_CLASSES_BY_TYPE = {
     Ikev1PayloadType.HASH: Ikev1PayloadHash,
     Ikev1PayloadType.NONCE: Ikev1PayloadNonce,
     Ikev1PayloadType.NOTIFICATION: Ikev1PayloadNotification,
+    Ikev1PayloadType.DELETE: Ikev1PayloadDelete,
     Ikev1PayloadType.VENDOR_ID: Ikev1PayloadVendorId,
 }
 
