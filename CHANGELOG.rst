@@ -12,6 +12,7 @@ Features
 -  IKE (``ike``)
 
    -  add IKEv1 delete payload parsing (#92)
+   -  add IKEv1 certificate request payload parsing (#97)
 
 ------------------
 1.1.1 - 2026-05-03
