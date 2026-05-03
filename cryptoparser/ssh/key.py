@@ -24,6 +24,7 @@ from cryptodatahub.common.key import (
     PublicKeyParamsEcdsa,
     PublicKeyParamsEddsa,
     PublicKeyParamsRsa,
+    PublicKeySize,
 )
 from cryptodatahub.common.utils import hash_bytes
 from cryptodatahub.ssh.algorithm import SshHostKeyAlgorithm, SshHostKeyType, SshEllipticCurveIdentifier
@@ -76,6 +77,10 @@ class SshPublicKeyBase():
             fingerprint = base64.b64encode(digest).decode('ascii')
 
         return ':'.join((prefix, fingerprint))
+
+    @property
+    def key_size(self):
+        return PublicKeySize(self.public_key.key_type, self.public_key.key_size)
 
     @property
     def fingerprints(self):

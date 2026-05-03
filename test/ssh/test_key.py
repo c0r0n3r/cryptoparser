@@ -173,6 +173,9 @@ class TestHostKeyRSA(TestPublicKeyBase):
     def test_compose(self):
         self.assertEqual(self.host_key.compose(), self.host_key_bytes)
 
+    def test_key_size(self):
+        self.assertEqual(self.host_key.key_size, PublicKeySize(Authentication.RSA, 32))
+
     def test_asdict(self):
         self.assertEqual(self.host_key._asdict(), OrderedDict([
             ('key_type', 'host key'),
