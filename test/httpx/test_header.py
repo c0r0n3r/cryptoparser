@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# SPDX-License-Identifier: MPL-2.0
 # pylint: disable=too-many-lines
 # -*- coding: utf-8 -*-
 

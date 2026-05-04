@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 """IKEv1 payload parsers."""
 
 import abc

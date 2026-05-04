@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MPL-2.0
 """IKEv2 message parsers."""
 # pylint: disable=too-many-lines
 
