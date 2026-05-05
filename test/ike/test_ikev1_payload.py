@@ -17,7 +17,7 @@ from cryptoparser.ike.ikev1 import (
     Ikev1AttributeAuthenticationMethod, Ikev1AttributeDiffieHellmanGroup, Ikev1AttributeHashAlgorithm,
     Ikev1AttributeLifeType, Ikev1AttributeLifeDuration, Ikev1AttributeKeyLength, Ikev1AttributeEncryptionAlgorithm,
     Ikev1PayloadTransform, Ikev1PayloadKeyExchange, Ikev1PayloadHash, Ikev1PayloadNonce, Ikev1PayloadNotification,
-    Ikev1PayloadDelete, Ikev1PayloadVendorId
+    Ikev1PayloadDelete, Ikev1PayloadVendorId, Ikev1PayloadCertificateRequest
 )
 
 from .classes import Ikev1PayloadBaseTest, Ikev1PayloadDoiProtocolSpiBaseTest
@@ -1171,6 +1171,60 @@ class TestIkev1PayloadVendorId(unittest.TestCase):  # pylint: disable=too-many-i
         self.assertEqual(parsed.vendor_id, special_vendor_id)
         self.assertEqual(parsed.next_payload, Ikev1PayloadType.NONCE)
         self.assertEqual(len(parsed.vendor_id), len(special_vendor_id))
+
+
+class TestIkev1PayloadCertificateRequest(unittest.TestCase):
+    def setUp(self):
+        self.cert_encoding = 4  # X.509 certificate signature
+        self.certificate_data = (
+            b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
+            b'\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f'
+        )
+
+        self.test_dict_certreq = collections.OrderedDict([
+            ('next_payload', b'\x00'),  # NONE
+            ('reserved', b'\x00'),
+            ('payload_length', b'\x00\x25'),  # 37 bytes (4 header + 1 cert_encoding + 32 data)
+            ('cert_encoding', b'\x04'),  # X.509 certificate signature
+            ('certificate_data', self.certificate_data),
+        ])
+        self.test_bytes_certreq = b''.join(self.test_dict_certreq.values())
+
+        self.certreq_payload = Ikev1PayloadCertificateRequest(
+            cert_encoding=self.cert_encoding,
+            certificate_data=self.certificate_data
+        )
+        self.certreq_payload.next_payload = Ikev1PayloadType.NONE
+
+    def test_get_payload_type(self):
+        self.assertEqual(Ikev1PayloadCertificateRequest.get_payload_type(), Ikev1PayloadType.CERTIFICATE_REQUEST)
+
+    def test_parse(self):
+        parsed_certreq: Ikev1PayloadCertificateRequest = Ikev1PayloadCertificateRequest.parse_exact_size(
+            self.test_bytes_certreq)
+        self.assertEqual(parsed_certreq.next_payload, Ikev1PayloadType.NONE)
+        self.assertEqual(parsed_certreq.cert_encoding, self.cert_encoding)
+        self.assertEqual(parsed_certreq.certificate_data, self.certificate_data)
+
+    def test_compose(self):
+        composed_bytes = self.certreq_payload.compose()
+        self.assertEqual(composed_bytes, self.test_bytes_certreq)
+
+    def test_round_trip(self):
+        composed_bytes = self.certreq_payload.compose()
+        parsed_payload: Ikev1PayloadCertificateRequest = Ikev1PayloadCertificateRequest.parse_exact_size(
+            composed_bytes)
+
+        self.assertEqual(parsed_payload.cert_encoding, self.certreq_payload.cert_encoding)
+        self.assertEqual(parsed_payload.certificate_data, self.certreq_payload.certificate_data)
+        self.assertEqual(parsed_payload.next_payload, self.certreq_payload.next_payload)
+
+    def test_error_parse_not_enough_data(self):
+        incomplete_data = self.test_bytes_certreq[:-5]
+
+        with self.assertRaises(NotEnoughData) as context_manager:
+            Ikev1PayloadCertificateRequest.parse_exact_size(incomplete_data)
+        self.assertEqual(context_manager.exception.bytes_needed, 5)
 
 
 if __name__ == '__main__':

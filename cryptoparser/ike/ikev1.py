@@ -823,6 +823,62 @@ class Ikev1PayloadVendorId(Ikev1PayloadBase):
         return composer_header.composed_bytes + composer_payload.composed_bytes
 
 
+@attr.s
+class Ikev1PayloadCertificateRequest(Ikev1PayloadBase):
+    """Certificate Request payload parser.
+
+    The Certificate Request payload has the following format:
+
+    .. code-block:: text
+
+        0                   1                   2                   3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        | Next Payload  |C|  RESERVED   |         Payload Length        |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        | Cert Encoding |                                               |
+        +-+-+-+-+-+-+-+-+                                               +
+        ~                       Certificate Data                        ~
+        |                                                               |
+        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+    :ivar cert_encoding: Certificate encoding type
+    :ivar certificate_data: Certificate data
+    """
+
+    cert_encoding: int = attr.ib(validator=attr.validators.instance_of(int))
+    certificate_data: typing.Union[bytes, bytearray] = attr.ib(
+        validator=attr.validators.instance_of((bytes, bytearray))
+    )
+
+    @classmethod
+    def get_payload_type(cls):
+        return Ikev1PayloadType.CERTIFICATE_REQUEST
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+        parser.parse_numeric('cert_encoding', 1)
+        parser.parse_raw('certificate_data', parser['payload_length'] - cls.HEADER_SIZE - 1)
+
+        payload = cls(
+            cert_encoding=parser['cert_encoding'],
+            certificate_data=parser['certificate_data']
+        )
+        payload.next_payload = parser['next_payload']
+
+        return payload, parser.parsed_length
+
+    def compose(self):
+        composer_payload = ComposerBinary()
+        composer_payload.compose_numeric(self.cert_encoding, 1)
+        composer_payload.compose_raw(self.certificate_data)
+
+        composer_header = self.compose_header(composer_payload.composed_length)
+
+        return composer_header.composed_bytes + composer_payload.composed_bytes
+
+
 IKEV1_PAYLOAD_CLASSES_BY_TYPE = {
     Ikev1PayloadType.SECURITY_ASSOCIATION: Ikev1PayloadSecurityAssociation,
     Ikev1PayloadType.KEY_EXCHANGE: Ikev1PayloadKeyExchange,
@@ -831,6 +887,7 @@ IKEV1_PAYLOAD_CLASSES_BY_TYPE = {
     Ikev1PayloadType.NOTIFICATION: Ikev1PayloadNotification,
     Ikev1PayloadType.DELETE: Ikev1PayloadDelete,
     Ikev1PayloadType.VENDOR_ID: Ikev1PayloadVendorId,
+    Ikev1PayloadType.CERTIFICATE_REQUEST: Ikev1PayloadCertificateRequest,
 }
 
 
