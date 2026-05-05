@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'CryptoParser'
-version = '1.1.1'
+version = '1.2.0'
 description = 'An analysis oriented security protocol parser and generator'
 authors = [
     {name = 'Szilárd Pfeiffer', email = 'coroner@pfeifferszilard.hu'}
@@ -48,7 +48,7 @@ license-files = ['LICENSE.txt']
 dependencies = [
     'asn1crypto',
     'attrs',
-    'cryptodatahub==1.1.1',
+    'cryptodatahub==1.2.0',
     'urllib3',
 ]
 
