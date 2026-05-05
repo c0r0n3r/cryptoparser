@@ -10,7 +10,7 @@ from cryptodatahub.ike.algorithm import (
     Ikev2PseudorandomFunction,
 )
 from cryptoparser.common.parse import ComposerBinary
-from cryptoparser.ike.ikev1 import Ikev1PayloadBase
+from cryptoparser.ike.ikev1 import Ikev1PayloadBase, Ikev1PayloadDoiProtocolSpiBase
 from cryptoparser.ike.ikev2 import (
     Ikev2PayloadBase,
     Ikev2PayloadNotifyBase,
@@ -48,6 +48,42 @@ class Ikev1PayloadBaseTest(Ikev1PayloadBase):
     def compose(self):
         composer_payload = ComposerBinary()
         composer_payload.compose_raw(self.test_data)
+
+        composer_header = self.compose_header(composer_payload.composed_length)
+        return composer_header.composed_bytes + composer_payload.composed_bytes
+
+
+class Ikev1PayloadDoiProtocolSpiBaseTest(Ikev1PayloadDoiProtocolSpiBase):
+    """Concrete implementation of Ikev1PayloadDoiProtocolSpiBase for testing."""
+
+    def __init__(self, doi, protocol_id, spi_size, extra_data=b''):
+        super().__init__(doi=doi, protocol_id=protocol_id, spi_size=spi_size)
+        self.extra_data = extra_data
+        self.next_payload = Ikev1PayloadType.NONE
+
+    @classmethod
+    def get_payload_type(cls):
+        return Ikev1PayloadType.NONE
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_header(parsable)
+        extra_data_length = parser['payload_length'] - parser.parsed_length
+        parser.parse_raw('extra_data', extra_data_length)
+
+        payload = cls(
+            doi=parser['doi'],
+            protocol_id=parser['protocol_id'],
+            spi_size=parser['spi_size'],
+            extra_data=bytes(parser['extra_data'])
+        )
+        payload.next_payload = parser['next_payload']
+        return payload, parser.parsed_length
+
+    def compose(self):
+        composer_payload = ComposerBinary()
+        self._compose_doi_protocol_spi(composer_payload)
+        composer_payload.compose_raw(self.extra_data)
 
         composer_header = self.compose_header(composer_payload.composed_length)
         return composer_header.composed_bytes + composer_payload.composed_bytes
