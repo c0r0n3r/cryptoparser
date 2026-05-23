@@ -13,9 +13,12 @@ from cryptoparser.ike.ikev2 import (
     Ikev2PayloadNotifyUnparsed,
     Ikev2NotifyPayloadCookie,
     Ikev2NotifyPayloadSetWindowSize,
+    Ikev2NotifyPayloadNatDetectionSourceIp,
+    Ikev2NotifyPayloadNatDetectionDestinationIp,
     Ikev2NotifyPayloadVariantResponder
 )
 
+from . import classes as _ike_test_classes
 from .classes import Ikev2PayloadNotifyBaseTest, Ikev2PayloadNotifyNoDataTest
 
 
@@ -371,6 +374,18 @@ class TestIkev2NotifyPayloadSetWindowSize(unittest.TestCase):
         )
         with self.assertRaises(InvalidValue):
             Ikev2NotifyPayloadSetWindowSize.parse_exact_size(wrong_length_bytes)
+
+
+class TestIkev2NotifyPayloadNatDetectionSourceIp(_ike_test_classes.Ikev2NotifyPayloadNatDetectionBaseTest):
+    _NOTIFY_TYPE = Ikev2NotifyType.NAT_DETECTION_SOURCE_IP
+    _PAYLOAD_CLASS = Ikev2NotifyPayloadNatDetectionSourceIp
+    _NOTIFY_TYPE_BYTES = b'\x40\x04'
+
+
+class TestIkev2NotifyPayloadNatDetectionDestinationIp(_ike_test_classes.Ikev2NotifyPayloadNatDetectionBaseTest):
+    _NOTIFY_TYPE = Ikev2NotifyType.NAT_DETECTION_DESTINATION_IP
+    _PAYLOAD_CLASS = Ikev2NotifyPayloadNatDetectionDestinationIp
+    _NOTIFY_TYPE_BYTES = b'\x40\x05'
 
 
 class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):

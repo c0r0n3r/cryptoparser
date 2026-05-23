@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: MPL-2.0
 
+import collections
+import unittest
+
 from cryptodatahub.ike.algorithm import (
     Ikev1PayloadType,
-    Ikev2PayloadType,
     Ikev2NotifyType,
+    Ikev2PayloadType,
     Ikev2ProtocolId,
     Ikev2TransformType,
     Ikev2PseudorandomFunction,
@@ -11,6 +14,7 @@ from cryptodatahub.ike.algorithm import (
 from cryptoparser.common.parse import ComposerBinary
 from cryptoparser.ike.ikev1 import Ikev1PayloadBase, Ikev1PayloadDoiProtocolSpiBase
 from cryptoparser.ike.ikev2 import (
+    Ikev2NotifyPayloadNatDetectionBase,
     Ikev2PayloadBase,
     Ikev2PayloadNotifyBase,
     Ikev2PayloadNotifyNoData,
@@ -265,3 +269,64 @@ class TransformTest(Transform):
 
     def compose(self):
         return self.compose_header(transform_length=0).composed_bytes
+
+
+class Ikev2NotifyPayloadNatDetectionBaseTest(unittest.TestCase):
+    _HASH_DATA = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13'
+    _NOTIFY_TYPE: Ikev2NotifyType
+    _PAYLOAD_CLASS: type[Ikev2NotifyPayloadNatDetectionBase]
+    _NOTIFY_TYPE_BYTES: bytes
+
+    def setUp(self):
+        payload_dict = collections.OrderedDict([
+            ('next_payload', b'\x00'),
+            ('flags', b'\x00'),
+            ('payload_length', b'\x00\x1c'),
+            ('protocol_id', b'\x01'),
+            ('spi_size', b'\x00'),
+            ('notify_type', self._NOTIFY_TYPE_BYTES),
+            ('hash_data', self._HASH_DATA),
+        ])
+        self.payload_bytes = b''.join(payload_dict.values())
+
+        self.nat_payload = self._PAYLOAD_CLASS(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=self._NOTIFY_TYPE,
+            spi=b'',
+            hash_data=self._HASH_DATA
+        )
+        self.nat_payload.next_payload = Ikev2PayloadType.NONE
+
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(self._PAYLOAD_CLASS._get_message_type(), self._NOTIFY_TYPE)
+
+    def test_parse(self):
+        parsed_payload = self._PAYLOAD_CLASS.parse_exact_size(self.payload_bytes)
+        self.assertEqual(parsed_payload.hash_data, self._HASH_DATA)  # pylint: disable=no-member
+        self.assertEqual(parsed_payload.type, self._NOTIFY_TYPE)
+
+    def test_compose(self):
+        self.assertEqual(self.nat_payload.compose(), self.payload_bytes)
+
+    def test_hash_data_storage(self):
+        self.assertEqual(self.nat_payload.hash_data, self._HASH_DATA)  # pylint: disable=no-member
+
+        different_hash = b'\xff\xfe\xfd\xfc\xfb\xfa'
+        payload_2 = self._PAYLOAD_CLASS(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=self._NOTIFY_TYPE,
+            spi=b'',
+            hash_data=different_hash
+        )
+        self.assertEqual(payload_2.hash_data, different_hash)  # pylint: disable=no-member
+
+    def test_round_trip_hash_preservation(self):
+        composed_bytes = self.nat_payload.compose()
+        parsed_payload = self._PAYLOAD_CLASS.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed_payload.hash_data, self.nat_payload.hash_data)  # pylint: disable=no-member
+        self.assertEqual(parsed_payload.type, self.nat_payload.type)
+        self.assertEqual(parsed_payload.spi, self.nat_payload.spi)

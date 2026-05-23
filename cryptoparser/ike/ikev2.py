@@ -1050,6 +1050,41 @@ class Ikev2NotifyPayloadSetWindowSize(Ikev2PayloadNotifyParsedBase):
         composer.compose_numeric(self.window_size, 4)
 
 
+@attr.s
+class Ikev2NotifyPayloadNatDetectionBase(Ikev2PayloadNotifyParsedBase):
+    hash_data: typing.Union[bytes, bytearray] = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_message_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse_data(cls, parser, notification_data_length):
+        parser.parse_raw('hash_data', notification_data_length)
+
+    def _compose_data(self, composer):
+        composer.compose_raw(self.hash_data)
+
+
+@attr.s
+class Ikev2NotifyPayloadNatDetectionSourceIp(Ikev2NotifyPayloadNatDetectionBase):
+    """NAT detection source IP payload notification data parser."""
+
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.NAT_DETECTION_SOURCE_IP
+
+
+@attr.s
+class Ikev2NotifyPayloadNatDetectionDestinationIp(Ikev2NotifyPayloadNatDetectionBase):
+    """NAT detection destination IP payload notification data parser."""
+
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.NAT_DETECTION_DESTINATION_IP
+
+
 class Ikev2NotifyPayloadVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1076,6 +1111,8 @@ class Ikev2NotifyPayloadVariantResponder(Ikev2NotifyPayloadVariantBase):
             (Ikev2NotifyType.COOKIE, [Ikev2NotifyPayloadCookie, ]),
             (Ikev2NotifyType.INVALID_KE_PAYLOAD, [Ikev2NotifyPayloadInvalidKe, ]),
             (Ikev2NotifyType.SET_WINDOW_SIZE, [Ikev2NotifyPayloadSetWindowSize, ]),
+            (Ikev2NotifyType.NAT_DETECTION_SOURCE_IP, [Ikev2NotifyPayloadNatDetectionSourceIp, ]),
+            (Ikev2NotifyType.NAT_DETECTION_DESTINATION_IP, [Ikev2NotifyPayloadNatDetectionDestinationIp, ]),
         ])
 
 
