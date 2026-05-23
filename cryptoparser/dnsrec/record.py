@@ -18,7 +18,13 @@ from cryptodatahub.common.key import (
     PublicKeyParamsRsa,
 )
 
-from cryptodatahub.dnsrec.algorithm import DnsRrType, DnsSecAlgorithm, DnsSecDigestType
+from cryptodatahub.dnsrec.algorithm import (
+    DnsRrType,
+    DnsSecAlgorithm,
+    DnsSecDigestType,
+    SshFpAlgorithm,
+    SshFpFingerprintType,
+)
 
 from cryptoparser.common.base import NumericRangeParsableBase, OneByteEnumParsable, Serializable, TwoByteEnumParsable
 from cryptoparser.common.exception import NotEnoughData
@@ -474,6 +480,56 @@ class DnsRecordMx(ParsableBase):
 
         composer.compose_numeric(self.priority, 2)
         composer.compose_parsable(self.exchange)
+
+        return composer.composed_bytes
+
+
+class SshFpAlgorithmFactory(OneByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return SshFpAlgorithm
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+class SshFpFingerprintTypeFactory(OneByteEnumParsable):
+    @classmethod
+    def get_enum_class(cls):
+        return SshFpFingerprintType
+
+    @abc.abstractmethod
+    def compose(self):
+        raise NotImplementedError()
+
+
+@attr.s
+class DnsRecordSshfp(ParsableBase, Serializable):
+    HEADER_SIZE = 2
+
+    algorithm = attr.ib(validator=attr.validators.instance_of(SshFpAlgorithm))
+    fingerprint_type = attr.ib(validator=attr.validators.instance_of(SshFpFingerprintType))
+    fingerprint = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    def _parse(cls, parsable):
+        if len(parsable) < cls.HEADER_SIZE:
+            raise NotEnoughData(cls.HEADER_SIZE - len(parsable))
+
+        parser = ParserBinary(parsable)
+        parser.parse_parsable('algorithm', SshFpAlgorithmFactory)
+        parser.parse_parsable('fingerprint_type', SshFpFingerprintTypeFactory)
+        parser.parse_raw('fingerprint', parser.unparsed_length)
+
+        return cls(**parser), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_numeric_enum_coded(self.algorithm)
+        composer.compose_numeric_enum_coded(self.fingerprint_type)
+        composer.compose_raw(self.fingerprint)
 
         return composer.composed_bytes
 
