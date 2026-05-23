@@ -16,6 +16,7 @@ from cryptoparser.ike.ikev2 import (
     Ikev2NotifyPayloadNatDetectionSourceIp,
     Ikev2NotifyPayloadNatDetectionDestinationIp,
     Ikev2NotifyPayloadUseTransportMode,
+    Ikev2NotifyPayloadHttpCertLookupSupported,
     Ikev2NotifyPayloadVariantResponder
 )
 
@@ -411,6 +412,33 @@ class TestIkev2NotifyPayloadUseTransportMode(unittest.TestCase):
         self.assertEqual(parsed_payload.protocol_id, transport_mode_payload.protocol_id)
         self.assertEqual(parsed_payload.flags, transport_mode_payload.flags)
         self.assertEqual(parsed_payload.next_payload, transport_mode_payload.next_payload)
+
+
+class TestIkev2NotifyPayloadHttpCertLookupSupported(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadHttpCertLookupSupported._get_message_type(),
+            Ikev2NotifyType.HTTP_CERT_LOOKUP_SUPPORTED
+        )
+
+    def test_round_trip_preservation(self):
+        http_cert_payload = Ikev2NotifyPayloadHttpCertLookupSupported(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.HTTP_CERT_LOOKUP_SUPPORTED,
+            spi=b''
+        )
+        http_cert_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = http_cert_payload.compose()
+        parsed_payload: Ikev2NotifyPayloadHttpCertLookupSupported = \
+            Ikev2NotifyPayloadHttpCertLookupSupported.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed_payload.type, http_cert_payload.type)
+        self.assertEqual(parsed_payload.spi, http_cert_payload.spi)
+        self.assertEqual(parsed_payload.protocol_id, http_cert_payload.protocol_id)
+        self.assertEqual(parsed_payload.flags, http_cert_payload.flags)
+        self.assertEqual(parsed_payload.next_payload, http_cert_payload.next_payload)
 
 
 class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
