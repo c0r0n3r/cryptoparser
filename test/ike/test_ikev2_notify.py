@@ -15,6 +15,7 @@ from cryptoparser.ike.ikev2 import (
     Ikev2NotifyPayloadSetWindowSize,
     Ikev2NotifyPayloadNatDetectionSourceIp,
     Ikev2NotifyPayloadNatDetectionDestinationIp,
+    Ikev2NotifyPayloadUseTransportMode,
     Ikev2NotifyPayloadVariantResponder
 )
 
@@ -386,6 +387,30 @@ class TestIkev2NotifyPayloadNatDetectionDestinationIp(_ike_test_classes.Ikev2Not
     _NOTIFY_TYPE = Ikev2NotifyType.NAT_DETECTION_DESTINATION_IP
     _PAYLOAD_CLASS = Ikev2NotifyPayloadNatDetectionDestinationIp
     _NOTIFY_TYPE_BYTES = b'\x40\x05'
+
+
+class TestIkev2NotifyPayloadUseTransportMode(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(Ikev2NotifyPayloadUseTransportMode._get_message_type(), Ikev2NotifyType.USE_TRANSPORT_MODE)
+
+    def test_round_trip_preservation(self):
+        transport_mode_payload = Ikev2NotifyPayloadUseTransportMode(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.USE_TRANSPORT_MODE,
+            spi=b''
+        )
+        transport_mode_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = transport_mode_payload.compose()
+        parsed_payload: Ikev2NotifyPayloadUseTransportMode = \
+            Ikev2NotifyPayloadUseTransportMode.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed_payload.type, transport_mode_payload.type)
+        self.assertEqual(parsed_payload.spi, transport_mode_payload.spi)
+        self.assertEqual(parsed_payload.protocol_id, transport_mode_payload.protocol_id)
+        self.assertEqual(parsed_payload.flags, transport_mode_payload.flags)
+        self.assertEqual(parsed_payload.next_payload, transport_mode_payload.next_payload)
 
 
 class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):

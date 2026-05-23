@@ -954,6 +954,12 @@ class Ikev2PayloadNotifyAuthenticationFailed(Ikev2PayloadNotifyNoData):
         return Ikev2NotifyType.AUTHENTICATION_FAILED
 
 
+class Ikev2NotifyPayloadUseTransportMode(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.USE_TRANSPORT_MODE
+
+
 @attr.s
 class Ikev2PayloadNotifyUnparsed(Ikev2PayloadNotifyBase):
     data: typing.Union[bytes, bytearray] = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
@@ -1113,6 +1119,7 @@ class Ikev2NotifyPayloadVariantResponder(Ikev2NotifyPayloadVariantBase):
             (Ikev2NotifyType.SET_WINDOW_SIZE, [Ikev2NotifyPayloadSetWindowSize, ]),
             (Ikev2NotifyType.NAT_DETECTION_SOURCE_IP, [Ikev2NotifyPayloadNatDetectionSourceIp, ]),
             (Ikev2NotifyType.NAT_DETECTION_DESTINATION_IP, [Ikev2NotifyPayloadNatDetectionDestinationIp, ]),
+            (Ikev2NotifyType.USE_TRANSPORT_MODE, [Ikev2NotifyPayloadUseTransportMode, ]),
         ])
 
 
