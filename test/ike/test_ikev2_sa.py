@@ -242,11 +242,23 @@ class TestIkev2TransformEncryptionAlgorithm(unittest.TestCase):
         self.assertEqual(parsed_transform.key_length, self.transform.key_length)  # pylint: disable=no-member
 
     def test_error_parse_not_enough_data(self):
-        incomplete_data = b'\x00\x00\x00\x08\x01\x00\x00\x0c'
+        incomplete_data = b'\x00\x00\x00\x08\x01\x00'
 
         with self.assertRaises(NotEnoughData) as context_manager:
             Ikev2TransformEncryptionAlgorithm.parse_exact_size(incomplete_data)
         self.assertGreater(context_manager.exception.bytes_needed, 0)
+
+    def test_round_trip_without_key_length(self):
+        transform_without_key = Ikev2TransformEncryptionAlgorithm(
+            transform_id=Ikev2EncryptionAlgorithm.ENCR_DES,
+            key_length=None,
+        )
+        transform_without_key.next_payload = TransformNextPayload.LAST
+        composed_bytes = transform_without_key.compose()
+        parsed_transform = Ikev2TransformEncryptionAlgorithm.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed_transform.transform_id, Ikev2EncryptionAlgorithm.ENCR_DES)
+        self.assertIsNone(parsed_transform.key_length)  # pylint: disable=no-member
 
 
 class TestIkev2Proposal(unittest.TestCase):  # pylint: disable=too-many-instance-attributes
