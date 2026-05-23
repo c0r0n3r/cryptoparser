@@ -3,6 +3,7 @@
 import collections
 import unittest
 
+from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.ike.algorithm import Ikev2NotifyType, Ikev2ProtocolId
 
 from cryptoparser.common.exception import NotEnoughData, InvalidType
@@ -11,6 +12,7 @@ from cryptoparser.ike.ikev2 import (
     Ikev2PayloadType,
     Ikev2PayloadNotifyUnparsed,
     Ikev2NotifyPayloadCookie,
+    Ikev2NotifyPayloadSetWindowSize,
     Ikev2NotifyPayloadVariantResponder
 )
 
@@ -310,6 +312,65 @@ class TestIkev2NotifyPayloadCookie(unittest.TestCase):
         self.assertEqual(parsed_payload.cookie, cookie_payload.cookie)  # pylint: disable=no-member
         self.assertEqual(parsed_payload.type, cookie_payload.type)
         self.assertEqual(parsed_payload.spi, cookie_payload.spi)
+
+
+class TestIkev2NotifyPayloadSetWindowSize(unittest.TestCase):
+    _PROTOCOL_ID = Ikev2ProtocolId.IKE
+    _WINDOW_SIZE = 5
+
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(Ikev2NotifyPayloadSetWindowSize._get_message_type(), Ikev2NotifyType.SET_WINDOW_SIZE)
+
+    def test_window_size_storage(self):
+        payload = Ikev2NotifyPayloadSetWindowSize(
+            flags=set(),
+            protocol_id=self._PROTOCOL_ID,
+            type=Ikev2NotifyType.SET_WINDOW_SIZE,
+            spi=b'',
+            window_size=self._WINDOW_SIZE
+        )
+        self.assertEqual(payload.window_size, self._WINDOW_SIZE)
+
+        different_window_size = 10
+        payload_2 = Ikev2NotifyPayloadSetWindowSize(
+            flags=set(),
+            protocol_id=self._PROTOCOL_ID,
+            type=Ikev2NotifyType.SET_WINDOW_SIZE,
+            spi=b'',
+            window_size=different_window_size
+        )
+        self.assertEqual(payload_2.window_size, different_window_size)
+
+    def test_round_trip_window_size_preservation(self):
+        window_size_payload = Ikev2NotifyPayloadSetWindowSize(
+            flags=set(),
+            protocol_id=self._PROTOCOL_ID,
+            type=Ikev2NotifyType.SET_WINDOW_SIZE,
+            spi=b'',
+            window_size=self._WINDOW_SIZE
+        )
+        window_size_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = window_size_payload.compose()
+        parsed_payload: Ikev2NotifyPayloadSetWindowSize = \
+            Ikev2NotifyPayloadSetWindowSize.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed_payload.window_size, window_size_payload.window_size)  # pylint: disable=no-member
+        self.assertEqual(parsed_payload.type, window_size_payload.type)
+        self.assertEqual(parsed_payload.spi, window_size_payload.spi)
+
+    def test_error_invalid_notification_data_length(self):
+        wrong_length_bytes = bytes.fromhex(
+            '00'      # next_payload = NONE
+            '00'      # flags = 0
+            '000b'    # payload_length = 11 (8 header + 3 data bytes)
+            '01'      # protocol_id = IKE
+            '00'      # spi_size = 0
+            '4001'    # notify_type = SET_WINDOW_SIZE
+            'aaaaaa'  # 3 bytes data (must be exactly 4)
+        )
+        with self.assertRaises(InvalidValue):
+            Ikev2NotifyPayloadSetWindowSize.parse_exact_size(wrong_length_bytes)
 
 
 class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):

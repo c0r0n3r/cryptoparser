@@ -1028,6 +1028,28 @@ class Ikev2NotifyPayloadCookie(Ikev2PayloadNotifyParsedBase):
         composer.compose_raw(self.cookie)
 
 
+@attr.s
+class Ikev2NotifyPayloadSetWindowSize(Ikev2PayloadNotifyParsedBase):
+    """Set window size payload notification data parser."""
+    window_size: int = attr.ib(validator=[
+        attr.validators.instance_of(int),
+        attr.validators.in_(range(0, 2 ** 32)),
+    ])
+
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.SET_WINDOW_SIZE
+
+    @classmethod
+    def _parse_data(cls, parser, notification_data_length):
+        if notification_data_length != 4:
+            raise InvalidValue(notification_data_length, cls, 'notification_data_length')
+        parser.parse_numeric('window_size', 4)
+
+    def _compose_data(self, composer):
+        composer.compose_numeric(self.window_size, 4)
+
+
 class Ikev2NotifyPayloadVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1053,6 +1075,7 @@ class Ikev2NotifyPayloadVariantResponder(Ikev2NotifyPayloadVariantBase):
         return collections.OrderedDict([
             (Ikev2NotifyType.COOKIE, [Ikev2NotifyPayloadCookie, ]),
             (Ikev2NotifyType.INVALID_KE_PAYLOAD, [Ikev2NotifyPayloadInvalidKe, ]),
+            (Ikev2NotifyType.SET_WINDOW_SIZE, [Ikev2NotifyPayloadSetWindowSize, ]),
         ])
 
 
