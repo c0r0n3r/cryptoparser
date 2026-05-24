@@ -55,7 +55,7 @@ class SignedCertificateTimestamp(ParsableBase, Serializable):
     )
     timestamp = attr.ib(validator=attr.validators.instance_of(datetime.datetime))
     extensions = attr.ib(
-        validator=attr.validators.deep_iterable(member_validator=attr.validators.instance_of(CtExtensions))
+        validator=attr.validators.instance_of(CtExtensions)
     )
     signature_algorithm = attr.ib(validator=attr.validators.in_(TlsSignatureAndHashAlgorithm))
     signature = attr.ib(
