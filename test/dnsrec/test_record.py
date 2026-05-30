@@ -16,7 +16,13 @@ from cryptodatahub.common.key import (
     PublicKeyParamsRsa,
 )
 
-from cryptodatahub.dnsrec.algorithm import DnsSecAlgorithm, DnsSecDigestType, DnsRrType
+from cryptodatahub.dnsrec.algorithm import (
+    DnsSecAlgorithm,
+    DnsSecDigestType,
+    DnsRrType,
+    SshFpAlgorithm,
+    SshFpFingerprintType,
+)
 
 from cryptoparser.common.exception import NotEnoughData
 from cryptoparser.dnsrec.record import (
@@ -25,6 +31,7 @@ from cryptoparser.dnsrec.record import (
     DnsRecordDs,
     DnsRecordMx,
     DnsRecordRrsig,
+    DnsRecordSshfp,
     DnsRecordTxt,
     DnsRrTypePrivate,
     DnsSecFlag,
@@ -549,3 +556,51 @@ class TestDnsRecordTxt(unittest.TestCase):
 
     def test_compose(self):
         self.assertEqual(self.record_single.compose(), self.record_bytes_single)
+
+
+class TestDnsRecordSshfp(unittest.TestCase):
+    def setUp(self):
+        self.record_rsa_sha1_bytes = bytes(
+            b'\x01' +          # algorithm: RSA
+            b'\x01' +          # fingerprint type: SHA-1
+            b'\xde\xad\xbe\xef' * 5  # fingerprint: 20 bytes
+        )
+        self.record_rsa_sha1 = DnsRecordSshfp(
+            algorithm=SshFpAlgorithm.RSA,
+            fingerprint_type=SshFpFingerprintType.SHA1,
+            fingerprint=b'\xde\xad\xbe\xef' * 5,
+        )
+
+        self.record_ecdsa_sha256_bytes = bytes(
+            b'\x03' +          # algorithm: ECDSA
+            b'\x02' +          # fingerprint type: SHA-256
+            b'\xab\xcd\xef\x01' * 8  # fingerprint: 32 bytes
+        )
+        self.record_ecdsa_sha256 = DnsRecordSshfp(
+            algorithm=SshFpAlgorithm.ECDSA,
+            fingerprint_type=SshFpFingerprintType.SHA2_256,
+            fingerprint=b'\xab\xcd\xef\x01' * 8,
+        )
+
+    def test_error_not_enough_data(self):
+        with self.assertRaises(NotEnoughData) as context_manager:
+            DnsRecordSshfp.parse_exact_size(b'\x01')
+
+        self.assertEqual(
+            context_manager.exception.bytes_needed,
+            DnsRecordSshfp.HEADER_SIZE - 1
+        )
+
+    def test_parse(self):
+        self.assertEqual(
+            DnsRecordSshfp.parse_exact_size(self.record_rsa_sha1_bytes),
+            self.record_rsa_sha1
+        )
+        self.assertEqual(
+            DnsRecordSshfp.parse_exact_size(self.record_ecdsa_sha256_bytes),
+            self.record_ecdsa_sha256
+        )
+
+    def test_compose(self):
+        self.assertEqual(self.record_rsa_sha1.compose(), self.record_rsa_sha1_bytes)
+        self.assertEqual(self.record_ecdsa_sha256.compose(), self.record_ecdsa_sha256_bytes)
