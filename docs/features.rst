@@ -105,6 +105,7 @@ Only features that cannot be or difficultly implemented by some of the most popu
    1. supports each cipher suites discussed on `ciphersuite.info <https://ciphersuite.info>`__
    2. supports `GOST <https://en.wikipedia.org/wiki/GOST>`__ (national standards of the Russian Federation and CIS
       countries) cipher suites
+   3. supports `ShangMi (SM) <https://www.rfc-editor.org/rfc/rfc8998>`__ (national standards of China) cipher suites
 
 -  application layer
 
@@ -142,3 +143,5 @@ Domain Name System (DNS)
    -  `DNSKEY <https://www.rfc-editor.org/rfc/rfc4034#section-2>`__
    -  `DS <https://www.rfc-editor.org/rfc/rfc4034#section-5>`__
    -  `RRSIG <https://www.rfc-editor.org/rfc/rfc4034#section-3>`__
+
+-  `SSHFP <https://www.rfc-editor.org/rfc/rfc4255>`__ (SSH host key fingerprints)
