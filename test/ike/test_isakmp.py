@@ -18,12 +18,13 @@ from cryptodatahub.ike.algorithm import (
     Ikev2ExchangeType,
     Ikev2PayloadType,
 )
+from cryptodatahub.ike.version import IkeVersion
 
 from cryptoparser.common.exception import InvalidType, NotEnoughData
 from cryptoparser.ike.ikev1 import Ikev1PayloadKeyExchange, Ikev1PayloadNonce
 from cryptoparser.ike.ikev2 import Ikev2PayloadNonce, Ikev2PayloadKeyExchange
 from cryptoparser.ike.isakmp import IsakmpFlags, IsakmpMessage
-from cryptoparser.ike.version import IsakmpProtocolVersion, IsakmpVersion
+from cryptoparser.ike.version import IsakmpProtocolVersion
 
 
 class TestISAKMPHeader(unittest.TestCase):
@@ -40,7 +41,7 @@ class TestISAKMPHeader(unittest.TestCase):
         ])
         self.header_bytes = b''.join(self.header_dict.values())
         self.header = IsakmpMessage(
-            version=IsakmpProtocolVersion(IsakmpVersion.V1, 1),
+            version=IsakmpProtocolVersion(IkeVersion.V1, 1),
             initiator_spi=0,
             responder_spi=0,
             exchange_type=Ikev1ExchangeType.BASE,
@@ -61,7 +62,7 @@ class TestISAKMPHeader(unittest.TestCase):
         header = IsakmpMessage.parse_exact_size(self.header_bytes)
         self.assertEqual(header.initiator_spi, 0)
         self.assertEqual(header.responder_spi, 0)
-        self.assertEqual(header.version, IsakmpProtocolVersion(IsakmpVersion.V1, 1))
+        self.assertEqual(header.version, IsakmpProtocolVersion(IkeVersion.V1, 1))
         self.assertEqual(header.exchange_type, Ikev1ExchangeType.BASE)
         self.assertEqual(header.flags, set())
         self.assertEqual(header.message_id, 0)
@@ -71,7 +72,7 @@ class TestISAKMPHeader(unittest.TestCase):
 
     def test_flags(self):
         header_with_flags = IsakmpMessage(
-            version=IsakmpProtocolVersion(IsakmpVersion.V1, 1),
+            version=IsakmpProtocolVersion(IkeVersion.V1, 1),
             initiator_spi=0,
             responder_spi=0,
             exchange_type=Ikev1ExchangeType.BASE,
@@ -86,7 +87,7 @@ class TestISAKMPHeader(unittest.TestCase):
     def test_ikev1_compose_payload_type(self):
         payload = Ikev1PayloadNonce(nonce_data=b'A' * 16)
         message = IsakmpMessage(
-            version=IsakmpProtocolVersion(IsakmpVersion.V1, 0),
+            version=IsakmpProtocolVersion(IkeVersion.V1, 0),
             initiator_spi=0,
             responder_spi=0,
             exchange_type=Ikev1ExchangeType.INFORMATIONAL,
@@ -110,7 +111,7 @@ class TestISAKMPHeader(unittest.TestCase):
         ])
         header_bytes_v2 = b''.join(header_dict_v2.values())
         header = IsakmpMessage.parse_exact_size(header_bytes_v2)
-        self.assertEqual(header.version, IsakmpProtocolVersion(IsakmpVersion.V2, 0))
+        self.assertEqual(header.version, IsakmpProtocolVersion(IkeVersion.V2, 0))
         self.assertEqual(header.exchange_type, Ikev2ExchangeType.IKE_SA_INIT)
 
     def test_invalid_payload_type_ikev1(self):
@@ -130,7 +131,7 @@ class TestISAKMPHeader(unittest.TestCase):
 
     def test_ikev2_compose_with_empty_payloads(self):
         header_v2 = IsakmpMessage(
-            version=IsakmpProtocolVersion(IsakmpVersion.V2, 0),
+            version=IsakmpProtocolVersion(IkeVersion.V2, 0),
             initiator_spi=0,
             responder_spi=0,
             exchange_type=Ikev2ExchangeType.IKE_SA_INIT,
@@ -164,7 +165,7 @@ class TestISAKMPHeader(unittest.TestCase):
             test_data=b'\x00\x01\x02\x03'
         )
         message = IsakmpMessage(
-            version=IsakmpProtocolVersion(IsakmpVersion.V2, 0),
+            version=IsakmpProtocolVersion(IkeVersion.V2, 0),
             initiator_spi=0,
             responder_spi=0,
             exchange_type=Ikev2ExchangeType.IKE_SA_INIT,
@@ -239,7 +240,7 @@ class TestISAKMPHeader(unittest.TestCase):
             key_exchange_data=b'\x00\x01\x02\x03\x04\x05\x06\x07'
         )
         message = IsakmpMessage(
-            version=IsakmpProtocolVersion(IsakmpVersion.V2, 0),
+            version=IsakmpProtocolVersion(IkeVersion.V2, 0),
             initiator_spi=0,
             responder_spi=0,
             exchange_type=Ikev2ExchangeType.IKE_SA_INIT,
@@ -260,7 +261,7 @@ class TestISAKMPHeader(unittest.TestCase):
         ke_payload = Ikev1PayloadKeyExchange(key_exchange_data=b'\x00\x01\x02\x03')
         nonce_payload = Ikev1PayloadNonce(nonce_data=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08')
         message = IsakmpMessage(
-            version=IsakmpProtocolVersion(IsakmpVersion.V1, 1),
+            version=IsakmpProtocolVersion(IkeVersion.V1, 1),
             initiator_spi=0,
             responder_spi=0,
             exchange_type=Ikev1ExchangeType.BASE,
@@ -283,7 +284,7 @@ class TestISAKMPHeader(unittest.TestCase):
             nonce_data=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
         )
         message = IsakmpMessage(
-            version=IsakmpProtocolVersion(IsakmpVersion.V2, 0),
+            version=IsakmpProtocolVersion(IkeVersion.V2, 0),
             initiator_spi=0,
             responder_spi=0,
             exchange_type=Ikev2ExchangeType.IKE_SA_INIT,
@@ -298,7 +299,7 @@ class TestISAKMPHeader(unittest.TestCase):
 
     def test_get_payload_by_type_empty_payloads(self):
         message = IsakmpMessage(
-            version=IsakmpProtocolVersion(IsakmpVersion.V2, 0),
+            version=IsakmpProtocolVersion(IkeVersion.V2, 0),
             initiator_spi=0,
             responder_spi=0,
             exchange_type=Ikev2ExchangeType.IKE_SA_INIT,

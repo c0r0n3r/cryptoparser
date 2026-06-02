@@ -7,11 +7,11 @@ import typing
 import attr
 
 from cryptodatahub.ike.algorithm import Ikev1PayloadType, Ikev2PayloadType, Ikev1ExchangeType, Ikev2ExchangeType
+from cryptodatahub.ike.version import IkeVersion
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, InvalidType
-
-from cryptoparser.ike.version import IsakmpProtocolVersion, IsakmpVersion
+from cryptoparser.ike.version import IsakmpProtocolVersion
 from cryptoparser.ike.ikev1 import (
     Ikev1PayloadBase,
     IKEV1_PAYLOAD_CLASSES_BY_TYPE,
@@ -112,10 +112,10 @@ class IsakmpMessage(ParsableBase):
         parser.parse_numeric('responder_spi', 8)
         parser.parse_raw('next_payload', 1)
         parser.parse_parsable('version', IsakmpProtocolVersion)
-        if parser['version'].major == IsakmpVersion.V1:
+        if parser['version'].major == IkeVersion.V1:
             next_payload_type = Ikev1PayloadType
             parser.parse_numeric_enum_coded('exchange_type', Ikev1ExchangeType)
-        elif parser['version'].major == IsakmpVersion.V2:
+        elif parser['version'].major == IkeVersion.V2:
             next_payload_type = Ikev2PayloadType
             parser.parse_numeric_enum_coded('exchange_type', Ikev2ExchangeType)
         else:
@@ -130,10 +130,10 @@ class IsakmpMessage(ParsableBase):
         parser.parse_numeric('length', 4)
 
         version = parser['version']
-        if version.major == IsakmpVersion.V1:
+        if version.major == IkeVersion.V1:
             payload_classes = IKEV1_PAYLOAD_CLASSES_BY_TYPE
             payload_none = Ikev1PayloadType.NONE
-        elif version.major == IsakmpVersion.V2:
+        elif version.major == IkeVersion.V2:
             payload_classes = IKEV2_PAYLOAD_CLASSES_BY_TYPE
             payload_none = Ikev2PayloadType.NONE
         else:
@@ -168,14 +168,14 @@ class IsakmpMessage(ParsableBase):
         header_composer.compose_numeric(self.initiator_spi, 8)
         header_composer.compose_numeric(self.responder_spi, 8)
 
-        if self.version.major == IsakmpVersion.V1:
+        if self.version.major == IkeVersion.V1:
             payload_none = Ikev1PayloadType.NONE
             payload_type_security_association = (
                 self.payloads[0].get_payload_type()
                 if self.payloads
                 else payload_none
             )
-        elif self.version.major == IsakmpVersion.V2:
+        elif self.version.major == IkeVersion.V2:
             payload_none = Ikev2PayloadType.NONE
             # First payload can be a cookie notification payload
             payload_type_security_association = self.payloads[0].get_payload_type()

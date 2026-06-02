@@ -2,56 +2,50 @@
 """ISAKMP version handling."""
 
 import abc
-import enum
 
 import attr
 
 from cryptodatahub.common.grade import GradeableSimple, Grade
+from cryptodatahub.ike.version import IkeVersion
 
 from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
 from cryptoparser.common.exception import NotEnoughData, InvalidType
 from cryptoparser.common.base import OneByteEnumParsable
 
 
-class IsakmpVersion(enum.IntEnum):
-    """ISAKMP version."""
-    V1 = 0x01  # ISAKMP v1
-    V2 = 0x02  # ISAKMP v2 (IKEv2)
-
-    @property
-    def identifier(self):
-        """Get version identifier."""
-        return f"ikev{self.value}"
-
-
 class IsakmpVersionFactory(OneByteEnumParsable):
     """ISAKMP version."""
     @classmethod
     def get_enum_class(cls):
-        return IsakmpVersion
+        return IkeVersion
 
     @abc.abstractmethod
     def compose(self):
         raise NotImplementedError()
 
 
-@attr.s(frozen=True)
+@attr.s(frozen=True, order=False)
 class IsakmpProtocolVersion(ParsableBase, GradeableSimple):
     """ISAKMP protocol version parser."""
     HEADER_SIZE = 1
 
-    major: IsakmpVersion = attr.ib(validator=attr.validators.instance_of(IsakmpVersion))
+    major = attr.ib(validator=attr.validators.instance_of(IkeVersion))
     minor: int = attr.ib(validator=attr.validators.instance_of(int))
+
+    def __lt__(self, other):
+        if self.major.value.code != other.major.value.code:
+            return self.major.value.code < other.major.value.code
+        return self.minor < other.minor
 
     @property
     def grade(self):
-        if self.major == IsakmpVersion.V1:
+        if self.major == IkeVersion.V1:
             return Grade.DEPRECATED
 
         return Grade.SECURE
 
     def __str__(self):
-        return f"IKEv{self.major.value} ({self.minor})"
+        return f"IKEv{self.major.value.code} ({self.minor})"
 
     @classmethod
     def _parse(cls, parsable):
@@ -64,18 +58,18 @@ class IsakmpProtocolVersion(ParsableBase, GradeableSimple):
         major_version = (parser['version'] >> 4) & 0x0f
         minor_version = parser['version'] & 0x0f
 
-        if major_version not in [v.value for v in IsakmpVersion]:
+        if major_version not in [v.value.code for v in IkeVersion]:
             raise InvalidType()
 
         return cls(
-            major=IsakmpVersion(major_version),
+            major=next(v for v in IkeVersion if v.value.code == major_version),
             minor=minor_version,
         ), parser.parsed_length
 
     def compose(self):
         composer = ComposerBinary()
 
-        version = (self.major.value << 4) | self.minor
+        version = (self.major.value.code << 4) | self.minor
         composer.compose_numeric(version, 1)
 
         return composer.composed_bytes
@@ -83,4 +77,4 @@ class IsakmpProtocolVersion(ParsableBase, GradeableSimple):
     @property
     def version(self):
         """Get version as string."""
-        return f"{self.major.value}.{self.minor}"
+        return f"{self.major.value.code}.{self.minor}"
