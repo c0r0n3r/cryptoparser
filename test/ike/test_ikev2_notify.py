@@ -16,6 +16,7 @@ from cryptoparser.ike.ikev2 import (
     Ikev2NotifyPayloadIntermediateExchangeSupported,
     Ikev2NotifyPayloadNatDetectionDestinationIp,
     Ikev2NotifyPayloadNatDetectionSourceIp,
+    Ikev2NotifyPayloadRedirectSupported,
     Ikev2NotifyPayloadSetWindowSize,
     Ikev2NotifyPayloadSignatureHashAlgorithms,
     Ikev2NotifyPayloadUsePpk,
@@ -481,6 +482,27 @@ class TestIkev2NotifyPayloadUsePpk(unittest.TestCase):
         composed_bytes = use_ppk_payload.compose()
         parsed_payload = Ikev2NotifyPayloadUsePpk.parse_exact_size(composed_bytes)
         self.assertEqual(parsed_payload.type, use_ppk_payload.type)
+
+
+class TestIkev2NotifyPayloadRedirectSupported(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadRedirectSupported._get_message_type(),
+            Ikev2NotifyType.REDIRECT_SUPPORTED,
+        )
+
+    def test_round_trip_preservation(self):
+        redirect_supported_payload = Ikev2NotifyPayloadRedirectSupported(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.REDIRECT_SUPPORTED,
+            spi=b'',
+        )
+        redirect_supported_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = redirect_supported_payload.compose()
+        parsed_payload = Ikev2NotifyPayloadRedirectSupported.parse_exact_size(composed_bytes)
+        self.assertEqual(parsed_payload.type, redirect_supported_payload.type)
 
 
 class TestIkev2NotifyPayloadSignatureHashAlgorithms(unittest.TestCase):
