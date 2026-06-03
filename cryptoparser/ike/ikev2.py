@@ -1097,6 +1097,29 @@ class Ikev2NotifyPayloadNatDetectionDestinationIp(Ikev2NotifyPayloadNatDetection
         return Ikev2NotifyType.NAT_DETECTION_DESTINATION_IP
 
 
+@attr.s
+class Ikev2NotifyPayloadSignatureHashAlgorithms(Ikev2PayloadNotifyParsedBase):
+    """Signature hash algorithms notification (RFC 7427 §4)."""
+    hash_algorithms: tuple[int, ...] = attr.ib(
+        converter=tuple,
+        validator=attr.validators.deep_iterable(attr.validators.instance_of(int)),
+    )
+
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS
+
+    @classmethod
+    def _parse_data(cls, parser, notification_data_length):
+        if notification_data_length % 2 != 0:
+            raise InvalidValue(notification_data_length, cls, 'notification_data_length')
+        parser.parse_numeric_array('hash_algorithms', notification_data_length // 2, 2)
+
+    def _compose_data(self, composer):
+        for hash_id in self.hash_algorithms:
+            composer.compose_numeric(hash_id, 2)
+
+
 class Ikev2NotifyPayloadVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1127,6 +1150,7 @@ class Ikev2NotifyPayloadVariantResponder(Ikev2NotifyPayloadVariantBase):
             (Ikev2NotifyType.NAT_DETECTION_DESTINATION_IP, [Ikev2NotifyPayloadNatDetectionDestinationIp, ]),
             (Ikev2NotifyType.USE_TRANSPORT_MODE, [Ikev2NotifyPayloadUseTransportMode, ]),
             (Ikev2NotifyType.HTTP_CERT_LOOKUP_SUPPORTED, [Ikev2NotifyPayloadHttpCertLookupSupported, ]),
+            (Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS, [Ikev2NotifyPayloadSignatureHashAlgorithms, ]),
         ])
 
 

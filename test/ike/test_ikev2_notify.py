@@ -12,12 +12,13 @@ from cryptoparser.ike.ikev2 import (
     Ikev2PayloadType,
     Ikev2PayloadNotifyUnparsed,
     Ikev2NotifyPayloadCookie,
-    Ikev2NotifyPayloadSetWindowSize,
-    Ikev2NotifyPayloadNatDetectionSourceIp,
-    Ikev2NotifyPayloadNatDetectionDestinationIp,
-    Ikev2NotifyPayloadUseTransportMode,
     Ikev2NotifyPayloadHttpCertLookupSupported,
-    Ikev2NotifyPayloadVariantResponder
+    Ikev2NotifyPayloadNatDetectionDestinationIp,
+    Ikev2NotifyPayloadNatDetectionSourceIp,
+    Ikev2NotifyPayloadSetWindowSize,
+    Ikev2NotifyPayloadSignatureHashAlgorithms,
+    Ikev2NotifyPayloadUseTransportMode,
+    Ikev2NotifyPayloadVariantResponder,
 )
 
 from . import classes as _ike_test_classes
@@ -439,6 +440,64 @@ class TestIkev2NotifyPayloadHttpCertLookupSupported(unittest.TestCase):
         self.assertEqual(parsed_payload.protocol_id, http_cert_payload.protocol_id)
         self.assertEqual(parsed_payload.flags, http_cert_payload.flags)
         self.assertEqual(parsed_payload.next_payload, http_cert_payload.next_payload)
+
+
+class TestIkev2NotifyPayloadSignatureHashAlgorithms(unittest.TestCase):
+    # Five 16-bit hash algorithm identifiers per RFC 7427 (IANA registry
+    # values: 1=SHA1, 2=SHA2-256, 3=SHA2-384, 4=SHA2-512, 5=IDENTITY)
+    _HASH_ALGORITHMS = (1, 2, 3, 4, 5)
+    _PAYLOAD_BYTES = bytes.fromhex(
+        '00'        # next_payload = NONE
+        '00'        # flags = 0
+        '0012'      # payload_length = 18 (8 header + 10 data)
+        '01'        # protocol_id = IKE
+        '00'        # spi_size = 0
+        '402f'      # notify_type = SIGNATURE_HASH_ALGORITHMS (16431)
+        '00010002000300040005'  # five 16-bit hash algorithm IDs
+    )
+
+    def setUp(self):
+        self.payload = Ikev2NotifyPayloadSignatureHashAlgorithms(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS,
+            spi=b'',
+            hash_algorithms=self._HASH_ALGORITHMS,
+        )
+        self.payload.next_payload = Ikev2PayloadType.NONE
+
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadSignatureHashAlgorithms._get_message_type(),
+            Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS,
+        )
+
+    def test_parse(self):
+        parsed = Ikev2NotifyPayloadSignatureHashAlgorithms.parse_exact_size(self._PAYLOAD_BYTES)
+        self.assertEqual(parsed.type, Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS)
+        self.assertEqual(parsed.hash_algorithms, self._HASH_ALGORITHMS)  # pylint: disable=no-member
+
+    def test_compose(self):
+        self.assertEqual(self.payload.compose(), self._PAYLOAD_BYTES)
+
+    def test_round_trip(self):
+        composed = self.payload.compose()
+        parsed = Ikev2NotifyPayloadSignatureHashAlgorithms.parse_exact_size(composed)
+        self.assertEqual(parsed.hash_algorithms, self.payload.hash_algorithms)  # pylint: disable=no-member
+
+    def test_error_invalid_notification_data_length(self):
+        odd_length_bytes = bytes.fromhex(
+            '00'    # next_payload = NONE
+            '00'    # flags = 0
+            '0009'  # payload_length = 9 (8 header + 1 data byte)
+            '01'    # protocol_id = IKE
+            '00'    # spi_size = 0
+            '402f'  # notify_type = SIGNATURE_HASH_ALGORITHMS
+            'aa'    # 1 byte data (must be even number of bytes)
+        )
+        with self.assertRaises(InvalidValue):
+            Ikev2NotifyPayloadSignatureHashAlgorithms.parse_exact_size(odd_length_bytes)
 
 
 class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
