@@ -13,6 +13,7 @@ from cryptoparser.ike.ikev2 import (
     Ikev2PayloadNotifyUnparsed,
     Ikev2NotifyPayloadCookie,
     Ikev2NotifyPayloadHttpCertLookupSupported,
+    Ikev2NotifyPayloadIntermediateExchangeSupported,
     Ikev2NotifyPayloadNatDetectionDestinationIp,
     Ikev2NotifyPayloadNatDetectionSourceIp,
     Ikev2NotifyPayloadSetWindowSize,
@@ -440,6 +441,27 @@ class TestIkev2NotifyPayloadHttpCertLookupSupported(unittest.TestCase):
         self.assertEqual(parsed_payload.protocol_id, http_cert_payload.protocol_id)
         self.assertEqual(parsed_payload.flags, http_cert_payload.flags)
         self.assertEqual(parsed_payload.next_payload, http_cert_payload.next_payload)
+
+
+class TestIkev2NotifyPayloadIntermediateExchangeSupported(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadIntermediateExchangeSupported._get_message_type(),
+            Ikev2NotifyType.INTERMEDIATE_EXCHANGE_SUPPORTED,
+        )
+
+    def test_round_trip_preservation(self):
+        intermediate_exchange_payload = Ikev2NotifyPayloadIntermediateExchangeSupported(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.INTERMEDIATE_EXCHANGE_SUPPORTED,
+            spi=b'',
+        )
+        intermediate_exchange_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = intermediate_exchange_payload.compose()
+        parsed_payload = Ikev2NotifyPayloadIntermediateExchangeSupported.parse_exact_size(composed_bytes)
+        self.assertEqual(parsed_payload.type, intermediate_exchange_payload.type)
 
 
 class TestIkev2NotifyPayloadSignatureHashAlgorithms(unittest.TestCase):
