@@ -18,6 +18,7 @@ from cryptoparser.ike.ikev2 import (
     Ikev2NotifyPayloadNatDetectionSourceIp,
     Ikev2NotifyPayloadSetWindowSize,
     Ikev2NotifyPayloadSignatureHashAlgorithms,
+    Ikev2NotifyPayloadUsePpk,
     Ikev2NotifyPayloadUseTransportMode,
     Ikev2NotifyPayloadVariantResponder,
 )
@@ -462,6 +463,24 @@ class TestIkev2NotifyPayloadIntermediateExchangeSupported(unittest.TestCase):
         composed_bytes = intermediate_exchange_payload.compose()
         parsed_payload = Ikev2NotifyPayloadIntermediateExchangeSupported.parse_exact_size(composed_bytes)
         self.assertEqual(parsed_payload.type, intermediate_exchange_payload.type)
+
+
+class TestIkev2NotifyPayloadUsePpk(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(Ikev2NotifyPayloadUsePpk._get_message_type(), Ikev2NotifyType.USE_PPK)
+
+    def test_round_trip_preservation(self):
+        use_ppk_payload = Ikev2NotifyPayloadUsePpk(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.USE_PPK,
+            spi=b'',
+        )
+        use_ppk_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = use_ppk_payload.compose()
+        parsed_payload = Ikev2NotifyPayloadUsePpk.parse_exact_size(composed_bytes)
+        self.assertEqual(parsed_payload.type, use_ppk_payload.type)
 
 
 class TestIkev2NotifyPayloadSignatureHashAlgorithms(unittest.TestCase):

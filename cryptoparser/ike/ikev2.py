@@ -972,6 +972,12 @@ class Ikev2NotifyPayloadIntermediateExchangeSupported(Ikev2PayloadNotifyNoData):
         return Ikev2NotifyType.INTERMEDIATE_EXCHANGE_SUPPORTED
 
 
+class Ikev2NotifyPayloadUsePpk(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.USE_PPK
+
+
 @attr.s
 class Ikev2PayloadNotifyUnparsed(Ikev2PayloadNotifyBase):
     data: typing.Union[bytes, bytearray] = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
@@ -1158,6 +1164,7 @@ class Ikev2NotifyPayloadVariantResponder(Ikev2NotifyPayloadVariantBase):
             (Ikev2NotifyType.HTTP_CERT_LOOKUP_SUPPORTED, [Ikev2NotifyPayloadHttpCertLookupSupported, ]),
             (Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS, [Ikev2NotifyPayloadSignatureHashAlgorithms, ]),
             (Ikev2NotifyType.INTERMEDIATE_EXCHANGE_SUPPORTED, [Ikev2NotifyPayloadIntermediateExchangeSupported, ]),
+            (Ikev2NotifyType.USE_PPK, [Ikev2NotifyPayloadUsePpk, ]),
         ])
 
 
