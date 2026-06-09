@@ -38,6 +38,8 @@ from cryptoparser.tls.subprotocol import (
     SslMessageType,
     TlsAlertMessage,
     TlsCertificate,
+    TlsCertificateEntry,
+    TlsCertificateEntryVector,
     TlsCertificateStatusType,
     TlsCertificates,
     TlsClientCertificateType,
@@ -50,9 +52,11 @@ from cryptoparser.tls.subprotocol import (
     TlsExtensionsClient,
     TlsExtensionsServer,
     TlsHandshakeCertificate,
+    TlsHandshakeServerCertificate,
     TlsHandshakeCertificateRequest,
     TlsHandshakeCertificateStatus,
     TlsHandshakeClientHello,
+    TlsHandshakeEncryptedExtensions,
     TlsHandshakeHelloRandom,
     TlsHandshakeHelloRandomBytes,
     TlsHandshakeHelloRetryRequest,
@@ -535,7 +539,7 @@ class TestTlsHandshakeHelloRetryRequest(unittest.TestCase):
         )
 
 
-class TestTlsHandshakeCertificate(unittest.TestCase):
+class TestTlsHandshakeServerCertificate(unittest.TestCase):
     def setUp(self):
         self.certificate_minimal_dict = collections.OrderedDict([
             ('handshake_type', b'\x0b'),                  # CERTIFICATE
@@ -548,7 +552,7 @@ class TestTlsHandshakeCertificate(unittest.TestCase):
         ])
         self.certificate_minimal_bytes = b''.join(self.certificate_minimal_dict.values())
 
-        self.certificate_minimal = TlsHandshakeCertificate(
+        self.certificate_minimal = TlsHandshakeServerCertificate(
             TlsCertificates([
                 TlsCertificate(b'peer certificate'),
                 TlsCertificate(b'intermediate certificate'),
@@ -556,7 +560,7 @@ class TestTlsHandshakeCertificate(unittest.TestCase):
         )
 
     def test_parse(self):
-        certificate_minimal = TlsHandshakeCertificate.parse_exact_size(self.certificate_minimal_bytes)
+        certificate_minimal = TlsHandshakeServerCertificate.parse_exact_size(self.certificate_minimal_bytes)
 
         self.assertEqual(
             certificate_minimal.certificate_chain,
@@ -568,6 +572,76 @@ class TestTlsHandshakeCertificate(unittest.TestCase):
             self.certificate_minimal.compose(),
             self.certificate_minimal_bytes
         )
+
+
+class TestTlsHandshakeCertificate(unittest.TestCase):
+    def setUp(self):
+        self.certificate_minimal_dict = collections.OrderedDict([
+            ('handshake_type', b'\x0b'),                  # CERTIFICATE
+            ('length', b'\x00\x00\x1a'),
+            ('certificate_request_context_length', b'\x01'),
+            ('certificate_request_context', b'\xaa'),
+            ('certificate_entries_length', b'\x00\x00\x15'),
+            ('entry_certificate_length', b'\x00\x00\x10'),
+            ('entry_certificate', b'first-cert-bytes'),
+            ('entry_extensions_length', b'\x00\x00'),
+        ])
+        self.certificate_minimal_bytes = b''.join(self.certificate_minimal_dict.values())
+
+        self.certificate_minimal = TlsHandshakeCertificate(
+            certificate_request_context=b'\xaa',
+            certificate_entries=TlsCertificateEntryVector([
+                TlsCertificateEntry(
+                    TlsCertificate(b'first-cert-bytes'),
+                    b'',
+                )
+            ]),
+        )
+
+    def test_parse(self):
+        certificate = TlsHandshakeCertificate.parse_exact_size(self.certificate_minimal_bytes)
+        self.assertEqual(
+            certificate.certificate_request_context,
+            self.certificate_minimal.certificate_request_context
+        )
+        self.assertEqual(
+            len(certificate.certificate_entries),
+            len(self.certificate_minimal.certificate_entries)
+        )
+
+    def test_compose(self):
+        self.assertEqual(
+            self.certificate_minimal.compose(),
+            self.certificate_minimal_bytes
+        )
+
+    def test_error_certificate_request_context_too_long(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            TlsHandshakeCertificate(
+                certificate_request_context=b'\x00' * 256,
+                certificate_entries=TlsCertificateEntryVector([]),
+            )
+        self.assertEqual(context_manager.exception.value, 256)
+
+    def test_error_entry_extensions_too_long(self):
+        with self.assertRaises(InvalidValue) as context_manager:
+            TlsCertificateEntry(
+                TlsCertificate(b'cert'),
+                b'\x00' * (2 ** 16),
+            )
+        self.assertEqual(context_manager.exception.value, 2 ** 16)
+
+    def test_error_parse_invalid_entries(self):
+        bad_dict = collections.OrderedDict([
+            ('handshake_type', b'\x0b'),                  # CERTIFICATE
+            ('length', b'\x00\x00\x05'),
+            ('certificate_request_context_length', b'\x01'),
+            ('certificate_request_context', b'\xaa'),
+            ('certificate_entries_length', b'\x00\x00\x0f'),  # claims more data than available
+        ])
+        bad_bytes = b''.join(bad_dict.values())
+        with self.assertRaises(InvalidType):
+            TlsHandshakeCertificate.parse_exact_size(bad_bytes)
 
 
 class TestTlsHandshakeCertificateRequestTls10(unittest.TestCase):
@@ -757,6 +831,31 @@ class TestTlsHandshakeCertificateStatus(unittest.TestCase):
 
     def test_compose(self):
         self.assertEqual(self.certificate_status.compose(), self.certificate_status_bytes)
+
+
+class TestTlsHandshakeEncryptedExtensions(unittest.TestCase):
+    def setUp(self):
+        self.extension_data = b'\x00\x10\x00\x0b\x00\x0c\x00\x00'
+        self.encrypted_extensions_dict = collections.OrderedDict([
+            ('handshake_type', b'\x08'),                  # ENCRYPTED_EXTENSIONS
+            ('length', b'\x00\x00\x08'),
+            ('extension_data', self.extension_data),
+        ])
+        self.encrypted_extensions_bytes = b''.join(self.encrypted_extensions_dict.values())
+
+        self.encrypted_extensions = TlsHandshakeEncryptedExtensions(self.extension_data)
+
+    def test_parse(self):
+        encrypted_extensions = TlsHandshakeEncryptedExtensions.parse_exact_size(self.encrypted_extensions_bytes)
+
+        self.assertEqual(encrypted_extensions.get_handshake_type(), TlsHandshakeType.ENCRYPTED_EXTENSIONS)
+        self.assertEqual(encrypted_extensions.extension_data, self.extension_data)
+
+    def test_compose(self):
+        self.assertEqual(
+            self.encrypted_extensions.compose(),
+            self.encrypted_extensions_bytes
+        )
 
 
 class TestSslHandshakeClientHello(unittest.TestCase):

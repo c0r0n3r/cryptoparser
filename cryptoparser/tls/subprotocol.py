@@ -209,6 +209,7 @@ class TlsHandshakeType(enum.IntEnum):
     HELLO_VERIFY_REQUEST = 0x03
     NEW_SESSION_TICKET = 0x04
     HELLO_RETRY_REQUEST = 0x06
+    ENCRYPTED_EXTENSIONS = 0x08
     CERTIFICATE = 0x0b
     SERVER_KEY_EXCHANGE = 0x0c
     CERTIFICATE_REQUEST = 0x0d
@@ -608,6 +609,11 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
         return header_bytes + payload_composer.composed_bytes + extension_bytes
 
 
+class TlsCertificateType(enum.IntEnum):
+    X509 = 0
+    RAW_PUBLIC_KEY = 2
+
+
 @attr.s
 class TlsCertificate(ParsableBase):
     certificate = attr.ib(validator=attr.validators.instance_of(bytes))
@@ -639,7 +645,7 @@ class TlsCertificates(VectorParsable):
 
 
 @attr.s
-class TlsHandshakeCertificate(TlsHandshakeMessage):
+class TlsHandshakeServerCertificate(TlsHandshakeMessage):
     certificate_chain = attr.ib(validator=attr.validators.instance_of(TlsCertificates))
 
     @classmethod
@@ -654,13 +660,101 @@ class TlsHandshakeCertificate(TlsHandshakeMessage):
 
         parser.parse_parsable('certificates', TlsCertificates)
 
-        return TlsHandshakeCertificate(
+        return TlsHandshakeServerCertificate(
             parser['certificates']
         ), handshake_header_parser.parsed_length
 
     def compose(self):
         payload_composer = ComposerBinary()
         payload_composer.compose_parsable(self.certificate_chain)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
+@attr.s
+class TlsCertificateEntry(ParsableBase):
+    certificate = attr.ib(validator=attr.validators.instance_of(TlsCertificate))
+    extensions = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    def __attrs_post_init__(self):
+        if len(self.extensions) > 2 ** 16 - 1:
+            raise InvalidValue(len(self.extensions), self.__class__, 'extensions')
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = ParserBinary(parsable)
+
+        parser.parse_parsable('certificate', TlsCertificate)
+        parser.parse_bytes('extensions', 2)
+
+        return TlsCertificateEntry(
+            parser['certificate'],
+            bytes(parser['extensions']),
+        ), parser.parsed_length
+
+    def compose(self):
+        composer = ComposerBinary()
+
+        composer.compose_parsable(self.certificate)
+        composer.compose_bytes(self.extensions, 2)
+
+        return composer.composed_bytes
+
+
+class TlsCertificateEntryVector(VectorParsable):
+    @classmethod
+    def get_param(cls):
+        return VectorParamParsable(
+            item_class=TlsCertificateEntry,
+            fallback_class=None,
+            min_byte_num=0,
+            max_byte_num=2 ** 24 - 1,
+        )
+
+
+@attr.s
+class TlsHandshakeCertificate(TlsHandshakeMessage):
+
+    certificate_request_context = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+    certificate_entries = attr.ib(validator=attr.validators.instance_of(TlsCertificateEntryVector))
+
+    def __attrs_post_init__(self):
+        if len(self.certificate_request_context) > 255:
+            raise InvalidValue(len(self.certificate_request_context), self.__class__, 'certificate_request_context')
+
+    @classmethod
+    def get_handshake_type(cls):
+        return TlsHandshakeType.CERTIFICATE
+
+    @classmethod
+    def _parse(cls, parsable):
+        handshake_header_parser = cls._parse_handshake_header(parsable)
+
+        parser = ParserBinary(handshake_header_parser['payload'])
+
+        parser.parse_numeric('certificate_request_context_length', 1)
+        parser.parse_raw(
+            'certificate_request_context',
+            parser['certificate_request_context_length'],
+        )
+        try:
+            parser.parse_parsable('certificate_entries', TlsCertificateEntryVector)
+        except (NotEnoughData, InvalidValue) as e:
+            raise InvalidType() from e
+
+        return TlsHandshakeCertificate(
+            bytes(parser['certificate_request_context']),
+            parser['certificate_entries'],
+        ), handshake_header_parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+
+        payload_composer.compose_numeric(len(self.certificate_request_context), 1)
+        payload_composer.compose_raw(self.certificate_request_context)
+        payload_composer.compose_parsable(self.certificate_entries)
 
         header_bytes = self._compose_header(payload_composer.composed_length)
 
@@ -924,6 +1018,31 @@ class TlsHandshakeHelloRetryRequest(TlsHandshakeHello):
         return header_bytes + payload_composer.composed_bytes + extension_bytes
 
 
+@attr.s
+class TlsHandshakeEncryptedExtensions(TlsHandshakeMessage):
+    extension_data = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    def get_handshake_type(cls):
+        return TlsHandshakeType.ENCRYPTED_EXTENSIONS
+
+    @classmethod
+    def _parse(cls, parsable):
+        parser = cls._parse_handshake_header(parsable)
+
+        return TlsHandshakeEncryptedExtensions(
+            parser['payload'],
+        ), parser.parsed_length
+
+    def compose(self):
+        payload_composer = ComposerBinary()
+        payload_composer.compose_raw(self.extension_data)
+
+        header_bytes = self._compose_header(payload_composer.composed_length)
+
+        return header_bytes + payload_composer.composed_bytes
+
+
 class SslMessageBase(ParsableBase):
     @classmethod
     def get_message_type(cls):
@@ -1099,7 +1218,8 @@ class TlsHandshakeMessageVariant(VariantParsable):
     _VARIANTS = collections.OrderedDict([
         (TlsHandshakeType.CLIENT_HELLO, [TlsHandshakeClientHello, ]),
         (TlsHandshakeType.SERVER_HELLO, [TlsHandshakeServerHello, ]),
-        (TlsHandshakeType.CERTIFICATE, [TlsHandshakeCertificate, ]),
+        (TlsHandshakeType.ENCRYPTED_EXTENSIONS, [TlsHandshakeEncryptedExtensions, ]),
+        (TlsHandshakeType.CERTIFICATE, [TlsHandshakeCertificate, TlsHandshakeServerCertificate, ]),
         (TlsHandshakeType.SERVER_KEY_EXCHANGE, [TlsHandshakeServerKeyExchange, ]),
         (TlsHandshakeType.CERTIFICATE_REQUEST, [TlsHandshakeCertificateRequest, ]),
         (TlsHandshakeType.CERTIFICATE_STATUS, [TlsHandshakeCertificateStatus, ]),
@@ -1117,7 +1237,6 @@ class TlsSubprotocolMessageParser(SubprotocolParser):
         TlsContentType.CHANGE_CIPHER_SPEC: TlsChangeCipherSpecMessage,
         TlsContentType.ALERT: TlsAlertMessage,
         TlsContentType.HANDSHAKE: TlsHandshakeMessageVariant,
-        TlsContentType.APPLICATION_DATA: TlsApplicationDataMessage,
     }
 
     @classmethod

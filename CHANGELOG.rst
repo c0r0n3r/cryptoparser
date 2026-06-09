@@ -2,6 +2,19 @@
 Changelog
 =========
 
+-------------------
+1.3.0 - Unreleased
+-------------------
+
+Features
+========
+
+-  TLS (``tls``)
+
+   -  Generic
+
+      -  protocol item classes for certofocate messages in version 1.3 (#94)
+
 ------------------
 1.2.1 - 2026-06-02
 ------------------
