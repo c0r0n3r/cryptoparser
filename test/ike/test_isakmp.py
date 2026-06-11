@@ -256,6 +256,48 @@ class TestISAKMPHeader(unittest.TestCase):
         self.assertEqual(found_ke, ke_payload)
         self.assertEqual(found_ke.get_payload_type(), Ikev2PayloadType.KE)
 
+    def test_get_payload_by_type_raises_index_error_on_multiple(self):
+        first_nonce = Ikev2PayloadNonce(
+            flags=set(),
+            nonce_data=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f',
+        )
+        second_nonce = Ikev2PayloadNonce(
+            flags=set(),
+            nonce_data=b'\xff\xfe\xfd\xfc\xfb\xfa\xf9\xf8\xf7\xf6\xf5\xf4\xf3\xf2\xf1\xf0',
+        )
+        message = IsakmpMessage(
+            version=IsakmpProtocolVersion(IkeVersion.V2, 0),
+            initiator_spi=0,
+            responder_spi=0,
+            exchange_type=Ikev2ExchangeType.IKE_SA_INIT,
+            flags=set(),
+            message_id=0,
+            payloads=[first_nonce, second_nonce],
+        )
+
+        with self.assertRaises(IndexError):
+            message.get_payload_by_type(Ikev2PayloadType.NONCE)
+        self.assertEqual(
+            message.get_payloads_by_type(Ikev2PayloadType.NONCE),
+            [first_nonce, second_nonce],
+        )
+
+    def test_get_payloads_by_type_returns_empty_list_when_missing(self):
+        message = IsakmpMessage(
+            version=IsakmpProtocolVersion(IkeVersion.V2, 0),
+            initiator_spi=0,
+            responder_spi=0,
+            exchange_type=Ikev2ExchangeType.IKE_SA_INIT,
+            flags=set(),
+            message_id=0,
+            payloads=[],
+        )
+
+        self.assertEqual(
+            message.get_payloads_by_type(Ikev2PayloadType.NONCE),
+            [],
+        )
+
     def test_get_payload_by_type_ikev1(self):
         ke_payload = Ikev1PayloadKeyExchange(key_exchange_data=b'\x00\x01\x02\x03')
         nonce_payload = Ikev1PayloadNonce(nonce_data=b'\x00\x01\x02\x03\x04\x05\x06\x07\x08')
