@@ -5,6 +5,7 @@ Maintainer: Szilárd Pfeiffer <coroner@pfeifferszilard.hu>
 Build-Depends: debhelper-compat (= 12),
                dh-python,
                python3-all,
+               python3-setuptools,
                python3-asn1crypto,
                python3-attr,
                python3-cryptodatahub (>= 1.2.1),
