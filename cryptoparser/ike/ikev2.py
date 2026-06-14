@@ -347,7 +347,8 @@ class TransformAttributes(Transform):
     @classmethod
     def _parse(cls, parsable):
         header_parser = cls._parse_header(parsable)
-        attributes, attributes_length = cls._parse_attributes(header_parser.unparsed)
+        attributes_size = header_parser['transform_length'] - cls.HEADER_SIZE
+        attributes, attributes_length = cls._parse_attributes(header_parser.unparsed[:attributes_size])
 
         transform = cls(
             transform_id=header_parser['transform_id'],
@@ -408,7 +409,10 @@ class Ikev2TransformDhGroup(TransformNoAttributes):
 class Ikev2TransformEncryptionAlgorithm(TransformAttributes):
     """Transform payload parser for encryption algorithm."""
 
-    key_length: int = attr.ib(validator=attr.validators.instance_of(int))
+    key_length: typing.Optional[int] = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(int)),
+    )
 
     @classmethod
     def get_transform_type(cls):
@@ -420,6 +424,8 @@ class Ikev2TransformEncryptionAlgorithm(TransformAttributes):
 
     @classmethod
     def _parse_attributes(cls, parsable):
+        if not parsable:
+            return {'key_length': None}, 0
         parser = ParserBinary(parsable)
 
         parser.parse_parsable('key_length', TransformAttributeKeyLength)
@@ -427,6 +433,8 @@ class Ikev2TransformEncryptionAlgorithm(TransformAttributes):
         return {'key_length': parser['key_length'].value}, parser.parsed_length
 
     def _get_attributes(self):
+        if self.key_length is None:
+            return []
         return [TransformAttributeKeyLength(value=self.key_length)]
 
 
