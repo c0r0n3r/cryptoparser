@@ -4,6 +4,7 @@
 import collections
 import datetime
 import enum
+import hashlib
 
 import attr
 
@@ -19,7 +20,7 @@ from cryptoparser.common.base import (
     VectorParamParsable,
     VectorParsable,
 )
-from cryptoparser.common.parse import ComposerBinary, ParsableBase, ParserBinary
+from cryptoparser.common.parse import ComposerBinary, ComposerText, ParsableBase, ParserBinary
 
 from cryptoparser.tls.algorithm import TlsSignatureAndHashAlgorithm, TlsSignatureAndHashAlgorithmFactory
 
@@ -106,7 +107,21 @@ class SignedCertificateTimestampList(VectorParsable):
         )
 
 
+@attr.s(frozen=True)
+class TlsJA4XFingerprint(Serializable):
+    fingerprint = attr.ib(validator=attr.validators.instance_of(str))
+    fingerprint_raw = attr.ib(validator=attr.validators.instance_of(str))
+
+
+@attr.s(eq=False, init=False, frozen=True)
 class PublicKeyX509(PublicKeyX509Base):
+    ja4x = attr.ib(init=False, default=None, metadata={'human_readable_name': 'JA4X'})
+
+    def __init__(self, certificate):
+        super().__init__(certificate)
+
+        object.__setattr__(self, 'ja4x', self._ja4x())
+
     @property
     def signed_certificate_timestamps(self):
         for extension in self._certificate['tbs_certificate']['extensions']:
@@ -116,9 +131,51 @@ class PublicKeyX509(PublicKeyX509Base):
 
         return SignedCertificateTimestampList([])
 
+    @staticmethod
+    def _ja4x_sha256(oid_hexes):
+        composer = ComposerText()
+        composer.compose_string_array(oid_hexes, ',')
+        return hashlib.sha256(composer.composed).hexdigest()[:12]
+
+    @staticmethod
+    def _ja4x_relative_distinguished_name_oid_hexes(name):
+        return [
+            attribute['type'].contents.hex()
+            for relative_distinguished_name in name.chosen
+            for attribute in relative_distinguished_name
+        ]
+
+    def _ja4x(self):
+        tbs_certificate = self._certificate['tbs_certificate']
+        issuer_oid_hexes = self._ja4x_relative_distinguished_name_oid_hexes(tbs_certificate['issuer'])
+        subject_oid_hexes = self._ja4x_relative_distinguished_name_oid_hexes(tbs_certificate['subject'])
+        extension_oid_hexes = [
+            extension['extn_id'].contents.hex()
+            for extension in tbs_certificate['extensions']
+        ]
+
+        fingerprint_composer = ComposerText()
+        fingerprint_composer.compose_string_array([
+            self._ja4x_sha256(issuer_oid_hexes),
+            self._ja4x_sha256(subject_oid_hexes),
+            self._ja4x_sha256(extension_oid_hexes),
+        ], '_')
+
+        raw_composer = ComposerText()
+        raw_composer.compose_string_array(issuer_oid_hexes, ',')
+        for oid_hexes in (subject_oid_hexes, extension_oid_hexes):
+            raw_composer.compose_separator('_')
+            raw_composer.compose_string_array(oid_hexes, ',')
+
+        return TlsJA4XFingerprint(
+            fingerprint=fingerprint_composer.composed.decode('ascii'),
+            fingerprint_raw=raw_composer.composed.decode('ascii'),
+        )
+
     def _asdict(self):
         dict_value = super()._asdict()
 
         return collections.OrderedDict(list(dict_value.items()) + [
+            ('ja4x', self.ja4x),
             ('signed_certificate_timestamps', self.signed_certificate_timestamps),
         ])
