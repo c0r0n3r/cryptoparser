@@ -54,10 +54,12 @@ dependencies = [
 [project.optional-dependencies]
 tests = [
     'pyfakefs',
+    'coverage',
 ]
 docs = [
     'sphinx',
     'sphinx-sitemap',
+    'docutils',
 ]
 
 [project.urls]
