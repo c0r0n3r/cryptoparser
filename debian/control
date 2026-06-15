@@ -1,0 +1,31 @@
+Source: python-cryptoparser
+Section: python
+Priority: optional
+Maintainer: Szilárd Pfeiffer <coroner@pfeifferszilard.hu>
+Build-Depends: debhelper-compat (= 12),
+               dh-python,
+               python3-all,
+               python3-setuptools,
+               python3-asn1crypto,
+               python3-attr,
+               python3-cryptodatahub (>= 1.2.1),
+               python3-pyfakefs <!nocheck>,
+               python3-urllib3
+Standards-Version: 4.7.2
+Rules-Requires-Root: no
+Homepage: https://gitlab.com/coroner/cryptoparser
+Vcs-Browser: https://gitlab.com/coroner/cryptoparser
+Vcs-Git: https://gitlab.com/coroner/cryptoparser.git
+
+Package: python3-cryptoparser
+Architecture: all
+Depends: ${python3:Depends},
+         ${misc:Depends},
+         python3-asn1crypto,
+         python3-attr,
+         python3-cryptodatahub (>= 1.2.1),
+         python3-urllib3
+Description: Analysis-oriented security protocol parser and generator
+ CryptoParser is a Python library for parsing and generating security
+ protocol messages. It supports TLS, SSH, DNS, LDAP, RDP, and IKE
+ protocols with a focus on cryptographic algorithm analysis.
