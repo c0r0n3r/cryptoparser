@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: MPL-2.0
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 
 import unittest
 
 import collections
 import copy
 import datetime
+import hashlib
 
 from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.tls.algorithm import (
@@ -14,12 +16,15 @@ from cryptodatahub.tls.algorithm import (
     TlsGreaseOneByte,
     TlsGreaseTwoByte,
     TlsNamedCurve,
+    TlsProtocolName,
     TlsSignatureAndHashAlgorithm,
 )
 
 from cryptoparser.common.exception import InvalidType, NotEnoughData
 from cryptoparser.tls.ciphersuite import TlsCipherSuite, SslCipherKind
 from cryptoparser.tls.extension import (
+    TlsExtensionApplicationLayerProtocolNegotiation,
+    TlsExtensionSignatureAlgorithms,
     TlsExtensionSupportedVersionsClient,
     TlsExtensionSupportedVersionsServer,
     TlsExtensionUnparsed,
@@ -354,6 +359,83 @@ class TestTlsHandshakeClientHello(unittest.TestCase):
         self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10-11,1,0')
         client_hello_minimal.extensions[1].point_formats.append(TlsInvalidTypeOneByte(TlsGreaseOneByte.GREASE_0B))
         self.assertEqual(client_hello_minimal.ja3(), '771,2570-1-2-3-4-5,10-11,1,0')
+
+    @staticmethod
+    def _ja4_hash(text):
+        return hashlib.sha256(text.encode('ascii')).hexdigest()[:12]
+
+    def test_ja4_sub_hashes(self):
+        # canonical example from the JA4 technical specification
+        ciphers = '002f,0035,009c,009d,1301,1302,1303,c013,c014,c02b,c02c,c02f,c030,cca8,cca9'
+        extensions = '0005,000a,000b,000d,0012,0015,0017,001b,0023,002b,002d,0033,4469,ff01'
+        signature_algorithms = '0403,0804,0401,0503,0805,0501,0806,0601'
+
+        self.assertEqual(self._ja4_hash(ciphers), '8daaf6152771')
+        self.assertEqual(self._ja4_hash(extensions + '_' + signature_algorithms), 'e5627efa2ab1')
+
+    def test_ja4(self):
+        client_hello_minimal = copy.copy(self.client_hello_minimal)
+
+        # the GREASE cipher (2570 in the JA3 tag) is excluded; five ciphers remain
+        cipher_hash = self._ja4_hash('0001,0002,0003,0004,0005')
+        result = client_hello_minimal.ja4()
+        self.assertEqual(result.fingerprint, f't12i050000_{cipher_hash}_000000000000')
+        # ciphers are already in ascending order and there are no extensions, so the original-order
+        # hashed form equals the sorted one
+        self.assertEqual(result.fingerprint_original, result.fingerprint)
+        self.assertEqual(result.fingerprint_raw, 't12i050000_0001,0002,0003,0004,0005__')
+        self.assertEqual(result.fingerprint_raw_original, 't12i050000_0001,0002,0003,0004,0005__')
+
+    def test_ja4_original_order(self):
+        client_hello = TlsHandshakeClientHello(
+            TlsCipherSuiteVector([
+                TlsCipherSuite.TLS_RSA_WITH_NULL_SHA,  # 0x0002
+                TlsCipherSuite.TLS_RSA_WITH_NULL_MD5,  # 0x0001
+            ]),
+            TlsProtocolVersion(TlsVersion.TLS1_2),
+        )
+        result = client_hello.ja4()
+        # the sorted hash is over 0001,0002; the original-order hash is over 0002,0001, so they differ
+        self.assertEqual(result.fingerprint, f't12i020000_{self._ja4_hash("0001,0002")}_000000000000')
+        self.assertEqual(result.fingerprint_original, f't12i020000_{self._ja4_hash("0002,0001")}_000000000000')
+        self.assertNotEqual(result.fingerprint, result.fingerprint_original)
+        self.assertEqual(result.fingerprint_raw, 't12i020000_0001,0002__')
+        self.assertEqual(result.fingerprint_raw_original, 't12i020000_0002,0001__')
+
+    def test_ja4_supported_versions_and_extensions(self):
+        client_hello_minimal = copy.copy(self.client_hello_minimal)
+        client_hello_minimal.extensions.append(
+            TlsExtensionSupportedVersionsClient(TlsSupportedVersionVector([
+                TlsProtocolVersion(TlsVersion.TLS1_3),
+            ]))
+        )
+
+        cipher_hash = self._ja4_hash('0001,0002,0003,0004,0005')
+        extension_hash = self._ja4_hash('002b')
+        result = client_hello_minimal.ja4()
+        # version is the highest in supported_versions (TLS 1.3 -> "13"), not the legacy protocol version
+        self.assertEqual(result.fingerprint, f't13i050100_{cipher_hash}_{extension_hash}')
+        self.assertEqual(result.fingerprint_raw, 't13i050100_0001,0002,0003,0004,0005_002b_')
+
+    def test_ja4_alpn_and_signature_algorithms(self):
+        client_hello_minimal = copy.copy(self.client_hello_minimal)
+        client_hello_minimal.extensions.append(
+            TlsExtensionApplicationLayerProtocolNegotiation([TlsProtocolName.H2])
+        )
+        client_hello_minimal.extensions.append(
+            TlsExtensionSignatureAlgorithms([TlsSignatureAndHashAlgorithm.RSA_PSS_RSAE_SHA256])
+        )
+
+        signature_algorithm_hex = f'{TlsSignatureAndHashAlgorithm.RSA_PSS_RSAE_SHA256.value.code:04x}'
+        cipher_hash = self._ja4_hash('0001,0002,0003,0004,0005')
+        extension_hash = self._ja4_hash(f'000d_{signature_algorithm_hex}')
+        result = client_hello_minimal.ja4()
+        # the ALPN value "h2" is in the prefix; SNI (0000) and ALPN (0010) are excluded from the
+        # extension hash, leaving signature_algorithms (000d) with the algorithms appended
+        self.assertEqual(result.fingerprint, f't12i0502h2_{cipher_hash}_{extension_hash}')
+        self.assertEqual(
+            result.fingerprint_raw, f't12i0502h2_0001,0002,0003,0004,0005_000d_{signature_algorithm_hex}'
+        )
 
 
 class TestTlsHandshakeServerHello(unittest.TestCase):

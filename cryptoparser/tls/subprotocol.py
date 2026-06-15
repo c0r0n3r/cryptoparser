@@ -7,6 +7,7 @@ import calendar
 import collections
 import datetime
 import enum
+import hashlib
 import random
 import attr
 
@@ -27,7 +28,7 @@ from cryptoparser.common.base import (
     VectorParsable,
 )
 from cryptoparser.common.exception import NotEnoughData, InvalidType
-from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary
+from cryptoparser.common.parse import ParsableBase, ParserBinary, ComposerBinary, ComposerText
 
 from cryptoparser.tls.extension import (
     TlsCertificateStatusType,
@@ -411,6 +412,14 @@ class TlsSessionIdVector(Vector):
         return VectorParamNumeric(item_size=1, min_byte_num=0, max_byte_num=32)
 
 
+@attr.s(frozen=True)
+class TlsJA4Fingerprint():
+    fingerprint = attr.ib(validator=attr.validators.instance_of(str))
+    fingerprint_original = attr.ib(validator=attr.validators.instance_of(str))
+    fingerprint_raw = attr.ib(validator=attr.validators.instance_of(str))
+    fingerprint_raw_original = attr.ib(validator=attr.validators.instance_of(str))
+
+
 @attr.s
 class TlsHandshakeClientHello(TlsHandshakeHello):  # pylint: disable=too-many-instance-attributes
     cipher_suites = attr.ib(
@@ -508,7 +517,7 @@ class TlsHandshakeClientHello(TlsHandshakeHello):  # pylint: disable=too-many-in
         parser = ParserBinary(self.protocol_version.compose())
         parser.parse_numeric('tls_protocol_version', 2)
 
-        cipher_suites = [str(cipher_suite.value.code) for cipher_suite in self.cipher_suites]
+        cipher_suites = [cipher_suite.value.code for cipher_suite in self.cipher_suites]
 
         extension_types = []
         named_curves = []
@@ -516,30 +525,165 @@ class TlsHandshakeClientHello(TlsHandshakeHello):  # pylint: disable=too-many-in
         for extension in self.extensions:
             if (not isinstance(extension.extension_type, TlsInvalidTypeTwoByte) or
                     extension.extension_type.value.value_type != TlsInvalidType.GREASE):
-                extension_types.append(str(extension.extension_type.value.code))
+                extension_types.append(extension.extension_type.value.code)
 
             if extension.extension_type == TlsExtensionType.SUPPORTED_GROUPS:
                 named_curves = [
-                    str(named_curve.value.code)
+                    named_curve.value.code
                     for named_curve in extension.elliptic_curves
                     if (not isinstance(named_curve, TlsInvalidTypeTwoByte) or
                         named_curve.value.value_type != TlsInvalidType.GREASE)
                 ]
             elif extension.extension_type == TlsExtensionType.EC_POINT_FORMATS:
                 ec_point_formats = [
-                    str(point_format.value.code)
+                    point_format.value.code
                     for point_format in extension.point_formats
                     if (not isinstance(point_format, TlsInvalidTypeOneByte) or
                         point_format.value.value_type != TlsInvalidType.GREASE)
                 ]
 
-        return ','.join([
-            str(parser['tls_protocol_version']),
-            '-'.join(cipher_suites),
-            '-'.join(extension_types),
-            '-'.join(named_curves),
-            '-'.join(ec_point_formats),
-        ])
+        composer = ComposerText()
+        composer.compose_numeric(parser['tls_protocol_version'])
+        for numeric_array in (cipher_suites, extension_types, named_curves, ec_point_formats):
+            composer.compose_separator(',')
+            composer.compose_numeric_array(numeric_array, '-')
+
+        return composer.composed.decode('ascii')
+
+    _JA4_VERSION_STRINGS = {
+        TlsVersion.TLS1_3: '13',
+        TlsVersion.TLS1_2: '12',
+        TlsVersion.TLS1_1: '11',
+        TlsVersion.TLS1: '10',
+        TlsVersion.SSL3: 's3',
+        TlsVersion.SSL2: 's2',
+    }
+
+    @staticmethod
+    def _ja4_is_grease(item):
+        return isinstance(item, TlsInvalidTypeTwoByte) and item.value.value_type == TlsInvalidType.GREASE
+
+    @staticmethod
+    def _ja4_sha256(data):
+        return hashlib.sha256(data).hexdigest()[:12]
+
+    @classmethod
+    def _ja4_hashes(cls, cipher_hexes, extension_hexes, signature_algorithm_hexes):
+        cipher_composer = ComposerText()
+        cipher_composer.compose_string_array(cipher_hexes, ',')
+        cipher_hash = cls._ja4_sha256(cipher_composer.composed) if cipher_hexes else '000000000000'
+
+        extension_composer = ComposerText()
+        extension_composer.compose_string_array(extension_hexes, ',')
+        if signature_algorithm_hexes:
+            extension_composer.compose_separator('_')
+            extension_composer.compose_string_array(signature_algorithm_hexes, ',')
+        extension_hash = cls._ja4_sha256(extension_composer.composed) if extension_hexes else '000000000000'
+
+        return cipher_hash, extension_hash
+
+    @staticmethod
+    def _ja4_raw(header, cipher_hexes, extension_hexes, signature_algorithm_hexes):
+        composer = ComposerText()
+        composer.compose_string(header)
+        for hexes in (cipher_hexes, extension_hexes, signature_algorithm_hexes):
+            composer.compose_separator('_')
+            composer.compose_string_array(hexes, ',')
+
+        return composer.composed.decode('ascii')
+
+    @staticmethod
+    def _ja4_alpn_characters(value):
+        return value[0] + value[-1]
+
+    def _ja4_version_string(self):
+        protocol_versions = []
+        for extension in self.extensions:
+            if extension.extension_type == TlsExtensionType.SUPPORTED_VERSIONS:
+                protocol_versions = [
+                    version
+                    for version in extension.supported_versions
+                    if not self._ja4_is_grease(version)
+                ]
+                break
+
+        if not protocol_versions:
+            protocol_versions = [self.protocol_version]
+
+        highest_protocol_version = max(
+            protocol_versions, key=lambda protocol_version: protocol_version.version.value.code
+        )
+
+        return self._JA4_VERSION_STRINGS.get(highest_protocol_version.version, '00')
+
+    def _ja4_alpn_value(self):
+        for extension in self.extensions:
+            if extension.extension_type == TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION:
+                return self._ja4_alpn_characters(list(extension.protocol_names)[0].value.code)
+
+        return '00'
+
+    def _ja4_signature_algorithm_hexes(self):
+        for extension in self.extensions:
+            if extension.extension_type == TlsExtensionType.SIGNATURE_ALGORITHMS:
+                return [
+                    f'{algorithm.value.code:04x}'
+                    for algorithm in extension.hash_and_signature_algorithms
+                    if not self._ja4_is_grease(algorithm)
+                ]
+
+        return []
+
+    def ja4(self):
+        cipher_hexes = [
+            f'{cipher_suite.value.code:04x}'
+            for cipher_suite in self.cipher_suites
+            if not self._ja4_is_grease(cipher_suite)
+        ]
+        extension_hexes = [
+            f'{extension.extension_type.value.code:04x}'
+            for extension in self.extensions
+            if not self._ja4_is_grease(extension.extension_type)
+        ]
+        signature_algorithm_hexes = self._ja4_signature_algorithm_hexes()
+
+        sni = 'd' if any(
+            extension.extension_type == TlsExtensionType.SERVER_NAME for extension in self.extensions
+        ) else 'i'
+        header = (
+            f't{self._ja4_version_string()}{sni}'
+            f'{min(len(cipher_hexes), 99):02d}{min(len(extension_hexes), 99):02d}'
+            f'{self._ja4_alpn_value()}'
+        )
+
+        excluded_extension_hexes = (
+            f'{TlsExtensionType.SERVER_NAME.value.code:04x}',
+            f'{TlsExtensionType.APPLICATION_LAYER_PROTOCOL_NEGOTIATION.value.code:04x}',
+        )
+        sorted_cipher_hexes = sorted(cipher_hexes)
+        sorted_extension_hexes = sorted(
+            extension_hex
+            for extension_hex in extension_hexes
+            if extension_hex not in excluded_extension_hexes
+        )
+
+        cipher_hash, extension_hash = self._ja4_hashes(
+            sorted_cipher_hexes, sorted_extension_hexes, signature_algorithm_hexes
+        )
+        cipher_hash_original, extension_hash_original = self._ja4_hashes(
+            cipher_hexes, extension_hexes, signature_algorithm_hexes
+        )
+
+        return TlsJA4Fingerprint(
+            fingerprint=f'{header}_{cipher_hash}_{extension_hash}',
+            fingerprint_original=f'{header}_{cipher_hash_original}_{extension_hash_original}',
+            fingerprint_raw=self._ja4_raw(
+                header, sorted_cipher_hexes, sorted_extension_hexes, signature_algorithm_hexes
+            ),
+            fingerprint_raw_original=self._ja4_raw(
+                header, cipher_hexes, extension_hexes, signature_algorithm_hexes
+            ),
+        )
 
 
 @attr.s
