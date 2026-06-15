@@ -1,3 +1,13 @@
+python-cryptoparser (1.3.0) unstable; urgency=low
+
+  * add Debian and RPM packaging (#102)
+  * add JA4 tag generation for the client hello message (#100)
+  * add JA4X tag generation for X.509 certificates (#101)
+  * add certificate-related messages for protocol version 1.3 (#94)
+  * make IKEv2 transform key length optional for fixed-key ciphers (#99)
+
+ -- Szilárd Pfeiffer <coroner@pfeifferszilard.hu>  Mon, 15 Jun 2026 21:14:01 +0200
+
 python-cryptoparser (1.2.1) unstable; urgency=low
 
   * Initial Debian packaging.

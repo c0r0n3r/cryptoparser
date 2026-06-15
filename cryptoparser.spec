@@ -1,5 +1,5 @@
 Name:           python-cryptoparser
-Version:        1.2.1
+Version:        1.3.0
 Release:        1%{?dist}
 Summary:        Multi-protocol cryptographic protocol parser library
 
@@ -12,7 +12,7 @@ BuildRequires:  python3-devel
 BuildRequires:  python3-pip
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-wheel
-BuildRequires:  python3-cryptodatahub >= 1.2.1
+BuildRequires:  python3-cryptodatahub >= 1.3.0
 
 %description
 CryptoParser is a library for parsing cryptographic protocol messages
@@ -23,7 +23,7 @@ parsing backend for CryptoLyzer.
 Summary:        %{summary}
 Requires:       python3-asn1crypto
 Requires:       python3-attrs
-Requires:       python3-cryptodatahub >= 1.2.1
+Requires:       python3-cryptodatahub >= 1.3.0
 Requires:       python3-urllib3
 
 %description -n python3-cryptoparser
@@ -50,3 +50,11 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 %{python3_sitelib}/cryptoparser/
 %{python3_sitelib}/cryptoparser-%{version}.dist-info/
 %license LICENSE.txt
+
+%changelog
+* Mon Jun 15 2026 Szilárd Pfeiffer <coroner@pfeifferszilard.hu> - 1.3.0-1
+- add Debian and RPM packaging (#102)
+- add JA4 tag generation for the client hello message (#100)
+- add JA4X tag generation for X.509 certificates (#101)
+- add certificate-related messages for protocol version 1.3 (#94)
+- make IKEv2 transform key length optional for fixed-key ciphers (#99)

@@ -2,18 +2,29 @@
 Changelog
 =========
 
--------------------
-1.3.0 - Unreleased
--------------------
+------------------
+1.3.0 - 2026-06-15
+------------------
 
 Features
 ========
 
+-  Generic
+
+   -  add Debian and RPM packaging (#102)
+
 -  TLS (``tls``)
 
-   -  Generic
+   -  add JA4 tag generation for the client hello message (#100)
+   -  add JA4X tag generation for X.509 certificates (#101)
+   -  add certificate-related messages for protocol version 1.3 (#94)
 
-      -  protocol item classes for certofocate messages in version 1.3 (#94)
+Notable fixes
+=============
+
+-  IKE (``ike``)
+
+   -  make IKEv2 transform key length optional for fixed-key ciphers (#99)
 
 ------------------
 1.2.1 - 2026-06-02
