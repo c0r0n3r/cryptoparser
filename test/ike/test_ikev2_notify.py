@@ -268,18 +268,8 @@ class TestIkev2PayloadNotifyUnparsed(unittest.TestCase):
 
 
 class TestIkev2NotifyPayloadCookie(unittest.TestCase):
-    def setUp(self):
-        self.protocol_id = Ikev2ProtocolId.IKE
-        self.cookie_data = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
-
-        self.cookie_payload = Ikev2NotifyPayloadCookie(
-            flags=set(),
-            protocol_id=self.protocol_id,
-            type=Ikev2NotifyType.COOKIE,
-            spi=b'',
-            cookie=self.cookie_data
-        )
-        self.cookie_payload.next_payload = Ikev2PayloadType.NONE
+    _PROTOCOL_ID = Ikev2ProtocolId.IKE
+    _COOKIE_DATA = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
 
     def test_get_message_type(self):
         # pylint: disable=protected-access
@@ -288,17 +278,17 @@ class TestIkev2NotifyPayloadCookie(unittest.TestCase):
     def test_cookie_data_storage(self):
         payload = Ikev2NotifyPayloadCookie(
             flags=set(),
-            protocol_id=self.protocol_id,
+            protocol_id=self._PROTOCOL_ID,
             type=Ikev2NotifyType.COOKIE,
             spi=b'',
-            cookie=self.cookie_data
+            cookie=self._COOKIE_DATA
         )
-        self.assertEqual(payload.cookie, self.cookie_data)
+        self.assertEqual(payload.cookie, self._COOKIE_DATA)
 
         different_cookie = b'\xff\xfe\xfd\xfc\xfb\xfa'
         payload_2 = Ikev2NotifyPayloadCookie(
             flags=set(),
-            protocol_id=self.protocol_id,
+            protocol_id=self._PROTOCOL_ID,
             type=Ikev2NotifyType.COOKIE,
             spi=b'',
             cookie=different_cookie
@@ -306,22 +296,29 @@ class TestIkev2NotifyPayloadCookie(unittest.TestCase):
         self.assertEqual(payload_2.cookie, different_cookie)
 
     def test_round_trip_cookie_preservation(self):
-        composed_bytes = self.cookie_payload.compose()
+        cookie_payload = Ikev2NotifyPayloadCookie(
+            flags=set(),
+            protocol_id=self._PROTOCOL_ID,
+            type=Ikev2NotifyType.COOKIE,
+            spi=b'',
+            cookie=self._COOKIE_DATA
+        )
+        cookie_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = cookie_payload.compose()
         parsed_payload: Ikev2NotifyPayloadCookie = Ikev2NotifyPayloadCookie.parse_exact_size(composed_bytes)
 
-        self.assertEqual(parsed_payload.cookie, self.cookie_payload.cookie)  # pylint: disable=no-member
-        self.assertEqual(parsed_payload.type, self.cookie_payload.type)
-        self.assertEqual(parsed_payload.spi, self.cookie_payload.spi)
+        self.assertEqual(parsed_payload.cookie, cookie_payload.cookie)  # pylint: disable=no-member
+        self.assertEqual(parsed_payload.type, cookie_payload.type)
+        self.assertEqual(parsed_payload.spi, cookie_payload.spi)
 
 
 class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
-    def setUp(self):
-        self.protocol_id = Ikev2ProtocolId.IKE
+    _PROTOCOL_ID = Ikev2ProtocolId.IKE
 
     def test_parse_other_notify_type(self):
         other_notify = Ikev2PayloadNotifyUnparsed(
             flags=set(),
-            protocol_id=self.protocol_id,
+            protocol_id=self._PROTOCOL_ID,
             type=Ikev2NotifyType.AUTHENTICATION_FAILED,
             spi=b'',
             data=b'\x00\x01\x02\x03'
@@ -338,7 +335,7 @@ class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
         cookie_data = b'\x00\x01\x02\x03'
         cookie_payload = Ikev2NotifyPayloadCookie(
             flags=set(),
-            protocol_id=self.protocol_id,
+            protocol_id=self._PROTOCOL_ID,
             type=Ikev2NotifyType.COOKIE,
             spi=b'',
             cookie=cookie_data
@@ -354,7 +351,7 @@ class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
         cookie_data = b'\x00\x01\x02\x03\x04\x05'
         cookie_payload = Ikev2NotifyPayloadCookie(
             flags=set(),
-            protocol_id=self.protocol_id,
+            protocol_id=self._PROTOCOL_ID,
             type=Ikev2NotifyType.COOKIE,
             spi=b'',
             cookie=cookie_data
