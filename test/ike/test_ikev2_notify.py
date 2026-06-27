@@ -13,6 +13,7 @@ from cryptoparser.ike.ikev2 import (
     Ikev2PayloadNotifyUnparsed,
     Ikev2NotifyPayloadCookie,
     Ikev2NotifyPayloadHttpCertLookupSupported,
+    Ikev2NotifyPayloadIkev2FragmentationSupported,
     Ikev2NotifyPayloadIntermediateExchangeSupported,
     Ikev2NotifyPayloadNatDetectionDestinationIp,
     Ikev2NotifyPayloadNatDetectionSourceIp,
@@ -443,6 +444,27 @@ class TestIkev2NotifyPayloadHttpCertLookupSupported(unittest.TestCase):
         self.assertEqual(parsed_payload.protocol_id, http_cert_payload.protocol_id)
         self.assertEqual(parsed_payload.flags, http_cert_payload.flags)
         self.assertEqual(parsed_payload.next_payload, http_cert_payload.next_payload)
+
+
+class TestIkev2NotifyPayloadIkev2FragmentationSupported(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadIkev2FragmentationSupported._get_message_type(),
+            Ikev2NotifyType.IKEV2_FRAGMENTATION_SUPPORTED,
+        )
+
+    def test_round_trip_preservation(self):
+        fragmentation_payload = Ikev2NotifyPayloadIkev2FragmentationSupported(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.IKEV2_FRAGMENTATION_SUPPORTED,
+            spi=b'',
+        )
+        fragmentation_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = fragmentation_payload.compose()
+        parsed_payload = Ikev2NotifyPayloadIkev2FragmentationSupported.parse_exact_size(composed_bytes)
+        self.assertEqual(parsed_payload.type, fragmentation_payload.type)
 
 
 class TestIkev2NotifyPayloadIntermediateExchangeSupported(unittest.TestCase):

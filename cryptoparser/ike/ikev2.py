@@ -966,6 +966,12 @@ class Ikev2NotifyPayloadHttpCertLookupSupported(Ikev2PayloadNotifyNoData):
         return Ikev2NotifyType.HTTP_CERT_LOOKUP_SUPPORTED
 
 
+class Ikev2NotifyPayloadIkev2FragmentationSupported(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.IKEV2_FRAGMENTATION_SUPPORTED
+
+
 class Ikev2NotifyPayloadIntermediateExchangeSupported(Ikev2PayloadNotifyNoData):
     @classmethod
     def _get_message_type(cls):
@@ -1169,6 +1175,7 @@ class Ikev2NotifyPayloadVariantResponder(Ikev2NotifyPayloadVariantBase):
             (Ikev2NotifyType.USE_TRANSPORT_MODE, [Ikev2NotifyPayloadUseTransportMode, ]),
             (Ikev2NotifyType.HTTP_CERT_LOOKUP_SUPPORTED, [Ikev2NotifyPayloadHttpCertLookupSupported, ]),
             (Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS, [Ikev2NotifyPayloadSignatureHashAlgorithms, ]),
+            (Ikev2NotifyType.IKEV2_FRAGMENTATION_SUPPORTED, [Ikev2NotifyPayloadIkev2FragmentationSupported, ]),
             (Ikev2NotifyType.INTERMEDIATE_EXCHANGE_SUPPORTED, [Ikev2NotifyPayloadIntermediateExchangeSupported, ]),
             (Ikev2NotifyType.USE_PPK, [Ikev2NotifyPayloadUsePpk, ]),
             (Ikev2NotifyType.REDIRECT_SUPPORTED, [Ikev2NotifyPayloadRedirectSupported, ]),
