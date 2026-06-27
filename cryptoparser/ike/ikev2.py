@@ -990,6 +990,12 @@ class Ikev2NotifyPayloadRedirectSupported(Ikev2PayloadNotifyNoData):
         return Ikev2NotifyType.REDIRECT_SUPPORTED
 
 
+class Ikev2NotifyPayloadChildlessIkev2Supported(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.CHILDLESS_IKEV2_SUPPORTED
+
+
 @attr.s
 class Ikev2PayloadNotifyUnparsed(Ikev2PayloadNotifyBase):
     data: typing.Union[bytes, bytearray] = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
@@ -1179,6 +1185,7 @@ class Ikev2NotifyPayloadVariantResponder(Ikev2NotifyPayloadVariantBase):
             (Ikev2NotifyType.INTERMEDIATE_EXCHANGE_SUPPORTED, [Ikev2NotifyPayloadIntermediateExchangeSupported, ]),
             (Ikev2NotifyType.USE_PPK, [Ikev2NotifyPayloadUsePpk, ]),
             (Ikev2NotifyType.REDIRECT_SUPPORTED, [Ikev2NotifyPayloadRedirectSupported, ]),
+            (Ikev2NotifyType.CHILDLESS_IKEV2_SUPPORTED, [Ikev2NotifyPayloadChildlessIkev2Supported, ]),
         ])
 
 

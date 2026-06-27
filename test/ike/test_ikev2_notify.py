@@ -11,6 +11,7 @@ from cryptoparser.ike.ikev2 import (
     Ikev2PayloadFlags,
     Ikev2PayloadType,
     Ikev2PayloadNotifyUnparsed,
+    Ikev2NotifyPayloadChildlessIkev2Supported,
     Ikev2NotifyPayloadCookie,
     Ikev2NotifyPayloadHttpCertLookupSupported,
     Ikev2NotifyPayloadIkev2FragmentationSupported,
@@ -525,6 +526,27 @@ class TestIkev2NotifyPayloadRedirectSupported(unittest.TestCase):
         composed_bytes = redirect_supported_payload.compose()
         parsed_payload = Ikev2NotifyPayloadRedirectSupported.parse_exact_size(composed_bytes)
         self.assertEqual(parsed_payload.type, redirect_supported_payload.type)
+
+
+class TestIkev2NotifyPayloadChildlessIkev2Supported(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadChildlessIkev2Supported._get_message_type(),
+            Ikev2NotifyType.CHILDLESS_IKEV2_SUPPORTED,
+        )
+
+    def test_round_trip_preservation(self):
+        childless_ikev2_payload = Ikev2NotifyPayloadChildlessIkev2Supported(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.CHILDLESS_IKEV2_SUPPORTED,
+            spi=b'',
+        )
+        childless_ikev2_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = childless_ikev2_payload.compose()
+        parsed_payload = Ikev2NotifyPayloadChildlessIkev2Supported.parse_exact_size(composed_bytes)
+        self.assertEqual(parsed_payload.type, childless_ikev2_payload.type)
 
 
 class TestIkev2NotifyPayloadSignatureHashAlgorithms(unittest.TestCase):
