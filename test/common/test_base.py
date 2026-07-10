@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 
 import json
 import unittest
@@ -485,18 +484,18 @@ class TestOpaque(unittest.TestCase):
 class TestOpaqueEnum(unittest.TestCase):
     def test_error(self):
         with self.assertRaises(InvalidValue) as context_manager:
-            OpaqueEnumFactory.parse_exact_size(b'\x0a' + 'δέλτα'.encode('utf-8'))
+            OpaqueEnumFactory.parse_exact_size(b'\x0a' + 'δέλτα'.encode())
         self.assertEqual(context_manager.exception.value, 'δέλτα')
 
     def test_parse(self):
         self.assertEqual(
             OpaqueEnum.ALPHA,
-            OpaqueEnumFactory.parse_exact_size(b'\x08' + 'άλφα'.encode('utf-8'))
+            OpaqueEnumFactory.parse_exact_size(b'\x08' + 'άλφα'.encode())
         )
 
     def test_compose(self):
         self.assertEqual(
-            b'\x0a' + 'γάμμα'.encode('utf-8'),
+            b'\x0a' + 'γάμμα'.encode(),
             OpaqueEnum.GAMMA.compose()  # pylint: disable=no-member
         )
 

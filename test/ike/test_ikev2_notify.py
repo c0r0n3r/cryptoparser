@@ -1,12 +1,11 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 
 import collections
 import unittest
 
 from cryptodatahub.ike.algorithm import Ikev2NotifyType, Ikev2ProtocolId
 
-from cryptoparser.common.exception import NotEnoughData
+from cryptoparser.common.exception import NotEnoughData, InvalidType
 from cryptoparser.ike.ikev2 import (
     Ikev2PayloadFlags,
     Ikev2PayloadType,
@@ -29,7 +28,7 @@ class TestIkev2PayloadNotifyBase(unittest.TestCase):  # pylint: disable=too-many
             flags=set(),
             protocol_id=self.protocol_id,
             notify_type=self.notify_type,
-            spi=bytes(),
+            spi=b'',
             test_data=b''
         )
         self.notify_payload_minimal.next_payload = Ikev2PayloadType.NONE
@@ -76,7 +75,7 @@ class TestIkev2PayloadNotifyBase(unittest.TestCase):  # pylint: disable=too-many
         self.assertEqual(parsed_minimal.next_payload, Ikev2PayloadType.NONE)
         self.assertEqual(parsed_minimal.protocol_id, self.protocol_id)
         self.assertEqual(parsed_minimal.type, self.notify_type)
-        self.assertEqual(parsed_minimal.spi, bytes())
+        self.assertEqual(parsed_minimal.spi, b'')
         self.assertEqual(parsed_minimal.test_data, b'')
 
         parsed_with_data: Ikev2PayloadNotifyBaseTest = Ikev2PayloadNotifyBaseTest.parse_exact_size(
@@ -130,7 +129,7 @@ class TestIkev2PayloadNotifyBase(unittest.TestCase):  # pylint: disable=too-many
                 flags=set(),
                 protocol_id="invalid",
                 notify_type=self.notify_type,
-                spi=bytes(),
+                spi=b'',
                 test_data=b''
             )
 
@@ -140,7 +139,7 @@ class TestIkev2PayloadNotifyBase(unittest.TestCase):  # pylint: disable=too-many
                 flags=set(),
                 protocol_id=self.protocol_id,
                 notify_type="invalid",
-                spi=bytes(),
+                spi=b'',
                 test_data=b''
             )
 
@@ -172,7 +171,7 @@ class TestIkev2PayloadNotifyNoData(unittest.TestCase):
         self.assertEqual(Ikev2PayloadNotifyNoDataTest._get_message_type(), Ikev2NotifyType.AUTHENTICATION_FAILED)
 
     def test_error_invalid_notify_type(self):
-        with self.assertRaises(Exception):  # InvalidType from the implementation
+        with self.assertRaises(InvalidType):
             Ikev2PayloadNotifyNoDataTest.parse_exact_size(self.wrong_notify_bytes)
 
 
@@ -204,7 +203,7 @@ class TestIkev2PayloadNotifyUnparsed(unittest.TestCase):
                 flags=set(),
                 protocol_id=self.protocol_id,
                 type=notify_type,
-                spi=bytes(),
+                spi=b'',
                 data=b'\x00\x01\x02\x03'
             )
             self.assertEqual(payload.type, notify_type)
@@ -215,7 +214,7 @@ class TestIkev2PayloadNotifyUnparsed(unittest.TestCase):
             flags=set(),
             protocol_id=self.protocol_id,
             type=self.notify_type,
-            spi=bytes(),
+            spi=b'',
             data=self.data
         )
         self.assertEqual(payload.data, self.data)
@@ -225,7 +224,7 @@ class TestIkev2PayloadNotifyUnparsed(unittest.TestCase):
             flags=set(),
             protocol_id=self.protocol_id,
             type=self.notify_type,
-            spi=bytes(),
+            spi=b'',
             data=different_data
         )
         self.assertEqual(payload_2.data, different_data)
@@ -235,7 +234,7 @@ class TestIkev2PayloadNotifyUnparsed(unittest.TestCase):
             flags=set(),
             protocol_id=self.protocol_id,
             type=self.notify_type,
-            spi=bytes(),
+            spi=b'',
             data=self.data
         )
         payload_no_spi.next_payload = Ikev2PayloadType.NONE
@@ -277,7 +276,7 @@ class TestIkev2NotifyPayloadCookie(unittest.TestCase):
             flags=set(),
             protocol_id=self.protocol_id,
             type=Ikev2NotifyType.COOKIE,
-            spi=bytes(),
+            spi=b'',
             cookie=self.cookie_data
         )
         self.cookie_payload.next_payload = Ikev2PayloadType.NONE
@@ -291,7 +290,7 @@ class TestIkev2NotifyPayloadCookie(unittest.TestCase):
             flags=set(),
             protocol_id=self.protocol_id,
             type=Ikev2NotifyType.COOKIE,
-            spi=bytes(),
+            spi=b'',
             cookie=self.cookie_data
         )
         self.assertEqual(payload.cookie, self.cookie_data)
@@ -301,7 +300,7 @@ class TestIkev2NotifyPayloadCookie(unittest.TestCase):
             flags=set(),
             protocol_id=self.protocol_id,
             type=Ikev2NotifyType.COOKIE,
-            spi=bytes(),
+            spi=b'',
             cookie=different_cookie
         )
         self.assertEqual(payload_2.cookie, different_cookie)
@@ -324,7 +323,7 @@ class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
             flags=set(),
             protocol_id=self.protocol_id,
             type=Ikev2NotifyType.AUTHENTICATION_FAILED,
-            spi=bytes(),
+            spi=b'',
             data=b'\x00\x01\x02\x03'
         )
         other_notify.next_payload = Ikev2PayloadType.NONE
@@ -341,7 +340,7 @@ class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
             flags=set(),
             protocol_id=self.protocol_id,
             type=Ikev2NotifyType.COOKIE,
-            spi=bytes(),
+            spi=b'',
             cookie=cookie_data
         )
         cookie_payload.next_payload = Ikev2PayloadType.NONE
@@ -357,7 +356,7 @@ class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
             flags=set(),
             protocol_id=self.protocol_id,
             type=Ikev2NotifyType.COOKIE,
-            spi=bytes(),
+            spi=b'',
             cookie=cookie_data
         )
         cookie_payload.next_payload = Ikev2PayloadType.NONE

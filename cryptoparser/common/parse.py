@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 
 import abc
@@ -19,7 +18,7 @@ from cryptoparser.common.exception import InvalidType, NotEnoughData, TooMuchDat
 import cryptoparser.common.utils
 
 
-class ParsableBaseNoABC():
+class ParsableBaseNoABC:
     @classmethod
     def parse_mutable(cls, parsable):
         parsed_object, parsed_length = cls._parse(parsable)
@@ -96,7 +95,7 @@ class ParserBase(collections.abc.Mapping):
         validator=attr.validators.instance_of((bytes, bytearray))
     )
     _parsed_length: int = attr.ib(init=False, default=0)
-    _parsed_values: typing.Dict[str, typing.Any] = attr.ib(init=False, default=None)
+    _parsed_values: dict[str, typing.Any] = attr.ib(init=False, default=None)
 
     def __attrs_post_init__(self):
         if self._parsed_values is None:
@@ -165,7 +164,7 @@ class ParserBase(collections.abc.Mapping):
         value = self._parsable[self._parsed_length:self._parsed_length + parsable_length]
         try:
             value = value.decode(encoding)
-            if converter != str:
+            if converter is not str:
                 value = converter(value)
             self._parsed_values[name] = value
         except UnicodeError as e:
@@ -760,8 +759,8 @@ class ParserBinary(ParserBase):
 
 
 @attr.s
-class ComposerBase():
-    _composed = attr.ib(init=False, default=bytes())
+class ComposerBase:
+    _composed = attr.ib(init=False, default=b'')
 
     @property
     def composed(self):
@@ -795,7 +794,7 @@ class ComposerText(ComposerBase):
         self._encoding = encoding
 
     def _compose_numeric_array(self, values, separator):
-        composed_str = str()
+        composed_str = ''
 
         for value in values:
             composed_str += f'{value:d}{separator}'
@@ -969,7 +968,7 @@ class ComposerBinary(ComposerBase):
             self.compose_numeric(len(composed), item_size)
         self._composed += composed
 
-    def compose_parsable_array(self, values, separator=bytearray()):
+    def compose_parsable_array(self, values, separator=b''):
         self._composed += separator.join(map(lambda item: item.compose(), values))
 
     def compose_bytes(self, value, item_size, converter=bytearray):

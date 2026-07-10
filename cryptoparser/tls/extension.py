@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 
 import abc
@@ -185,7 +184,7 @@ class TlsExtensionParsed(TlsExtensionBase):
 
     @classmethod
     def _parse_header(cls, parsable):
-        parser = super(TlsExtensionParsed, cls)._check_header(parsable)
+        parser = super()._check_header(parsable)
 
         if parser['extension_type'] != cls.get_extension_type():
             raise InvalidType()
@@ -239,7 +238,7 @@ class TlsExtensionServerNameClient(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionServerNameClient, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_numeric('server_name_list_length', 2)
         parser.parse_numeric('server_name_type', 1, TlsServerNameType)
@@ -293,7 +292,7 @@ class TlsExtensionECPointFormats(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionECPointFormats, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('point_formats', TlsECPointFormatVector)
 
@@ -332,7 +331,7 @@ class TlsExtensionEllipticCurves(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionEllipticCurves, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('elliptic_curves', TlsEllipticCurveVector)
 
@@ -383,7 +382,7 @@ class TlsExtensionSupportedVersionsClient(TlsExtensionSupportedVersionsBase):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionSupportedVersionsClient, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('supported_versions', TlsSupportedVersionVector)
 
@@ -405,7 +404,7 @@ class TlsExtensionSupportedVersionsServer(TlsExtensionSupportedVersionsBase):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionSupportedVersionsServer, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('selected_version', TlsProtocolVersion)
 
@@ -445,7 +444,7 @@ class TlsExtensionSignatureAlgorithmsBase(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionSignatureAlgorithmsBase, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('hash_and_signature_algorithms', TlsSignatureAndHashAlgorithmVector)
 
@@ -567,7 +566,7 @@ class TlsExtensionKeyShareServer(TlsExtensionKeyShareBase):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionKeyShareServer, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('key_share_entry', TlsKeyShareEntry)
 
@@ -593,7 +592,7 @@ class TlsExtensionKeyShareClientHelloRetry(TlsExtensionKeyShareBase):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionKeyShareClientHelloRetry, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         if parser['extension_length'] != 2:
             raise InvalidType()
@@ -623,7 +622,7 @@ class TlsExtensionKeyShareEntriesClientBase(TlsExtensionKeyShareBase):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionKeyShareEntriesClientBase, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('key_share_entries', TlsKeyShareEntryVector)
 
@@ -696,7 +695,7 @@ class TlsExtensionCertificateStatusRequestClient(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionCertificateStatusRequestClient, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_numeric('status_type', 1, TlsCertificateStatusType)
         parser.parse_parsable('responder_id_list', TlsCertificateStatusRequestResponderIdList)
@@ -747,7 +746,7 @@ class TlsExtensionRenegotiationInfo(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionRenegotiationInfo, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('renegotiated_connection', TlsRenegotiatedConnection)
 
@@ -776,7 +775,7 @@ class TlsExtensionSessionTicket(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionSessionTicket, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_raw('session_ticket', parser['extension_length'])
 
@@ -827,7 +826,7 @@ class TlsExtensionApplicationLayerProtocolBase(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionApplicationLayerProtocolBase, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('protocol_names', TlsProtocolNameList)
 
@@ -979,7 +978,7 @@ class TlsExtensionTokenBinding(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionTokenBinding, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('protocol_version', TlsTokenBindingProtocolVersion)
         parser.parse_parsable('parameters', TlsTokenBindingParamaterVector)
@@ -1031,7 +1030,7 @@ class TlsExtensionPskKeyExchangeModes(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionPskKeyExchangeModes, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('key_exchange_modes', TlsPskKeyExchangeModeVector)
 
@@ -1142,7 +1141,7 @@ class TlsExtensionCompressCertificate(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionCompressCertificate, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_parsable('compression_algorithms', TlsCertificateCompressionAlgorithmVector)
 
@@ -1168,7 +1167,7 @@ class TlsExtensionPadding(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(TlsExtensionPadding, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_raw('padding', parser['extension_length'])
         try:
@@ -1216,7 +1215,7 @@ class TlsExtensionEncryptedClientHelloBase(TlsExtensionParsed):
 
     @classmethod
     def _parse_header(cls, parsable):
-        parser = super(TlsExtensionEncryptedClientHelloBase, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         parser.parse_numeric('client_hello_type', 1, TlsEncryptedClientHelloType)
         if parser['client_hello_type'] != cls.get_encrypted_client_hello_type():

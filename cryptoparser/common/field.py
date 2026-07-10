@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 
 import abc
@@ -540,7 +539,7 @@ class FieldValueComponentPercent(FieldValueComponentNumber):
 
 
 @attr.s
-class FieldValueComponentStringEnumParams():
+class FieldValueComponentStringEnumParams:
     code = attr.ib(validator=attr.validators.instance_of(str))
 
 

@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 
 import abc
 import base64
@@ -240,7 +239,7 @@ class OpaqueEnumFactory(OpaqueEnumParsable):
 
 
 @attr.s
-class OpaqueEnumParams():
+class OpaqueEnumParams:
     code = attr.ib(validator=attr.validators.instance_of(str))
 
 
@@ -250,7 +249,7 @@ class OpaqueEnum(OpaqueEnumComposer):
     GAMMA = OpaqueEnumParams(code='γάμμα')
 
 
-class TestObject():
+class TestObject:
     pass
 
 
@@ -345,19 +344,19 @@ class SerializableAttributeOrder(Serializable):
     attr_a = attr.ib(default='a')
 
 
-class Class():
+class Class:
     def __init__(self):
         self.attr_b = 'b'
         self.attr_a = 'a'
 
 
 @attr.s
-class ClassAttr():
+class ClassAttr:
     attr_b = attr.ib(default='b')
     attr_a = attr.ib(default='a')
 
 
-class ClassAsDict():
+class ClassAsDict:
     def __init__(self):
         self.attr_a = 'a'
         self.attr_b = 'b'
@@ -370,7 +369,7 @@ class ClassAsDict():
 
 
 @attr.s
-class ClassAttrAsDict():
+class ClassAttrAsDict:
     attr_a = attr.ib(default='a')
     attr_b = attr.ib(default='b')
 
@@ -427,7 +426,7 @@ class FlagEnum(enum.IntEnum):
 
 
 @attr.s
-class StringEnumParams():
+class StringEnumParams:
     code = attr.ib()
 
     def _check_code(self, code):
@@ -504,7 +503,7 @@ class ListParsableTest(ListParsable):
 
 
 @attr.s
-class NByteEnumParam():
+class NByteEnumParam:
     code = attr.ib(validator=attr.validators.instance_of(int))
 
 
@@ -689,7 +688,7 @@ class FieldValueComponentTimeDeltaTest(FieldValueComponentTimeDelta):
 
 
 @attr.s
-class FieldValueComplexTestBase():  # pylint: disable=too-many-instance-attributes
+class FieldValueComplexTestBase:  # pylint: disable=too-many-instance-attributes
     time_delta = attr.ib(
         converter=FieldValueComponentTimeDeltaTest.convert,
         validator=attr.validators.instance_of(FieldValueComponentTimeDeltaTest)
@@ -769,7 +768,7 @@ class TestClasses:
 
         def _get_pem_str(self, public_key_file_name):
             public_key_path = self.__certs_dir / public_key_file_name
-            with open(str(public_key_path), 'r', encoding='ascii') as pem_file:
+            with open(str(public_key_path), encoding='ascii') as pem_file:
                 return pem_file.read()
 
         def _get_public_key_x509(self, public_key_file_name):

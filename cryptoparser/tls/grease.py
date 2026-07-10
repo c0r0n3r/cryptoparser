@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 
 import abc
 import enum
@@ -21,7 +20,7 @@ class TlsInvalidType(enum.IntEnum):
 
 
 @attr.s
-class TlsInvalidTypeParamsBase():
+class TlsInvalidTypeParamsBase:
     code = attr.ib(validator=attr.validators.instance_of(int))
     value_type = attr.ib(validator=attr.validators.in_(TlsInvalidType))
 

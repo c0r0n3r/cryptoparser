@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 
 import abc
@@ -51,7 +50,7 @@ class TlsContentType(enum.IntEnum):
 
 
 @attr.s
-class SubprotocolParser():
+class SubprotocolParser:
     _subprotocol_type = attr.ib(validator=attr.validators.instance_of(enum.IntEnum))
 
     @classmethod
@@ -277,7 +276,7 @@ class TlsHandshakeHelloRandomBytes(Vector):
         vector_param = cls.get_param()
         composer.compose_numeric(vector_param.min_byte_num, vector_param.item_num_size)
 
-        vector, parsed_length = super(TlsHandshakeHelloRandomBytes, cls)._parse(composer.composed_bytes + parsable)
+        vector, parsed_length = super()._parse(composer.composed_bytes + parsable)
 
         return cls(vector), parsed_length - vector_param.item_num_size
 
@@ -413,7 +412,7 @@ class TlsSessionIdVector(Vector):
 
 
 @attr.s(frozen=True)
-class TlsJA4Fingerprint():
+class TlsJA4Fingerprint:
     fingerprint = attr.ib(validator=attr.validators.instance_of(str))
     fingerprint_original = attr.ib(validator=attr.validators.instance_of(str))
     fingerprint_raw = attr.ib(validator=attr.validators.instance_of(str))
@@ -697,7 +696,7 @@ class TlsHandshakeServerHello(TlsHandshakeHello):
         validator=attr.validators.instance_of(TlsHandshakeHelloRandom),
     )
     session_id = attr.ib(
-        default=TlsSessionIdVector((random.randint(0, 255) for i in range(32))),
+        default=TlsSessionIdVector(random.randint(0, 255) for i in range(32)),
         converter=TlsSessionIdVector,
         validator=attr.validators.instance_of(TlsSessionIdVector),
     )
@@ -1105,7 +1104,7 @@ class TlsHandshakeHelloRetryRequest(TlsHandshakeHello):
         validator=attr.validators.instance_of(TlsHandshakeHelloRandom),
     )
     session_id = attr.ib(
-        default=TlsSessionIdVector((random.randint(0, 255) for i in range(32))),
+        default=TlsSessionIdVector(random.randint(0, 255) for i in range(32)),
         converter=TlsSessionIdVector,
         validator=attr.validators.instance_of(TlsSessionIdVector),
     )
@@ -1263,7 +1262,7 @@ class SslHandshakeClientHello(SslMessageBase):
 
     @session_id.default
     def _default_session_id(self):  # pylint: disable=no-self-use
-        return bytes()
+        return b''
 
     @challenge.default
     def _default_challenge(self):  # pylint: disable=no-self-use
@@ -1315,7 +1314,7 @@ class SslHandshakeServerHello(SslMessageBase):
 
     @connection_id.default
     def _default_connection_id(self):  # pylint: disable=no-self-use
-        return bytes()
+        return b''
 
     @classmethod
     def get_message_type(cls):

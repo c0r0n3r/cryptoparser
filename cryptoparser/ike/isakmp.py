@@ -79,7 +79,7 @@ class IsakmpMessage(ParsableBase):
     exchange_type: typing.Union[Ikev1ExchangeType, Ikev2ExchangeType] = attr.ib(
         validator=attr.validators.instance_of((Ikev1ExchangeType, Ikev2ExchangeType))
     )
-    flags: typing.List[IsakmpFlags] = attr.ib(validator=attr.validators.deep_iterable(
+    flags: list[IsakmpFlags] = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(IsakmpFlags)
     ))
     message_id: int = attr.ib(validator=attr.validators.and_(
@@ -87,7 +87,7 @@ class IsakmpMessage(ParsableBase):
         attr.validators.ge(0),
         attr.validators.lt(2**32)
     ))
-    payloads: typing.List[typing.Union[Ikev1PayloadBase, Ikev2PayloadBase]] = attr.ib(
+    payloads: list[typing.Union[Ikev1PayloadBase, Ikev2PayloadBase]] = attr.ib(
         validator=attr.validators.deep_iterable(
             member_validator=attr.validators.instance_of((Ikev1PayloadBase, Ikev2PayloadBase))
         )

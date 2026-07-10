@@ -18,3 +18,4 @@ disable=
     too-many-function-args,
     too-many-ancestors,
     duplicate-code,
+    no-member,

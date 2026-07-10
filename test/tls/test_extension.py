@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 
 import collections
 import datetime
@@ -115,7 +114,7 @@ class ExtensionInvalidType(TlsExtensionParsed):
 
     @classmethod
     def _parse(cls, parsable):
-        parser = super(ExtensionInvalidType, cls)._parse_header(parsable)
+        parser = super()._parse_header(parsable)
 
         return ExtensionInvalidType(), parser.parsed_length
 

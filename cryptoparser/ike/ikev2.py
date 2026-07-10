@@ -57,7 +57,7 @@ class Ikev2PayloadBase(ParsableBase):
     """
     HEADER_SIZE = 4
 
-    flags: typing.Set[Ikev2PayloadFlags] = attr.ib(
+    flags: set[Ikev2PayloadFlags] = attr.ib(
         validator=attr.validators.deep_iterable(
             member_validator=attr.validators.instance_of(Ikev2PayloadFlags),
         )
@@ -474,10 +474,10 @@ class Ikev2Proposal(ParsableBase):
     HEADER_SIZE = 8
 
     protocol_id: Ikev2ProtocolId = attr.ib(validator=attr.validators.instance_of(Ikev2ProtocolId))
-    transforms: typing.List[Transform] = attr.ib(validator=attr.validators.deep_iterable(
+    transforms: list[Transform] = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(Transform)
     ))
-    spi: bytes = attr.ib(default=bytes(), converter=bytes, validator=attr.validators.instance_of(bytes))
+    spi: bytes = attr.ib(default=b'', converter=bytes, validator=attr.validators.instance_of(bytes))
     last: typing.Optional[Ikev2ProposalNextPayload] = attr.ib(
         init=False,
         default=None,
@@ -579,7 +579,7 @@ class Ikev2PayloadSecurityAssociation(Ikev2PayloadBase):
        |                                                               |
        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     """
-    proposals: typing.List[Ikev2Proposal] = attr.ib(validator=attr.validators.deep_iterable(
+    proposals: list[Ikev2Proposal] = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(Ikev2Proposal)
     ))
 
@@ -777,7 +777,7 @@ class Ikev2PayloadDelete(Ikev2PayloadBase):
     :ivar spis: List of Security Parameter Indexes
     """
     protocol_id: Ikev2ProtocolId = attr.ib(validator=attr.validators.instance_of(Ikev2ProtocolId))
-    spis: typing.List[int] = attr.ib(validator=attr.validators.deep_iterable(
+    spis: list[int] = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(int),
     ))
 
@@ -889,7 +889,7 @@ class Ikev2PayloadNotifyBase(Ikev2PayloadBase):
             parser.parse_raw('spi', parser['spi_size'])
             spi = parser['spi']
         else:
-            spi = bytes()
+            spi = b''
 
         del parser['spi_size']
         if 'spi' in parser:

@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 
 import unittest
 
@@ -24,7 +23,7 @@ class TestRecord(unittest.TestCase):
             b'\x01' +                                             # message code = DISCONNECT
             b'\x00\x00\x00\x02' +                                 # reason = PROTOCOL_ERROR
             b'\x00\x00\x00\x06' +                                 # description length = 6
-            'αβγ'.encode('utf-8') +                               # description
+            'αβγ'.encode() +                               # description
             b'\x00\x00\x00\x05' +                                 # language length = 5
             b'en-US' +                                            # language
             b'\x00\x00\x00\x00\x00\x00\x00\x00' +                 # padding

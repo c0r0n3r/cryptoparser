@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 
 import abc
@@ -48,7 +47,7 @@ from cryptoparser.common.x509 import PublicKeyX509
 
 
 @attr.s
-class SshPublicKeyBase():
+class SshPublicKeyBase:
     host_key_algorithm = attr.ib(
         converter=SshHostKeyAlgorithm,
         validator=attr.validators.instance_of(SshHostKeyAlgorithm)
@@ -446,7 +445,7 @@ class SshCertValidPrincipals(VectorParsable):
 
 
 @attr.s(frozen=True)
-class SshCertExtensionParam():
+class SshCertExtensionParam:
     code = attr.ib(validator=attr.validators.instance_of(str))
     critical = attr.ib(validator=attr.validators.instance_of(bool))
 
@@ -571,7 +570,7 @@ class SshCertExtensionNoData(SshCertExtensionParsed):
 
     @classmethod
     def _parse_header(cls, parsable):
-        header_parser = super(SshCertExtensionNoData, cls)._parse_header(parsable)
+        header_parser = super()._parse_header(parsable)
 
         header_parser.parse_numeric('extension_length', 4)
 
@@ -729,7 +728,7 @@ class SshCertConstraintVariant(VariantParsable):
         raise NotImplementedError()
 
 
-class SshCertificateBase():
+class SshCertificateBase:
     @classmethod
     @abc.abstractmethod
     def _parse_host_key_algorithm(cls, parsable):
@@ -840,7 +839,7 @@ class SshHostCertificateV00Base(ParsableBase, SshCertificateBase):  # pylint: di
         return composer.composed
 
 
-class SshHostCertificateBase():
+class SshHostCertificateBase:
     def _asdict(self):
         key_dict = OrderedDict([])
 

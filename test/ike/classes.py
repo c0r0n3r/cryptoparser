@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 
 from cryptodatahub.ike.algorithm import (
     Ikev1PayloadType,
@@ -146,7 +145,7 @@ class Ikev2PayloadNotifyNoDataTest(Ikev2PayloadNotifyNoData):
             parser.parse_raw('spi', parser['spi_size'])
             spi = parser['spi']
         else:
-            spi = bytes()
+            spi = b''
 
         del parser['spi_size']
         if 'spi' in parser:
@@ -208,7 +207,7 @@ class Ikev2PayloadNotifyBaseTest(Ikev2PayloadNotifyBase):
             parser.parse_raw('spi', parser['spi_size'])
             spi = parser['spi']
         else:
-            spi = bytes()
+            spi = b''
 
         del parser['spi_size']
         if 'spi' in parser:

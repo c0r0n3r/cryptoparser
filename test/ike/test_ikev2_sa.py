@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 
 import collections
 import unittest
@@ -87,7 +86,7 @@ class TestTransformAttributeSignatureAlgorithm(unittest.TestCase):
     def test_error_invalid_type(self):
         wrong_type_header = b'\x00\x11\x00\x20'  # wrong type 0x11 instead of 0x12
         wrong_type_bytes = wrong_type_header + self.signature_algorithm
-        with self.assertRaises(Exception):
+        with self.assertRaises(InvalidValue):
             TransformAttributeSignatureAlgorithm.parse_exact_size(wrong_type_bytes)
 
     def test_error_invalid_signature_algorithm_type(self):
@@ -274,7 +273,7 @@ class TestIkev2Proposal(unittest.TestCase):  # pylint: disable=too-many-instance
         self.proposal_minimal = Ikev2Proposal(
             protocol_id=self.protocol_id,
             transforms=[self.transform_prf],
-            spi=bytes()
+            spi=b''
         )
         self.proposal_minimal.last = Ikev2ProposalNextPayload.LAST
         self.proposal_minimal.proposal_number = 1
@@ -303,7 +302,7 @@ class TestIkev2Proposal(unittest.TestCase):  # pylint: disable=too-many-instance
         self.proposal_minimal = Ikev2Proposal(
             protocol_id=self.protocol_id,
             transforms=[self.transform_prf],
-            spi=bytes()
+            spi=b''
         )
         self.proposal_minimal.last = Ikev2ProposalNextPayload.LAST
         self.proposal_minimal.proposal_number = 1
@@ -331,7 +330,7 @@ class TestIkev2Proposal(unittest.TestCase):  # pylint: disable=too-many-instance
     def test_parse(self):
         parsed_proposal = Ikev2Proposal.parse_exact_size(self.proposal_bytes_minimal)
         self.assertEqual(parsed_proposal.protocol_id, self.protocol_id)
-        self.assertEqual(parsed_proposal.spi, bytes())
+        self.assertEqual(parsed_proposal.spi, b'')
         self.assertEqual(len(parsed_proposal.transforms), 1)
         self.assertEqual(parsed_proposal.last, set())
         self.assertEqual(parsed_proposal.proposal_number, 1)
@@ -403,7 +402,7 @@ class TestIkev2PayloadSecurityAssociation(unittest.TestCase):  # pylint: disable
         self.proposal_single = Ikev2Proposal(
             protocol_id=Ikev2ProtocolId.IKE,
             transforms=[self.transform_prf],
-            spi=bytes()
+            spi=b''
         )
 
         self.proposal_with_spi = Ikev2Proposal(
@@ -512,7 +511,7 @@ class TestIkev2PayloadSecurityAssociation(unittest.TestCase):  # pylint: disable
         proposal = Ikev2Proposal(
             protocol_id=Ikev2ProtocolId.IKE,
             transforms=[transform_prf, transform_dh, transform_encr],
-            spi=bytes()
+            spi=b''
         )
 
         sa_payload = Ikev2PayloadSecurityAssociation(
@@ -540,7 +539,7 @@ class TestIkev2PayloadSecurityAssociation(unittest.TestCase):  # pylint: disable
         proposal_with_integ = Ikev2Proposal(
             protocol_id=Ikev2ProtocolId.IKE,
             transforms=[transform_integ],
-            spi=bytes()
+            spi=b''
         )
 
         sa_payload_with_integ = Ikev2PayloadSecurityAssociation(
@@ -566,13 +565,13 @@ class TestIkev2PayloadSecurityAssociation(unittest.TestCase):  # pylint: disable
         proposal1 = Ikev2Proposal(
             protocol_id=Ikev2ProtocolId.IKE,
             transforms=[transform_prf1],
-            spi=bytes()
+            spi=b''
         )
 
         proposal2 = Ikev2Proposal(
             protocol_id=Ikev2ProtocolId.IKE,
             transforms=[transform_prf2],
-            spi=bytes()
+            spi=b''
         )
 
         sa_payload = Ikev2PayloadSecurityAssociation(

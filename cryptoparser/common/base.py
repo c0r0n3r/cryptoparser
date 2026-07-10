@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 
 import abc
@@ -14,7 +13,7 @@ import ipaddress
 try:
     from collections.abc import MutableSequence  # only works on python 3.3+
 except ImportError:  # pragma: no cover
-    from collections import MutableSequence  # pylint: disable=deprecated-class
+    from collections.abc import MutableSequence  # pylint: disable=deprecated-class
 
 from collections import OrderedDict
 
@@ -49,7 +48,7 @@ _default.default = json.JSONEncoder().default
 json.JSONEncoder.default = _default
 
 
-class SerializableTextEncoder():
+class SerializableTextEncoder:
     def __call__(self, obj, level):
         if isinstance(obj, str):
             string_result = obj
@@ -59,7 +58,7 @@ class SerializableTextEncoder():
         return False, string_result
 
 
-class Serializable():  # pylint: disable=too-few-public-methods
+class Serializable:  # pylint: disable=too-few-public-methods
     _MARKDOWN_RESULT_STRING_CLASSES = (
         ipaddress.IPv4Network,
         ipaddress.IPv6Network,
@@ -367,7 +366,7 @@ class VariantParsableExact(VariantParsableBase):
 
 
 @attr.s
-class VectorParamBase():  # pylint: disable=too-few-public-methods
+class VectorParamBase:  # pylint: disable=too-few-public-methods
     min_byte_num = attr.ib(validator=attr.validators.instance_of(int))
     max_byte_num = attr.ib(validator=attr.validators.instance_of(int))
     item_num_size = attr.ib(init=False, validator=attr.validators.instance_of(int))
@@ -863,7 +862,7 @@ class StringEnumParsableBase(ParsableBaseNoABC):
         return self._asdict().encode('ascii')
 
     def _asdict(self):
-        return getattr(self, 'value').code
+        return self.value.code
 
 
 class StringEnumParsable(StringEnumParsableBase):
@@ -946,7 +945,7 @@ class ProtocolVersionMajorMinorBase(ProtocolVersionBase):
 
 
 @attr.s
-class ListParamParsable():  # pylint: disable=too-few-public-methods
+class ListParamParsable:  # pylint: disable=too-few-public-methods
     item_class = attr.ib(validator=attr.validators.instance_of(type))
     fallback_class = attr.ib(validator=attr.validators.optional(attr.validators.instance_of(type)))
     separator_class = attr.ib(attr.validators.instance_of(ParsableBase))
@@ -994,7 +993,7 @@ class ListParsable(ArrayBase):
 class OpaqueEnumParsable(Vector):
     @classmethod
     def _parse(cls, parsable):
-        opaque, parsed_length = super(OpaqueEnumParsable, cls)._parse(parsable)
+        opaque, parsed_length = super()._parse(parsable)
         code = b''.join([bytes((opaque_item,)) for opaque_item in opaque]).decode(cls.get_encoding())
 
         try:

@@ -226,7 +226,7 @@ class Ikev1PayloadTransform(Ikev1PayloadBase):
     """
 
     transform_id: Ikev1TransformId = attr.ib(validator=attr.validators.instance_of(Ikev1TransformId))
-    attributes: typing.List[DataAttributeBase] = attr.ib(
+    attributes: list[DataAttributeBase] = attr.ib(
         validator=attr.validators.deep_iterable(
             member_validator=attr.validators.instance_of(DataAttributeBase),
         )
@@ -310,10 +310,10 @@ class Ikev1PayloadProposal(Ikev1PayloadBase):
     """
 
     protocol_id: Ikev1ProtocolId = attr.ib(validator=attr.validators.instance_of(Ikev1ProtocolId))
-    transforms: typing.List[Ikev1PayloadTransform] = attr.ib(validator=attr.validators.deep_iterable(
+    transforms: list[Ikev1PayloadTransform] = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(Ikev1PayloadTransform),
     ))
-    spi: bytes = attr.ib(default=bytes(), converter=bytes, validator=attr.validators.instance_of(bytes))
+    spi: bytes = attr.ib(default=b'', converter=bytes, validator=attr.validators.instance_of(bytes))
     next_payload: typing.Optional[Ikev1PayloadType] = attr.ib(
         init=False,
         default=None,
@@ -409,10 +409,10 @@ class Ikev1PayloadSecurityAssociation(Ikev1PayloadBase):
     """
 
     doi: Ikev1Doi = attr.ib(validator=attr.validators.instance_of(Ikev1Doi))
-    situation: typing.List[Ikev1Situation] = attr.ib(validator=attr.validators.deep_iterable(
+    situation: list[Ikev1Situation] = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(Ikev1Situation),
     ))
-    proposals: typing.List[Ikev1PayloadProposal] = attr.ib(validator=attr.validators.deep_iterable(
+    proposals: list[Ikev1PayloadProposal] = attr.ib(validator=attr.validators.deep_iterable(
         member_validator=attr.validators.instance_of(Ikev1PayloadProposal),
     ))
 

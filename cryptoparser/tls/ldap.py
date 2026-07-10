@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: MPL-2.0
-# -*- coding: utf-8 -*-
 
 import abc
 import enum
@@ -153,7 +152,7 @@ class LDAPMessageParsableBase(ParsableBase):
         try:
             message = LDAPMessage.load(bytes(parsable))
             # ensure recursive parsing
-            message.native  # pylint: disable=pointless-statement
+            _ = message.native
         except ValueError as e:
             match = cls._NOT_ENOUGH_DATA_REGEX.match(e.args[0])
             if match:
