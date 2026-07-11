@@ -93,14 +93,28 @@ class IsakmpMessage(ParsableBase):
         )
     )
 
+    def _collect_payloads_by_type(
+        self, payload_type: typing.Union[Ikev1PayloadType, Ikev2PayloadType]
+    ) -> list[typing.Union[Ikev1PayloadBase, Ikev2PayloadBase]]:
+        return [
+            payload for payload in self.payloads
+            if payload.get_payload_type() == payload_type
+        ]
+
+    def get_payloads_by_type(
+        self, payload_type: typing.Union[Ikev1PayloadType, Ikev2PayloadType]
+    ) -> list[typing.Union[Ikev1PayloadBase, Ikev2PayloadBase]]:
+        return self._collect_payloads_by_type(payload_type)
+
     def get_payload_by_type(
         self, payload_type: typing.Union[Ikev1PayloadType, Ikev2PayloadType]
     ) -> typing.Union[Ikev1PayloadBase, Ikev2PayloadBase]:
-        for payload in self.payloads:
-            if payload.get_payload_type() == payload_type:
-                return payload
-
-        raise KeyError(payload_type)
+        payloads = self._collect_payloads_by_type(payload_type)
+        if not payloads:
+            raise KeyError(payload_type)
+        if len(payloads) > 1:
+            raise IndexError(payload_type)
+        return payloads[0]
 
     @classmethod
     def _parse(cls, parsable):

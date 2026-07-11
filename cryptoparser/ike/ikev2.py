@@ -954,6 +954,48 @@ class Ikev2PayloadNotifyAuthenticationFailed(Ikev2PayloadNotifyNoData):
         return Ikev2NotifyType.AUTHENTICATION_FAILED
 
 
+class Ikev2NotifyPayloadUseTransportMode(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.USE_TRANSPORT_MODE
+
+
+class Ikev2NotifyPayloadHttpCertLookupSupported(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.HTTP_CERT_LOOKUP_SUPPORTED
+
+
+class Ikev2NotifyPayloadIkev2FragmentationSupported(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.IKEV2_FRAGMENTATION_SUPPORTED
+
+
+class Ikev2NotifyPayloadIntermediateExchangeSupported(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.INTERMEDIATE_EXCHANGE_SUPPORTED
+
+
+class Ikev2NotifyPayloadUsePpk(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.USE_PPK
+
+
+class Ikev2NotifyPayloadRedirectSupported(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.REDIRECT_SUPPORTED
+
+
+class Ikev2NotifyPayloadChildlessIkev2Supported(Ikev2PayloadNotifyNoData):
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.CHILDLESS_IKEV2_SUPPORTED
+
+
 @attr.s
 class Ikev2PayloadNotifyUnparsed(Ikev2PayloadNotifyBase):
     data: typing.Union[bytes, bytearray] = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
@@ -1028,6 +1070,86 @@ class Ikev2NotifyPayloadCookie(Ikev2PayloadNotifyParsedBase):
         composer.compose_raw(self.cookie)
 
 
+@attr.s
+class Ikev2NotifyPayloadSetWindowSize(Ikev2PayloadNotifyParsedBase):
+    """Set window size payload notification data parser."""
+    window_size: int = attr.ib(validator=[
+        attr.validators.instance_of(int),
+        attr.validators.in_(range(0, 2 ** 32)),
+    ])
+
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.SET_WINDOW_SIZE
+
+    @classmethod
+    def _parse_data(cls, parser, notification_data_length):
+        if notification_data_length != 4:
+            raise InvalidValue(notification_data_length, cls, 'notification_data_length')
+        parser.parse_numeric('window_size', 4)
+
+    def _compose_data(self, composer):
+        composer.compose_numeric(self.window_size, 4)
+
+
+@attr.s
+class Ikev2NotifyPayloadNatDetectionBase(Ikev2PayloadNotifyParsedBase):
+    hash_data: typing.Union[bytes, bytearray] = attr.ib(validator=attr.validators.instance_of((bytes, bytearray)))
+
+    @classmethod
+    @abc.abstractmethod
+    def _get_message_type(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    def _parse_data(cls, parser, notification_data_length):
+        parser.parse_raw('hash_data', notification_data_length)
+
+    def _compose_data(self, composer):
+        composer.compose_raw(self.hash_data)
+
+
+@attr.s
+class Ikev2NotifyPayloadNatDetectionSourceIp(Ikev2NotifyPayloadNatDetectionBase):
+    """NAT detection source IP payload notification data parser."""
+
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.NAT_DETECTION_SOURCE_IP
+
+
+@attr.s
+class Ikev2NotifyPayloadNatDetectionDestinationIp(Ikev2NotifyPayloadNatDetectionBase):
+    """NAT detection destination IP payload notification data parser."""
+
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.NAT_DETECTION_DESTINATION_IP
+
+
+@attr.s
+class Ikev2NotifyPayloadSignatureHashAlgorithms(Ikev2PayloadNotifyParsedBase):
+    """Signature hash algorithms notification (RFC 7427 §4)."""
+    hash_algorithms: tuple[int, ...] = attr.ib(
+        converter=tuple,
+        validator=attr.validators.deep_iterable(attr.validators.instance_of(int)),
+    )
+
+    @classmethod
+    def _get_message_type(cls):
+        return Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS
+
+    @classmethod
+    def _parse_data(cls, parser, notification_data_length):
+        if notification_data_length % 2 != 0:
+            raise InvalidValue(notification_data_length, cls, 'notification_data_length')
+        parser.parse_numeric_array('hash_algorithms', notification_data_length // 2, 2)
+
+    def _compose_data(self, composer):
+        for hash_id in self.hash_algorithms:
+            composer.compose_numeric(hash_id, 2)
+
+
 class Ikev2NotifyPayloadVariantBase(VariantParsable):
     @classmethod
     @abc.abstractmethod
@@ -1053,6 +1175,17 @@ class Ikev2NotifyPayloadVariantResponder(Ikev2NotifyPayloadVariantBase):
         return collections.OrderedDict([
             (Ikev2NotifyType.COOKIE, [Ikev2NotifyPayloadCookie, ]),
             (Ikev2NotifyType.INVALID_KE_PAYLOAD, [Ikev2NotifyPayloadInvalidKe, ]),
+            (Ikev2NotifyType.SET_WINDOW_SIZE, [Ikev2NotifyPayloadSetWindowSize, ]),
+            (Ikev2NotifyType.NAT_DETECTION_SOURCE_IP, [Ikev2NotifyPayloadNatDetectionSourceIp, ]),
+            (Ikev2NotifyType.NAT_DETECTION_DESTINATION_IP, [Ikev2NotifyPayloadNatDetectionDestinationIp, ]),
+            (Ikev2NotifyType.USE_TRANSPORT_MODE, [Ikev2NotifyPayloadUseTransportMode, ]),
+            (Ikev2NotifyType.HTTP_CERT_LOOKUP_SUPPORTED, [Ikev2NotifyPayloadHttpCertLookupSupported, ]),
+            (Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS, [Ikev2NotifyPayloadSignatureHashAlgorithms, ]),
+            (Ikev2NotifyType.IKEV2_FRAGMENTATION_SUPPORTED, [Ikev2NotifyPayloadIkev2FragmentationSupported, ]),
+            (Ikev2NotifyType.INTERMEDIATE_EXCHANGE_SUPPORTED, [Ikev2NotifyPayloadIntermediateExchangeSupported, ]),
+            (Ikev2NotifyType.USE_PPK, [Ikev2NotifyPayloadUsePpk, ]),
+            (Ikev2NotifyType.REDIRECT_SUPPORTED, [Ikev2NotifyPayloadRedirectSupported, ]),
+            (Ikev2NotifyType.CHILDLESS_IKEV2_SUPPORTED, [Ikev2NotifyPayloadChildlessIkev2Supported, ]),
         ])
 
 

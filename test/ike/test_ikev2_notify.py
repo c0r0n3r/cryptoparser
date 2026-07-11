@@ -3,6 +3,7 @@
 import collections
 import unittest
 
+from cryptodatahub.common.exception import InvalidValue
 from cryptodatahub.ike.algorithm import Ikev2NotifyType, Ikev2ProtocolId
 
 from cryptoparser.common.exception import NotEnoughData, InvalidType
@@ -10,10 +11,22 @@ from cryptoparser.ike.ikev2 import (
     Ikev2PayloadFlags,
     Ikev2PayloadType,
     Ikev2PayloadNotifyUnparsed,
+    Ikev2NotifyPayloadChildlessIkev2Supported,
     Ikev2NotifyPayloadCookie,
-    Ikev2NotifyPayloadVariantResponder
+    Ikev2NotifyPayloadHttpCertLookupSupported,
+    Ikev2NotifyPayloadIkev2FragmentationSupported,
+    Ikev2NotifyPayloadIntermediateExchangeSupported,
+    Ikev2NotifyPayloadNatDetectionDestinationIp,
+    Ikev2NotifyPayloadNatDetectionSourceIp,
+    Ikev2NotifyPayloadRedirectSupported,
+    Ikev2NotifyPayloadSetWindowSize,
+    Ikev2NotifyPayloadSignatureHashAlgorithms,
+    Ikev2NotifyPayloadUsePpk,
+    Ikev2NotifyPayloadUseTransportMode,
+    Ikev2NotifyPayloadVariantResponder,
 )
 
+from . import classes as _ike_test_classes
 from .classes import Ikev2PayloadNotifyBaseTest, Ikev2PayloadNotifyNoDataTest
 
 
@@ -268,18 +281,8 @@ class TestIkev2PayloadNotifyUnparsed(unittest.TestCase):
 
 
 class TestIkev2NotifyPayloadCookie(unittest.TestCase):
-    def setUp(self):
-        self.protocol_id = Ikev2ProtocolId.IKE
-        self.cookie_data = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
-
-        self.cookie_payload = Ikev2NotifyPayloadCookie(
-            flags=set(),
-            protocol_id=self.protocol_id,
-            type=Ikev2NotifyType.COOKIE,
-            spi=b'',
-            cookie=self.cookie_data
-        )
-        self.cookie_payload.next_payload = Ikev2PayloadType.NONE
+    _PROTOCOL_ID = Ikev2ProtocolId.IKE
+    _COOKIE_DATA = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
 
     def test_get_message_type(self):
         # pylint: disable=protected-access
@@ -288,17 +291,17 @@ class TestIkev2NotifyPayloadCookie(unittest.TestCase):
     def test_cookie_data_storage(self):
         payload = Ikev2NotifyPayloadCookie(
             flags=set(),
-            protocol_id=self.protocol_id,
+            protocol_id=self._PROTOCOL_ID,
             type=Ikev2NotifyType.COOKIE,
             spi=b'',
-            cookie=self.cookie_data
+            cookie=self._COOKIE_DATA
         )
-        self.assertEqual(payload.cookie, self.cookie_data)
+        self.assertEqual(payload.cookie, self._COOKIE_DATA)
 
         different_cookie = b'\xff\xfe\xfd\xfc\xfb\xfa'
         payload_2 = Ikev2NotifyPayloadCookie(
             flags=set(),
-            protocol_id=self.protocol_id,
+            protocol_id=self._PROTOCOL_ID,
             type=Ikev2NotifyType.COOKIE,
             spi=b'',
             cookie=different_cookie
@@ -306,22 +309,311 @@ class TestIkev2NotifyPayloadCookie(unittest.TestCase):
         self.assertEqual(payload_2.cookie, different_cookie)
 
     def test_round_trip_cookie_preservation(self):
-        composed_bytes = self.cookie_payload.compose()
+        cookie_payload = Ikev2NotifyPayloadCookie(
+            flags=set(),
+            protocol_id=self._PROTOCOL_ID,
+            type=Ikev2NotifyType.COOKIE,
+            spi=b'',
+            cookie=self._COOKIE_DATA
+        )
+        cookie_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = cookie_payload.compose()
         parsed_payload: Ikev2NotifyPayloadCookie = Ikev2NotifyPayloadCookie.parse_exact_size(composed_bytes)
 
-        self.assertEqual(parsed_payload.cookie, self.cookie_payload.cookie)  # pylint: disable=no-member
-        self.assertEqual(parsed_payload.type, self.cookie_payload.type)
-        self.assertEqual(parsed_payload.spi, self.cookie_payload.spi)
+        self.assertEqual(parsed_payload.cookie, cookie_payload.cookie)  # pylint: disable=no-member
+        self.assertEqual(parsed_payload.type, cookie_payload.type)
+        self.assertEqual(parsed_payload.spi, cookie_payload.spi)
+
+
+class TestIkev2NotifyPayloadSetWindowSize(unittest.TestCase):
+    _PROTOCOL_ID = Ikev2ProtocolId.IKE
+    _WINDOW_SIZE = 5
+
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(Ikev2NotifyPayloadSetWindowSize._get_message_type(), Ikev2NotifyType.SET_WINDOW_SIZE)
+
+    def test_window_size_storage(self):
+        payload = Ikev2NotifyPayloadSetWindowSize(
+            flags=set(),
+            protocol_id=self._PROTOCOL_ID,
+            type=Ikev2NotifyType.SET_WINDOW_SIZE,
+            spi=b'',
+            window_size=self._WINDOW_SIZE
+        )
+        self.assertEqual(payload.window_size, self._WINDOW_SIZE)
+
+        different_window_size = 10
+        payload_2 = Ikev2NotifyPayloadSetWindowSize(
+            flags=set(),
+            protocol_id=self._PROTOCOL_ID,
+            type=Ikev2NotifyType.SET_WINDOW_SIZE,
+            spi=b'',
+            window_size=different_window_size
+        )
+        self.assertEqual(payload_2.window_size, different_window_size)
+
+    def test_round_trip_window_size_preservation(self):
+        window_size_payload = Ikev2NotifyPayloadSetWindowSize(
+            flags=set(),
+            protocol_id=self._PROTOCOL_ID,
+            type=Ikev2NotifyType.SET_WINDOW_SIZE,
+            spi=b'',
+            window_size=self._WINDOW_SIZE
+        )
+        window_size_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = window_size_payload.compose()
+        parsed_payload: Ikev2NotifyPayloadSetWindowSize = \
+            Ikev2NotifyPayloadSetWindowSize.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed_payload.window_size, window_size_payload.window_size)  # pylint: disable=no-member
+        self.assertEqual(parsed_payload.type, window_size_payload.type)
+        self.assertEqual(parsed_payload.spi, window_size_payload.spi)
+
+    def test_error_invalid_notification_data_length(self):
+        wrong_length_bytes = bytes.fromhex(
+            '00'      # next_payload = NONE
+            '00'      # flags = 0
+            '000b'    # payload_length = 11 (8 header + 3 data bytes)
+            '01'      # protocol_id = IKE
+            '00'      # spi_size = 0
+            '4001'    # notify_type = SET_WINDOW_SIZE
+            'aaaaaa'  # 3 bytes data (must be exactly 4)
+        )
+        with self.assertRaises(InvalidValue):
+            Ikev2NotifyPayloadSetWindowSize.parse_exact_size(wrong_length_bytes)
+
+
+class TestIkev2NotifyPayloadNatDetectionSourceIp(_ike_test_classes.Ikev2NotifyPayloadNatDetectionBaseTest):
+    _NOTIFY_TYPE = Ikev2NotifyType.NAT_DETECTION_SOURCE_IP
+    _PAYLOAD_CLASS = Ikev2NotifyPayloadNatDetectionSourceIp
+    _NOTIFY_TYPE_BYTES = b'\x40\x04'
+
+
+class TestIkev2NotifyPayloadNatDetectionDestinationIp(_ike_test_classes.Ikev2NotifyPayloadNatDetectionBaseTest):
+    _NOTIFY_TYPE = Ikev2NotifyType.NAT_DETECTION_DESTINATION_IP
+    _PAYLOAD_CLASS = Ikev2NotifyPayloadNatDetectionDestinationIp
+    _NOTIFY_TYPE_BYTES = b'\x40\x05'
+
+
+class TestIkev2NotifyPayloadUseTransportMode(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(Ikev2NotifyPayloadUseTransportMode._get_message_type(), Ikev2NotifyType.USE_TRANSPORT_MODE)
+
+    def test_round_trip_preservation(self):
+        transport_mode_payload = Ikev2NotifyPayloadUseTransportMode(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.USE_TRANSPORT_MODE,
+            spi=b''
+        )
+        transport_mode_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = transport_mode_payload.compose()
+        parsed_payload: Ikev2NotifyPayloadUseTransportMode = \
+            Ikev2NotifyPayloadUseTransportMode.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed_payload.type, transport_mode_payload.type)
+        self.assertEqual(parsed_payload.spi, transport_mode_payload.spi)
+        self.assertEqual(parsed_payload.protocol_id, transport_mode_payload.protocol_id)
+        self.assertEqual(parsed_payload.flags, transport_mode_payload.flags)
+        self.assertEqual(parsed_payload.next_payload, transport_mode_payload.next_payload)
+
+
+class TestIkev2NotifyPayloadHttpCertLookupSupported(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadHttpCertLookupSupported._get_message_type(),
+            Ikev2NotifyType.HTTP_CERT_LOOKUP_SUPPORTED
+        )
+
+    def test_round_trip_preservation(self):
+        http_cert_payload = Ikev2NotifyPayloadHttpCertLookupSupported(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.HTTP_CERT_LOOKUP_SUPPORTED,
+            spi=b''
+        )
+        http_cert_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = http_cert_payload.compose()
+        parsed_payload: Ikev2NotifyPayloadHttpCertLookupSupported = \
+            Ikev2NotifyPayloadHttpCertLookupSupported.parse_exact_size(composed_bytes)
+
+        self.assertEqual(parsed_payload.type, http_cert_payload.type)
+        self.assertEqual(parsed_payload.spi, http_cert_payload.spi)
+        self.assertEqual(parsed_payload.protocol_id, http_cert_payload.protocol_id)
+        self.assertEqual(parsed_payload.flags, http_cert_payload.flags)
+        self.assertEqual(parsed_payload.next_payload, http_cert_payload.next_payload)
+
+
+class TestIkev2NotifyPayloadIkev2FragmentationSupported(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadIkev2FragmentationSupported._get_message_type(),
+            Ikev2NotifyType.IKEV2_FRAGMENTATION_SUPPORTED,
+        )
+
+    def test_round_trip_preservation(self):
+        fragmentation_payload = Ikev2NotifyPayloadIkev2FragmentationSupported(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.IKEV2_FRAGMENTATION_SUPPORTED,
+            spi=b'',
+        )
+        fragmentation_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = fragmentation_payload.compose()
+        parsed_payload = Ikev2NotifyPayloadIkev2FragmentationSupported.parse_exact_size(composed_bytes)
+        self.assertEqual(parsed_payload.type, fragmentation_payload.type)
+
+
+class TestIkev2NotifyPayloadIntermediateExchangeSupported(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadIntermediateExchangeSupported._get_message_type(),
+            Ikev2NotifyType.INTERMEDIATE_EXCHANGE_SUPPORTED,
+        )
+
+    def test_round_trip_preservation(self):
+        intermediate_exchange_payload = Ikev2NotifyPayloadIntermediateExchangeSupported(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.INTERMEDIATE_EXCHANGE_SUPPORTED,
+            spi=b'',
+        )
+        intermediate_exchange_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = intermediate_exchange_payload.compose()
+        parsed_payload = Ikev2NotifyPayloadIntermediateExchangeSupported.parse_exact_size(composed_bytes)
+        self.assertEqual(parsed_payload.type, intermediate_exchange_payload.type)
+
+
+class TestIkev2NotifyPayloadUsePpk(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(Ikev2NotifyPayloadUsePpk._get_message_type(), Ikev2NotifyType.USE_PPK)
+
+    def test_round_trip_preservation(self):
+        use_ppk_payload = Ikev2NotifyPayloadUsePpk(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.USE_PPK,
+            spi=b'',
+        )
+        use_ppk_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = use_ppk_payload.compose()
+        parsed_payload = Ikev2NotifyPayloadUsePpk.parse_exact_size(composed_bytes)
+        self.assertEqual(parsed_payload.type, use_ppk_payload.type)
+
+
+class TestIkev2NotifyPayloadRedirectSupported(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadRedirectSupported._get_message_type(),
+            Ikev2NotifyType.REDIRECT_SUPPORTED,
+        )
+
+    def test_round_trip_preservation(self):
+        redirect_supported_payload = Ikev2NotifyPayloadRedirectSupported(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.REDIRECT_SUPPORTED,
+            spi=b'',
+        )
+        redirect_supported_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = redirect_supported_payload.compose()
+        parsed_payload = Ikev2NotifyPayloadRedirectSupported.parse_exact_size(composed_bytes)
+        self.assertEqual(parsed_payload.type, redirect_supported_payload.type)
+
+
+class TestIkev2NotifyPayloadChildlessIkev2Supported(unittest.TestCase):
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadChildlessIkev2Supported._get_message_type(),
+            Ikev2NotifyType.CHILDLESS_IKEV2_SUPPORTED,
+        )
+
+    def test_round_trip_preservation(self):
+        childless_ikev2_payload = Ikev2NotifyPayloadChildlessIkev2Supported(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.CHILDLESS_IKEV2_SUPPORTED,
+            spi=b'',
+        )
+        childless_ikev2_payload.next_payload = Ikev2PayloadType.NONE
+        composed_bytes = childless_ikev2_payload.compose()
+        parsed_payload = Ikev2NotifyPayloadChildlessIkev2Supported.parse_exact_size(composed_bytes)
+        self.assertEqual(parsed_payload.type, childless_ikev2_payload.type)
+
+
+class TestIkev2NotifyPayloadSignatureHashAlgorithms(unittest.TestCase):
+    # Five 16-bit hash algorithm identifiers per RFC 7427 (IANA registry
+    # values: 1=SHA1, 2=SHA2-256, 3=SHA2-384, 4=SHA2-512, 5=IDENTITY)
+    _HASH_ALGORITHMS = (1, 2, 3, 4, 5)
+    _PAYLOAD_BYTES = bytes.fromhex(
+        '00'        # next_payload = NONE
+        '00'        # flags = 0
+        '0012'      # payload_length = 18 (8 header + 10 data)
+        '01'        # protocol_id = IKE
+        '00'        # spi_size = 0
+        '402f'      # notify_type = SIGNATURE_HASH_ALGORITHMS (16431)
+        '00010002000300040005'  # five 16-bit hash algorithm IDs
+    )
+
+    def setUp(self):
+        self.payload = Ikev2NotifyPayloadSignatureHashAlgorithms(
+            flags=set(),
+            protocol_id=Ikev2ProtocolId.IKE,
+            type=Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS,
+            spi=b'',
+            hash_algorithms=self._HASH_ALGORITHMS,
+        )
+        self.payload.next_payload = Ikev2PayloadType.NONE
+
+    def test_get_message_type(self):
+        # pylint: disable=protected-access
+        self.assertEqual(
+            Ikev2NotifyPayloadSignatureHashAlgorithms._get_message_type(),
+            Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS,
+        )
+
+    def test_parse(self):
+        parsed = Ikev2NotifyPayloadSignatureHashAlgorithms.parse_exact_size(self._PAYLOAD_BYTES)
+        self.assertEqual(parsed.type, Ikev2NotifyType.SIGNATURE_HASH_ALGORITHMS)
+        self.assertEqual(parsed.hash_algorithms, self._HASH_ALGORITHMS)  # pylint: disable=no-member
+
+    def test_compose(self):
+        self.assertEqual(self.payload.compose(), self._PAYLOAD_BYTES)
+
+    def test_round_trip(self):
+        composed = self.payload.compose()
+        parsed = Ikev2NotifyPayloadSignatureHashAlgorithms.parse_exact_size(composed)
+        self.assertEqual(parsed.hash_algorithms, self.payload.hash_algorithms)  # pylint: disable=no-member
+
+    def test_error_invalid_notification_data_length(self):
+        odd_length_bytes = bytes.fromhex(
+            '00'    # next_payload = NONE
+            '00'    # flags = 0
+            '0009'  # payload_length = 9 (8 header + 1 data byte)
+            '01'    # protocol_id = IKE
+            '00'    # spi_size = 0
+            '402f'  # notify_type = SIGNATURE_HASH_ALGORITHMS
+            'aa'    # 1 byte data (must be even number of bytes)
+        )
+        with self.assertRaises(InvalidValue):
+            Ikev2NotifyPayloadSignatureHashAlgorithms.parse_exact_size(odd_length_bytes)
 
 
 class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
-    def setUp(self):
-        self.protocol_id = Ikev2ProtocolId.IKE
+    _PROTOCOL_ID = Ikev2ProtocolId.IKE
 
     def test_parse_other_notify_type(self):
         other_notify = Ikev2PayloadNotifyUnparsed(
             flags=set(),
-            protocol_id=self.protocol_id,
+            protocol_id=self._PROTOCOL_ID,
             type=Ikev2NotifyType.AUTHENTICATION_FAILED,
             spi=b'',
             data=b'\x00\x01\x02\x03'
@@ -338,7 +630,7 @@ class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
         cookie_data = b'\x00\x01\x02\x03'
         cookie_payload = Ikev2NotifyPayloadCookie(
             flags=set(),
-            protocol_id=self.protocol_id,
+            protocol_id=self._PROTOCOL_ID,
             type=Ikev2NotifyType.COOKIE,
             spi=b'',
             cookie=cookie_data
@@ -354,7 +646,7 @@ class TestIkev2NotifyPayloadVariantResponder(unittest.TestCase):
         cookie_data = b'\x00\x01\x02\x03\x04\x05'
         cookie_payload = Ikev2NotifyPayloadCookie(
             flags=set(),
-            protocol_id=self.protocol_id,
+            protocol_id=self._PROTOCOL_ID,
             type=Ikev2NotifyType.COOKIE,
             spi=b'',
             cookie=cookie_data
