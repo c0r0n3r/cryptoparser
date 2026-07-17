@@ -3,6 +3,29 @@ Changelog
 =========
 
 ------------------
+1.4.0 - 2026-07-17
+------------------
+
+Features
+========
+
+-  IKE (``ike``)
+
+   -  add getter for multiple payloads with the same type (#93)
+   -  add IKEv2 notify payload parsing for protocol extensions (#93)
+
+      -  NAT detection source IP and destination IP
+      -  set window size
+      -  use transport mode
+      -  HTTP certificate lookup supported
+      -  signature hash algorithms
+      -  intermediate exchange supported
+      -  use PPK
+      -  redirect supported
+      -  IKEv2 fragmentation supported
+      -  childless IKEv2 supported
+
+------------------
 1.3.0 - 2026-06-15
 ------------------
 

@@ -1,5 +1,5 @@
 Name:           python-cryptoparser
-Version:        1.3.0
+Version:        1.4.0
 Release:        1%{?dist}
 Summary:        Multi-protocol cryptographic protocol parser library
 
@@ -12,7 +12,7 @@ BuildRequires:  python3-devel
 BuildRequires:  python3-pip
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-wheel
-BuildRequires:  python3-cryptodatahub >= 1.3.0
+BuildRequires:  python3-cryptodatahub >= 1.4.0
 
 %description
 CryptoParser is a library for parsing cryptographic protocol messages
@@ -23,7 +23,7 @@ parsing backend for CryptoLyzer.
 Summary:        %{summary}
 Requires:       python3-asn1crypto
 Requires:       python3-attrs
-Requires:       python3-cryptodatahub >= 1.3.0
+Requires:       python3-cryptodatahub >= 1.4.0
 Requires:       python3-urllib3
 
 %description -n python3-cryptoparser
@@ -52,6 +52,19 @@ export SETUPTOOLS_SCM_PRETEND_VERSION=%{version}
 %license LICENSE.txt
 
 %changelog
+* Fri Jul 17 2026 Szilárd Pfeiffer <coroner@pfeifferszilard.hu> - 1.4.0-1
+- add getter for multiple payloads with the same type (#93)
+- add IKEv2 NAT detection source IP and destination IP notify payload parsing (#93)
+- add IKEv2 set window size notify payload parsing (#93)
+- add IKEv2 use transport mode notify payload parsing (#93)
+- add IKEv2 HTTP certificate lookup supported notify payload parsing (#93)
+- add IKEv2 signature hash algorithms notify payload parsing (#93)
+- add IKEv2 intermediate exchange supported notify payload parsing (#93)
+- add IKEv2 use PPK notify payload parsing (#93)
+- add IKEv2 redirect supported notify payload parsing (#93)
+- add IKEv2 fragmentation supported notify payload parsing (#93)
+- add childless IKEv2 supported notify payload parsing (#93)
+
 * Mon Jun 15 2026 Szilárd Pfeiffer <coroner@pfeifferszilard.hu> - 1.3.0-1
 - add Debian and RPM packaging (#102)
 - add JA4 tag generation for the client hello message (#100)
